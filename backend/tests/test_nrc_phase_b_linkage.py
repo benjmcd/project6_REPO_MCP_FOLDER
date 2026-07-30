@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from copy import deepcopy
+from dataclasses import FrozenInstanceError, fields
 from datetime import datetime, timezone
 import hashlib
 import importlib
@@ -13,7 +14,13 @@ from typing import Any, Generator
 from uuid import UUID
 
 import pytest
-from sqlalchemy import create_engine, inspect as sa_inspect
+from sqlalchemy import (
+    create_engine,
+    event as sa_event,
+    inspect as sa_inspect,
+    select,
+    update,
+)
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -26,6 +33,7 @@ from app.models import (
     ApsContentLinkage,
     ConnectorRun,
     ConnectorRunEvent,
+    ConnectorRunSubmission,
     ConnectorRunTarget,
 )
 from app.services import connector_egress_arming
@@ -547,6 +555,471 @@ def _install_origin_stub(
             {"accession_number": "ML17123A319"},
         ),
     )
+
+
+def _make_verified_state(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[
+    ConnectorRun,
+    ConnectorRunTarget,
+    ApsContentLinkage,
+    Path,
+    str,
+    list[dict[str, Any]],
+]:
+    run, target, raw_path, digest = _make_strict_state(db)
+    parser_calls = _install_parser(monkeypatch)
+    linkage = _phase_b().bind_strict_nrc_phase_b_linkage(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    parser_calls.clear()
+    return run, target, linkage, raw_path, digest, parser_calls
+
+
+def _verified_error_code(
+    db: Session,
+    *,
+    target_id: str,
+) -> str:
+    outer = db.begin()
+    try:
+        with pytest.raises(_phase_b().NrcPhaseBLinkageError) as excinfo:
+            _phase_b().verify_strict_nrc_phase_b_linkage(
+                db,
+                connector_run_target_id=target_id,
+            )
+        return str(excinfo.value.code)
+    finally:
+        outer.rollback()
+
+
+def test_verifier_contract_success_is_frozen_and_read_only(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db, _ = file_dbs
+    phase_b = _phase_b()
+    run, target, linkage, raw_path, digest, parser_calls = (
+        _make_verified_state(db, monkeypatch)
+    )
+    signature = inspect.signature(phase_b.verify_strict_nrc_phase_b_linkage)
+    assert list(signature.parameters) == ["db", "connector_run_target_id"]
+    assert signature.parameters["connector_run_target_id"].kind is (
+        inspect.Parameter.KEYWORD_ONLY
+    )
+    assert [item.name for item in fields(phase_b.NrcPhaseBVerifiedState)] == (
+        [
+            "connector_run_id",
+            "connector_run_target_id",
+            "aps_content_linkage_id",
+            "content_id",
+            "raw_storage_ref",
+            "raw_content_sha256",
+            "raw_content_size_bytes",
+        ]
+    )
+    assert phase_b.NrcPhaseBVerifiedState.__dataclass_params__.frozen
+    assert "__slots__" in vars(phase_b.NrcPhaseBVerifiedState)
+    statements: list[str] = []
+
+    def capture(*args: Any) -> None:
+        statements.append(str(args[2]))
+
+    engine = db.get_bind()
+    outer = db.begin()
+    sa_event.listen(engine, "before_cursor_execute", capture)
+    try:
+        state = phase_b.verify_strict_nrc_phase_b_linkage(
+            db,
+            connector_run_target_id=target.connector_run_target_id,
+        )
+        assert outer.is_active and db.in_transaction()
+    finally:
+        sa_event.remove(engine, "before_cursor_execute", capture)
+        outer.rollback()
+    assert tuple(getattr(state, item.name) for item in fields(state)) == (
+        run.connector_run_id,
+        target.connector_run_target_id,
+        linkage.aps_content_linkage_id,
+        linkage.content_id,
+        str(raw_path),
+        digest,
+        raw_path.stat().st_size,
+    )
+    assert parser_calls == [{"blob_path": raw_path, "expected_sha256": digest}]
+    assert statements and all(
+        item.lstrip().upper().startswith("SELECT")
+        and "FOR UPDATE" not in item.upper()
+        for item in statements
+    )
+    with pytest.raises(FrozenInstanceError):
+        setattr(state, "content_id", "mutated")
+
+
+@pytest.mark.parametrize(
+    "mode",
+    ["missing_tx", "outer", "nested", "unrelated", "new", "dirty", "deleted"],
+)
+def test_verifier_transaction_and_identity_map_contract(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+) -> None:
+    db, _ = file_dbs
+    run, target, linkage, _, _, parser_calls = _make_verified_state(
+        db,
+        monkeypatch,
+    )
+    if mode == "missing_tx":
+        with pytest.raises(_phase_b().NrcPhaseBLinkageError) as excinfo:
+            _phase_b().verify_strict_nrc_phase_b_linkage(
+                db,
+                connector_run_target_id=target.connector_run_target_id,
+            )
+        assert excinfo.value.code == "nrc_phase_b_caller_transaction_required"
+        assert parser_calls == []
+        return
+    outer = db.begin()
+    nested = db.begin_nested() if mode == "nested" else None
+    unrelated = None
+    if mode == "unrelated":
+        unrelated = ConnectorRunSubmission(
+            connector_run_submission_id="pending-unrelated",
+            connector_key="other",
+            submission_idempotency_key="pending-unrelated",
+            request_fingerprint="f" * 64,
+            connector_run_id=run.connector_run_id,
+        )
+        db.add(unrelated)
+    elif mode == "new":
+        db.add(ApsContentChunk(chunk_text_sha256="0" * 64))
+    elif mode == "dirty":
+        target.status = "failed"
+    elif mode == "deleted":
+        db.delete(linkage)
+    try:
+        if mode in {"new", "dirty", "deleted"}:
+            with pytest.raises(_phase_b().NrcPhaseBLinkageError) as excinfo:
+                _phase_b().verify_strict_nrc_phase_b_linkage(
+                    db,
+                    connector_run_target_id=target.connector_run_target_id,
+                )
+            assert excinfo.value.code == "nrc_phase_b_identity_map_dirty"
+            assert parser_calls == []
+            if mode == "dirty":
+                history = sa_inspect(target).attrs.status.history
+                assert history.added == ["failed"]
+                assert history.deleted == ["downloaded"]
+        else:
+            _phase_b().verify_strict_nrc_phase_b_linkage(
+                db,
+                connector_run_target_id=target.connector_run_target_id,
+            )
+            assert outer.is_active and db.in_transaction()
+            assert db.in_nested_transaction() is (nested is not None)
+            if unrelated is not None:
+                assert unrelated in db.new and sa_inspect(unrelated).pending
+    finally:
+        if nested is not None and nested.is_active:
+            nested.rollback()
+        outer.rollback()
+
+
+@pytest.mark.parametrize(
+    ("surface", "expected_code"),
+    [
+        ("linkage_missing", "nrc_phase_b_linkage_cardinality"),
+        ("linkage_extra", "nrc_phase_b_linkage_cardinality"),
+        ("linkage_forbidden", "nrc_phase_b_linkage_mismatch"),
+        ("linkage_cross_run", "nrc_phase_b_linkage_mismatch"),
+        ("document_tamper", "nrc_phase_b_linkage_mismatch"),
+        ("chunk_tamper", "nrc_phase_b_linkage_mismatch"),
+        ("custody_absent", "nrc_phase_b_custody_ineligible"),
+        ("custody_pending", "nrc_phase_b_custody_ineligible"),
+        ("custody_contradictory", "nrc_phase_b_custody_ineligible"),
+    ],
+)
+def test_verifier_rejects_projection_and_custody_mutations(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+    surface: str,
+    expected_code: str,
+) -> None:
+    db, _ = file_dbs
+    run, target, _, _, _, _ = _make_verified_state(db, monkeypatch)
+    linkage = db.query(ApsContentLinkage).one()
+    document = db.query(ApsContentDocument).one()
+    chunk = db.query(ApsContentChunk).first()
+    assert chunk is not None
+    if surface == "linkage_missing":
+        db.delete(linkage)
+    elif surface == "linkage_extra":
+        db.add(
+            ApsContentLinkage(
+                content_id="extra",
+                run_id=run.connector_run_id,
+                target_id=target.connector_run_target_id,
+                content_contract_id="extra",
+                chunking_contract_id="extra",
+            )
+        )
+    elif surface == "linkage_forbidden":
+        linkage.diagnostics_ref = "forbidden"
+    elif surface == "linkage_cross_run":
+        linkage.run_id = "cross-run"
+    elif surface == "document_tamper":
+        document.normalized_char_count += 1
+    elif surface == "chunk_tamper":
+        chunk.chunk_text = "tampered"
+    else:
+        source = _fresh_source_reference(
+            db,
+            target.connector_run_target_id,
+        )
+        marker = deepcopy(source.get(_CUSTODY_KEY))
+        assert isinstance(marker, dict)
+        if surface == "custody_absent":
+            source.pop(_CUSTODY_KEY)
+        elif surface == "custody_pending":
+            marker["status"] = _PENDING_CUSTODY
+            source[_CUSTODY_KEY] = marker
+        else:
+            marker["content_id"] = "contradictory"
+            source[_CUSTODY_KEY] = marker
+        target.source_reference_json = source
+    db.commit()
+    assert (
+        _verified_error_code(
+            db,
+            target_id=target.connector_run_target_id,
+        )
+        == expected_code
+    )
+
+
+@pytest.mark.parametrize(
+    ("surface", "expected_code"),
+    [
+        ("raw_initial", "nrc_phase_b_raw_storage_unsafe"),
+        ("raw_exit", "nrc_phase_b_raw_drift"),
+    ],
+)
+def test_verifier_translates_raw_failures(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+    surface: str,
+    expected_code: str,
+) -> None:
+    db, _ = file_dbs
+    _, target, _, _, _, _ = _make_verified_state(db, monkeypatch)
+    phase_b = _phase_b()
+    if surface == "raw_initial":
+        def fail_rehash(*_args: Any, **_kwargs: Any) -> Any:
+            raise raw_handles.StableRawStorageError("missing")
+
+        monkeypatch.setattr(phase_b, "hash_locked_raw_file", fail_rehash)
+    else:
+        db.rollback()
+        real_snapshot = phase_b.locked_raw_file_snapshot
+
+        @contextmanager
+        def changed_raw(
+            raw_root: Path,
+            file_path: Path,
+        ) -> Generator[Any, None, None]:
+            with real_snapshot(raw_root, file_path) as snapshot:
+                yield snapshot
+                raise raw_handles.StableRawStorageError("changed")
+
+        monkeypatch.setattr(
+            phase_b,
+            "locked_raw_file_snapshot",
+            changed_raw,
+        )
+    assert (
+        _verified_error_code(
+            db,
+            target_id=target.connector_run_target_id,
+        )
+        == expected_code
+    )
+
+
+def test_verifier_refuses_shared_memory_pool_before_checkout(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _, target, _, _, _, parser_calls = _make_verified_state(db, monkeypatch)
+    engine = db.get_bind()
+    real_connect = engine.connect
+    checkouts: list[None] = []
+
+    def record_checkout() -> Any:
+        checkouts.append(None)
+        return real_connect()
+
+    monkeypatch.setattr(engine, "connect", record_checkout)
+    outer = db.begin()
+    try:
+        with pytest.raises(_phase_b().NrcPhaseBLinkageError) as excinfo:
+            _phase_b().verify_strict_nrc_phase_b_linkage(
+                db,
+                connector_run_target_id=target.connector_run_target_id,
+            )
+        assert excinfo.value.code == (
+            "nrc_phase_b_committed_visibility_unavailable"
+        )
+        assert checkouts == []
+        assert parser_calls == []
+        assert outer.is_active and db.in_transaction()
+    finally:
+        outer.rollback()
+
+
+@pytest.mark.parametrize(
+    "promotion",
+    ["flushed_orm", "direct_core", "nested_rollback"],
+)
+def test_verifier_rejects_provisional_custody_promotion(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+    promotion: str,
+) -> None:
+    db, observer = file_dbs
+    run, target, _, _, _, _ = _make_verified_state(db, monkeypatch)
+    target_id = target.connector_run_target_id
+    pending_source = _fresh_source_reference(db, target_id)
+    pending_marker = deepcopy(pending_source[_CUSTODY_KEY])
+    pending_marker["status"] = _PENDING_CUSTODY
+    pending_source[_CUSTODY_KEY] = pending_marker
+    target.source_reference_json = pending_source
+    db.commit()
+    verified_source = deepcopy(pending_source)
+    verified_marker = deepcopy(verified_source[_CUSTODY_KEY])
+    verified_marker["status"] = _VERIFIED_CUSTODY
+    verified_source[_CUSTODY_KEY] = verified_marker
+
+    outer = db.begin()
+    nested = db.begin_nested() if promotion == "nested_rollback" else None
+    if promotion == "flushed_orm":
+        target.source_reference_json = verified_source
+        db.flush()
+        assert target not in db.dirty
+    else:
+        db.connection().execute(
+            update(ConnectorRunTarget)
+            .where(
+                ConnectorRunTarget.connector_run_target_id == target_id
+            )
+            .values(source_reference_json=verified_source)
+        )
+    unrelated = ConnectorRunSubmission(
+        connector_run_submission_id=f"pending-{promotion}",
+        connector_key="other",
+        submission_idempotency_key=f"pending-{promotion}",
+        request_fingerprint="f" * 64,
+        connector_run_id=run.connector_run_id,
+    )
+    db.add(unrelated)
+    try:
+        with pytest.raises(_phase_b().NrcPhaseBLinkageError) as excinfo:
+            _phase_b().verify_strict_nrc_phase_b_linkage(
+                db,
+                connector_run_target_id=target_id,
+            )
+        assert excinfo.value.code == "nrc_phase_b_custody_ineligible"
+        assert outer.is_active and db.in_transaction()
+        assert db.in_nested_transaction() is (nested is not None)
+        assert unrelated in db.new and sa_inspect(unrelated).pending
+        committed_source = _fresh_source_reference(observer, target_id)
+        assert (
+            committed_source[_CUSTODY_KEY]["status"] == _PENDING_CUSTODY
+        )
+        if nested is not None:
+            nested.rollback()
+            rolled_back_source = db.connection().execute(
+                select(ConnectorRunTarget.source_reference_json).where(
+                    ConnectorRunTarget.connector_run_target_id == target_id
+                )
+            ).scalar_one()
+            assert (
+                rolled_back_source[_CUSTODY_KEY]["status"]
+                == _PENDING_CUSTODY
+            )
+    finally:
+        observer.rollback()
+        if nested is not None and nested.is_active:
+            nested.rollback()
+        outer.rollback()
+
+
+@pytest.mark.parametrize(
+    "failure",
+    ["checkout", "isolation", "isolation_error", "read"],
+)
+def test_verifier_fails_closed_when_committed_visibility_fails(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+    failure: str,
+) -> None:
+    db, _ = file_dbs
+    _, target, _, _, _, _ = _make_verified_state(db, monkeypatch)
+    engine = db.get_bind()
+    remove_listener = False
+    read_listener: Any = None
+    if failure == "checkout":
+        def fail_checkout() -> Any:
+            raise OperationalError(
+                "independent checkout",
+                {},
+                RuntimeError("unavailable"),
+            )
+
+        monkeypatch.setattr(engine, "connect", fail_checkout)
+    elif failure == "isolation":
+        monkeypatch.setattr(
+            engine.dialect,
+            "get_isolation_level",
+            lambda _connection: "READ-UNCOMMITTED",
+        )
+    elif failure == "isolation_error":
+        def fail_isolation(_connection: Any) -> str:
+            raise RuntimeError("unavailable")
+
+        monkeypatch.setattr(
+            engine.dialect,
+            "get_isolation_level",
+            fail_isolation,
+        )
+    else:
+        def fail_read(*_args: Any) -> None:
+            raise OperationalError(
+                "independent read",
+                {},
+                RuntimeError("unavailable"),
+            )
+
+        read_listener = fail_read
+        sa_event.listen(engine, "before_cursor_execute", read_listener)
+        remove_listener = True
+
+    outer = db.begin()
+    try:
+        with pytest.raises(_phase_b().NrcPhaseBLinkageError) as excinfo:
+            _phase_b().verify_strict_nrc_phase_b_linkage(
+                db,
+                connector_run_target_id=target.connector_run_target_id,
+            )
+        assert excinfo.value.code == (
+            "nrc_phase_b_committed_visibility_unavailable"
+        )
+        assert outer.is_active and db.in_transaction()
+    finally:
+        if remove_listener:
+            sa_event.remove(engine, "before_cursor_execute", read_listener)
+        outer.rollback()
 
 
 def test_public_boundary_accepts_only_db_and_target_id() -> None:

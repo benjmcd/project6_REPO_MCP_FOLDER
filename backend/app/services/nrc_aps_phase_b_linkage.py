@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
 import json
@@ -13,8 +14,11 @@ import re
 from typing import Any, Mapping, NoReturn
 from uuid import UUID
 
+from sqlalchemy import select
+from sqlalchemy.engine import Connection, Engine, RowMapping
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool, QueuePool
 
 from app.core.config import settings
 from app.models import (
@@ -61,6 +65,8 @@ _ADMISSION_KEYS = frozenset(
 )
 _RowSnapshot = tuple[tuple[str, Any], ...]
 _EventSnapshot = tuple[_RowSnapshot, ...]
+_RowSetSnapshot = tuple[_RowSnapshot, ...]
+_NRC_PHASE_B_EVENT_CAP = 7
 _ADMISSION_KEY_SETS = frozenset(
     {
         _ADMISSION_KEYS,
@@ -69,6 +75,57 @@ _ADMISSION_KEY_SETS = frozenset(
         _ADMISSION_KEYS | {_ORIGIN_RECEIPT_KEY, _CUSTODY_KEY},
     }
 )
+
+
+@dataclass(frozen=True, slots=True)
+class NrcPhaseBVerifiedState:
+    connector_run_id: str
+    connector_run_target_id: str
+    aps_content_linkage_id: str
+    content_id: str
+    raw_storage_ref: str
+    raw_content_sha256: str
+    raw_content_size_bytes: int
+
+
+@dataclass(frozen=True, slots=True)
+class _CoreSnapshotRow:
+    values: dict[str, Any]
+    snapshot: _RowSnapshot
+
+
+@dataclass(frozen=True, slots=True)
+class _VerifierAuthorityRead:
+    runs: tuple[_CoreSnapshotRow, ...]
+    targets: tuple[_CoreSnapshotRow, ...]
+    run_targets: tuple[_CoreSnapshotRow, ...]
+    events: tuple[_CoreSnapshotRow, ...]
+
+    @property
+    def fingerprint(self) -> tuple[_RowSetSnapshot, ...]:
+        return tuple(
+            tuple(row.snapshot for row in rows)
+            for rows in (
+                self.runs,
+                self.targets,
+                self.run_targets,
+                self.events,
+            )
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class _VerifierProjectionRead:
+    linkages: tuple[_CoreSnapshotRow, ...]
+    documents: tuple[_CoreSnapshotRow, ...]
+    chunks: tuple[_CoreSnapshotRow, ...]
+
+    @property
+    def fingerprint(self) -> tuple[_RowSetSnapshot, ...]:
+        return tuple(
+            tuple(row.snapshot for row in rows)
+            for rows in (self.linkages, self.documents, self.chunks)
+        )
 
 
 class NrcPhaseBLinkageError(RuntimeError):
@@ -189,6 +246,206 @@ def _mapped_snapshot(row: object) -> _RowSnapshot:
     )
 
 
+def _core_snapshot_row(
+    table: Any,
+    row: RowMapping,
+) -> _CoreSnapshotRow:
+    values = {
+        column.key: deepcopy(row[column.key])
+        for column in table.columns
+    }
+    return _CoreSnapshotRow(
+        values=values,
+        snapshot=tuple(
+            (
+                column.key,
+                _canonical_snapshot_value(values[column.key]),
+            )
+            for column in sorted(
+                table.columns,
+                key=lambda item: item.key,
+            )
+        ),
+    )
+
+
+def _read_bounded_core_rows(
+    connection: Connection,
+    table: Any,
+    *,
+    criterion: Any,
+    max_rows: int,
+) -> tuple[_CoreSnapshotRow, ...]:
+    statement = (
+        select(table)
+        .where(criterion)
+        .order_by(*tuple(table.primary_key.columns))
+        .limit(max_rows + 1)
+    )
+    return tuple(
+        _core_snapshot_row(table, row)
+        for row in connection.execute(statement).mappings().all()
+    )
+
+
+def _materialize_core_row(
+    row: _CoreSnapshotRow,
+    model: type[Any],
+) -> Any:
+    return model(**deepcopy(row.values))
+
+
+def _read_verifier_authority(
+    connection: Connection,
+    *,
+    target_id: str,
+    expected_run_id: str | None = None,
+) -> _VerifierAuthorityRead:
+    target_table = ConnectorRunTarget.__table__
+    run_table = ConnectorRun.__table__
+    event_table = ConnectorRunEvent.__table__
+    targets = _read_bounded_core_rows(
+        connection,
+        target_table,
+        criterion=(
+            target_table.c.connector_run_target_id == target_id
+        ),
+        max_rows=1,
+    )
+    run_id = expected_run_id
+    if targets and run_id is None:
+        candidate = targets[0].values.get("connector_run_id")
+        if isinstance(candidate, str):
+            run_id = candidate
+    bounded_run_id = run_id or ""
+    runs = _read_bounded_core_rows(
+        connection,
+        run_table,
+        criterion=run_table.c.connector_run_id == bounded_run_id,
+        max_rows=1,
+    )
+    run_targets = _read_bounded_core_rows(
+        connection,
+        target_table,
+        criterion=target_table.c.connector_run_id == bounded_run_id,
+        max_rows=1,
+    )
+    events = _read_bounded_core_rows(
+        connection,
+        event_table,
+        criterion=event_table.c.connector_run_id == bounded_run_id,
+        max_rows=_NRC_PHASE_B_EVENT_CAP,
+    )
+    return _VerifierAuthorityRead(
+        runs=runs,
+        targets=targets,
+        run_targets=run_targets,
+        events=events,
+    )
+
+
+def _read_verifier_projection(
+    connection: Connection,
+    *,
+    payload: Mapping[str, Any],
+) -> _VerifierProjectionRead:
+    chunk_count = payload.get("chunk_count")
+    chunks = payload.get("chunks")
+    if (
+        isinstance(chunk_count, bool)
+        or not isinstance(chunk_count, int)
+        or chunk_count < 0
+        or not isinstance(chunks, list)
+        or len(chunks) != chunk_count
+    ):
+        _fail(
+            "nrc_phase_b_parse_projection_invalid",
+            "Strict projection has no bounded complete chunk set.",
+        )
+    linkage_table = ApsContentLinkage.__table__
+    document_table = ApsContentDocument.__table__
+    chunk_table = ApsContentChunk.__table__
+    return _VerifierProjectionRead(
+        linkages=_read_bounded_core_rows(
+            connection,
+            linkage_table,
+            criterion=(
+                linkage_table.c.target_id == payload["target_id"]
+            ),
+            max_rows=1,
+        ),
+        documents=_read_bounded_core_rows(
+            connection,
+            document_table,
+            criterion=(
+                document_table.c.content_id == payload["content_id"]
+            ),
+            max_rows=1,
+        ),
+        chunks=_read_bounded_core_rows(
+            connection,
+            chunk_table,
+            criterion=chunk_table.c.content_id == payload["content_id"],
+            max_rows=chunk_count,
+        ),
+    )
+
+
+def _reject_phase_b_identity_map_state(db: Session) -> None:
+    authority_types = (
+        ConnectorRun,
+        ConnectorRunTarget,
+        ConnectorRunEvent,
+        ApsContentDocument,
+        ApsContentChunk,
+        ApsContentLinkage,
+    )
+    if any(
+        isinstance(item, authority_types)
+        for collection in (db.new, db.deleted)
+        for item in collection
+    ) or any(
+        isinstance(item, authority_types)
+        and db.is_modified(item, include_collections=True)
+        for item in db.dirty
+    ):
+        _fail(
+            "nrc_phase_b_identity_map_dirty",
+            "Phase B authority has pending identity-map changes.",
+        )
+
+
+def _committed_visibility_unavailable(
+    cause: Exception | None = None,
+) -> NoReturn:
+    error = NrcPhaseBLinkageError(
+        "nrc_phase_b_committed_visibility_unavailable",
+        "Independent committed Phase B visibility is unavailable.",
+    )
+    if cause is not None:
+        raise error from cause
+    raise error
+
+
+def _independent_committed_engine(db: Session) -> Engine:
+    try:
+        bind = db.get_bind()
+    except SQLAlchemyError as exc:
+        _committed_visibility_unavailable(exc)
+    engine = bind.engine if isinstance(bind, Connection) else bind
+    if not isinstance(engine, Engine) or not isinstance(
+        engine.pool,
+        (QueuePool, NullPool),
+    ):
+        _committed_visibility_unavailable()
+    if engine.dialect.name == "sqlite":
+        database = _text(engine.url.database).lower()
+        mode = _text(engine.url.query.get("mode")).lower()
+        if not database or ":memory:" in database or mode == "memory":
+            _committed_visibility_unavailable()
+    return engine
+
+
 def _require_owned_clean_transaction(db: Session) -> None:
     if (
         db.in_transaction()
@@ -215,13 +472,7 @@ def _event_snapshot(
     )
 
 
-def _validate_run(
-    db: Session,
-    run: ConnectorRun,
-    *,
-    expected_event_snapshot: _EventSnapshot | None = None,
-    lock_events: bool = False,
-) -> _EventSnapshot:
+def _validate_run_shape(run: ConnectorRun) -> None:
     if (
         run.connector_key != "nrc_adams_aps"
         or run.source_system != "nrc_adams_aps"
@@ -241,6 +492,33 @@ def _validate_run(
             "nrc_phase_b_run_invalid",
             "Target parent is not one completed strict NRC raw-only run.",
         )
+
+
+def _validate_run_events(
+    run: ConnectorRun,
+    events: list[ConnectorRunEvent],
+) -> None:
+    try:
+        connector_egress_arming._assert_nrc_terminal_transition(
+            run,
+            events=events,
+            now=datetime.now(timezone.utc),
+        )
+    except connector_egress_arming.ConnectorEgressArmingError as exc:
+        raise NrcPhaseBLinkageError(
+            "nrc_phase_b_run_invalid",
+            "Strict NRC terminal transition is not structurally valid.",
+        ) from exc
+
+
+def _validate_run(
+    db: Session,
+    run: ConnectorRun,
+    *,
+    expected_event_snapshot: _EventSnapshot | None = None,
+    lock_events: bool = False,
+) -> _EventSnapshot:
+    _validate_run_shape(run)
     event_query = db.query(ConnectorRunEvent).filter(
         ConnectorRunEvent.connector_run_id == run.connector_run_id
     ).populate_existing()
@@ -256,17 +534,7 @@ def _validate_run(
             "nrc_phase_b_row_drift",
             "Run event authority changed during strict parsing.",
         )
-    try:
-        connector_egress_arming._assert_nrc_terminal_transition(
-            run,
-            events=events,
-            now=datetime.now(timezone.utc),
-        )
-    except connector_egress_arming.ConnectorEgressArmingError as exc:
-        raise NrcPhaseBLinkageError(
-            "nrc_phase_b_run_invalid",
-            "Strict NRC terminal transition is not structurally valid.",
-        ) from exc
+    _validate_run_events(run, events)
     return current_event_snapshot
 
 
@@ -1135,6 +1403,283 @@ def _strict_payload(
             "nrc_phase_b_parse_projection_invalid",
             "Strict parser result cannot form canonical content units.",
         ) from exc
+
+
+def _validate_verifier_authority(
+    authority: _VerifierAuthorityRead,
+    *,
+    target_id: str,
+) -> tuple[ConnectorRun, ConnectorRunTarget, str, int]:
+    if len(authority.targets) != 1:
+        _fail(
+            "nrc_phase_b_target_not_found",
+            "Connector run target does not exist.",
+        )
+    if len(authority.runs) != 1:
+        _fail(
+            "nrc_phase_b_run_not_found",
+            "Connector run does not exist.",
+        )
+    run = _materialize_core_row(authority.runs[0], ConnectorRun)
+    target = _materialize_core_row(
+        authority.targets[0],
+        ConnectorRunTarget,
+    )
+    _validate_run_shape(run)
+    if len(authority.events) > _NRC_PHASE_B_EVENT_CAP:
+        _fail(
+            "nrc_phase_b_run_invalid",
+            "Strict NRC run exceeds its bounded event authority.",
+        )
+    events = [
+        _materialize_core_row(row, ConnectorRunEvent)
+        for row in authority.events
+    ]
+    _validate_run_events(run, events)
+    if (
+        len(authority.run_targets) != 1
+        or authority.run_targets[0].values.get(
+            "connector_run_target_id"
+        )
+        != target_id
+    ):
+        _fail(
+            "nrc_phase_b_target_cardinality",
+            "Strict NRC run must have exactly one ordinal-1 target.",
+        )
+    raw_sha256, raw_size = _validate_target(target, run=run)
+    return run, target, raw_sha256, raw_size
+
+
+def _validate_verifier_projection(
+    projection: _VerifierProjectionRead,
+    *,
+    payload: Mapping[str, Any],
+    target: ConnectorRunTarget,
+    raw_size: int,
+) -> ApsContentLinkage:
+    if len(projection.linkages) != 1:
+        _fail(
+            "nrc_phase_b_linkage_cardinality",
+            "Target must have exactly one durable content linkage.",
+        )
+    linkage = _materialize_core_row(
+        projection.linkages[0],
+        ApsContentLinkage,
+    )
+    if not _linkage_matches(linkage, payload):
+        _fail(
+            "nrc_phase_b_linkage_mismatch",
+            "Existing run-target linkage is not exact.",
+        )
+    documents = [
+        _materialize_core_row(row, ApsContentDocument)
+        for row in projection.documents
+    ]
+    chunks = [
+        _materialize_core_row(row, ApsContentChunk)
+        for row in projection.chunks
+    ]
+    if (
+        len(documents) != 1
+        or not _document_matches(documents[0], payload)
+        or not _chunks_match(chunks, payload)
+    ):
+        _fail(
+            "nrc_phase_b_linkage_mismatch",
+            "Existing linkage document/chunk projection is not exact.",
+        )
+    source_reference = target.source_reference_json
+    if not isinstance(source_reference, Mapping):
+        _custody_ineligible()
+    _require_exact_custody(
+        source_reference.get(_CUSTODY_KEY),
+        status=nrc_phase_b_custody.VERIFIED,
+        linkage=linkage,
+        raw_size=raw_size,
+    )
+    return linkage
+
+
+def _verify_strict_nrc_phase_b_linkage_on_connection(
+    db: Session,
+    connection: Connection,
+    *,
+    target_id: str,
+) -> NrcPhaseBVerifiedState:
+    """Verify two visible snapshots without an ABA or serializability claim."""
+
+    with db.no_autoflush:
+        initial_authority = _read_verifier_authority(
+            connection,
+            target_id=target_id,
+        )
+        run, target, raw_sha256, raw_size = (
+            _validate_verifier_authority(
+                initial_authority,
+                target_id=target_id,
+            )
+        )
+        linkage_table = ApsContentLinkage.__table__
+        initial_linkages = _read_bounded_core_rows(
+            connection,
+            linkage_table,
+            criterion=linkage_table.c.target_id == target_id,
+            max_rows=1,
+        )
+        initial_linkage_snapshot = tuple(
+            row.snapshot for row in initial_linkages
+        )
+        raw_path = _safe_rehash(
+            target,
+            expected_sha256=raw_sha256,
+            expected_size=raw_size,
+            drift_phase=False,
+        )
+        expected_raw_ref = str(target.raw_storage_ref)
+        try:
+            processed = nrc_aps_strict_parse.parse_admitted_blob_strict(
+                blob_path=raw_path,
+                expected_sha256=raw_sha256,
+            )
+        except (
+            nrc_aps_strict_parse.StrictParseViolation,
+            OSError,
+            ValueError,
+        ) as exc:
+            raise NrcPhaseBLinkageError(
+                "nrc_phase_b_parse_failed",
+                "Frozen strict parser refused admitted bytes.",
+            ) from exc
+        payload = _strict_payload(
+            run=run,
+            target=target,
+            raw_sha256=raw_sha256,
+            blob_ref=str(raw_path),
+            processed=processed,
+        )
+        snapshot_a_authority = _read_verifier_authority(
+            connection,
+            target_id=target_id,
+            expected_run_id=run.connector_run_id,
+        )
+        if (
+            snapshot_a_authority.fingerprint
+            != initial_authority.fingerprint
+        ):
+            _fail(
+                "nrc_phase_b_row_drift",
+                "Run, target, or event authority changed during parsing.",
+            )
+        snapshot_a_projection = _read_verifier_projection(
+            connection,
+            payload=payload,
+        )
+        if tuple(
+            row.snapshot for row in snapshot_a_projection.linkages
+        ) != initial_linkage_snapshot:
+            _fail(
+                "nrc_phase_b_row_drift",
+                "Target linkage authority changed during parsing.",
+            )
+        linkage = _validate_verifier_projection(
+            snapshot_a_projection,
+            payload=payload,
+            target=target,
+            raw_size=raw_size,
+        )
+        snapshot_a = (
+            snapshot_a_authority.fingerprint,
+            snapshot_a_projection.fingerprint,
+        )
+        verified_values: tuple[str, str, str, str, str, str, int] | None = (
+            None
+        )
+        try:
+            with locked_raw_file_snapshot(
+                Path(settings.connector_raw_dir),
+                raw_path,
+            ) as raw_snapshot:
+                if (
+                    raw_snapshot.canonical_ref != expected_raw_ref
+                    or raw_snapshot.sha256 != raw_sha256
+                    or raw_snapshot.size != raw_size
+                ):
+                    _fail(
+                        "nrc_phase_b_raw_drift",
+                        "Final locked raw snapshot contradicts authority.",
+                    )
+                snapshot_b_authority = _read_verifier_authority(
+                    connection,
+                    target_id=target_id,
+                    expected_run_id=run.connector_run_id,
+                )
+                snapshot_b_projection = _read_verifier_projection(
+                    connection,
+                    payload=payload,
+                )
+                snapshot_b = (
+                    snapshot_b_authority.fingerprint,
+                    snapshot_b_projection.fingerprint,
+                )
+                if snapshot_b != snapshot_a:
+                    _fail(
+                        "nrc_phase_b_row_drift",
+                        "Phase B authority changed between visible snapshots.",
+                    )
+                _reject_phase_b_identity_map_state(db)
+                verified_values = (
+                    run.connector_run_id,
+                    target.connector_run_target_id,
+                    linkage.aps_content_linkage_id,
+                    linkage.content_id,
+                    raw_snapshot.canonical_ref,
+                    raw_sha256,
+                    raw_size,
+                )
+        except StableRawStorageError as exc:
+            raise NrcPhaseBLinkageError(
+                "nrc_phase_b_raw_drift",
+                "Final locked raw snapshot changed during verification.",
+            ) from exc
+        assert verified_values is not None
+        return NrcPhaseBVerifiedState(*verified_values)
+
+
+def verify_strict_nrc_phase_b_linkage(
+    db: Session,
+    *,
+    connector_run_target_id: str,
+) -> NrcPhaseBVerifiedState:
+    """Verify committed state without an ABA or serializability claim."""
+
+    with db.no_autoflush:
+        if not db.in_transaction():
+            _fail(
+                "nrc_phase_b_caller_transaction_required",
+                "Phase B verification requires an active caller transaction.",
+            )
+        _reject_phase_b_identity_map_state(db)
+        target_id = _text(connector_run_target_id)
+        engine = _independent_committed_engine(db)
+        try:
+            with engine.connect() as connection:
+                isolation_level = re.sub(
+                    r"[-\s_]+",
+                    " ",
+                    connection.get_isolation_level().strip().upper(),
+                )
+                if isolation_level == "READ UNCOMMITTED":
+                    _committed_visibility_unavailable()
+                return _verify_strict_nrc_phase_b_linkage_on_connection(
+                    db,
+                    connection,
+                    target_id=target_id,
+                )
+        except NrcPhaseBLinkageError:
+            raise
+        except Exception as exc:
+            _committed_visibility_unavailable(exc)
 
 
 def _bind_strict_nrc_phase_b_linkage_owned(
