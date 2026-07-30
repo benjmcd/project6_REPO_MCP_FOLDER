@@ -785,14 +785,26 @@ def _derive_counted_prior_bytes(
     return counted
 
 
-def _load_counter_records(path: Path) -> tuple[dict[str, Any], ...]:
+def _load_counter_records(
+    path: Path,
+    *,
+    empty_is_valid: bool = False,
+) -> tuple[dict[str, Any], ...]:
     try:
         payload = path.read_bytes()
+    except FileNotFoundError:
+        if empty_is_valid:
+            return ()
+        _fail("connector_egress_prior_counter_unresolved")
     except OSError as exc:
         raise ConnectorEgressTransportError(
             "connector_egress_prior_counter_unresolved"
         ) from exc
-    if not payload or len(payload) > 1_048_576 or not payload.endswith(b"\n"):
+    if not payload:
+        if empty_is_valid:
+            return ()
+        _fail("connector_egress_prior_counter_unresolved")
+    if len(payload) > 1_048_576 or not payload.endswith(b"\n"):
         _fail("connector_egress_prior_counter_unresolved")
 
     records: list[dict[str, Any]] = []
@@ -831,23 +843,13 @@ def _reconcile_prior_counter_stream(
         if expected_ordinals is None
         else set(expected_ordinals)
     )
-    if not expected:
-        if counter_path is None:
-            return 0
-        try:
-            payload = counter_path.read_bytes()
-        except FileNotFoundError:
-            return 0
-        except OSError as exc:
-            raise ConnectorEgressTransportError(
-                "connector_egress_prior_counter_unresolved"
-            ) from exc
-        if payload:
-            _fail("connector_egress_prior_counter_unresolved")
-        return 0
     if counter_path is None:
+        if not expected:
+            return 0
         _fail("connector_egress_prior_counter_unresolved")
-    records = _load_counter_records(counter_path)
+    records = _load_counter_records(counter_path, empty_is_valid=not expected)
+    if not expected:
+        return 0
 
     reservations: dict[int, ConnectorRunEvent] = {}
     completions: dict[int, ConnectorRunEvent] = {}
@@ -864,28 +866,65 @@ def _reconcile_prior_counter_stream(
 
     if set(reservations) != expected or set(completions) != expected:
         _fail("connector_egress_prior_counter_unresolved")
-    if len(records) != len(expected) or tuple(
-        record.get("ordinal") for record in records
-    ) != tuple(sorted(expected)):
-        _fail("connector_egress_prior_counter_unresolved")
 
-    counted = 0
-    used_record_indexes: set[int] = set()
+    expected_identities: list[tuple[str, int, str]] = []
+    reservation_metrics_by_ordinal: dict[int, dict[str, Any]] = {}
+    completion_metrics_by_ordinal: dict[int, dict[str, Any]] = {}
     for ordinal in sorted(expected):
         reservation_metrics = _event_metrics(reservations[ordinal])
         completion_metrics = _event_metrics(completions[ordinal])
-        matches = [
-            (index, record)
-            for index, record in enumerate(records)
-            if record.get("request_fingerprint")
-            == reservation_metrics.get("request_fingerprint")
-            and record.get("ordinal") == ordinal
-            and record.get("stage") == reservation_metrics.get("stage")
-        ]
-        if len(matches) != 1 or matches[0][0] in used_record_indexes:
+        request_fingerprint = reservation_metrics.get("request_fingerprint")
+        stage = reservation_metrics.get("stage")
+        if (
+            not isinstance(request_fingerprint, str)
+            or not isinstance(stage, str)
+            or completion_metrics.get("request_fingerprint")
+            != request_fingerprint
+            or completion_metrics.get("ordinal") != ordinal
+            or completion_metrics.get("stage") != stage
+        ):
             _fail("connector_egress_prior_counter_unresolved")
-        index, record = matches[0]
-        used_record_indexes.add(index)
+        expected_identities.append((request_fingerprint, ordinal, stage))
+        reservation_metrics_by_ordinal[ordinal] = reservation_metrics
+        completion_metrics_by_ordinal[ordinal] = completion_metrics
+    expected_fingerprints = {
+        request_fingerprint
+        for request_fingerprint, _ordinal, _stage in expected_identities
+    }
+    if len(expected_fingerprints) != len(expected_identities):
+        _fail("connector_egress_prior_counter_unresolved")
+
+    current_records: list[dict[str, Any]] = []
+    current_segment_started = False
+    for record in records:
+        request_fingerprint = record.get("request_fingerprint")
+        if request_fingerprint not in expected_fingerprints:
+            if current_segment_started:
+                _fail("connector_egress_prior_counter_unresolved")
+            continue
+        current_segment_started = True
+        identity = (
+            request_fingerprint,
+            record.get("ordinal"),
+            record.get("stage"),
+        )
+        if identity not in expected_identities:
+            _fail("connector_egress_prior_counter_unresolved")
+        current_records.append(record)
+    if [
+        (
+            record.get("request_fingerprint"),
+            record.get("ordinal"),
+            record.get("stage"),
+        )
+        for record in current_records
+    ] != expected_identities:
+        _fail("connector_egress_prior_counter_unresolved")
+
+    counted = 0
+    for ordinal, record in zip(sorted(expected), current_records, strict=True):
+        reservation_metrics = reservation_metrics_by_ordinal[ordinal]
+        completion_metrics = completion_metrics_by_ordinal[ordinal]
 
         status_header_bytes = record.get("canonical_status_header_bytes")
         delivered_body_bytes = record.get("delivered_body_bytes")
@@ -944,8 +983,6 @@ def _reconcile_prior_counter_stream(
         assert isinstance(status_header_bytes, int)
         assert isinstance(delivered_body_bytes, int)
         counted += status_header_bytes + delivered_body_bytes
-    if len(used_record_indexes) != len(records):
-        _fail("connector_egress_prior_counter_unresolved")
     return counted
 
 

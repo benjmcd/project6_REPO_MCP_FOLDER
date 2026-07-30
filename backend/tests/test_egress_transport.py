@@ -147,6 +147,43 @@ def _request() -> transport.FrozenPhysicalRequest:
     )
 
 
+def _counter_record(
+    *,
+    ordinal: int,
+    stage: str,
+    request_fingerprint: str,
+    now: datetime,
+) -> dict[str, object]:
+    body_hash = hashlib.sha256(b"x").hexdigest()
+    return {
+        "schema_id": "project6.connector_http_counter.v1",
+        "ordinal": ordinal,
+        "stage": stage,
+        "request_fingerprint": request_fingerprint,
+        "canonical_status_header_bytes": 10,
+        "delivered_body_bytes": 1,
+        "decoded_body_bytes": 1,
+        "decoded_body_sha256": body_hash,
+        "response_status": 200,
+        "error_class": None,
+        "monotonic_started_at": float(ordinal),
+        "monotonic_stopped_at": float(ordinal) + 0.5,
+        "evidence_started_at": transport.utc_six_z(now),
+        "evidence_stopped_at": transport.utc_six_z(now),
+    }
+
+
+def _write_counter_records(
+    path: Path,
+    records: list[dict[str, object]],
+) -> None:
+    path.write_bytes(
+        b"".join(
+            transport._canonical_json_bytes(record) + b"\n" for record in records
+        )
+    )
+
+
 def test_revalidation_delegates_coordinated_tamper_to_canonical_resolver(
     session_factory,
     monkeypatch,
@@ -611,7 +648,7 @@ def test_later_ordinal_requires_matching_independent_prior_counter(
         }
         records = [record]
         if counter_mode == "extra":
-            records.append({**record, "ordinal": 99})
+            records.append(dict(record))
         counter_path.write_text(
             "".join(
                 json.dumps(item, sort_keys=True, separators=(",", ":")) + "\n"
@@ -713,6 +750,151 @@ def test_counter_reconciliation_rejects_reordered_records(tmp_path) -> None:
         transport._reconcile_prior_counter_stream(
             events,
             before_ordinal=3,
+            counter_path=counter_path,
+        )
+    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+
+
+def test_shared_nrc_prefix_allows_sciencebase_ordinal_one(tmp_path) -> None:
+    now = datetime.now(timezone.utc)
+    counter_path = tmp_path / "http.jsonl"
+    _write_counter_records(
+        counter_path,
+        [
+            _counter_record(
+                ordinal=1,
+                stage="exact_accession_api",
+                request_fingerprint="1" * 64,
+                now=now,
+            ),
+            _counter_record(
+                ordinal=2,
+                stage="artifact",
+                request_fingerprint="2" * 64,
+                now=now,
+            ),
+        ],
+    )
+
+    assert (
+        transport._reconcile_prior_counter_stream(
+            [],
+            before_ordinal=1,
+            counter_path=counter_path,
+        )
+        == 0
+    )
+
+
+@pytest.mark.parametrize("invalid_kind", ["malformed", "noncanonical"])
+def test_sciencebase_ordinal_one_rejects_invalid_shared_prefix(
+    tmp_path,
+    invalid_kind: str,
+) -> None:
+    now = datetime.now(timezone.utc)
+    record = _counter_record(
+        ordinal=1,
+        stage="exact_accession_api",
+        request_fingerprint="1" * 64,
+        now=now,
+    )
+    canonical = transport._canonical_json_bytes(record) + b"\n"
+    invalid = (
+        b"{not-json}\n"
+        if invalid_kind == "malformed"
+        else json.dumps(record, sort_keys=True).encode("utf-8") + b"\n"
+    )
+    counter_path = tmp_path / "http.jsonl"
+    counter_path.write_bytes(canonical + invalid)
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._reconcile_prior_counter_stream(
+            [],
+            before_ordinal=1,
+            counter_path=counter_path,
+        )
+    assert exc.value.code == "connector_egress_prior_counter_unresolved"
+
+
+def test_shared_nrc_prefix_allows_later_sciencebase_ordinal(tmp_path) -> None:
+    now = datetime.now(timezone.utc)
+    sciencebase_fingerprint = "3" * 64
+    sciencebase_record = _counter_record(
+        ordinal=1,
+        stage="item_hydration",
+        request_fingerprint=sciencebase_fingerprint,
+        now=now,
+    )
+    events = [
+        SimpleNamespace(
+            event_type=transport.RESERVATION_EVENT_TYPE,
+            metrics_json={
+                "ordinal": 1,
+                "stage": "item_hydration",
+                "request_fingerprint": sciencebase_fingerprint,
+            },
+        ),
+        SimpleNamespace(
+            event_type=transport.COMPLETION_EVENT_TYPE,
+            metrics_json={
+                "ordinal": 1,
+                "stage": "item_hydration",
+                "request_fingerprint": sciencebase_fingerprint,
+                "outcome_class": "completed",
+                "response_status": 200,
+                "counted_status_header_bytes": 10,
+                "delivered_body_bytes": 1,
+                "decoded_body_bytes": 1,
+                "decoded_body_sha256": hashlib.sha256(b"x").hexdigest(),
+                "send_started_at": transport.utc_six_z(now),
+                "completed_at": transport.utc_six_z(now),
+            },
+        ),
+    ]
+    counter_path = tmp_path / "http.jsonl"
+    _write_counter_records(
+        counter_path,
+        [
+            _counter_record(
+                ordinal=1,
+                stage="exact_accession_api",
+                request_fingerprint="1" * 64,
+                now=now,
+            ),
+            _counter_record(
+                ordinal=2,
+                stage="artifact",
+                request_fingerprint="2" * 64,
+                now=now,
+            ),
+            sciencebase_record,
+        ],
+    )
+
+    assert (
+        transport._reconcile_prior_counter_stream(
+            events,
+            before_ordinal=2,
+            counter_path=counter_path,
+        )
+        == 11
+    )
+
+    interleaved_foreign = _counter_record(
+        ordinal=3,
+        stage="foreign_after_current_segment",
+        request_fingerprint="4" * 64,
+        now=now,
+    )
+    counter_path.write_bytes(
+        counter_path.read_bytes()
+        + transport._canonical_json_bytes(interleaved_foreign)
+        + b"\n"
+    )
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._reconcile_prior_counter_stream(
+            events,
+            before_ordinal=2,
             counter_path=counter_path,
         )
     assert exc.value.code == "connector_egress_prior_counter_unresolved"
