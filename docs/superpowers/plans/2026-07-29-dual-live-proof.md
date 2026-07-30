@@ -842,9 +842,9 @@ Prove:
   rederived ledger with a missing completion, missing/extra/reordered
   ordinal, `spent_unknown` entry, or ceiling breach; a missing, extra,
   unparseable, or field-disagreeing `http.jsonl` counter record; a
-  non-`200`, incomplete, or over-limit artifact completion; and a canonical
-  connector-target receipt raw SHA-256 that mismatches the rederived ledger
-  or counter hashes — and each falsification leaves the ScienceBase marker
+  non-`200`, incomplete, or over-limit artifact completion; and a
+  blob-rehash raw SHA-256 (rehashed from the content-addressed NRC target
+  bytes) that mismatches the rederived ledger or counter hashes — and each falsification leaves the ScienceBase marker
   uncreated, its grant unconsumed, and zero marker, DB row, or event
   mutation; a stored `ledger_terminal_hash` or `proof_class` column that
   disagrees with the rederived evidence is itself a rejection, and the
@@ -1006,12 +1006,19 @@ when all of the following pass:
    matching completion event commits, so a terminal run whose records are
    absent fails this clause rather than racing it;
 5. the admitted artifact completion is a complete `200` within its byte
-   limits, and the raw SHA-256 recorded on the canonical connector-target
-   receipt equals both the rederived ledger's artifact-completion
-   `body_sha256` and the matching counter record's decoded-body SHA-256.
+   limits, and the raw SHA-256 REHASHED from the content-addressed blob
+   recorded for the NRC target (the bytes behind
+   `ConnectorRunTarget.downloaded_sha256`, rehashed at evaluation time —
+   never a stored column read) equals both the rederived ledger's
+   artifact-completion `body_sha256` and the matching counter record's
+   decoded-body SHA-256. [S3 delta 2026-07-30, owner-delegated Option B:
+   the referent was formerly "recorded on the canonical connector-target
+   receipt", which cannot exist at this Phase-A gate — the canonical origin
+   receipt (invariant 12) mints in Phase B; the blob rehash is the stronger,
+   phase-consistent third leg of the same triangulation.]
 
 It returns `NrcAcquisitionSuccessEvidence` — the rederived
-`ledger_terminal_hash`, receipt raw SHA-256, and counter-reconciliation
+`ledger_terminal_hash`, blob-rehash raw SHA-256, and counter-reconciliation
 summary — and `create_connector_egress_arming` invokes it inside the same
 ScienceBase creation call, before the consumption-marker create-new
 operation, rejecting on any failed clause with zero marker, DB row, or
