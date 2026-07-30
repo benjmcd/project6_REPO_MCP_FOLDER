@@ -655,13 +655,20 @@ but never delivered are outside the counted entity, and no claim covers them.
 `max_run_bytes` bounds the run aggregate of counted bytes: exhaustion refuses
 the next reservation before any send, and a chunk-boundary check that finds
 the remainder crossed mid-stream aborts the read, counts every delivered
-byte, and terminally classifies the send — crossing detection with at most
-one 32 KiB canonical status/header block plus one 64 KiB read chunk of
-overshoot, not a network-level never-exceeded guarantee. A campaign whose
-counted aggregate crossed the ceiling is never `fresh_live`.
+byte, and terminally classifies the send. Because `http.client` fully parses
+the status/header block before the adapter seam runs (admitting up to 100
+header lines of 65,536 B each), the 32 KiB canonical status/header check is a
+post-parse terminal rejection whose bytes are still counted and spent — so
+the reservation headroom guard admits a send only when the remaining
+aggregate budget covers the worst-case single-send allowance (one parsed
+header block at the parser admission ceiling, ~6.4 MiB, plus one 64 KiB read
+chunk). Overshoot beyond that arithmetic-enforced allowance is a counter
+defect; none of this is a network-level never-exceeded guarantee. A campaign
+whose counted aggregate crossed the ceiling is never `fresh_live`.
 `Accept-Encoding: identity` is sent so delivered and decoded body counts
-coincide, and a response declaring any other encoding stops; canonical
-status/header bytes are bounded at 32 KiB; cookies are never stored or
+coincide, and a response declaring any other encoding stops; a canonical
+status/header block over 32 KiB is terminally rejected post-parse, its
+counted bytes spent; cookies are never stored or
 replayed. Each send runs under an absolute deadline derived from
 `request_timeout_seconds` and measured on the process monotonic clock, and
 `min_request_interval_ms` is monotonic spacing per actual destination host —

@@ -1168,9 +1168,15 @@ The test matrix must include:
   reservation as budget exhaustion; a response that crosses the remainder at a
   chunk-boundary check is aborted with every delivered byte counted and the
   send classified oversized; a run whose counted aggregate crossed the ceiling
-  is never `fresh_live`-eligible, and that aggregate exceeds the ceiling by no
-  more than the detection bound — one canonical status/header block of at most
-  32 KiB plus one 64 KiB read chunk — with any larger excess rejected as a
+  is never `fresh_live`-eligible. RESERVATION HEADROOM GUARD: a send is
+  admitted only when the remaining aggregate budget is at least the worst-case
+  single-send detection allowance — one parsed canonical status/header block at
+  the `http.client` admission ceiling (100 lines x 65,536 B plus status line,
+  ~6.4 MiB) plus one 64 KiB read chunk; a smaller remainder stops before
+  reservation as budget exhaustion. Under that guard the counted aggregate
+  exceeds the ceiling by no more than the stated allowance — enforced by
+  arithmetic before the send, not promised of the seam — with any larger
+  excess rejected as a
   counter defect;
 - the absolute monotonic send deadline aborts a slow-dripping response that
   never violates the per-read socket timeout, as one spent send;
@@ -1388,8 +1394,16 @@ process alive at any instant—and adversarial tests are mandatory.
   as a stop, and never silently decompressed into the admitted-artifact path;
 - call an injected transport once with `allow_redirects=False`;
 - configure a Requests adapter with `max_retries=0`;
-- bound response headers: more than 32 KiB (32,768 bytes) of canonical
-  status/header bytes stops the read and classifies the send as oversized;
+- bound response headers, post-parse and honestly: `http.client` parses the
+  complete status/header block BEFORE the adapter seam sees parsed fields, and
+  the parser itself admits up to 100 header lines of up to 65,536 bytes each —
+  so no seam-level check can prevent receipt of a large legal header block.
+  The 32 KiB (32,768-byte) canonical status/header check is therefore a
+  POST-PARSE terminal rejection: a block whose canonical serialization exceeds
+  32 KiB classifies the send as oversized, with every counted header byte
+  still spent. The worst-case counted header contribution of one send is the
+  parser's own admission ceiling (~6.4 MiB), not 32 KiB, and the reservation
+  headroom guard below is the mechanism that keeps the owner ceiling honest;
 - stream the body in fixed 64 KiB (65,536-byte) reads under the effective
   streaming cap recorded at reservation — the lesser of the stage cap and the
   remaining aggregate counted-byte budget — while the counting adapter
