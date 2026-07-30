@@ -1316,14 +1316,15 @@ def test_finalize_strict_run_is_lease_gated_and_single_terminal_transition(
     )
 
 
-def test_finalize_wrong_lease_token_mutates_nothing(tmp_path) -> None:
+def test_finalize_wrong_lease_token_after_expiry_mutates_nothing(tmp_path) -> None:
     db = _session()
     run, _ = _created_arming(db, tmp_path)
     run.status = "running"
     run.execution_lease_owner = "strict-worker"
     run.execution_lease_token = "lease-token"
-    run.execution_lease_expires_at = NOW + timedelta(minutes=5)
+    run.execution_lease_expires_at = NOW - timedelta(seconds=1)
     db.commit()
+    prior_expiry = run.execution_lease_expires_at
 
     with pytest.raises(ConnectorEgressArmingError) as exc:
         finalize_strict_run(
@@ -1338,6 +1339,9 @@ def test_finalize_wrong_lease_token_mutates_nothing(tmp_path) -> None:
     db.refresh(run)
     assert exc.value.code == "connector_strict_finalize_conflict"
     assert run.status == "running"
+    assert run.execution_lease_owner == "strict-worker"
+    assert run.execution_lease_token == "lease-token"
+    assert run.execution_lease_expires_at == prior_expiry
     assert (
         db.query(ConnectorRunEvent)
         .filter(ConnectorRunEvent.event_type == "egress_run_terminal")
@@ -1386,8 +1390,13 @@ def test_refresh_strict_run_lease_is_active_exact_token_cas(
     assert run.execution_lease_expires_at == prior_expiry
 
 
-def test_expired_strict_lease_cannot_refresh_or_finalize(
+@pytest.mark.parametrize(
+    "terminal_status",
+    ["completed", "failed", "cancelled"],
+)
+def test_expired_strict_lease_rejects_refresh_but_allows_exact_token_finalization(
     tmp_path,
+    terminal_status: str,
 ) -> None:
     db = _session()
     run, _ = _created_arming(db, tmp_path)
@@ -1406,37 +1415,47 @@ def test_expired_strict_lease_cannot_refresh_or_finalize(
         )
     assert refresh.value.code == "connector_strict_lease_expired"
 
-    with pytest.raises(ConnectorEgressArmingError) as complete:
-        finalize_strict_run(
-            db,
-            run=run,
-            lease_token="lease-token",
-            terminal_status="completed",
-            outcome_class="fresh_live",
-            now=NOW,
-        )
-    assert complete.value.code == "connector_strict_lease_expired"
-
-    with pytest.raises(ConnectorEgressArmingError) as failed:
-        finalize_strict_run(
-            db,
-            run=run,
-            lease_token="lease-token",
-            terminal_status="failed",
-            outcome_class="connector_strict_lease_expired",
-            now=NOW,
-        )
+    finalize_strict_run(
+        db,
+        run=run,
+        lease_token="lease-token",
+        terminal_status=terminal_status,
+        outcome_class=f"{terminal_status}_after_expiry",
+        now=NOW,
+    )
 
     db.refresh(run)
-    assert failed.value.code == "connector_strict_lease_expired"
-    assert run.status == "running"
-    assert run.execution_lease_owner == "strict-worker"
-    assert run.execution_lease_token == "lease-token"
+    assert run.status == terminal_status
+    assert run.completed_at is not None
+    assert run.execution_lease_owner is None
+    assert run.execution_lease_token is None
+    assert run.execution_lease_expires_at == run.completed_at
+    terminal_events = list(
+        db.scalars(
+            select(ConnectorRunEvent).where(
+                ConnectorRunEvent.event_type == "egress_run_terminal"
+            )
+        )
+    )
+    assert len(terminal_events) == 1
+    assert terminal_events[0].status_after == terminal_status
+
+    with pytest.raises(ConnectorEgressArmingError) as replay:
+        finalize_strict_run(
+            db,
+            run=run,
+            lease_token="lease-token",
+            terminal_status=terminal_status,
+            outcome_class=f"{terminal_status}_after_expiry",
+            now=NOW + timedelta(seconds=1),
+        )
+
+    assert replay.value.code == "connector_strict_finalize_conflict"
     assert (
         db.query(ConnectorRunEvent)
         .filter(ConnectorRunEvent.event_type == "egress_run_terminal")
         .count()
-        == 0
+        == 1
     )
 
 

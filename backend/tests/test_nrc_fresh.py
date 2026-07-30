@@ -265,7 +265,7 @@ def test_exact_raw_admission_is_two_sends_sanitized_and_parse_free(
     assert terminal.reason_code == "nrc_raw_admission_completed"
 
 
-def test_lease_expiry_after_response_stops_send_under_frozen_active_rule(
+def test_lease_expiry_after_response_blocks_next_send_and_finalizes_failed(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -285,33 +285,27 @@ def test_lease_expiry_after_response_stops_send_under_frozen_active_rule(
 
     monkeypatch.setattr(transport, "send_once", send_and_expire)
 
-    with pytest.raises(
-        nrc.connector_egress_arming.ConnectorEgressArmingError
-    ) as exc:
-        nrc._execute_fresh_exact_nrc_aps_run(
-            db,
-            run=run,
-            lease_token="lease-token",
-            transport=transport,
-        )
+    nrc._execute_fresh_exact_nrc_aps_run(
+        db,
+        run=run,
+        lease_token="lease-token",
+        transport=transport,
+    )
 
     db.expire_all()
     persisted = db.get(ConnectorRun, run.connector_run_id)
     assert persisted is not None
-    assert exc.value.code == "connector_strict_lease_expired"
-    assert persisted.status == "running"
+    assert persisted.status == "failed"
+    assert persisted.execution_lease_owner is None
+    assert persisted.execution_lease_token is None
     assert len(transport.calls) == 1
     assert db.query(ConnectorRunTarget).count() == 0
-    assert (
-        db.query(ConnectorRunEvent)
-        .filter(ConnectorRunEvent.connector_run_id == run.connector_run_id)
-        .filter(ConnectorRunEvent.event_type == "egress_run_terminal")
-        .count()
-        == 0
-    )
+    terminal = _terminal_event(db, run.connector_run_id)
+    assert terminal.status_after == "failed"
+    assert terminal.reason_code == "connector_strict_lease_expired"
 
 
-def test_expiry_before_success_finalizer_exposes_frozen_terminal_stop(
+def test_expiry_before_success_finalizer_allows_completed_terminal(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -349,30 +343,24 @@ def test_expiry_before_success_finalizer_exposes_frozen_terminal_stop(
         ]
     )
 
-    with pytest.raises(
-        nrc.connector_egress_arming.ConnectorEgressArmingError
-    ) as exc:
-        nrc._execute_fresh_exact_nrc_aps_run(
-            db,
-            run=run,
-            lease_token="lease-token",
-            transport=transport,
-        )
+    nrc._execute_fresh_exact_nrc_aps_run(
+        db,
+        run=run,
+        lease_token="lease-token",
+        transport=transport,
+    )
 
     db.expire_all()
     persisted = db.get(ConnectorRun, run.connector_run_id)
     assert persisted is not None
-    assert exc.value.code == "connector_strict_lease_expired"
-    assert persisted.status == "running"
+    assert persisted.status == "completed"
+    assert persisted.execution_lease_owner is None
+    assert persisted.execution_lease_token is None
     assert len(transport.calls) == 2
-    assert db.query(ConnectorRunTarget).count() == 0
-    assert (
-        db.query(ConnectorRunEvent)
-        .filter(ConnectorRunEvent.connector_run_id == run.connector_run_id)
-        .filter(ConnectorRunEvent.event_type == "egress_run_terminal")
-        .count()
-        == 0
-    )
+    assert db.query(ConnectorRunTarget).count() == 1
+    terminal = _terminal_event(db, run.connector_run_id)
+    assert terminal.status_after == "completed"
+    assert terminal.reason_code == "nrc_raw_admission_completed"
 
 
 @pytest.mark.parametrize(

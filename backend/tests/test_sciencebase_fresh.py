@@ -342,7 +342,7 @@ def test_exact_raw_admission_stops_before_csv_or_provenance(
     assert db.scalar(select(DatasetSourceProvenance)) is None
 
 
-def test_lease_expiry_after_response_stops_send_under_frozen_active_rule(
+def test_lease_expiry_after_response_blocks_next_send_and_finalizes_failed(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -376,35 +376,35 @@ def test_lease_expiry_after_response_stops_send_under_frozen_active_rule(
 
     monkeypatch.setattr(transport, "send_once", send_and_expire)
 
-    with pytest.raises(
-        sciencebase.connector_egress_arming.ConnectorEgressArmingError
-    ) as exc:
-        sciencebase._execute_fresh_exact_sciencebase_run(
-            db,
-            run=run,
-            lease_token="lease-token",
-            transport=transport,
-        )
+    sciencebase._execute_fresh_exact_sciencebase_run(
+        db,
+        run=run,
+        lease_token="lease-token",
+        transport=transport,
+    )
 
     db.expire_all()
     persisted = db.get(ConnectorRun, run.connector_run_id)
     assert persisted is not None
-    assert exc.value.code == "connector_strict_lease_expired"
-    assert persisted.status == "running"
+    assert persisted.status == "failed"
+    assert persisted.execution_lease_owner is None
+    assert persisted.execution_lease_token is None
     assert len(transport.calls) == 1
     assert db.scalar(select(ConnectorRunTarget)) is None
-    assert (
-        db.query(ConnectorRunEvent)
-        .filter(
-            ConnectorRunEvent.connector_run_id == run.connector_run_id,
-            ConnectorRunEvent.event_type == "egress_run_terminal",
+    terminal_events = list(
+        db.scalars(
+            select(ConnectorRunEvent).where(
+                ConnectorRunEvent.connector_run_id == run.connector_run_id,
+                ConnectorRunEvent.event_type == "egress_run_terminal",
+            )
         )
-        .count()
-        == 0
     )
+    assert len(terminal_events) == 1
+    assert terminal_events[0].status_after == "failed"
+    assert terminal_events[0].reason_code == "connector_strict_lease_expired"
 
 
-def test_lease_expiry_during_persistence_exposes_frozen_terminal_stop(
+def test_lease_expiry_during_persistence_finalizes_failed(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -441,35 +441,35 @@ def test_lease_expiry_during_persistence_exposes_frozen_terminal_stop(
         timeline,
     )
 
-    with pytest.raises(
-        sciencebase.connector_egress_arming.ConnectorEgressArmingError
-    ) as exc:
-        sciencebase._execute_fresh_exact_sciencebase_run(
-            db,
-            run=run,
-            lease_token="lease-token",
-            transport=transport,
-        )
+    sciencebase._execute_fresh_exact_sciencebase_run(
+        db,
+        run=run,
+        lease_token="lease-token",
+        transport=transport,
+    )
 
     db.expire_all()
     persisted = db.get(ConnectorRun, run.connector_run_id)
     assert persisted is not None
-    assert exc.value.code == "connector_strict_lease_expired"
-    assert persisted.status == "running"
+    assert persisted.status == "failed"
+    assert persisted.execution_lease_owner is None
+    assert persisted.execution_lease_token is None
     assert len(transport.calls) == 2
     assert db.scalar(select(DatasetVersion)) is None
-    assert (
-        db.query(ConnectorRunEvent)
-        .filter(
-            ConnectorRunEvent.connector_run_id == run.connector_run_id,
-            ConnectorRunEvent.event_type == "egress_run_terminal",
+    terminal_events = list(
+        db.scalars(
+            select(ConnectorRunEvent).where(
+                ConnectorRunEvent.connector_run_id == run.connector_run_id,
+                ConnectorRunEvent.event_type == "egress_run_terminal",
+            )
         )
-        .count()
-        == 0
     )
+    assert len(terminal_events) == 1
+    assert terminal_events[0].status_after == "failed"
+    assert terminal_events[0].reason_code == "connector_strict_lease_expired"
 
 
-def test_expiry_before_success_finalizer_exposes_frozen_terminal_stop(
+def test_expiry_before_success_finalizer_allows_completed_terminal(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -508,31 +508,31 @@ def test_expiry_before_success_finalizer_exposes_frozen_terminal_stop(
         timeline,
     )
 
-    with pytest.raises(
-        sciencebase.connector_egress_arming.ConnectorEgressArmingError
-    ) as exc:
-        sciencebase._execute_fresh_exact_sciencebase_run(
-            db,
-            run=run,
-            lease_token="lease-token",
-            transport=transport,
-        )
+    sciencebase._execute_fresh_exact_sciencebase_run(
+        db,
+        run=run,
+        lease_token="lease-token",
+        transport=transport,
+    )
 
     db.expire_all()
     persisted = db.get(ConnectorRun, run.connector_run_id)
     assert persisted is not None
-    assert exc.value.code == "connector_strict_lease_expired"
-    assert persisted.status == "running"
+    assert persisted.status == "completed"
+    assert persisted.execution_lease_owner is None
+    assert persisted.execution_lease_token is None
     assert len(transport.calls) == 2
-    assert (
-        db.query(ConnectorRunEvent)
-        .filter(
-            ConnectorRunEvent.connector_run_id == run.connector_run_id,
-            ConnectorRunEvent.event_type == "egress_run_terminal",
+    terminal_events = list(
+        db.scalars(
+            select(ConnectorRunEvent).where(
+                ConnectorRunEvent.connector_run_id == run.connector_run_id,
+                ConnectorRunEvent.event_type == "egress_run_terminal",
+            )
         )
-        .count()
-        == 0
     )
+    assert len(terminal_events) == 1
+    assert terminal_events[0].status_after == "completed"
+    assert terminal_events[0].reason_code == "sciencebase_raw_admitted"
 
 
 def test_one_admitted_redirect_uses_ordinal_three_once(
@@ -1007,8 +1007,17 @@ def test_public_strict_finalizer_is_single_use_and_releases_lease(
     )
 
 
-def test_public_strict_finalizer_requires_active_lease_for_all_outcomes(
+@pytest.mark.parametrize(
+    ("terminal_status", "outcome_class"),
+    [
+        ("completed", "sciencebase_raw_admitted"),
+        ("failed", "connector_strict_lease_expired"),
+    ],
+)
+def test_public_strict_finalizer_accepts_matching_token_after_expiry(
     db: Session,
+    terminal_status: str,
+    outcome_class: str,
 ) -> None:
     run = _running_run(db)
     run.execution_lease_expires_at = (
@@ -1017,41 +1026,29 @@ def test_public_strict_finalizer_requires_active_lease_for_all_outcomes(
     )
     db.commit()
 
-    with pytest.raises(
-        sciencebase.connector_egress_arming.ConnectorEgressArmingError
-    ):
-        sciencebase._finalize_sciencebase_strict_run(
-            db=db,
-            run=run,
-            lease_token="lease-token",
-            terminal_status="completed",
-            outcome_class="sciencebase_raw_admitted",
-        )
-
-    with pytest.raises(
-        sciencebase.connector_egress_arming.ConnectorEgressArmingError
-    ) as failed:
-        sciencebase._finalize_sciencebase_strict_run(
-            db=db,
-            run=run,
-            lease_token="lease-token",
-            terminal_status="failed",
-            outcome_class="connector_strict_lease_expired",
-        )
+    sciencebase._finalize_sciencebase_strict_run(
+        db=db,
+        run=run,
+        lease_token="lease-token",
+        terminal_status=terminal_status,
+        outcome_class=outcome_class,
+    )
 
     db.refresh(run)
-    assert failed.value.code == "connector_strict_lease_expired"
-    assert run.status == "running"
-    assert run.execution_lease_token == "lease-token"
-    assert (
-        db.query(ConnectorRunEvent)
-        .filter(
-            ConnectorRunEvent.connector_run_id == run.connector_run_id,
-            ConnectorRunEvent.event_type == "egress_run_terminal",
+    assert run.status == terminal_status
+    assert run.execution_lease_owner is None
+    assert run.execution_lease_token is None
+    terminal_events = list(
+        db.scalars(
+            select(ConnectorRunEvent).where(
+                ConnectorRunEvent.connector_run_id == run.connector_run_id,
+                ConnectorRunEvent.event_type == "egress_run_terminal",
+            )
         )
-        .count()
-        == 0
     )
+    assert len(terminal_events) == 1
+    assert terminal_events[0].status_after == terminal_status
+    assert terminal_events[0].reason_code == outcome_class
 
 
 def test_hydration_cap_media_and_hash_guards_fail_closed() -> None:
