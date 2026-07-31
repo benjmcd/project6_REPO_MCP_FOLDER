@@ -372,7 +372,10 @@ class RuntimeRecordWriter:
             if process_boot_id is not None:
                 _fail("dual_live_runtime_process_boot_id_invalid")
         else:
-            _require_uuid4(process_boot_id, "dual_live_runtime_process_boot_id_invalid")
+            _require_sha256(
+                process_boot_id,
+                "dual_live_runtime_process_boot_id_invalid",
+            )
         if event not in _EVENT_PAYLOAD_KEYS:
             _fail("dual_live_runtime_event_invalid")
         _require_event_phase(
@@ -444,7 +447,7 @@ def _validate_runtime_record(record: Mapping[str, Any]) -> dict[str, Any]:
         if process_boot_id is not None:
             _fail(code)
     else:
-        _require_uuid4(process_boot_id, code)
+        _require_sha256(process_boot_id, code)
     event = record["event"]
     if not isinstance(event, str) or event not in _EVENT_PAYLOAD_KEYS:
         _fail(code)

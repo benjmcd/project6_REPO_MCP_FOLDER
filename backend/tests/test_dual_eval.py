@@ -67,7 +67,8 @@ EXPECTED_REPORT = {
     ],
 }
 RUNTIME_INSTANCE_ID = "223e4567-e89b-42d3-a456-426614174000"
-BOOT_ID = "323e4567-e89b-42d3-a456-426614174000"
+BOOT_ID = "7" * 64
+UUID_BOOT_ID = "323e4567-e89b-42d3-a456-426614174000"
 RUNTIME_IDENTITY = RuntimeIdentity(
     runtime_instance_id=RUNTIME_INSTANCE_ID,
     wrapper_nonce_sha256="1" * 64,
@@ -421,6 +422,77 @@ def test_r05_runtime_records_form_exact_canonical_hash_chain() -> None:
         + b"\n"
     )
     assert read_runtime_records(sink.bytes()) == (first, second)
+
+
+def _rehashed_phase_child_start_record(process_boot_id: str) -> dict[str, object]:
+    record = RuntimeRecordWriter(
+        MemorySink().write,
+        identity=RUNTIME_IDENTITY,
+    ).append(
+        phase="wrapper",
+        event="runtime_start",
+        process_boot_id=None,
+        payload=RUNTIME_START_PAYLOAD,
+    )
+    record["phase"] = "A"
+    record["event"] = "phase_child_start"
+    record["process_boot_id"] = process_boot_id
+    record["payload"] = CHILD_START_PAYLOAD
+    preimage = {key: value for key, value in record.items() if key != "record_sha256"}
+    record["record_sha256"] = hashlib.sha256(
+        canonical_json_bytes(preimage)
+    ).hexdigest()
+    return record
+
+
+def test_r05_runtime_writer_accepts_lowercase_sha256_process_boot_id() -> None:
+    record = RuntimeRecordWriter(
+        MemorySink().write,
+        identity=RUNTIME_IDENTITY,
+    ).append(
+        phase="A",
+        event="phase_child_start",
+        process_boot_id=BOOT_ID,
+        payload=CHILD_START_PAYLOAD,
+    )
+
+    assert record["process_boot_id"] == BOOT_ID
+
+
+@pytest.mark.parametrize("process_boot_id", (UUID_BOOT_ID, "A" * 64, "a" * 63))
+def test_r05_runtime_writer_rejects_non_hash_process_boot_id(
+    process_boot_id: str,
+) -> None:
+    writer = RuntimeRecordWriter(MemorySink().write, identity=RUNTIME_IDENTITY)
+
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_runtime_process_boot_id_invalid",
+    ):
+        writer.append(
+            phase="A",
+            event="phase_child_start",
+            process_boot_id=process_boot_id,
+            payload=CHILD_START_PAYLOAD,
+        )
+
+
+def test_r05_runtime_reader_accepts_lowercase_sha256_process_boot_id() -> None:
+    record = _rehashed_phase_child_start_record(BOOT_ID)
+
+    parsed = read_runtime_records(canonical_json_bytes(record) + b"\n")
+
+    assert parsed[0]["process_boot_id"] == BOOT_ID
+
+
+@pytest.mark.parametrize("process_boot_id", (UUID_BOOT_ID, "A" * 64, "a" * 63))
+def test_r05_runtime_reader_rejects_non_hash_process_boot_id(
+    process_boot_id: str,
+) -> None:
+    record = _rehashed_phase_child_start_record(process_boot_id)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_runtime_record_invalid"):
+        read_runtime_records(canonical_json_bytes(record) + b"\n")
 
 
 @pytest.mark.parametrize(
