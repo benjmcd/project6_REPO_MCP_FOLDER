@@ -1,3 +1,5 @@
+"""B1a Option-2 successor split provenance: predecessor blob 8ec90984."""
+
 from __future__ import annotations
 
 import hashlib
