@@ -1,14 +1,17 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import FrozenInstanceError
 from datetime import datetime, timedelta, timezone
 import hashlib
 import http.client
 import io
 import json
+import os
 from pathlib import Path
+from queue import Queue
 import sys
-from threading import Barrier, Event, Lock
+from threading import Barrier, Event, Lock, Thread
 from types import SimpleNamespace
 from typing import Any
 
@@ -1162,16 +1165,18 @@ def test_sciencebase_ordinal_one_rejects_invalid_shared_prefix(
     assert exc.value.code == "connector_egress_prior_counter_unresolved"
 
 
-def test_shared_nrc_prefix_and_suffix_allow_later_sciencebase_ordinal(
+def test_shared_v2_nrc_prefix_and_sciencebase_one_allow_sciencebase_two_revalidation(
     tmp_path,
 ) -> None:
     now = datetime.now(timezone.utc)
     sciencebase_fingerprint = "3" * 64
-    sciencebase_record = _counter_record(
-        ordinal=1,
-        stage="item_hydration",
-        request_fingerprint=sciencebase_fingerprint,
-        now=now,
+    sciencebase_record = _v2_counter_record(
+        _counter_record(
+            ordinal=1,
+            stage="item_hydration",
+            request_fingerprint=sciencebase_fingerprint,
+            now=now,
+        )
     )
     events = [
         SimpleNamespace(
@@ -1203,17 +1208,21 @@ def test_shared_nrc_prefix_and_suffix_allow_later_sciencebase_ordinal(
     _write_counter_records(
         counter_path,
         [
-            _counter_record(
-                ordinal=1,
-                stage="exact_accession_api",
-                request_fingerprint="1" * 64,
-                now=now,
+            _v2_counter_record(
+                _counter_record(
+                    ordinal=1,
+                    stage="exact_accession_api",
+                    request_fingerprint="1" * 64,
+                    now=now,
+                )
             ),
-            _counter_record(
-                ordinal=2,
-                stage="artifact",
-                request_fingerprint="2" * 64,
-                now=now,
+            _v2_counter_record(
+                _counter_record(
+                    ordinal=2,
+                    stage="artifact",
+                    request_fingerprint="2" * 64,
+                    now=now,
+                )
             ),
             sciencebase_record,
         ],
@@ -1228,11 +1237,13 @@ def test_shared_nrc_prefix_and_suffix_allow_later_sciencebase_ordinal(
         == 11
     )
 
-    foreign_suffix = _counter_record(
-        ordinal=3,
-        stage="foreign_after_current_segment",
-        request_fingerprint="4" * 64,
-        now=now,
+    foreign_suffix = _v2_counter_record(
+        _counter_record(
+            ordinal=3,
+            stage="foreign_after_current_segment",
+            request_fingerprint="4" * 64,
+            now=now,
+        )
     )
     counter_path.write_bytes(
         counter_path.read_bytes()
@@ -1642,6 +1653,15 @@ def test_revocation_before_reservation_creates_no_reservation(
     frames: list[bytes] = []
     lifecycle: list[str] = []
     sends: list[object] = []
+    preflights: list[str] = []
+    resolutions: list[tuple[str, int]] = []
+    real_preflight = transport._preflight_exact_request
+
+    def observed_preflight(**kwargs):
+        preflights.append(kwargs["connector_run_id"])
+        return real_preflight(**kwargs)
+
+    monkeypatch.setattr(transport, "_preflight_exact_request", observed_preflight)
     context = _runtime_context(
         frames,
         revocation_is_set=lambda: True,
@@ -1654,7 +1674,9 @@ def test_revocation_before_reservation_creates_no_reservation(
             lease_token="lease-token",
             arming_fingerprint="d" * 64,
             send_callable=lambda *args, **kwargs: sends.append(args),
-            dns_resolver=lambda host, port: ["8.8.8.8"],
+            dns_resolver=lambda host, port: (
+                resolutions.append((host, port)) or ["8.8.8.8"]
+            ),
         )
         with pytest.raises(transport.ConnectorEgressTransportError) as exc:
             client.send_once(
@@ -1665,6 +1687,67 @@ def test_revocation_before_reservation_creates_no_reservation(
 
     assert exc.value.code == "connector_egress_revoked"
     assert lifecycle == []
+    assert sends == []
+    assert frames == []
+    assert preflights == []
+    assert resolutions == []
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 0
+
+
+def test_revocation_set_by_idle_acquire_stops_before_reservation(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    revoked = [False]
+    frames: list[bytes] = []
+    lifecycle: list[str] = []
+    resolutions: list[tuple[str, int]] = []
+    adapters: list[object] = []
+    sends: list[object] = []
+
+    def acquire() -> None:
+        lifecycle.append("acquire")
+        revoked[0] = True
+
+    context = transport.ConnectorCounterRuntimeContext(
+        runtime_instance_id=COUNTER_RUNTIME_INSTANCE_ID,
+        process_boot_id=COUNTER_PROCESS_BOOT_ID,
+        append_frame=frames.append,
+        revocation_is_set=lambda: revoked[0],
+        acquire_send_idle=acquire,
+        release_send_idle=lambda: lifecycle.append("release"),
+    )
+    with transport.connector_counter_runtime(context):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: sends.append(args),
+            dns_resolver=lambda host, port: (
+                resolutions.append((host, port)) or ["8.8.8.8"]
+            ),
+            prepared_request_adapter=lambda prepared: (
+                adapters.append(prepared) or prepared
+            ),
+        )
+        with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+            client.send_once(
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            )
+
+    assert exc.value.code == "connector_egress_revoked"
+    assert lifecycle == ["acquire", "release"]
+    assert len(resolutions) == 1
+    assert adapters == []
     assert sends == []
     assert frames == []
     with session_factory() as db:
@@ -1681,7 +1764,7 @@ def test_revocation_after_reservation_records_reserved_not_sent_and_signals_idle
         "_revalidate_run_authority",
         lambda **kwargs: kwargs["envelope"],
     )
-    checks = iter((False, True))
+    checks = iter((False, False, True))
     frames: list[bytes] = []
     lifecycle: list[str] = []
     sends: list[object] = []
@@ -1839,6 +1922,442 @@ def test_process_global_physical_send_lock_serializes_transport_instances(
     assert second_entered.is_set()
     assert lifecycle == ["acquire", "release", "acquire", "release"]
     assert len(frames) == 2
+
+
+def test_transport_constructed_before_runtime_binds_context_in_another_thread(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    legacy_path = tmp_path / "legacy.jsonl"
+    client = transport.BoundedConnectorTransport(
+        connector_run_id="strict-nrc-run",
+        lease_token="lease-token",
+        arming_fingerprint="d" * 64,
+        counter_path=legacy_path,
+        send_callable=lambda *args, **kwargs: _response(b"runtime-bound"),
+        dns_resolver=lambda host, port: ["8.8.8.8"],
+    )
+    frames: list[bytes] = []
+    lifecycle: list[str] = []
+    context = _runtime_context(
+        frames,
+        revocation_is_set=lambda: False,
+        lifecycle=lifecycle,
+    )
+
+    with transport.connector_counter_runtime(context):
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            result = pool.submit(
+                client.send_once,
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            ).result(timeout=5)
+
+    assert result.outcome_class == "completed"
+    assert lifecycle == ["acquire", "release"]
+    assert not legacy_path.exists()
+    records = transport.parse_connector_counter_records(frames[0] + b"\n")
+    assert records[0]["schema_id"] == transport.COUNTER_V2_SCHEMA_ID
+    assert records[0]["runtime_instance_id"] == COUNTER_RUNTIME_INSTANCE_ID
+
+
+def test_transport_uses_current_runtime_not_stale_construction_context(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    first_frames: list[bytes] = []
+    first_lifecycle: list[str] = []
+    first = _runtime_context(
+        first_frames,
+        revocation_is_set=lambda: False,
+        lifecycle=first_lifecycle,
+    )
+    with transport.connector_counter_runtime(first):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: _response(b"fresh-context"),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+
+    second_frames: list[bytes] = []
+    second_lifecycle: list[str] = []
+    second = transport.ConnectorCounterRuntimeContext(
+        runtime_instance_id="323e4567-e89b-42d3-a456-426614174000",
+        process_boot_id="8" * 64,
+        append_frame=second_frames.append,
+        revocation_is_set=lambda: False,
+        acquire_send_idle=lambda: second_lifecycle.append("acquire"),
+        release_send_idle=lambda: second_lifecycle.append("release"),
+    )
+    with transport.connector_counter_runtime(second):
+        result = client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+
+    assert result.outcome_class == "completed"
+    assert first_frames == []
+    assert first_lifecycle == []
+    assert second_lifecycle == ["acquire", "release"]
+    record = transport.parse_connector_counter_records(second_frames[0] + b"\n")[0]
+    assert record["runtime_instance_id"] == second.runtime_instance_id
+    assert record["process_boot_id"] == second.process_boot_id
+
+
+def test_append_frame_failure_still_closes_physical_request_terminally(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    lifecycle: list[str] = []
+    sends: list[object] = []
+
+    def append_frame(_frame: bytes) -> None:
+        raise RuntimeError("synthetic counter sink failure")
+
+    context = transport.ConnectorCounterRuntimeContext(
+        runtime_instance_id=COUNTER_RUNTIME_INSTANCE_ID,
+        process_boot_id=COUNTER_PROCESS_BOOT_ID,
+        append_frame=append_frame,
+        revocation_is_set=lambda: False,
+        acquire_send_idle=lambda: lifecycle.append("acquire"),
+        release_send_idle=lambda: lifecycle.append("release"),
+    )
+    with transport.connector_counter_runtime(context):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: (
+                sends.append(args) or _response(b"physically-sent")
+            ),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+            client.send_once(
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            )
+
+    assert exc.value.code == "connector_egress_counter_write_failed"
+    assert len(sends) == 1
+    assert lifecycle == ["acquire", "release"]
+    with session_factory() as db:
+        events = db.query(ConnectorRunEvent).all()
+    assert [event.event_type for event in events] == [
+        transport.RESERVATION_EVENT_TYPE,
+        transport.COMPLETION_EVENT_TYPE,
+    ]
+    assert events[-1].metrics_json["outcome_class"] == "counter_write_failed"
+
+
+def test_release_failure_does_not_mask_primary_revocation_error(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    revoked = [False]
+    lifecycle: list[str] = []
+
+    def acquire() -> None:
+        lifecycle.append("acquire")
+        revoked[0] = True
+
+    def release() -> None:
+        lifecycle.append("release")
+        raise RuntimeError("synthetic release failure")
+
+    context = transport.ConnectorCounterRuntimeContext(
+        runtime_instance_id=COUNTER_RUNTIME_INSTANCE_ID,
+        process_boot_id=COUNTER_PROCESS_BOOT_ID,
+        append_frame=lambda frame: None,
+        revocation_is_set=lambda: revoked[0],
+        acquire_send_idle=acquire,
+        release_send_idle=release,
+    )
+    with transport.connector_counter_runtime(context):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: pytest.fail("must not send"),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+            client.send_once(
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            )
+
+    assert exc.value.code == "connector_egress_revoked"
+    assert lifecycle == ["acquire", "release"]
+    assert any(
+        "connector_egress_send_idle_release_failed" in note
+        for note in getattr(exc.value, "__notes__", ())
+    )
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 0
+
+
+def test_release_failure_after_success_is_reported(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    frames: list[bytes] = []
+
+    def release() -> None:
+        raise RuntimeError("synthetic release failure")
+
+    context = transport.ConnectorCounterRuntimeContext(
+        runtime_instance_id=COUNTER_RUNTIME_INSTANCE_ID,
+        process_boot_id=COUNTER_PROCESS_BOOT_ID,
+        append_frame=frames.append,
+        revocation_is_set=lambda: False,
+        acquire_send_idle=lambda: None,
+        release_send_idle=release,
+    )
+    with transport.connector_counter_runtime(context):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: _response(b"completed"),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+            client.send_once(
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            )
+
+    assert exc.value.code == "connector_egress_send_idle_release_failed"
+    assert len(frames) == 1
+    with session_factory() as db:
+        events = db.query(ConnectorRunEvent).all()
+    assert events[-1].event_type == transport.COMPLETION_EVENT_TYPE
+
+
+def test_process_global_send_guard_rejects_same_thread_reentry() -> None:
+    with transport._serialized_physical_send():
+        with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+            with transport._serialized_physical_send():
+                pytest.fail("reentrant physical-send body must not run")
+    assert exc.value.code == "connector_egress_send_reentry"
+
+
+def test_runtime_sink_ack_persists_validated_frame_before_return(
+    session_factory,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    counter_path = tmp_path / "http.jsonl"
+    pending: Queue[tuple[bytes, Event, list[BaseException]]] = Queue()
+
+    def pump() -> None:
+        frame, acknowledged, failures = pending.get(timeout=5)
+        try:
+            records = transport.parse_connector_counter_records(frame + b"\n")
+            assert records[0]["schema_id"] == transport.COUNTER_V2_SCHEMA_ID
+            with counter_path.open("ab", buffering=0) as stream:
+                stream.write(frame + b"\n")
+                stream.flush()
+                os.fsync(stream.fileno())
+        except BaseException as exc:
+            failures.append(exc)
+        finally:
+            acknowledged.set()
+
+    worker = Thread(target=pump, daemon=True)
+    worker.start()
+
+    def append_frame(frame: bytes) -> None:
+        acknowledged = Event()
+        failures: list[BaseException] = []
+        pending.put((frame, acknowledged, failures))
+        if not acknowledged.wait(5):
+            raise RuntimeError("counter pump ACK timed out")
+        if failures:
+            raise failures[0]
+
+    lifecycle: list[str] = []
+    context = transport.ConnectorCounterRuntimeContext(
+        runtime_instance_id=COUNTER_RUNTIME_INSTANCE_ID,
+        process_boot_id=COUNTER_PROCESS_BOOT_ID,
+        append_frame=append_frame,
+        revocation_is_set=lambda: False,
+        acquire_send_idle=lambda: lifecycle.append("acquire"),
+        release_send_idle=lambda: lifecycle.append("release"),
+    )
+    with transport.connector_counter_runtime(context):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: _response(b"persisted"),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        result = client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+        immediate = arming._load_nrc_counter_records(counter_path)
+
+    worker.join(timeout=5)
+    assert not worker.is_alive()
+    assert result.outcome_class == "completed"
+    assert lifecycle == ["acquire", "release"]
+    assert len(immediate) == 1
+    assert immediate[0]["schema_id"] == transport.COUNTER_V2_SCHEMA_ID
+
+
+def test_runtime_install_rejections_do_not_disturb_active_context(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    first_frames: list[bytes] = []
+    first_lifecycle: list[str] = []
+    first = _runtime_context(
+        first_frames,
+        revocation_is_set=lambda: False,
+        lifecycle=first_lifecycle,
+    )
+    second = transport.ConnectorCounterRuntimeContext(
+        runtime_instance_id="323e4567-e89b-42d3-a456-426614174000",
+        process_boot_id="8" * 64,
+        append_frame=lambda frame: None,
+        revocation_is_set=lambda: False,
+        acquire_send_idle=lambda: None,
+        release_send_idle=lambda: None,
+    )
+
+    with transport.connector_counter_runtime(first):
+        with pytest.raises(transport.ConnectorEgressTransportError) as nested:
+            with transport.connector_counter_runtime(second):
+                pytest.fail("nested runtime must not install")
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(_install_runtime_for_test, second)
+            with pytest.raises(
+                transport.ConnectorEgressTransportError
+            ) as concurrent:
+                future.result(timeout=5)
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: _response(b"still-active"),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        result = client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+
+    assert nested.value.code == "connector_counter_runtime_already_installed"
+    assert concurrent.value.code == "connector_counter_runtime_already_installed"
+    assert result.outcome_class == "completed"
+    assert len(first_frames) == 1
+    assert first_lifecycle == ["acquire", "release"]
+
+
+def _install_runtime_for_test(
+    context: transport.ConnectorCounterRuntimeContext,
+) -> None:
+    with transport.connector_counter_runtime(context):
+        pytest.fail("concurrent runtime must not install")
+
+
+def test_runtime_exception_clears_cache_and_next_install_is_isolated() -> None:
+    first_frames: list[bytes] = []
+    first_lifecycle: list[str] = []
+    first = _runtime_context(
+        first_frames,
+        revocation_is_set=lambda: False,
+        lifecycle=first_lifecycle,
+    )
+    marker = _v2_counter_record(
+        _counter_record(
+            ordinal=1,
+            stage="exact_accession_api",
+            request_fingerprint="1" * 64,
+            now=datetime.now(timezone.utc),
+        )
+    )
+    with pytest.raises(RuntimeError, match="synthetic runtime exit"):
+        with transport.connector_counter_runtime(first):
+            transport._COUNTER_RUNTIME_RECORDS.append(marker)
+            raise RuntimeError("synthetic runtime exit")
+
+    second = transport.ConnectorCounterRuntimeContext(
+        runtime_instance_id="323e4567-e89b-42d3-a456-426614174000",
+        process_boot_id="8" * 64,
+        append_frame=lambda frame: None,
+        revocation_is_set=lambda: False,
+        acquire_send_idle=lambda: None,
+        release_send_idle=lambda: None,
+    )
+    with transport.connector_counter_runtime(second):
+        assert transport._COUNTER_RUNTIME_RECORDS == []
+    assert transport._COUNTER_RUNTIME_RECORDS == []
+
+
+def test_counter_runtime_context_is_frozen() -> None:
+    context = _runtime_context(
+        [],
+        revocation_is_set=lambda: False,
+        lifecycle=[],
+    )
+    with pytest.raises(FrozenInstanceError):
+        context.runtime_instance_id = "323e4567-e89b-42d3-a456-426614174000"
 
 
 def test_subscription_key_value_is_absent_from_fingerprint_and_repr() -> None:
@@ -2560,7 +3079,7 @@ def test_pre_status_transport_failure_has_one_null_status_counter(
     assert not ledger.eligible
 
 
-def test_counter_write_failure_after_send_leaves_spent_unknown_and_closes_response(
+def test_counter_write_failure_after_send_closes_terminal_and_response(
     session_factory,
     monkeypatch,
     tmp_path,
@@ -2600,5 +3119,6 @@ def test_counter_write_failure_after_send_leaves_spent_unknown_and_closes_respon
             db,
             connector_run_id="strict-nrc-run",
         )
-    assert ledger.entries[0]["outcome_class"] == "spent_unknown"
+    assert ledger.entries[0]["outcome_class"] == "counter_write_failed"
+    assert "non_successful_send" in ledger.validation_errors
     assert not ledger.eligible

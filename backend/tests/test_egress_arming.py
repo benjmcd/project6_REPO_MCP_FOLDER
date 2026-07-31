@@ -841,6 +841,90 @@ def test_nrc_dual_live_success_refuses_historical_v1_pass(
     assert exc.value.code == "nrc_acquisition_success_counter_v2_required"
 
 
+def test_nrc_success_selects_ledger_bound_substream_from_shared_campaign_counter(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    db = _session()
+    state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    sciencebase = _counter_record(
+        schema_id="project6.connector_http_counter.v2",
+        ordinal=1,
+        stage="item_hydration",
+        request_fingerprint="6" * 64,
+    )
+    shared_records = (*state.records, sciencebase)
+    state.counter_path.write_bytes(
+        b"".join(
+            canonical_json_bytes(record) + b"\n" for record in shared_records
+        )
+    )
+    ledger_inputs: list[tuple[dict[str, object], ...]] = []
+
+    def derive_ledger(_db, **kwargs):
+        ledger_inputs.append(tuple(kwargs["counter_records"]))
+        return state.ledger
+
+    monkeypatch.setattr(
+        transport_module,
+        "derive_terminal_request_ledger",
+        derive_ledger,
+    )
+
+    evidence = evaluate_nrc_acquisition_success(
+        db,
+        verified_definition=state.grant.verified_campaign,
+    )
+
+    assert ledger_inputs == [shared_records]
+    assert evidence.counter_reconciliation == {
+        "record_count": 2,
+        "artifact_ordinal": 2,
+        "artifact_stage": "artifact",
+        "artifact_decoded_body_sha256": state.artifact_hash,
+    }
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["missing", "duplicate", "reordered", "disagreeing"],
+)
+def test_nrc_substream_selection_rejects_invalid_ledger_bound_records(
+    tmp_path,
+    monkeypatch,
+    case: str,
+) -> None:
+    db = _session()
+    state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    first, second = (dict(record) for record in state.records)
+    sciencebase = _counter_record(
+        schema_id="project6.connector_http_counter.v2",
+        ordinal=1,
+        stage="item_hydration",
+        request_fingerprint="6" * 64,
+    )
+    if case == "missing":
+        records = [first, sciencebase]
+    elif case == "duplicate":
+        records = [first, dict(first), second, sciencebase]
+    elif case == "reordered":
+        records = [second, first, sciencebase]
+    else:
+        second["response_status"] = 206
+        records = [first, second, sciencebase]
+    state.counter_path.write_bytes(
+        b"".join(canonical_json_bytes(record) + b"\n" for record in records)
+    )
+
+    with pytest.raises(ConnectorEgressArmingError) as exc:
+        evaluate_nrc_acquisition_success(
+            db,
+            verified_definition=state.grant.verified_campaign,
+        )
+
+    assert exc.value.code == "nrc_acquisition_success_counter_invalid"
+
+
 def _db_state_snapshot(db: Session) -> dict[str, tuple[tuple[object, ...], ...]]:
     snapshot: dict[str, tuple[tuple[object, ...], ...]] = {}
     for model in (

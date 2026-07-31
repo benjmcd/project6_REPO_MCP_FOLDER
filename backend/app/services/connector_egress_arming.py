@@ -697,6 +697,71 @@ def _reconcile_nrc_counter_records(
             )
 
 
+def _select_nrc_counter_records(
+    records: Sequence[Mapping[str, Any]],
+    *,
+    entries: Sequence[Mapping[str, Any]],
+) -> tuple[dict[str, Any], ...]:
+    expected = [
+        (
+            entry.get("request_fingerprint"),
+            entry.get("ordinal"),
+            entry.get("stage"),
+        )
+        for entry in entries
+    ]
+    expected_set = set(expected)
+    expected_fingerprints = {identity[0] for identity in expected}
+    if (
+        len(expected_set) != len(expected)
+        or len(expected_fingerprints) != len(expected)
+        or any(
+            not isinstance(fingerprint, str)
+            or not isinstance(ordinal, int)
+            or isinstance(ordinal, bool)
+            or not isinstance(stage, str)
+            for fingerprint, ordinal, stage in expected
+        )
+    ):
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_counter_invalid",
+            "NRC terminal ledger does not select one exact counter substream",
+        )
+
+    selected: list[dict[str, Any]] = []
+    found: set[tuple[object, object, object]] = set()
+    for record in records:
+        fingerprint = record.get("request_fingerprint")
+        if fingerprint not in expected_fingerprints:
+            continue
+        identity = (
+            fingerprint,
+            record.get("ordinal"),
+            record.get("stage"),
+        )
+        if identity not in expected_set or identity in found:
+            raise ConnectorEgressArmingError(
+                "nrc_acquisition_success_counter_invalid",
+                "NRC HTTP counter substream is duplicate or disagrees with ledger",
+            )
+        found.add(identity)
+        selected.append(dict(record))
+    selected_identities = [
+        (
+            record.get("request_fingerprint"),
+            record.get("ordinal"),
+            record.get("stage"),
+        )
+        for record in selected
+    ]
+    if selected_identities != expected:
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_counter_invalid",
+            "NRC HTTP counter substream is missing or reordered",
+        )
+    return tuple(selected)
+
+
 def _lexical_absolute(path: Path) -> Path:
     return Path(os.path.abspath(os.fspath(path)))
 
@@ -904,11 +969,21 @@ def evaluate_nrc_acquisition_success(
             "nrc_acquisition_success_counter_unavailable",
             "manifest-bound NRC HTTP counter is not an exact regular file",
         )
+    all_records = _load_nrc_counter_records(resolved_counter)
+    if (
+        not all_records
+        or all_records[0].get("schema_id")
+        != "project6.connector_http_counter.v2"
+    ):
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_counter_v2_required",
+            "dual-live NRC success requires one boot-bound counter-v2 stream",
+        )
     try:
         ledger = derive_terminal_request_ledger(
             db,
             connector_run_id=run_id,
-            counter_path=resolved_counter,
+            counter_records=all_records,
         )
     except Exception as exc:
         raise ConnectorEgressArmingError(
@@ -920,16 +995,7 @@ def evaluate_nrc_acquisition_success(
         run=run,
         verified_grant=verified_grant,
     )
-    records = _load_nrc_counter_records(resolved_counter)
-    if (
-        not records
-        or records[0].get("schema_id")
-        != "project6.connector_http_counter.v2"
-    ):
-        raise ConnectorEgressArmingError(
-            "nrc_acquisition_success_counter_v2_required",
-            "dual-live NRC success requires one boot-bound counter-v2 stream",
-        )
+    records = _select_nrc_counter_records(all_records, entries=entries)
     _reconcile_nrc_counter_records(records, entries=entries)
 
     artifact = entries[-1]

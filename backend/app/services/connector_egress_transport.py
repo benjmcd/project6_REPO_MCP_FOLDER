@@ -156,6 +156,19 @@ COUNTER_V2_EXTRA_KEYS = frozenset(("runtime_instance_id", "process_boot_id"))
 COUNTER_V2_KEYS = COUNTER_V1_KEYS | COUNTER_V2_EXTRA_KEYS
 _LOWERCASE_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _PHYSICAL_SEND_LOCK = threading.Lock()
+_PHYSICAL_SEND_STATE = threading.local()
+
+
+@contextmanager
+def _serialized_physical_send() -> Iterator[None]:
+    if getattr(_PHYSICAL_SEND_STATE, "active", False):
+        _fail("connector_egress_send_reentry")
+    with _PHYSICAL_SEND_LOCK:
+        _PHYSICAL_SEND_STATE.active = True
+        try:
+            yield
+        finally:
+            _PHYSICAL_SEND_STATE.active = False
 
 
 class ConnectorEgressTransportError(RuntimeError):
@@ -2365,13 +2378,9 @@ class BoundedConnectorTransport:
         self.connector_run_id = connector_run_id
         self.lease_token = lease_token
         self.arming_fingerprint = arming_fingerprint
-        self._counter_runtime_context = _COUNTER_RUNTIME_CONTEXT
-        if self._counter_runtime_context is None:
-            if counter_path is None:
-                _fail("connector_egress_counter_path_required")
-            self.counter_path: Path | None = Path(counter_path)
-        else:
-            self.counter_path = None
+        if counter_path is None and _COUNTER_RUNTIME_CONTEXT is None:
+            _fail("connector_egress_counter_path_required")
+        self.counter_path = None if counter_path is None else Path(counter_path)
         self._send_callable = send_callable
         self._dns_resolver = dns_resolver or _default_dns_resolver
         self._prepared_request_adapter = prepared_request_adapter or (
@@ -2384,11 +2393,9 @@ class BoundedConnectorTransport:
         self._authority_deadline_monotonic: float | None = None
 
     def _runtime_revoked(self) -> bool:
-        context = self._counter_runtime_context
+        context = _COUNTER_RUNTIME_CONTEXT
         if context is None:
             return False
-        if _COUNTER_RUNTIME_CONTEXT is not context:
-            _fail("connector_counter_runtime_not_installed")
         try:
             revoked = context.revocation_is_set()
         except Exception as exc:
@@ -2400,7 +2407,7 @@ class BoundedConnectorTransport:
         return revoked
 
     def _acquire_send_idle(self) -> bool:
-        context = self._counter_runtime_context
+        context = _COUNTER_RUNTIME_CONTEXT
         if context is None:
             return False
         try:
@@ -2414,7 +2421,7 @@ class BoundedConnectorTransport:
         return True
 
     def _release_send_idle(self) -> None:
-        context = self._counter_runtime_context
+        context = _COUNTER_RUNTIME_CONTEXT
         if context is None:
             return
         try:
@@ -2507,7 +2514,7 @@ class BoundedConnectorTransport:
             "evidence_started_at": utc_six_z(evidence_started_at),
             "evidence_stopped_at": utc_six_z(evidence_stopped_at),
         }
-        context = self._counter_runtime_context
+        context = _COUNTER_RUNTIME_CONTEXT
         if context is not None:
             record.update(
                 schema_id=COUNTER_V2_SCHEMA_ID,
@@ -2517,7 +2524,7 @@ class BoundedConnectorTransport:
         return record
 
     def _write_counter_record(self, record: Mapping[str, Any]) -> None:
-        context = self._counter_runtime_context
+        context = _COUNTER_RUNTIME_CONTEXT
         if context is None:
             if self.counter_path is None:  # pragma: no cover - constructor invariant
                 _fail("connector_egress_counter_path_required")
@@ -2608,7 +2615,9 @@ class BoundedConnectorTransport:
         request: FrozenPhysicalRequest,
         expected_derived_arming_hash: str | None = None,
     ) -> BoundedConnectorResponse:
-        with _PHYSICAL_SEND_LOCK:
+        with _serialized_physical_send():
+            if _COUNTER_RUNTIME_CONTEXT is None and self.counter_path is None:
+                _fail("connector_counter_runtime_not_installed")
             return self._send_once_serialized(
                 ordinal=ordinal,
                 stage=stage,
@@ -2625,6 +2634,8 @@ class BoundedConnectorTransport:
         expected_derived_arming_hash: str | None,
     ) -> BoundedConnectorResponse:
         assert_pinned_http_parser_limits()
+        if self._runtime_revoked():
+            _fail("connector_egress_revoked")
         host = _preflight_exact_request(
             connector_run_id=self.connector_run_id,
             lease_token=self.lease_token,
@@ -2635,9 +2646,8 @@ class BoundedConnectorTransport:
             now=_as_utc(self._utc_clock()),
         )
         _assert_all_addresses_public(self._dns_resolver(host, 443))
-        if self._runtime_revoked():
-            _fail("connector_egress_revoked")
         send_idle_acquired = self._acquire_send_idle()
+        primary_error: BaseException | None = None
         try:
             return self._send_once_after_idle_acquired(
                 ordinal=ordinal,
@@ -2645,9 +2655,19 @@ class BoundedConnectorTransport:
                 request=request,
                 expected_derived_arming_hash=expected_derived_arming_hash,
             )
+        except BaseException as exc:
+            primary_error = exc
+            raise
         finally:
             if send_idle_acquired:
-                self._release_send_idle()
+                try:
+                    self._release_send_idle()
+                except ConnectorEgressTransportError as release_error:
+                    if primary_error is None:
+                        raise
+                    primary_error.add_note(
+                        f"suppressed cleanup error: {release_error.code}"
+                    )
 
     def _send_once_after_idle_acquired(
         self,
@@ -2657,6 +2677,14 @@ class BoundedConnectorTransport:
         request: FrozenPhysicalRequest,
         expected_derived_arming_hash: str | None,
     ) -> BoundedConnectorResponse:
+        context = _COUNTER_RUNTIME_CONTEXT
+        reservation_now = _as_utc(self._utc_clock())
+        counter_path = self.counter_path if context is None else None
+        counter_records = (
+            tuple(_COUNTER_RUNTIME_RECORDS) if context is not None else None
+        )
+        if self._runtime_revoked():
+            _fail("connector_egress_revoked")
         reservation = reserve_physical_request(
             connector_run_id=self.connector_run_id,
             lease_token=self.lease_token,
@@ -2665,13 +2693,9 @@ class BoundedConnectorTransport:
             stage=stage,
             request=request,
             expected_derived_arming_hash=expected_derived_arming_hash,
-            now=_as_utc(self._utc_clock()),
-            counter_path=self.counter_path,
-            counter_records=(
-                tuple(_COUNTER_RUNTIME_RECORDS)
-                if self._counter_runtime_context is not None
-                else None
-            ),
+            now=reservation_now,
+            counter_path=counter_path,
+            counter_records=counter_records,
         )
         if reservation.already_reserved:
             _fail("connector_egress_reservation_already_spent")
@@ -2890,11 +2914,19 @@ class BoundedConnectorTransport:
             evidence_started_at=send_started_at,
             evidence_stopped_at=evidence_stopped_at,
         )
+        counter_write_error: ConnectorEgressTransportError | None = None
         try:
-            self._write_counter_record(record)
+            try:
+                self._write_counter_record(record)
+            except ConnectorEgressTransportError as exc:
+                counter_write_error = exc
             self._record_terminal(
                 reservation=reservation,
-                outcome_class=outcome_class,
+                outcome_class=(
+                    "counter_write_failed"
+                    if counter_write_error is not None
+                    else outcome_class
+                ),
                 response_status=response_status,
                 status_header_bytes=status_header_bytes,
                 delivered_body_bytes=counter.delivered_body_bytes,
@@ -2908,6 +2940,8 @@ class BoundedConnectorTransport:
             session.cookies.clear()
             session.close()
 
+        if counter_write_error is not None:
+            raise counter_write_error
         if outcome_class == "transport_error":
             _fail("connector_egress_transport_failed")
         if outcome_class == "timeout":
