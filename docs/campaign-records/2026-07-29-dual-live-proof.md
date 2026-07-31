@@ -968,8 +968,11 @@ rederived from DB events with reservation/completion parity within the NRC
 grant ceiling and no `spent_unknown` entry; one-to-one field agreement
 between that rederived ledger and the strictly parsed manifest-bound
 transport counter; and a complete admitted `200` PDF within byte limits
-whose raw SHA-256 on the canonical connector-target receipt equals the
-rederived ledger and counter hashes. The service binds the NRC parent-run ID
+whose raw SHA-256 REHASHED at evaluation time from the content-addressed NRC
+target blob (never a stored-column/receipt read) equals the
+rederived ledger and counter hashes. [S3 delta 2026-07-30: this governance
+restatement formerly read "on the canonical connector-target receipt"; synced
+to the plan Option-B amendment.] The service binds the NRC parent-run ID
 and the `ledger_terminal_hash` it rederived into the ScienceBase envelope;
 because marker creation is reachable only through this service call, no
 caller path — the exposed arming route included — can consume the
