@@ -368,12 +368,15 @@ def test_proof_lock_same_campaign_contends_across_evidence_roots(
         assert first.campaign_identity_sha256 == second.campaign_identity_sha256
 
 
-def test_proof_locks_public_constructor_is_exact_and_inert_close_is_idempotent() -> None:
+def test_proof_locks_public_constructor_is_exact_and_inert_close_is_idempotent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     assert tuple(inspect.signature(ProofLocks).parameters) == (
         "root_identity_sha256",
         "campaign_identity_sha256",
     )
     locks = ProofLocks("a" * 64, "b" * 64)
+    monkeypatch.setattr(dual_live_windows, "_kernel32", None)
     locks.close()
     locks.close()
 
@@ -412,6 +415,78 @@ def test_proof_lock_abandoned_mutex_refuses(tmp_path: Path) -> None:
     assert completed.returncode == 0
     assert completed.stdout == "dual_live_lock_abandoned\n"
     assert completed.stderr == ""
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_proof_lock_abandoned_release_failure_retains_registry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_wait = dual_live_windows._wait_mutex
+    original_release = dual_live_windows._kernel32.ReleaseMutex
+    original_create_mutex = dual_live_windows._kernel32.CreateMutexW
+    created_mutexes: list[int] = []
+
+    def recording_create_mutex(*args: object) -> int:
+        handle = int(original_create_mutex(*args))
+        created_mutexes.append(handle)
+        return handle
+
+    def acquire_then_report_abandoned(handle: int, wait_ms: int) -> bool:
+        assert original_wait(handle, wait_ms) is False
+        return True
+
+    def fail_release(handle: object) -> int:
+        return 0
+
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "CreateMutexW",
+        recording_create_mutex,
+    )
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_wait_mutex",
+        acquire_then_report_abandoned,
+    )
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "ReleaseMutex",
+        fail_release,
+    )
+    try:
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_lock_cleanup_failed",
+        ):
+            acquire_proof_locks(
+                tmp_path,
+                CAMPAIGN_ID,
+                CAMPAIGN_FINGERPRINT,
+                DEFINITION_SHA,
+            )
+        assert len(created_mutexes) == 1
+        assert len(dual_live_windows._held_roots) == 1
+        assert len(dual_live_windows._held_campaigns) == 1
+        with pytest.raises(DualLiveWindowsError, match="dual_live_lock_busy"):
+            acquire_proof_locks(
+                tmp_path,
+                CAMPAIGN_ID,
+                CAMPAIGN_FINGERPRINT,
+                DEFINITION_SHA,
+            )
+    finally:
+        monkeypatch.setattr(
+            dual_live_windows._kernel32,
+            "ReleaseMutex",
+            original_release,
+        )
+        if created_mutexes:
+            assert original_release(created_mutexes[0])
+            assert dual_live_windows._kernel32.CloseHandle(created_mutexes[0])
+        with dual_live_windows._held_lock:
+            dual_live_windows._held_roots.clear()
+            dual_live_windows._held_campaigns.clear()
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")

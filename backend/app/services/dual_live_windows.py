@@ -832,6 +832,24 @@ class ProofLocks:
     def close(self) -> None:
         if self._closed:
             return
+        if (
+            not self._root_owned
+            and not self._campaign_owned
+            and not self._registered
+            and all(
+                resource is None
+                for resource in (
+                    self._root_directory,
+                    self._namespace_handle,
+                    self._boundary_descriptor,
+                    self._security_descriptor,
+                    self._root_mutex,
+                    self._campaign_mutex,
+                )
+            )
+        ):
+            self._closed = True
+            return
         assert _kernel32 is not None
         if (
             self._root_owned or self._campaign_owned
@@ -883,16 +901,15 @@ class ProofLocks:
         self._closed = True
 
 
-def _wait_mutex(handle: int, wait_ms: int) -> None:
+def _wait_mutex(handle: int, wait_ms: int) -> bool:
     assert _kernel32 is not None
     result = _kernel32.WaitForSingleObject(handle, wait_ms)
     if result == _WAIT_OBJECT_0:
-        return
+        return False
     if result == _WAIT_TIMEOUT:
         _fail("dual_live_lock_busy")
     if result == _WAIT_ABANDONED_0:
-        _kernel32.ReleaseMutex(handle)
-        _fail("dual_live_lock_abandoned")
+        return True
     if result == _WAIT_FAILED:
         _fail("dual_live_lock_access_refused")
     _fail("dual_live_lock_invalid")
@@ -1055,8 +1072,10 @@ def acquire_proof_locks(
         if not root_mutex:
             _fail("dual_live_lock_namespace_squatted")
         _verify_private_handle(root_mutex, sid_text, _MUTEX_ALL_ACCESS)
-        _wait_mutex(root_mutex, wait_ms)
+        root_abandoned = _wait_mutex(root_mutex, wait_ms)
         root_owned = True
+        if root_abandoned:
+            _fail("dual_live_lock_abandoned")
         campaign_mutex = _kernel32.CreateMutexW(
             ctypes.byref(security_attributes),
             False,
@@ -1065,8 +1084,10 @@ def acquire_proof_locks(
         if not campaign_mutex:
             _fail("dual_live_lock_namespace_squatted")
         _verify_private_handle(campaign_mutex, sid_text, _MUTEX_ALL_ACCESS)
-        _wait_mutex(campaign_mutex, wait_ms)
+        campaign_abandoned = _wait_mutex(campaign_mutex, wait_ms)
         campaign_owned = True
+        if campaign_abandoned:
+            _fail("dual_live_lock_abandoned")
         return ProofLocks._from_owned_handles(
             root_identity_sha256,
             campaign_identity_sha256,
