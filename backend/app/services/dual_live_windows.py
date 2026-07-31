@@ -24,17 +24,25 @@ _WAIT_TIMEOUT = 0x102
 _WAIT_FAILED = 0xFFFFFFFF
 _ERROR_ALREADY_EXISTS = 183
 _ERROR_INSUFFICIENT_BUFFER = 122
+_ERROR_INVALID_PARAMETER = 87
+_ERROR_NOT_FOUND = 1168
 _FILE_ATTRIBUTE_DIRECTORY = 0x10
 _FILE_ATTRIBUTE_REPARSE_POINT = 0x400
 _FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
 _FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000
 _FILE_READ_ATTRIBUTES = 0x80
+_GENERIC_READ = 0x80000000
 _READ_CONTROL = 0x00020000
 _FILE_SHARE_READ = 0x1
 _FILE_SHARE_WRITE = 0x2
 _OPEN_EXISTING = 3
+_FILE_ATTRIBUTE_NORMAL = 0x80
 _FILE_ATTRIBUTE_TAG_INFO_CLASS = 9
 _FILE_ID_INFO_CLASS = 18
+_FILE_TYPE_DISK = 1
+_FILE_TYPE_PIPE = 3
+_DRIVE_FIXED = 3
+_FILE_BEGIN = 0
 _OWNER_SECURITY_INFORMATION = 0x1
 _GROUP_SECURITY_INFORMATION = 0x2
 _DACL_SECURITY_INFORMATION = 0x4
@@ -57,7 +65,7 @@ _JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 _EXTENDED_STARTUPINFO_PRESENT = 0x00080000
 _CREATE_UNICODE_ENVIRONMENT = 0x00000400
 _TERMINATE_EXIT_CODE = 0xE0000001
-_STILL_ACTIVE = 259
+_POST_CREATE_CLEANUP_WAIT_MS = 5_000
 _ERROR_MORE_DATA = 234
 _PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 _SYNCHRONIZE = 0x00100000
@@ -69,7 +77,7 @@ _TCP_TABLE_OWNER_PID_ALL = 5
 _UDP_TABLE_OWNER_PID = 1
 _OBJECT_TYPE_INFORMATION_CLASS = 2
 _STATUS_INFO_LENGTH_MISMATCH = 0xC0000004
-_FORBIDDEN_INHERITED_HANDLE_TYPES = frozenset(("Job", "Process", "Thread"))
+_PERMITTED_INHERITED_HANDLE_TYPES = frozenset(("Event", "File"))
 
 
 class DualLiveWindowsError(ValueError):
@@ -288,6 +296,38 @@ if os.name == "nt":
         wintypes.DWORD,
     )
     _kernel32.GetFinalPathNameByHandleW.restype = wintypes.DWORD
+    _kernel32.GetFileType.argtypes = (wintypes.HANDLE,)
+    _kernel32.GetFileType.restype = wintypes.DWORD
+    _kernel32.GetDriveTypeW.argtypes = (wintypes.LPCWSTR,)
+    _kernel32.GetDriveTypeW.restype = wintypes.UINT
+    _kernel32.GetFileSizeEx.argtypes = (
+        wintypes.HANDLE,
+        ctypes.POINTER(ctypes.c_longlong),
+    )
+    _kernel32.GetFileSizeEx.restype = wintypes.BOOL
+    _kernel32.SetFilePointerEx.argtypes = (
+        wintypes.HANDLE,
+        ctypes.c_longlong,
+        ctypes.POINTER(ctypes.c_longlong),
+        wintypes.DWORD,
+    )
+    _kernel32.SetFilePointerEx.restype = wintypes.BOOL
+    _kernel32.ReadFile.argtypes = (
+        wintypes.HANDLE,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        ctypes.POINTER(wintypes.DWORD),
+        wintypes.LPVOID,
+    )
+    _kernel32.ReadFile.restype = wintypes.BOOL
+    _kernel32.GetNamedPipeInfo.argtypes = (
+        wintypes.HANDLE,
+        ctypes.POINTER(wintypes.DWORD),
+        ctypes.POINTER(wintypes.DWORD),
+        ctypes.POINTER(wintypes.DWORD),
+        ctypes.POINTER(wintypes.DWORD),
+    )
+    _kernel32.GetNamedPipeInfo.restype = wintypes.BOOL
     _kernel32.CloseHandle.argtypes = (wintypes.HANDLE,)
     _kernel32.CloseHandle.restype = wintypes.BOOL
     _kernel32.GetHandleInformation.argtypes = (
@@ -729,6 +769,9 @@ class ProofLocks:
         "_security_descriptor",
         "_root_mutex",
         "_campaign_mutex",
+        "_acquiring_thread_id",
+        "_root_owned",
+        "_campaign_owned",
         "_closed",
     )
 
@@ -745,6 +788,9 @@ class ProofLocks:
         self._security_descriptor: int | None = None
         self._root_mutex: int | None = None
         self._campaign_mutex: int | None = None
+        self._acquiring_thread_id: int | None = None
+        self._root_owned = False
+        self._campaign_owned = False
         self._closed = False
 
     @classmethod
@@ -767,6 +813,9 @@ class ProofLocks:
         instance._security_descriptor = security_descriptor
         instance._root_mutex = root_mutex
         instance._campaign_mutex = campaign_mutex
+        instance._acquiring_thread_id = threading.get_ident()
+        instance._root_owned = True
+        instance._campaign_owned = True
         return instance
 
     def __enter__(self) -> ProofLocks:
@@ -780,29 +829,56 @@ class ProofLocks:
     def close(self) -> None:
         if self._closed:
             return
-        self._closed = True
-        if self._campaign_mutex is None:
+        if self._campaign_mutex is None and self._root_mutex is None:
+            self._closed = True
             return
         assert _kernel32 is not None
-        release_failed = False
-        if not _kernel32.ReleaseMutex(self._campaign_mutex):
-            release_failed = True
-        if not _kernel32.ReleaseMutex(self._root_mutex):
-            release_failed = True
+        if (
+            self._root_owned or self._campaign_owned
+        ) and threading.get_ident() != self._acquiring_thread_id:
+            _fail("dual_live_lock_wrong_thread")
+        if self._campaign_owned:
+            assert self._campaign_mutex is not None
+            if not _kernel32.ReleaseMutex(self._campaign_mutex):
+                _fail("dual_live_lock_release_failed")
+            self._campaign_owned = False
+        if self._root_owned:
+            assert self._root_mutex is not None
+            if not _kernel32.ReleaseMutex(self._root_mutex):
+                _fail("dual_live_lock_release_failed")
+            self._root_owned = False
+
+        cleanup_failed = False
+        for name in ("_campaign_mutex", "_root_mutex", "_root_directory"):
+            handle = getattr(self, name)
+            if handle:
+                if _kernel32.CloseHandle(handle):
+                    setattr(self, name, None)
+                else:
+                    cleanup_failed = True
+            else:
+                setattr(self, name, None)
+        if self._namespace_handle:
+            if _kernel32.ClosePrivateNamespace(self._namespace_handle, 0):
+                self._namespace_handle = None
+            else:
+                cleanup_failed = True
+        else:
+            self._namespace_handle = None
+        if self._boundary_descriptor:
+            _kernel32.DeleteBoundaryDescriptor(self._boundary_descriptor)
+            self._boundary_descriptor = None
+        if self._security_descriptor:
+            if _kernel32.LocalFree(self._security_descriptor):
+                cleanup_failed = True
+            else:
+                self._security_descriptor = None
+        if cleanup_failed:
+            _fail("dual_live_lock_cleanup_failed")
         with _held_lock:
             _held_roots.discard(self.root_identity_sha256)
             _held_campaigns.discard(self.campaign_identity_sha256)
-        _close_handle(self._campaign_mutex)
-        _close_handle(self._root_mutex)
-        assert self._namespace_handle is not None
-        assert self._boundary_descriptor is not None
-        assert self._security_descriptor is not None
-        _kernel32.ClosePrivateNamespace(self._namespace_handle, 0)
-        _kernel32.DeleteBoundaryDescriptor(self._boundary_descriptor)
-        _kernel32.LocalFree(self._security_descriptor)
-        _close_handle(self._root_directory)
-        if release_failed:
-            _fail("dual_live_lock_release_failed")
+        self._closed = True
 
 
 def _wait_mutex(handle: int, wait_ms: int) -> None:
@@ -985,6 +1061,7 @@ def _require_job_apis() -> None:
         "OpenProcess",
         "GetProcessId",
         "QueryFullProcessImageNameW",
+        "GetNamedPipeInfo",
         "GetExitCodeProcess",
         "TerminateJobObject",
         "IsProcessInJob",
@@ -1046,6 +1123,31 @@ def _handle_type_name(handle: int) -> str:
         _fail("dual_live_job_inherited_handles_invalid")
 
 
+def _validate_inherited_capability(handle: int) -> None:
+    assert _kernel32 is not None
+    type_name = _handle_type_name(handle)
+    if type_name not in _PERMITTED_INHERITED_HANDLE_TYPES:
+        _fail("dual_live_job_inherited_handles_invalid")
+    if type_name == "Event":
+        return
+    if _kernel32.GetFileType(handle) != _FILE_TYPE_PIPE:
+        _fail("dual_live_job_inherited_handles_invalid")
+    pipe_flags = wintypes.DWORD()
+    output_size = wintypes.DWORD()
+    input_size = wintypes.DWORD()
+    maximum_instances = wintypes.DWORD()
+    if not _kernel32.GetNamedPipeInfo(
+        handle,
+        ctypes.byref(pipe_flags),
+        ctypes.byref(output_size),
+        ctypes.byref(input_size),
+        ctypes.byref(maximum_instances),
+    ):
+        _fail("dual_live_job_inherited_handles_invalid")
+    if pipe_flags.value not in (0, 1):
+        _fail("dual_live_job_inherited_handles_invalid")
+
+
 def _environment_block(environment: Mapping[str, str]) -> ctypes.Array[Any]:
     if not isinstance(environment, Mapping):
         _fail("dual_live_windows_arguments_invalid")
@@ -1074,6 +1176,169 @@ def _environment_block(environment: Mapping[str, str]) -> ctypes.Array[Any]:
     return buffer
 
 
+def _validated_executable_path_text(value: object) -> Path:
+    if not isinstance(value, str) or not value or "\0" in value:
+        _fail("dual_live_executable_invalid")
+    windows_path = value.replace("/", "\\")
+    folded = windows_path.casefold()
+    if windows_path.startswith("\\\\") or folded.startswith(
+        ("\\??\\", "\\device\\", "\\global??\\")
+    ):
+        _fail("dual_live_executable_invalid")
+    drive, tail = os.path.splitdrive(windows_path)
+    if (
+        len(drive) != 2
+        or drive[1] != ":"
+        or not tail.startswith("\\")
+        or ":" in tail
+        or os.path.normpath(windows_path) != windows_path
+    ):
+        _fail("dual_live_executable_invalid")
+    return Path(windows_path)
+
+
+def _hash_file_handle(handle: int) -> str:
+    assert _kernel32 is not None
+    file_size = ctypes.c_longlong()
+    if not _kernel32.GetFileSizeEx(handle, ctypes.byref(file_size)):
+        _fail("dual_live_executable_invalid")
+    if file_size.value <= 0:
+        _fail("dual_live_executable_invalid")
+    if not _kernel32.SetFilePointerEx(handle, 0, None, _FILE_BEGIN):
+        _fail("dual_live_executable_invalid")
+    digest = hashlib.sha256()
+    buffer = ctypes.create_string_buffer(1024 * 1024)
+    remaining = int(file_size.value)
+    while remaining:
+        requested = min(remaining, len(buffer))
+        received = wintypes.DWORD()
+        if not _kernel32.ReadFile(
+            handle,
+            buffer,
+            requested,
+            ctypes.byref(received),
+            None,
+        ):
+            _fail("dual_live_executable_invalid")
+        if not 0 < received.value <= requested:
+            _fail("dual_live_executable_invalid")
+        digest.update(buffer.raw[: received.value])
+        remaining -= int(received.value)
+    extra = wintypes.DWORD()
+    if not _kernel32.ReadFile(handle, buffer, 1, ctypes.byref(extra), None):
+        _fail("dual_live_executable_invalid")
+    if extra.value != 0:
+        _fail("dual_live_executable_invalid")
+    if not _kernel32.SetFilePointerEx(handle, 0, None, _FILE_BEGIN):
+        _fail("dual_live_executable_invalid")
+    return digest.hexdigest()
+
+
+class _ExecutableCustody:
+    __slots__ = (
+        "handle",
+        "final_path",
+        "file_identity_sha256",
+        "sha256",
+    )
+
+    def __init__(
+        self,
+        *,
+        handle: int,
+        final_path: str,
+        file_identity_sha256: str,
+        sha256: str,
+    ) -> None:
+        self.handle = handle
+        self.final_path = final_path
+        self.file_identity_sha256 = file_identity_sha256
+        self.sha256 = sha256
+
+
+def _open_executable_custody(path_text: object) -> _ExecutableCustody:
+    assert _kernel32 is not None
+    path = _validated_executable_path_text(path_text)
+    handle = _kernel32.CreateFileW(
+        str(path),
+        _GENERIC_READ | _FILE_READ_ATTRIBUTES,
+        _FILE_SHARE_READ,
+        None,
+        _OPEN_EXISTING,
+        _FILE_ATTRIBUTE_NORMAL | _FILE_FLAG_OPEN_REPARSE_POINT,
+        None,
+    )
+    if handle in (None, ctypes.c_void_p(-1).value):
+        _fail("dual_live_executable_invalid")
+    owned_handle = int(handle)
+    try:
+        attributes = _FILE_ATTRIBUTE_TAG_INFO()
+        if not _kernel32.GetFileInformationByHandleEx(
+            owned_handle,
+            _FILE_ATTRIBUTE_TAG_INFO_CLASS,
+            ctypes.byref(attributes),
+            ctypes.sizeof(attributes),
+        ):
+            _fail("dual_live_executable_invalid")
+        if attributes.FileAttributes & (
+            _FILE_ATTRIBUTE_DIRECTORY | _FILE_ATTRIBUTE_REPARSE_POINT
+        ):
+            _fail("dual_live_executable_invalid")
+        if _kernel32.GetFileType(owned_handle) != _FILE_TYPE_DISK:
+            _fail("dual_live_executable_invalid")
+        file_id = _FILE_ID_INFO()
+        if not _kernel32.GetFileInformationByHandleEx(
+            owned_handle,
+            _FILE_ID_INFO_CLASS,
+            ctypes.byref(file_id),
+            ctypes.sizeof(file_id),
+        ):
+            _fail("dual_live_executable_invalid")
+        file_id_hex = bytes(file_id.FileId.Identifier).hex()
+        if not file_id_hex or set(file_id_hex) == {"0"}:
+            _fail("dual_live_executable_invalid")
+        required = _kernel32.GetFinalPathNameByHandleW(owned_handle, None, 0, 0)
+        if required == 0:
+            _fail("dual_live_executable_invalid")
+        final_buffer = ctypes.create_unicode_buffer(required + 1)
+        written = _kernel32.GetFinalPathNameByHandleW(
+            owned_handle,
+            final_buffer,
+            len(final_buffer),
+            0,
+        )
+        if written == 0 or written >= len(final_buffer):
+            _fail("dual_live_executable_invalid")
+        handle_path = final_buffer.value
+        if not handle_path.startswith("\\\\?\\") or handle_path.casefold().startswith(
+            "\\\\?\\unc\\"
+        ):
+            _fail("dual_live_executable_invalid")
+        final_path = str(_validated_executable_path_text(handle_path[4:]))
+        if _kernel32.GetDriveTypeW(final_path[:3]) != _DRIVE_FIXED:
+            _fail("dual_live_executable_invalid")
+        sha256 = _hash_file_handle(owned_handle)
+        file_identity_sha256 = hashlib.sha256(
+            canonical_json_bytes(
+                {
+                    "file_attributes": int(attributes.FileAttributes),
+                    "file_id": file_id_hex,
+                    "final_path": final_path.replace("\\", "/").casefold(),
+                    "volume_serial_number": int(file_id.VolumeSerialNumber),
+                }
+            )
+        ).hexdigest()
+        return _ExecutableCustody(
+            handle=owned_handle,
+            final_path=final_path,
+            file_identity_sha256=file_identity_sha256,
+            sha256=sha256,
+        )
+    except BaseException:
+        _close_handle(owned_handle)
+        raise
+
+
 def _validated_job_inputs(
     *,
     argv: Sequence[str],
@@ -1088,9 +1353,7 @@ def _validated_job_inputs(
     copied_argv = tuple(argv)
     if any(not isinstance(value, str) or "\0" in value for value in copied_argv):
         _fail("dual_live_windows_arguments_invalid")
-    executable = Path(copied_argv[0])
-    if not copied_argv[0] or not executable.is_absolute() or not executable.is_file():
-        _fail("dual_live_windows_arguments_invalid")
+    _validated_executable_path_text(copied_argv[0])
     block = _environment_block(environment)
     if isinstance(inherited_handles, (str, bytes)) or not isinstance(
         inherited_handles, Sequence
@@ -1111,8 +1374,7 @@ def _validated_job_inputs(
             _fail("dual_live_job_inherited_handles_invalid")
         if not flags.value & _HANDLE_FLAG_INHERIT:
             _fail("dual_live_job_inherited_handles_invalid")
-        if _handle_type_name(handle) in _FORBIDDEN_INHERITED_HANDLE_TYPES:
-            _fail("dual_live_job_inherited_handles_invalid")
+        _validate_inherited_capability(handle)
     return (
         copied_argv,
         block,
@@ -1166,6 +1428,25 @@ def _configure_job(job_handle: int) -> str:
     return hashlib.sha256(
         canonical_json_bytes({"limit_flags": flags})
     ).hexdigest()
+
+
+def _attribute_list_size() -> int:
+    assert _kernel32 is not None
+    attribute_bytes = ctypes.c_size_t()
+    ctypes.set_last_error(0)
+    succeeded = _kernel32.InitializeProcThreadAttributeList(
+        None,
+        2,
+        0,
+        ctypes.byref(attribute_bytes),
+    )
+    if (
+        succeeded
+        or ctypes.get_last_error() != _ERROR_INSUFFICIENT_BUFFER
+        or attribute_bytes.value == 0
+    ):
+        _fail("dual_live_job_unsupported")
+    return int(attribute_bytes.value)
 
 
 def _filetime_value(value: _FILETIME) -> int:
@@ -1268,8 +1549,6 @@ class JobChild:
             self._process_handle, ctypes.byref(exit_code)
         ):
             _fail("dual_live_child_wait_failed")
-        if exit_code.value == _STILL_ACTIVE:
-            _fail("dual_live_child_wait_failed")
         return int(exit_code.value)
 
     def terminate_tree(self) -> None:
@@ -1316,6 +1595,74 @@ class JobChild:
             self._closed = True
 
 
+class _ProvisionalJobOwner:
+    __slots__ = ("job_handle", "process_handle", "thread_handle")
+
+    def __init__(
+        self,
+        *,
+        job_handle: int,
+        process_handle: int,
+        thread_handle: int,
+    ) -> None:
+        self.job_handle: int | None = job_handle
+        self.process_handle: int | None = process_handle
+        self.thread_handle: int | None = thread_handle
+
+    def close_thread_checked(self) -> None:
+        if self.thread_handle is None:
+            return
+        assert _kernel32 is not None
+        if not _kernel32.CloseHandle(self.thread_handle):
+            _fail("dual_live_child_cleanup_failed")
+        self.thread_handle = None
+
+    def _close_owned_handle(self, name: str) -> bool:
+        handle = getattr(self, name)
+        if handle is None:
+            return True
+        assert _kernel32 is not None
+        if not _kernel32.CloseHandle(handle):
+            return False
+        setattr(self, name, None)
+        return True
+
+    def cleanup_after_failure(self) -> bool:
+        assert _kernel32 is not None
+        cleanup_ok = True
+        if self.job_handle is not None and not _kernel32.TerminateJobObject(
+            self.job_handle,
+            _TERMINATE_EXIT_CODE,
+        ):
+            cleanup_ok = False
+            if not self._close_owned_handle("job_handle"):
+                cleanup_ok = False
+        if self.process_handle is not None:
+            wait_result = _kernel32.WaitForSingleObject(
+                self.process_handle,
+                _POST_CREATE_CLEANUP_WAIT_MS,
+            )
+            if wait_result != _WAIT_OBJECT_0:
+                cleanup_ok = False
+        for name in ("thread_handle", "process_handle", "job_handle"):
+            if not self._close_owned_handle(name):
+                cleanup_ok = False
+        # No caller can receive a failed provisional owner. Retry once to avoid
+        # orphaning a handle while retaining the failed cleanup verdict.
+        for name in ("thread_handle", "process_handle", "job_handle"):
+            self._close_owned_handle(name)
+        return cleanup_ok and all(
+            getattr(self, name) is None
+            for name in ("thread_handle", "process_handle", "job_handle")
+        )
+
+    def disown(self) -> None:
+        if self.thread_handle is not None:
+            _fail("dual_live_child_cleanup_failed")
+        self.process_handle = None
+        self.job_handle = None
+
+
 def create_child_in_job(
     argv: Sequence[str],
     environment: Mapping[str, str],
@@ -1336,14 +1683,12 @@ def create_child_in_job(
         runtime_instance_id=runtime_instance_id,
         wrapper_nonce_sha256=wrapper_nonce_sha256,
     )
-    executable = Path(copied_argv[0])
-    image_stream, executable_sha256 = _hash_open_image(executable)
+    executable_custody = _open_executable_custody(copied_argv[0])
+    executable_sha256 = executable_custody.sha256
     job_handle: int | None = None
-    process_handle: int | None = None
-    thread_handle: int | None = None
+    provisional_owner: _ProvisionalJobOwner | None = None
     attribute_list: ctypes.Array[ctypes.c_char] | None = None
     attributes_initialized = False
-    process_created = False
     try:
         assert _kernel32 is not None
         job_handle = _kernel32.CreateJobObjectW(None, None)
@@ -1356,12 +1701,7 @@ def create_child_in_job(
             _fail("dual_live_job_policy_invalid")
         job_policy_sha256 = _configure_job(job_handle)
 
-        attribute_bytes = ctypes.c_size_t()
-        _kernel32.InitializeProcThreadAttributeList(
-            None, 2, 0, ctypes.byref(attribute_bytes)
-        )
-        if attribute_bytes.value == 0:
-            _fail("dual_live_job_unsupported")
+        attribute_bytes = ctypes.c_size_t(_attribute_list_size())
         attribute_list = ctypes.create_string_buffer(attribute_bytes.value)
         if not _kernel32.InitializeProcThreadAttributeList(
             attribute_list, 2, 0, ctypes.byref(attribute_bytes)
@@ -1397,7 +1737,7 @@ def create_child_in_job(
         process_info = _PROCESS_INFORMATION()
         command_line = ctypes.create_unicode_buffer(subprocess.list2cmdline(copied_argv))
         if not _kernel32.CreateProcessW(
-            str(executable),
+            executable_custody.final_path,
             command_line,
             None,
             None,
@@ -1409,14 +1749,24 @@ def create_child_in_job(
             ctypes.byref(process_info),
         ):
             _fail("dual_live_job_admission_refused")
-        process_created = True
-        process_handle = int(process_info.hProcess)
-        thread_handle = int(process_info.hThread)
-        _close_handle(thread_handle)
-        thread_handle = None
+        provisional_owner = _ProvisionalJobOwner(
+            job_handle=int(job_handle),
+            process_handle=int(process_info.hProcess),
+            thread_handle=int(process_info.hThread),
+        )
+        job_handle = None
+        provisional_owner.close_thread_checked()
+        assert provisional_owner.process_handle is not None
+        assert provisional_owner.job_handle is not None
+        owned_process_handle = provisional_owner.process_handle
+        owned_job_handle = provisional_owner.job_handle
+        if _hash_file_handle(executable_custody.handle) != executable_sha256:
+            _fail("dual_live_process_identity_indeterminate")
         membership = wintypes.BOOL()
         if not _kernel32.IsProcessInJob(
-            process_handle, job_handle, ctypes.byref(membership)
+            owned_process_handle,
+            owned_job_handle,
+            ctypes.byref(membership),
         ) or not membership.value:
             _fail("dual_live_job_admission_refused")
         creation = _FILETIME()
@@ -1424,7 +1774,7 @@ def create_child_in_job(
         kernel_time = _FILETIME()
         user_time = _FILETIME()
         if not _kernel32.GetProcessTimes(
-            process_handle,
+            owned_process_handle,
             ctypes.byref(creation),
             ctypes.byref(exit_time),
             ctypes.byref(kernel_time),
@@ -1434,7 +1784,7 @@ def create_child_in_job(
         creation_filetime = _filetime_value(creation)
         if (
             _process_image_sha256(
-                process_handle,
+                owned_process_handle,
                 refusal_code="dual_live_process_identity_indeterminate",
             )
             != executable_sha256
@@ -1459,30 +1809,35 @@ def create_child_in_job(
                 }
             )
         ).hexdigest()
+        if not _kernel32.CloseHandle(executable_custody.handle):
+            _fail("dual_live_child_cleanup_failed")
+        executable_custody.handle = 0
         child = JobChild._from_owned_handles(
             pid=pid,
             process_creation_identity_sha256=process_creation_identity_sha256,
             process_boot_id=process_boot_id,
-            process_handle=process_handle,
-            job_handle=int(job_handle),
+            process_handle=owned_process_handle,
+            job_handle=owned_job_handle,
             creation_filetime=creation_filetime,
             executable_sha256=executable_sha256,
             job_policy_sha256=job_policy_sha256,
         )
-        process_handle = None
-        job_handle = None
+        provisional_owner.disown()
         return child
-    except BaseException:
-        if process_created and job_handle:
-            _kernel32.TerminateJobObject(job_handle, _TERMINATE_EXIT_CODE)
+    except BaseException as error:
+        if provisional_owner is not None:
+            cleanup_ok = provisional_owner.cleanup_after_failure()
+            if not cleanup_ok or (
+                isinstance(error, DualLiveWindowsError)
+                and error.code == "dual_live_child_cleanup_failed"
+            ):
+                _fail("dual_live_child_cleanup_failed")
         raise
     finally:
         if attributes_initialized and attribute_list is not None:
             _kernel32.DeleteProcThreadAttributeList(attribute_list)
-        _close_handle(thread_handle)
-        _close_handle(process_handle)
         _close_handle(job_handle)
-        image_stream.close()
+        _close_handle(executable_custody.handle)
 
 
 def _process_creation_filetime(process_handle: int) -> int:
@@ -1562,6 +1917,33 @@ def _validate_retained_processes(child: JobChild) -> None:
             or _SHA256.fullmatch(executable_sha256) is None
         ):
             _fail("dual_live_quiescence_indeterminate")
+
+
+def _validate_fresh_pid_occupancy(child: JobChild) -> None:
+    assert _kernel32 is not None
+    for pid, retained in child._retained_processes.items():
+        ctypes.set_last_error(0)
+        process_handle = _kernel32.OpenProcess(
+            _PROCESS_QUERY_LIMITED_INFORMATION | _SYNCHRONIZE,
+            False,
+            pid,
+        )
+        if not process_handle:
+            if ctypes.get_last_error() in (
+                _ERROR_INVALID_PARAMETER,
+                _ERROR_NOT_FOUND,
+            ):
+                continue
+            _fail("dual_live_quiescence_indeterminate")
+        owned_handle = int(process_handle)
+        try:
+            if int(_kernel32.GetProcessId(owned_handle)) != pid:
+                _fail("dual_live_quiescence_indeterminate")
+            if _process_creation_filetime(owned_handle) != retained[1]:
+                _fail("dual_live_quiescence_indeterminate")
+        finally:
+            if not _kernel32.CloseHandle(owned_handle):
+                _fail("dual_live_quiescence_indeterminate")
 
 
 def _retain_active_job_processes(
@@ -1689,7 +2071,7 @@ def _owner_table_rows(
         _fail("dual_live_quiescence_indeterminate")
     required = wintypes.ULONG()
     result = function(None, ctypes.byref(required), False, family, table_class, 0)
-    if result not in (0, _ERROR_INSUFFICIENT_BUFFER) or required.value < 4:
+    if result != _ERROR_INSUFFICIENT_BUFFER or required.value < 4:
         _fail("dual_live_quiescence_indeterminate")
     for _ in range(8):
         allocated = max(int(required.value), 4)
@@ -1770,6 +2152,39 @@ def _socket_sample(target_pids: frozenset[int]) -> tuple[tuple[Any, ...], ...]:
     return tuple(sorted(filtered))
 
 
+def _classify_socket_sample(
+    sample: tuple[tuple[Any, ...], ...],
+) -> tuple[dict[str, int], dict[str, int], int, int]:
+    tcp4_counts = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
+    tcp6_counts = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
+    udp4_count = 0
+    udp6_count = 0
+    for row in sample:
+        table_index = int(row[0])
+        if table_index in (0, 1):
+            state_number = int(row[1])
+            if not 1 <= state_number <= len(WINDOWS_MIB_TCP_STATES):
+                _fail("dual_live_quiescence_indeterminate")
+            state_name = WINDOWS_MIB_TCP_STATES[state_number - 1]
+            counts = tcp4_counts if table_index == 0 else tcp6_counts
+            counts[state_name] += 1
+        elif table_index == 2:
+            udp4_count += 1
+        elif table_index == 3:
+            udp6_count += 1
+        else:
+            _fail("dual_live_quiescence_indeterminate")
+    disallowed_tcp = sum(
+        count
+        for counts in (tcp4_counts, tcp6_counts)
+        for state, count in counts.items()
+        if state != "MIB_TCP_STATE_TIME_WAIT"
+    )
+    if disallowed_tcp or udp4_count or udp6_count:
+        _fail("dual_live_child_not_quiescent")
+    return tcp4_counts, tcp6_counts, udp4_count, udp6_count
+
+
 def prove_child_quiescence(child: JobChild) -> dict[str, Any]:
     if not isinstance(child, JobChild):
         _fail("dual_live_windows_arguments_invalid")
@@ -1795,8 +2210,11 @@ def prove_child_quiescence(child: JobChild) -> dict[str, Any]:
         _fail("dual_live_quiescence_indeterminate")
 
     target_pids = frozenset(child._retained_processes)
+    _validate_fresh_pid_occupancy(child)
     first_socket_sample = _socket_sample(target_pids)
+    _validate_fresh_pid_occupancy(child)
     second_socket_sample = _socket_sample(target_pids)
+    _validate_fresh_pid_occupancy(child)
     if first_socket_sample != second_socket_sample:
         _fail("dual_live_quiescence_indeterminate")
     _validate_retained_processes(child)
@@ -1809,33 +2227,12 @@ def prove_child_quiescence(child: JobChild) -> dict[str, Any]:
     ):
         _fail("dual_live_quiescence_indeterminate")
 
-    tcp4_counts = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
-    tcp6_counts = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
-    udp4_count = 0
-    udp6_count = 0
-    for row in first_socket_sample:
-        table_index = int(row[0])
-        if table_index in (0, 1):
-            state_number = int(row[1])
-            if not 1 <= state_number <= len(WINDOWS_MIB_TCP_STATES):
-                _fail("dual_live_quiescence_indeterminate")
-            state_name = WINDOWS_MIB_TCP_STATES[state_number - 1]
-            counts = tcp4_counts if table_index == 0 else tcp6_counts
-            counts[state_name] += 1
-        elif table_index == 2:
-            udp4_count += 1
-        elif table_index == 3:
-            udp6_count += 1
-        else:  # pragma: no cover - private closed call set
-            _fail("dual_live_quiescence_indeterminate")
-    disallowed_tcp = sum(
-        count
-        for counts in (tcp4_counts, tcp6_counts)
-        for state, count in counts.items()
-        if state != "MIB_TCP_STATE_TIME_WAIT"
-    )
-    if disallowed_tcp or udp4_count or udp6_count:
-        _fail("dual_live_child_not_quiescent")
+    (
+        tcp4_counts,
+        tcp6_counts,
+        udp4_count,
+        udp6_count,
+    ) = _classify_socket_sample(first_socket_sample)
 
     retained_identity_hashes = sorted(
         hashlib.sha256(
