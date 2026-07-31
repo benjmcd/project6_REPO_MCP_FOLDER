@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 os.environ["DB_INIT_MODE"] = "none"
 
@@ -53,7 +54,12 @@ from app.services.layer3_typing_entry import materialize_typing_entry
 
 
 def _make_session():
-    engine = create_engine("sqlite:///:memory:", future=True)
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        future=True,
+    )
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
     return Session()

@@ -3929,6 +3929,14 @@ def _mock_origin_verifiers(
         "app.services.layer3_origin_continuity",
         origin,
     )
+    services_package = sys.modules.get("app.services")
+    if services_package is not None:
+        monkeypatch.setattr(
+            services_package,
+            "layer3_origin_continuity",
+            origin,
+            raising=False,
+        )
 
     def verified(db, *, connector_run_target_id: str):
         del db
