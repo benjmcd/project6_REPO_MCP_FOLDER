@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 import hashlib
 import json
+from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, cast
 from uuid import NAMESPACE_URL, UUID, uuid5
 
 import pytest
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine, event, inspect, select
+from sqlalchemy.orm import Mapper, Session, sessionmaker
 
 from app.core.config import settings
 from app.db.session import Base
@@ -34,6 +37,7 @@ from app.schemas.api import (
 from app.services import connector_egress_arming as arming_module
 from app.services import connector_egress_transport as transport_module
 from app.services import layer3_origin_continuity as origin_module
+from app.services import nrc_aps_artifact_ingestion as artifact_module
 from app.services.connector_egress_arming import (
     ConnectorEgressArmingError,
     _assert_supersession_contract,
@@ -480,7 +484,7 @@ def test_marker_without_db_arming_fails_closed(tmp_path) -> None:
     assert db.query(ConnectorRun).count() == 0
 
 
-def test_sciencebase_uncleared_clause_5_leaves_marker_db_and_events_untouched(
+def test_sciencebase_arming_accepts_matching_nrc_clause_5(
     tmp_path,
     monkeypatch,
 ) -> None:
@@ -490,33 +494,18 @@ def test_sciencebase_uncleared_clause_5_leaves_marker_db_and_events_untouched(
     sciencebase_root.mkdir()
     grant = _grant(sciencebase_root, connector_key="sciencebase_mcs")
     grant.verified_campaign = state.grant.verified_campaign
-    baseline_counts = {
-        model: db.query(model).count()
-        for model in (
-            ConnectorRun,
-            ConnectorRunSubmission,
-            ConnectorPolicySnapshot,
-            ConnectorRunEvent,
-            ConnectorRunTarget,
-        )
-    }
+    run, created = create_connector_egress_arming(
+        db,
+        payload=_arming_payload(connector_key="sciencebase_mcs"),
+        verified_grant=grant,
+        operator_receipt=_operator_receipt(grant),
+        code_revision=CODE_REVISION,
+    )
 
-    with pytest.raises(ConnectorEgressArmingError) as exc:
-        create_connector_egress_arming(
-            db,
-            payload=_arming_payload(connector_key="sciencebase_mcs"),
-            verified_grant=grant,
-            operator_receipt=_operator_receipt(grant),
-            code_revision=CODE_REVISION,
-        )
-
-    assert exc.value.code == "nrc_acquisition_success_clause_5_not_cleared"
-    assert exc.value.status_code == 409
-    assert str(exc.value) == "NRC acquisition-success clause 5 is not cleared"
-    assert not grant.consumption_marker_path.exists()
-    assert {
-        model: db.query(model).count() for model in baseline_counts
-    } == baseline_counts
+    assert created is True
+    assert run.connector_key == "sciencebase_mcs"
+    assert grant.consumption_marker_path.is_file()
+    assert db.query(ConnectorRun).count() == 2
 
 
 def _created_arming(db: Session, tmp_path):
@@ -548,14 +537,27 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
         outcome_class="nrc_raw_admission_completed",
         now=completed_at,
     )
-    artifact_hash = "2" * 64
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path / "storage"))
+    artifact_body = b"%PDF-1.7\nclause-5-proof\n"
+    artifact_hash = hashlib.sha256(artifact_body).hexdigest()
+    stored = artifact_module.write_blob_content_addressed(
+        raw_root=settings.connector_raw_dir,
+        content=artifact_body,
+    )
     target = ConnectorRunTarget(
         connector_run_target_id="nrc-canonical-target",
         connector_run_id=run.connector_run_id,
         ordinal=1,
         status="downloaded",
         downloaded_sha256=artifact_hash,
+        raw_storage_ref=str(stored["blob_ref"]),
         sciencebase_download_uri=None,
+        source_reference_json={
+            "connector_origin_receipt_v1": {
+                "schema_id": "must-not-be-read",
+                "receipt_hash": "not-a-sha256",
+            }
+        },
     )
     db.add(target)
     db.commit()
@@ -598,7 +600,7 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
             "credential_audience": "none",
             "outcome_class": "completed",
             "response_status": 200,
-            "byte_count": 16,
+            "byte_count": len(artifact_body),
             "body_sha256": artifact_hash,
         },
     )
@@ -709,25 +711,161 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
         ledger=ledger,
         records=records,
         counter_path=counter_path,
+        target=target,
+        artifact_body=artifact_body,
+        artifact_hash=artifact_hash,
+        blob_path=Path(str(stored["blob_ref"])),
     )
 
 
-def test_evaluate_nrc_acquisition_success_stops_at_uncleared_clause_5(
+def _db_state_snapshot(db: Session) -> dict[str, tuple[tuple[object, ...], ...]]:
+    snapshot: dict[str, tuple[tuple[object, ...], ...]] = {}
+    for model in (
+        ConnectorRun,
+        ConnectorRunSubmission,
+        ConnectorPolicySnapshot,
+        ConnectorRunEvent,
+        ConnectorRunTarget,
+    ):
+        mapper = cast(Mapper[Any], inspect(model))
+        column_keys = tuple(attribute.key for attribute in mapper.column_attrs)
+        primary_keys = tuple(str(column.key) for column in mapper.primary_key)
+        rows = sorted(
+            db.scalars(select(model)).all(),
+            key=lambda row: tuple(str(getattr(row, key)) for key in primary_keys),
+        )
+        snapshot[model.__name__] = tuple(
+            tuple(deepcopy(getattr(row, key)) for key in column_keys)
+            for row in rows
+        )
+    return snapshot
+
+
+def _replace_ledger_artifact_hash(state, digest: str) -> None:
+    entries = tuple(
+        {**entry, "body_sha256": digest}
+        if entry["stage"] == "artifact"
+        else dict(entry)
+        for entry in state.ledger.entries
+    )
+    projection = {
+        **dict(state.ledger.canonical_projection),
+        "entries": list(entries),
+    }
+    state.ledger.entries = entries
+    state.ledger.canonical_projection = projection
+    state.ledger.ledger_terminal_hash = hashlib.sha256(
+        canonical_json_bytes(projection)
+    ).hexdigest()
+
+
+def _replace_counter_artifact_hash(state, digest: str) -> None:
+    records = [dict(record) for record in state.records]
+    records[-1]["decoded_body_sha256"] = digest
+    state.counter_path.write_bytes(
+        b"".join(canonical_json_bytes(record) + b"\n" for record in records)
+    )
+
+
+def test_evaluate_nrc_acquisition_success_accepts_matching_blob_ledger_counter(
     tmp_path,
     monkeypatch,
 ) -> None:
     db = _session()
     state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    target_selects: list[str] = []
 
-    with pytest.raises(ConnectorEgressArmingError) as exc:
-        evaluate_nrc_acquisition_success(
+    def capture_target_selects(
+        _connection,
+        _cursor,
+        statement,
+        _parameters,
+        _context,
+        _executemany,
+    ) -> None:
+        if "from connector_run_target" in statement.lower():
+            target_selects.append(statement.lower())
+
+    bind = db.get_bind()
+    event.listen(bind, "before_cursor_execute", capture_target_selects)
+    try:
+        evidence = evaluate_nrc_acquisition_success(
             db,
             verified_definition=state.grant.verified_campaign,
         )
+    finally:
+        event.remove(bind, "before_cursor_execute", capture_target_selects)
 
-    assert exc.value.code == "nrc_acquisition_success_clause_5_not_cleared"
+    assert evidence.connector_run_id == state.run.connector_run_id
+    assert evidence.ledger_terminal_hash == state.ledger.ledger_terminal_hash
+    assert evidence.blob_rehash_raw_sha256 == state.artifact_hash
+    assert evidence.counter_reconciliation == {
+        "record_count": 2,
+        "artifact_ordinal": 2,
+        "artifact_stage": "artifact",
+        "artifact_decoded_body_sha256": state.artifact_hash,
+    }
+    assert len(target_selects) == 1
+    assert "source_reference_json" not in target_selects[0]
+
+
+@pytest.mark.parametrize(
+    ("failure", "expected_code"),
+    [
+        ("blob_vs_ledger", "nrc_acquisition_success_blob_mismatch"),
+        ("blob_vs_counter", "nrc_acquisition_success_blob_mismatch"),
+        ("changed_blob", "nrc_acquisition_success_blob_mismatch"),
+        ("missing_blob", "nrc_acquisition_success_blob_unavailable"),
+    ],
+)
+def test_sciencebase_clause_5_failures_leave_marker_db_and_events_untouched(
+    tmp_path,
+    monkeypatch,
+    failure: str,
+    expected_code: str,
+) -> None:
+    db = _session()
+    state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    # Clause 4 normally rejects ledger/counter disagreement first. Bypass only
+    # that redundant guard here to prove clause 5 independently compares both.
+    if failure == "blob_vs_ledger":
+        _replace_ledger_artifact_hash(state, "0" * 64)
+        monkeypatch.setattr(
+            arming_module,
+            "_reconcile_nrc_counter_records",
+            lambda *_args, **_kwargs: None,
+        )
+    elif failure == "blob_vs_counter":
+        _replace_counter_artifact_hash(state, "0" * 64)
+        monkeypatch.setattr(
+            arming_module,
+            "_reconcile_nrc_counter_records",
+            lambda *_args, **_kwargs: None,
+        )
+    elif failure == "changed_blob":
+        state.blob_path.write_bytes(b"X" + state.artifact_body[1:])
+    else:
+        state.blob_path.rename(state.blob_path.with_suffix(".missing"))
+
+    sciencebase_root = tmp_path / "sciencebase"
+    sciencebase_root.mkdir()
+    grant = _grant(sciencebase_root, connector_key="sciencebase_mcs")
+    grant.verified_campaign = state.grant.verified_campaign
+    baseline = _db_state_snapshot(db)
+
+    with pytest.raises(ConnectorEgressArmingError) as exc:
+        create_connector_egress_arming(
+            db,
+            payload=_arming_payload(connector_key="sciencebase_mcs"),
+            verified_grant=grant,
+            operator_receipt=_operator_receipt(grant),
+            code_revision=CODE_REVISION,
+        )
+
+    assert exc.value.code == expected_code
     assert exc.value.status_code == 409
-    assert str(exc.value) == "NRC acquisition-success clause 5 is not cleared"
+    assert not grant.consumption_marker_path.exists()
+    assert _db_state_snapshot(db) == baseline
 
 
 def test_evaluate_nrc_acquisition_success_rejects_failure_like_terminal_outcome(

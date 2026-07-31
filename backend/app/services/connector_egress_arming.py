@@ -24,6 +24,7 @@ from app.models import (
     ConnectorRun,
     ConnectorRunEvent,
     ConnectorRunSubmission,
+    ConnectorRunTarget,
 )
 from app.schemas.api import (
     ConnectorEgressArmingIn,
@@ -39,6 +40,11 @@ from app.services.connector_egress_authorization import (
     resolve_current_dual_live_campaign_definition,
     resolve_historical_connector_grant_evidence,
     strict_json_loads,
+)
+from app.services import nrc_aps_artifact_ingestion
+from app.services.raw_storage_handles import (
+    StableRawStorageError,
+    hash_locked_raw_file,
 )
 
 try:
@@ -58,7 +64,7 @@ class ConnectorEgressArmingError(RuntimeError):
 class NrcAcquisitionSuccessEvidence:
     connector_run_id: str
     ledger_terminal_hash: str
-    receipt_raw_sha256: str
+    blob_rehash_raw_sha256: str
     counter_reconciliation: Mapping[str, Any]
 
 
@@ -725,6 +731,90 @@ def _reconcile_nrc_counter_records(
             )
 
 
+def _lexical_absolute(path: Path) -> Path:
+    return Path(os.path.abspath(os.fspath(path)))
+
+
+def _same_lexical_path(left: Path, right: Path) -> bool:
+    return os.path.normcase(os.path.normpath(str(left))) == os.path.normcase(
+        os.path.normpath(str(right))
+    )
+
+
+def _rehash_nrc_artifact_blob(
+    db: Session,
+    *,
+    connector_run_id: str,
+    ledger_sha256: str,
+    counter_sha256: object,
+    expected_size: int,
+    max_bytes: int,
+) -> str:
+    target_rows = db.execute(
+        select(
+            ConnectorRunTarget.downloaded_sha256,
+            ConnectorRunTarget.raw_storage_ref,
+        )
+        .where(ConnectorRunTarget.connector_run_id == connector_run_id)
+        .order_by(ConnectorRunTarget.connector_run_target_id.asc())
+    ).all()
+    if len(target_rows) != 1:
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_blob_invalid",
+            "NRC predecessor does not bind exactly one raw target blob",
+        )
+    target_sha256, raw_storage_ref = target_rows[0]
+    if (
+        not isinstance(target_sha256, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", target_sha256)
+        or not isinstance(raw_storage_ref, str)
+        or not raw_storage_ref
+        or raw_storage_ref != raw_storage_ref.strip()
+    ):
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_blob_invalid",
+            "NRC predecessor raw target binding is incomplete or invalid",
+        )
+
+    raw_root = _lexical_absolute(Path(settings.connector_raw_dir))
+    expected_path = _lexical_absolute(
+        raw_root
+        / nrc_aps_artifact_ingestion.blob_relative_path(
+            sha256=target_sha256
+        )
+    )
+    target_path = _lexical_absolute(Path(raw_storage_ref))
+    if not _same_lexical_path(target_path, expected_path):
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_blob_invalid",
+            "NRC predecessor raw target is not the exact content-addressed blob",
+        )
+
+    try:
+        actual_size, actual_sha256, canonical_ref = hash_locked_raw_file(
+            raw_root,
+            expected_path,
+            max_bytes=max_bytes,
+        )
+    except StableRawStorageError as exc:
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_blob_unavailable",
+            "NRC predecessor content-addressed blob is unavailable or unsafe",
+        ) from exc
+    if (
+        not _same_lexical_path(Path(canonical_ref), expected_path)
+        or actual_size != expected_size
+        or actual_sha256 != target_sha256
+        or actual_sha256 != ledger_sha256
+        or actual_sha256 != counter_sha256
+    ):
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_blob_mismatch",
+            "NRC predecessor blob rehash disagrees with target, ledger, or counter authority",
+        )
+    return actual_sha256
+
+
 def evaluate_nrc_acquisition_success(
     db: Session,
     *,
@@ -890,17 +980,31 @@ def evaluate_nrc_acquisition_success(
         or artifact_size > artifact_limit
         or not isinstance(artifact_hash, str)
         or not re.fullmatch(r"[0-9a-f]{64}", artifact_hash)
-        or records[-1].get("decoded_body_sha256") != artifact_hash
     ):
         raise ConnectorEgressArmingError(
             "nrc_acquisition_success_artifact_invalid",
             "NRC artifact completion is not one complete bounded 200 response",
         )
 
-    raise ConnectorEgressArmingError(
-        "nrc_acquisition_success_clause_5_not_cleared",
-        "NRC acquisition-success clause 5 is not cleared",
-        status_code=409,
+    counter_artifact_hash = records[-1].get("decoded_body_sha256")
+    blob_rehash_raw_sha256 = _rehash_nrc_artifact_blob(
+        db,
+        connector_run_id=run_id,
+        ledger_sha256=artifact_hash,
+        counter_sha256=counter_artifact_hash,
+        expected_size=artifact_size,
+        max_bytes=artifact_limit,
+    )
+    return NrcAcquisitionSuccessEvidence(
+        connector_run_id=run_id,
+        ledger_terminal_hash=ledger.ledger_terminal_hash,
+        blob_rehash_raw_sha256=blob_rehash_raw_sha256,
+        counter_reconciliation={
+            "record_count": len(records),
+            "artifact_ordinal": artifact.get("ordinal"),
+            "artifact_stage": artifact.get("stage"),
+            "artifact_decoded_body_sha256": counter_artifact_hash,
+        },
     )
 
 
