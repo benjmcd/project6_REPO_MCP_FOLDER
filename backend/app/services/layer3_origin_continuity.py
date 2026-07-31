@@ -10,16 +10,18 @@ import math
 import os
 from pathlib import Path, PurePosixPath
 import stat
-from typing import TYPE_CHECKING, Any, NoReturn, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, TypeVar
 from typing import cast as type_cast
 from uuid import UUID
 
 from sqlalchemy import JSON, Table, cast, false, literal, or_, select, update
-from sqlalchemy.engine import RowMapping
+from sqlalchemy.engine import Connection, Engine, RowMapping, URL
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool, QueuePool, StaticPool
 
 from app.core.config import settings
 from app.models.models import (
+    ApsContentDocument,
     ApsContentLinkage,
     ConnectorPolicySnapshot,
     ConnectorRun,
@@ -28,8 +30,18 @@ from app.models.models import (
     DatasetSourceProvenance,
     DatasetVersion,
     L3ConnectorSourceIntakeRecord,
+    L3Descriptor,
+    L3GateBIdempotencyKey,
+    L3MaterialSnapshot,
+    L3PassRun,
+    L3SelectionManifest,
+    L3Session,
 )
-from app.services import nrc_phase_b_custody
+from app.services import (
+    layer3_connector_source_intake,
+    layer3_gate_b_state,
+    nrc_phase_b_custody,
+)
 from app.services.connector_egress_authorization import (
     VerifiedHistoricalGrantEvidence,
     resolve_historical_connector_grant_evidence,
@@ -39,7 +51,6 @@ from app.services.connector_egress_arming import (
     canonical_arming_payload,
     compute_arming_fingerprint,
 )
-
 if TYPE_CHECKING:
     from app.services.connector_egress_transport import (
         VerifiedTerminalRequestLedger,
@@ -3272,3 +3283,2383 @@ def assert_connector_origin_continuity(
                     "A downstream origin binding does not equal the canonical receipt.",
                     details={"field": field},
                 )
+
+
+_DOWNSTREAM_ORIGIN_BOUNDARIES = frozenset(
+    {
+        "gate_c_typing",
+        "pass_selection",
+        "execution_output",
+        "result_review",
+        "package_commit",
+        "package_submit",
+        "handoff_prepare",
+    }
+)
+CONNECTOR_ORIGIN_INTEGRITY_SCHEMA_ID = "layer3.connector_origin_integrity.v1"
+CONNECTOR_ORIGIN_INTEGRITY_KEY = "connector_origin_integrity_v1"
+_DOWNSTREAM_SCIENCEBASE_SOURCE_CLASS = "connector_produced_single_source"
+_DOWNSTREAM_NRC_SOURCE_CLASS = "aps_content_document"
+_DOWNSTREAM_SCIENCEBASE_CANDIDATE_PREFIX = (
+    "mat-connector_source_intake_record-"
+)
+_DOWNSTREAM_AUTHORITY_ROW_CAP = 128
+_DOWNSTREAM_JSON_DEPTH_CAP = 24
+_DOWNSTREAM_JSON_NODE_CAP = 16_384
+_DOWNSTREAM_JSON_FANOUT_CAP = 512
+_DOWNSTREAM_JSON_STRING_BYTE_CAP = 1024 * 1024
+_DOWNSTREAM_JSON_BYTE_CAP = 16 * 1024 * 1024
+_DOWNSTREAM_AUTHORITY_BYTE_CAP = 32 * 1024 * 1024
+_DOWNSTREAM_SNAPSHOT_BYTE_CAP = 16 * 1024 * 1024
+_WINDOWS_REPARSE_POINT = int(
+    getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+)
+_WINDOWS_RESERVED_COMPONENTS = frozenset(
+    {"CON", "PRN", "AUX", "NUL"}
+    | {f"COM{index}" for index in range(1, 10)}
+    | {f"LPT{index}" for index in range(1, 10)}
+)
+
+
+@dataclass(frozen=True)
+class _DownstreamState:
+    session: _AnchorRow
+    selections: tuple[_AnchorRow, ...]
+    claims: tuple[_AnchorRow, ...]
+    descriptors: tuple[_AnchorRow, ...]
+    snapshots: tuple[_AnchorRow, ...]
+    documents: tuple[_AnchorRow, ...]
+    linked_records: tuple[_AnchorRow, ...]
+    linked_runs: tuple[_AnchorRow, ...]
+    linked_targets: tuple[_AnchorRow, ...]
+    linked_linkages: tuple[_AnchorRow, ...]
+    payloads: tuple[
+        tuple[str, str, str, int, tuple[str, Any]],
+        ...,
+    ]
+    origin: _OriginAnchor | None
+
+
+@dataclass(frozen=True)
+class _DownstreamAuthority:
+    connector_key: str
+    target_id: str
+    origin_pairs: tuple[tuple[str, str], ...]
+    run_id: str
+    record_id: str = ""
+    content_id: str = ""
+
+
+@dataclass(frozen=True)
+class _DownstreamResolution:
+    state: _DownstreamState
+    authority: _DownstreamAuthority | None
+
+
+def _downstream_authority_invalid(
+    message: str,
+    *,
+    details: Mapping[str, Any] | None = None,
+) -> NoReturn:
+    _fail(
+        "layer3_downstream_origin_authority_invalid",
+        message,
+        details=details,
+    )
+
+
+def _downstream_one(
+    rows: list[Any],
+    *,
+    label: str,
+) -> Any:
+    if len(rows) != 1:
+        _downstream_authority_invalid(
+            f"Exactly one durable {label} row is required.",
+            details={"count": len(rows), "label": label},
+        )
+    return rows[0]
+
+
+def _downstream_validate_json_shape(value: object) -> None:
+    pending: list[tuple[object, int, bool]] = [(value, 0, False)]
+    active_containers: set[int] = set()
+    visited = 0
+    byte_count = 0
+    while pending:
+        current, depth, exiting = pending.pop()
+        if exiting:
+            active_containers.remove(id(current))
+            continue
+        visited += 1
+        if (
+            depth > _DOWNSTREAM_JSON_DEPTH_CAP
+            or visited > _DOWNSTREAM_JSON_NODE_CAP
+        ):
+            _downstream_authority_invalid(
+                "Downstream JSON authority exceeds traversal bounds."
+            )
+        if current is None or isinstance(current, bool):
+            byte_count += 4
+        elif isinstance(current, int):
+            byte_count += len(str(current))
+        elif isinstance(current, float):
+            if not math.isfinite(current):
+                _downstream_authority_invalid(
+                    "Downstream JSON authority contains a non-finite number."
+                )
+            byte_count += len(repr(current))
+        elif isinstance(current, str):
+            encoded_size = len(current.encode("utf-8"))
+            if encoded_size > _DOWNSTREAM_JSON_STRING_BYTE_CAP:
+                _downstream_authority_invalid(
+                    "Downstream JSON authority contains an oversized string."
+                )
+            byte_count += encoded_size
+        elif isinstance(current, Mapping):
+            if len(current) > _DOWNSTREAM_JSON_FANOUT_CAP:
+                _downstream_authority_invalid(
+                    "Downstream JSON object fanout exceeds its bound."
+                )
+            identity = id(current)
+            if identity in active_containers:
+                _downstream_authority_invalid(
+                    "Downstream JSON authority contains a cycle."
+                )
+            active_containers.add(identity)
+            pending.append((current, depth, True))
+            nested: list[object] = []
+            for key, item in current.items():
+                if not isinstance(key, str):
+                    _downstream_authority_invalid(
+                        "Downstream JSON object keys must be strings."
+                    )
+                key_size = len(key.encode("utf-8"))
+                if key_size > _DOWNSTREAM_JSON_STRING_BYTE_CAP:
+                    _downstream_authority_invalid(
+                        "Downstream JSON authority contains an oversized key."
+                    )
+                byte_count += key_size
+                nested.append(item)
+            pending.extend(
+                (item, depth + 1, False)
+                for item in reversed(nested)
+            )
+        elif isinstance(current, (list, tuple)):
+            if len(current) > _DOWNSTREAM_JSON_FANOUT_CAP:
+                _downstream_authority_invalid(
+                    "Downstream JSON array fanout exceeds its bound."
+                )
+            identity = id(current)
+            if identity in active_containers:
+                _downstream_authority_invalid(
+                    "Downstream JSON authority contains a cycle."
+                )
+            active_containers.add(identity)
+            pending.append((current, depth, True))
+            pending.extend(
+                (item, depth + 1, False)
+                for item in reversed(current)
+            )
+        else:
+            _downstream_authority_invalid(
+                "Downstream JSON authority contains an unsupported value."
+            )
+        if byte_count > _DOWNSTREAM_JSON_BYTE_CAP:
+            _downstream_authority_invalid(
+                "Downstream JSON authority exceeds its byte bound."
+            )
+
+
+def _downstream_canonical_json_bytes(value: object) -> bytes:
+    _downstream_validate_json_shape(value)
+    try:
+        payload = json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    except (RecursionError, TypeError, ValueError) as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Downstream session authority is not canonical JSON.",
+        ) from exc
+    if len(payload) > _DOWNSTREAM_JSON_BYTE_CAP:
+        _downstream_authority_invalid(
+            "Downstream canonical JSON exceeds its byte bound."
+        )
+    return payload
+
+
+def _downstream_require_canonical(*surfaces: object) -> None:
+    for surface in surfaces:
+        _downstream_canonical_json_bytes(surface)
+
+
+def _downstream_reserved_kind(*surfaces: object) -> str | None:
+    _downstream_require_canonical(*surfaces)
+    sciencebase = False
+    nrc = False
+    pending: list[tuple[object, int]] = [
+        (surface, 0) for surface in reversed(surfaces)
+    ]
+    visited = 0
+    while pending:
+        current, depth = pending.pop()
+        visited += 1
+        if (
+            depth > _ORIGIN_CLAIM_DEPTH_CAP
+            or visited > _ORIGIN_CLAIM_NODE_CAP
+        ):
+            _downstream_authority_invalid(
+                "Reserved-origin signal traversal exceeds its bounds."
+            )
+        if isinstance(current, Mapping):
+            candidate_id = current.get("candidate_id")
+            source_class = current.get("source_class")
+            connector_key = current.get("connector_key")
+            if (
+                isinstance(candidate_id, str)
+                and candidate_id.startswith(
+                    _DOWNSTREAM_SCIENCEBASE_CANDIDATE_PREFIX
+                )
+            ):
+                sciencebase = True
+            if connector_key == "sciencebase_mcs" or (
+                current.get("source_system") == "sciencebase"
+                and current.get("source_mode") == "strict_live_egress"
+            ):
+                sciencebase = True
+            if (
+                source_class == _DOWNSTREAM_NRC_SOURCE_CLASS
+                or current.get("source_shape") == _DOWNSTREAM_NRC_SOURCE_CLASS
+                or current.get("document_class") == "nrc_adams_aps"
+                or connector_key == "nrc_adams_aps"
+                or current.get("accession_number") == _FIXTURE_ACCESSION
+                or current.get("stable_release_key") == _FIXTURE_ACCESSION
+                or current.get("stable_release_identifier")
+                == f"adams_accession:{_FIXTURE_ACCESSION}"
+                or current.get("selection_scope") == "dual_live_proof_v1"
+                or current.get("selection_source")
+                == "strict_exact_accession"
+            ):
+                nrc = True
+            pending.extend(
+                (nested, depth + 1)
+                for nested in reversed(tuple(current.values()))
+            )
+        elif isinstance(current, Sequence) and not isinstance(
+            current,
+            (str, bytes, bytearray),
+        ):
+            pending.extend(
+                (nested, depth + 1)
+                for nested in reversed(tuple(current))
+            )
+    try:
+        claims = _origin_claims(surfaces)
+    except Layer3OriginContinuityError as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Persisted origin-pair traversal exceeds its bounds.",
+        ) from exc
+    kinds = [
+        kind
+        for kind, present in (
+            ("sciencebase_mcs", sciencebase),
+            ("nrc_adams_aps", nrc),
+        )
+        if present
+    ]
+    if len(kinds) > 1:
+        _downstream_authority_invalid(
+            "A session cannot bind both reserved downstream proof origins."
+        )
+    if claims and not kinds:
+        _downstream_authority_invalid(
+            "An origin receipt claim requires an explicit reserved connector kind."
+        )
+    return kinds[0] if kinds else None
+
+
+def _downstream_lexical_absolute(path: Path) -> Path:
+    return Path(os.path.abspath(os.fspath(path)))
+
+
+def _downstream_validate_local_component(
+    component: str,
+    *,
+    field: str,
+) -> None:
+    normalized = component.rstrip(" .")
+    stem = normalized.split(".", 1)[0].upper()
+    if (
+        component in {"", ".", ".."}
+        or component != normalized
+        or ":" in component
+        or stem in _WINDOWS_RESERVED_COMPONENTS
+    ):
+        _downstream_authority_invalid(
+            f"{field} contains an unsafe path component."
+        )
+
+
+def _downstream_managed_root(root: Path, *, field: str) -> Path:
+    raw = os.fspath(root)
+    normalized = raw.replace("\\", "/")
+    if (
+        "\x00" in raw
+        or not root.is_absolute()
+        or normalized.startswith("//")
+        or normalized.startswith(("//?/", "//./"))
+    ):
+        _downstream_authority_invalid(
+            f"{field} must be an absolute local managed root."
+        )
+    canonical = _downstream_lexical_absolute(root)
+    for component in canonical.parts:
+        if component == canonical.anchor:
+            continue
+        _downstream_validate_local_component(component, field=field)
+    current = Path(canonical.anchor)
+    for component in canonical.parts[1:]:
+        current /= component
+        try:
+            info = current.lstat()
+        except OSError as exc:
+            raise Layer3OriginContinuityError(
+                "layer3_downstream_origin_authority_invalid",
+                f"{field} is missing or inaccessible.",
+            ) from exc
+        attributes = int(getattr(info, "st_file_attributes", 0))
+        if (
+            stat.S_ISLNK(info.st_mode)
+            or attributes & _WINDOWS_REPARSE_POINT
+            or not stat.S_ISDIR(info.st_mode)
+        ):
+            _downstream_authority_invalid(
+                f"{field} has an unsafe ancestry."
+            )
+    return canonical
+
+
+def _downstream_file_fingerprint(
+    value: os.stat_result,
+) -> tuple[int, int, int, int, int, int]:
+    return (
+        value.st_mode,
+        value.st_dev,
+        value.st_ino,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
+def _downstream_hash_stream(
+    handle: Any,
+    *,
+    max_bytes: int,
+    capture_bytes: bool,
+) -> tuple[int, str, bytes | None]:
+    digest = hashlib.sha256()
+    captured = bytearray() if capture_bytes else None
+    size = 0
+    while True:
+        remaining = max_bytes - size
+        chunk = handle.read(min(1024 * 1024, remaining + 1))
+        if not chunk:
+            break
+        if len(chunk) > remaining:
+            _downstream_authority_invalid(
+                "Material snapshot payload exceeds its bounded size."
+            )
+        size += len(chunk)
+        digest.update(chunk)
+        if captured is not None:
+            captured.extend(chunk)
+    return (
+        size,
+        digest.hexdigest(),
+        bytes(captured) if captured is not None else None,
+    )
+
+
+def _downstream_preflight_json_text(payload: str) -> None:
+    depth = 0
+    tokens = 0
+    index = 0
+    in_string = False
+    escaped = False
+    while index < len(payload):
+        char = payload[index]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == '"':
+                in_string = False
+            elif ord(char) < 0x20:
+                _downstream_authority_invalid(
+                    "Material snapshot JSON contains a control character."
+                )
+            index += 1
+            continue
+        if char.isspace():
+            index += 1
+            continue
+        if char == '"':
+            in_string = True
+            tokens += 1
+            index += 1
+        elif char in "[{":
+            depth += 1
+            tokens += 1
+            index += 1
+        elif char in "]}":
+            depth -= 1
+            tokens += 1
+            index += 1
+            if depth < 0:
+                _downstream_authority_invalid(
+                    "Material snapshot JSON has unbalanced structure."
+                )
+        elif char in ",:":
+            tokens += 1
+            index += 1
+        else:
+            tokens += 1
+            while (
+                index < len(payload)
+                and payload[index] not in "[]{}:, \t\r\n"
+            ):
+                index += 1
+        if (
+            depth > _DOWNSTREAM_JSON_DEPTH_CAP
+            or tokens > _DOWNSTREAM_JSON_NODE_CAP * 4
+        ):
+            _downstream_authority_invalid(
+                "Material snapshot JSON exceeds lexical work bounds."
+            )
+    if in_string or escaped or depth != 0:
+        _downstream_authority_invalid(
+            "Material snapshot JSON has incomplete structure."
+        )
+
+
+def _downstream_managed_regular_file(
+    root: Path,
+    path: Path,
+) -> os.stat_result:
+    relative = path.relative_to(root)
+    components = (
+        root,
+        *(
+            root.joinpath(*relative.parts[:index])
+            for index in range(1, len(relative.parts) + 1)
+        ),
+    )
+    for index, current in enumerate(components):
+        try:
+            info = current.lstat()
+        except OSError as exc:
+            raise Layer3OriginContinuityError(
+                "layer3_downstream_origin_authority_invalid",
+                "Material snapshot bytes are missing or inaccessible.",
+            ) from exc
+        attributes = int(getattr(info, "st_file_attributes", 0))
+        if stat.S_ISLNK(info.st_mode) or attributes & _WINDOWS_REPARSE_POINT:
+            _downstream_authority_invalid(
+                "Material snapshot paths cannot contain a reparse component."
+            )
+        if index < len(components) - 1 and not stat.S_ISDIR(info.st_mode):
+            _downstream_authority_invalid(
+                "A material snapshot parent is not a directory."
+            )
+    if (
+        not stat.S_ISREG(info.st_mode)
+        or info.st_size > _DOWNSTREAM_SNAPSHOT_BYTE_CAP
+    ):
+        _downstream_authority_invalid(
+            "Material snapshot payload is not a bounded regular file."
+        )
+    return info
+
+
+def _read_downstream_snapshot_payload(
+    snapshot: Mapping[str, Any],
+    *,
+    session_id: str,
+) -> dict[str, Any]:
+    payload_hash = _normalized_sha256(
+        snapshot.get("payload_hash"),
+        field="material snapshot payload_hash",
+    )
+    if (
+        Path(session_id).name != session_id
+        or session_id in {"", ".", ".."}
+        or ":" in session_id
+    ):
+        _downstream_authority_invalid(
+            "Layer 3 session_id is not a managed path component."
+        )
+    root = _downstream_managed_root(
+        Path(settings.artifact_storage_dir),
+        field="artifact_storage_dir",
+    )
+    expected_path = _downstream_lexical_absolute(
+        root / "layer3" / session_id / f"{payload_hash}.json"
+    )
+    raw_ref = _required_text(
+        snapshot.get("payload_ref"),
+        field="material snapshot payload_ref",
+    )
+    normalized_ref = raw_ref.replace("\\", "/")
+    if (
+        "\x00" in raw_ref
+        or normalized_ref.startswith("//")
+        or normalized_ref.startswith(("/?/", "/./"))
+    ):
+        _downstream_authority_invalid(
+            "Material snapshot payload_ref is not a managed local path."
+        )
+    supplied_path = Path(raw_ref)
+    candidate = _downstream_lexical_absolute(
+        supplied_path if supplied_path.is_absolute() else root / supplied_path
+    )
+    try:
+        relative = candidate.relative_to(root)
+    except ValueError:
+        _downstream_authority_invalid(
+            "Material snapshot payload_ref escapes artifact storage."
+        )
+    if (
+        candidate != expected_path
+        or not relative.parts
+    ):
+        _downstream_authority_invalid(
+            "Material snapshot payload_ref is not its exact server path."
+        )
+    for part in relative.parts:
+        _downstream_validate_local_component(
+            part,
+            field="material snapshot payload_ref",
+        )
+    initial = _downstream_managed_regular_file(root, candidate)
+    initial_fingerprint = _downstream_file_fingerprint(initial)
+    try:
+        with candidate.open("rb") as handle:
+            opened_before = os.fstat(handle.fileno())
+            if (
+                _downstream_file_fingerprint(opened_before)
+                != initial_fingerprint
+                or not stat.S_ISREG(opened_before.st_mode)
+            ):
+                _downstream_authority_invalid(
+                    "Material snapshot bytes changed during verification."
+                )
+            first = _downstream_hash_stream(
+                handle,
+                max_bytes=initial.st_size,
+                capture_bytes=True,
+            )
+            handle.seek(0)
+            second = _downstream_hash_stream(
+                handle,
+                max_bytes=initial.st_size,
+                capture_bytes=False,
+            )
+            opened_after = os.fstat(handle.fileno())
+        final = _downstream_managed_regular_file(root, candidate)
+    except Layer3OriginContinuityError:
+        raise
+    except OSError as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Material snapshot bytes are unreadable or unstable.",
+        ) from exc
+    fingerprints = {
+        initial_fingerprint,
+        _downstream_file_fingerprint(opened_before),
+        _downstream_file_fingerprint(opened_after),
+        _downstream_file_fingerprint(final),
+    }
+    if (
+        len(fingerprints) != 1
+        or first[:2] != second[:2]
+        or first[0] != initial.st_size
+        or first[1] != payload_hash
+        or first[2] is None
+    ):
+        _downstream_authority_invalid(
+            "Material snapshot bytes changed during bounded reading."
+        )
+    payload_bytes = first[2]
+    assert payload_bytes is not None
+    def unique_object(
+        pairs: list[tuple[str, Any]],
+    ) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate JSON object key")
+            result[key] = value
+        return result
+
+    def reject_constant(value: str) -> NoReturn:
+        raise ValueError(f"invalid JSON constant: {value}")
+
+    try:
+        payload_text = payload_bytes.decode("utf-8")
+        _downstream_preflight_json_text(payload_text)
+        payload = json.loads(
+            payload_text,
+            object_pairs_hook=unique_object,
+            parse_constant=reject_constant,
+        )
+    except (
+        RecursionError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        ValueError,
+    ) as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Material snapshot bytes are not a UTF-8 JSON object.",
+        ) from exc
+    if not isinstance(payload, dict):
+        _downstream_authority_invalid(
+            "Material snapshot payload must be a JSON object."
+        )
+    if payload_bytes != _downstream_canonical_json_bytes(payload):
+        _downstream_authority_invalid(
+            "Material snapshot bytes are not canonical JSON."
+        )
+    return payload
+
+
+def _downstream_origin_pairs(value: object) -> list[tuple[str, str]]:
+    pairs: list[tuple[str, str]] = []
+    try:
+        claims = _origin_claims(value)
+    except Layer3OriginContinuityError as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Persisted origin-pair traversal exceeds its bounds.",
+        ) from exc
+    for claim in claims:
+        if not isinstance(claim, Mapping):
+            continue
+        if "connector_origin_receipt_hash" not in claim:
+            continue
+        target_id = str(
+            claim.get("connector_run_target_id") or ""
+        ).strip()
+        if not target_id:
+            _downstream_authority_invalid(
+                "A persisted origin receipt hash lacks its target binding."
+            )
+        try:
+            receipt_hash = _normalized_sha256(
+                claim.get("connector_origin_receipt_hash"),
+                field="connector_origin_receipt_hash",
+            )
+        except Layer3OriginContinuityError as exc:
+            raise Layer3OriginContinuityError(
+                "layer3_downstream_origin_authority_invalid",
+                "A persisted origin pair is not canonical.",
+            ) from exc
+        pairs.append((target_id, receipt_hash))
+    return pairs
+
+
+def _downstream_reject_pending_state(
+    db: Session,
+    *,
+    session_id: str,
+    target_id: str | None = None,
+    run_id: str | None = None,
+    record_id: str | None = None,
+    content_id: str | None = None,
+) -> None:
+    pending = tuple(db.new) + tuple(db.deleted)
+    pending += tuple(
+        instance
+        for instance in db.dirty
+        if db.is_modified(instance, include_collections=True)
+    )
+
+    def relevant(instance: object) -> bool:
+        if isinstance(instance, L3Session):
+            return instance.session_id == session_id
+        if isinstance(
+            instance,
+            (
+                L3SelectionManifest,
+                L3Descriptor,
+                L3MaterialSnapshot,
+            ),
+        ):
+            return instance.session_id == session_id
+        if isinstance(instance, L3GateBIdempotencyKey):
+            return instance.session_id == session_id
+        if isinstance(instance, L3ConnectorSourceIntakeRecord):
+            return (
+                instance.connector_source_intake_record_id == record_id
+                or instance.connector_run_target_id == target_id
+                or instance.connector_run_id == run_id
+            )
+        if isinstance(instance, ConnectorRunTarget):
+            return (
+                instance.connector_run_target_id == target_id
+                or instance.connector_run_id == run_id
+            )
+        if isinstance(instance, ConnectorRun):
+            return instance.connector_run_id == run_id
+        if isinstance(instance, ConnectorRunEvent):
+            return (
+                instance.connector_run_id == run_id
+                or instance.connector_run_target_id == target_id
+            )
+        if isinstance(instance, ConnectorPolicySnapshot):
+            return instance.connector_run_id == run_id
+        if isinstance(instance, ApsContentDocument):
+            return instance.content_id == content_id
+        if isinstance(instance, ApsContentLinkage):
+            return (
+                instance.content_id == content_id
+                or instance.target_id == target_id
+                or instance.run_id == run_id
+            )
+        return False
+
+    if any(relevant(instance) for instance in pending):
+        _downstream_authority_invalid(
+            "Pending ORM state affects downstream origin authority."
+        )
+
+
+def _downstream_stable_hash(value: object) -> str:
+    return hashlib.sha256(
+        _downstream_canonical_json_bytes(value)
+    ).hexdigest()
+
+
+def _downstream_expected_snapshot_identity(
+    item: Mapping[str, Any],
+    *,
+    kind: str,
+) -> dict[str, Any]:
+    identity = item.get("source_identity")
+    provenance = item.get("source_provenance")
+    if not isinstance(identity, dict) or not isinstance(provenance, dict):
+        _downstream_authority_invalid(
+            "Gate B material identity and provenance must be objects."
+        )
+    expected = dict(identity)
+    if kind == "nrc_adams_aps":
+        source_trace = provenance.get("source_trace")
+        trace_refs = (
+            source_trace.get("aps_trace_refs")
+            if isinstance(source_trace, Mapping)
+            else None
+        )
+        if isinstance(trace_refs, Mapping):
+            for field in ("run_id", "target_id"):
+                if trace_refs.get(field) and not expected.get(field):
+                    expected[field] = trace_refs[field]
+    return {
+        "candidate_id": item.get("candidate_id"),
+        "source_class": item.get("source_class"),
+        **expected,
+    }
+
+
+def _downstream_aps_document_identity(
+    document: ApsContentDocument,
+) -> dict[str, Any]:
+    return {
+        "schema_id": "layer3.aps_content_document_source_identity.v1",
+        "source_class": _DOWNSTREAM_NRC_SOURCE_CLASS,
+        "content_id": document.content_id,
+        "content_contract_id": document.content_contract_id,
+        "chunking_contract_id": document.chunking_contract_id,
+        "normalization_contract_id": document.normalization_contract_id,
+        "content_status": document.content_status,
+        "media_type": document.media_type,
+        "document_class": document.document_class,
+        "quality_status": document.quality_status,
+    }
+
+
+def _downstream_serialize_aps_linkage(
+    linkage: ApsContentLinkage,
+) -> dict[str, Any]:
+    return {
+        "aps_content_linkage_id": linkage.aps_content_linkage_id,
+        "content_id": linkage.content_id,
+        "run_id": linkage.run_id,
+        "target_id": linkage.target_id,
+        "accession_number": linkage.accession_number,
+        "content_contract_id": linkage.content_contract_id,
+        "chunking_contract_id": linkage.chunking_contract_id,
+        "content_units_ref": linkage.content_units_ref,
+        "normalized_text_ref": linkage.normalized_text_ref,
+        "normalized_text_sha256": linkage.normalized_text_sha256,
+        "blob_ref": linkage.blob_ref,
+        "blob_sha256": linkage.blob_sha256,
+        "download_exchange_ref": linkage.download_exchange_ref,
+        "discovery_ref": linkage.discovery_ref,
+        "selection_ref": linkage.selection_ref,
+        "diagnostics_ref": linkage.diagnostics_ref,
+    }
+
+
+def _downstream_anchor_rows(
+    db: Session,
+    *,
+    model: type[Any],
+    criteria: Sequence[Any] = (),
+    max_rows: int = _DOWNSTREAM_AUTHORITY_ROW_CAP,
+) -> tuple[_AnchorRow, ...]:
+    table = _model_table(model)
+    prefix = "downstream"
+    statement = (
+        select(*_anchor_columns(table, prefix))
+        .select_from(table)
+        .where(*criteria)
+        .limit(max_rows + 1)
+    )
+    rows = list(db.execute(statement).mappings().all())
+    if len(rows) > max_rows:
+        _downstream_authority_invalid(
+            "Downstream durable authority exceeds its row bound.",
+            details={
+                "table": table.name,
+                "max_rows": max_rows,
+                "observed_at_least": max_rows + 1,
+            },
+        )
+    authority_bytes = 0
+    for row in rows:
+        for column in table.columns:
+            value = row[f"{prefix}__{column.key}"]
+            if isinstance(column.type, JSON):
+                authority_bytes += len(
+                    _downstream_canonical_json_bytes(value)
+                )
+            elif isinstance(value, str):
+                encoded_size = len(value.encode("utf-8"))
+                if encoded_size > _DOWNSTREAM_JSON_STRING_BYTE_CAP:
+                    _downstream_authority_invalid(
+                        "Downstream durable authority has an oversized scalar."
+                    )
+                authority_bytes += encoded_size
+            if authority_bytes > _DOWNSTREAM_AUTHORITY_BYTE_CAP:
+                _downstream_authority_invalid(
+                    "Downstream durable authority exceeds its byte bound."
+                )
+    try:
+        return _anchor_rows(rows, table=table, prefix=prefix)
+    except RecursionError as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Downstream durable authority exceeds recursion bounds.",
+        ) from exc
+
+
+def _downstream_materialize(
+    rows: Sequence[_AnchorRow],
+    model: type[_ModelT],
+) -> list[_ModelT]:
+    return [row.materialize(model) for row in rows]
+
+
+def _downstream_anchor_surface(row: _AnchorRow) -> dict[str, Any]:
+    surface: dict[str, Any] = {}
+    for field, frozen in row.values:
+        value = _thaw_anchor_value(frozen)
+        if (
+            value is None
+            or isinstance(value, (bool, int, float, str, Mapping))
+            or isinstance(value, (list, tuple))
+        ):
+            surface[field] = value
+    return surface
+
+
+def _downstream_scalar_references(
+    *surfaces: object,
+) -> dict[str, set[str]]:
+    references = {
+        "record": set(),
+        "content": set(),
+        "run": set(),
+        "target": set(),
+    }
+    pending = list(reversed(surfaces))
+    while pending:
+        current = pending.pop()
+        if isinstance(current, Mapping):
+            candidate_id = current.get("candidate_id")
+            if (
+                isinstance(candidate_id, str)
+                and candidate_id.startswith(
+                    _DOWNSTREAM_SCIENCEBASE_CANDIDATE_PREFIX
+                )
+            ):
+                references["record"].add(
+                    candidate_id[
+                        len(_DOWNSTREAM_SCIENCEBASE_CANDIDATE_PREFIX) :
+                    ]
+                )
+            for field, group in (
+                ("connector_source_intake_record_id", "record"),
+                ("content_id", "content"),
+                ("connector_run_id", "run"),
+                ("run_id", "run"),
+                ("connector_run_target_id", "target"),
+                ("target_id", "target"),
+            ):
+                value = current.get(field)
+                if isinstance(value, str) and value:
+                    references[group].add(value)
+            pending.extend(reversed(tuple(current.values())))
+        elif isinstance(current, (list, tuple)):
+            pending.extend(reversed(current))
+    if any(
+        len(values) > _DOWNSTREAM_AUTHORITY_ROW_CAP
+        for values in references.values()
+    ):
+        _downstream_authority_invalid(
+            "Downstream linked-reference fanout exceeds its bound."
+        )
+    return references
+
+
+def _downstream_exact_origin_anchor(
+    db: Session,
+    *,
+    target_id: str,
+) -> _OriginAnchor:
+    target_table = _model_table(ConnectorRunTarget)
+    target_rows = _downstream_anchor_rows(
+        db,
+        model=ConnectorRunTarget,
+        criteria=(
+            target_table.c.connector_run_target_id == target_id,
+        ),
+        max_rows=1,
+    )
+    target_anchor = _downstream_one(
+        list(target_rows),
+        label="connector run target",
+    )
+    target = target_anchor.materialize(ConnectorRunTarget)
+    run_table = _model_table(ConnectorRun)
+    run_anchor = _downstream_one(
+        list(
+            _downstream_anchor_rows(
+                db,
+                model=ConnectorRun,
+                criteria=(
+                    run_table.c.connector_run_id
+                    == target.connector_run_id,
+                ),
+                max_rows=1,
+            )
+        ),
+        label="connector run",
+    )
+    run = run_anchor.materialize(ConnectorRun)
+    event_table = _model_table(ConnectorRunEvent)
+    policy_table = _model_table(ConnectorPolicySnapshot)
+    linkage_table = _model_table(ApsContentLinkage)
+    version_table = _model_table(DatasetVersion)
+    provenance_table = _model_table(DatasetSourceProvenance)
+    intake_table = _model_table(L3ConnectorSourceIntakeRecord)
+    dataset_versions = (
+        _downstream_anchor_rows(
+            db,
+            model=DatasetVersion,
+            criteria=(
+                version_table.c.dataset_version_id
+                == target.dataset_version_id,
+            ),
+            max_rows=1,
+        )
+        if target.dataset_version_id is not None
+        else ()
+    )
+    events = _downstream_anchor_rows(
+        db,
+        model=ConnectorRunEvent,
+        criteria=(
+            event_table.c.connector_run_id == run.connector_run_id,
+        ),
+        max_rows=_ORIGIN_EVENT_CAPS.get(
+            run.connector_key,
+            _GLOBAL_ORIGIN_EVENT_CAP,
+        ),
+    )
+    policies = _downstream_anchor_rows(
+        db,
+        model=ConnectorPolicySnapshot,
+        criteria=(
+            policy_table.c.connector_run_id == run.connector_run_id,
+        ),
+        max_rows=_ORIGIN_POLICY_CAPS.get(
+            run.connector_key,
+            _GLOBAL_ORIGIN_POLICY_CAP,
+        ),
+    )
+    linkages = _downstream_anchor_rows(
+        db,
+        model=ApsContentLinkage,
+        criteria=(
+            linkage_table.c.run_id == run.connector_run_id,
+            linkage_table.c.target_id
+            == target.connector_run_target_id,
+        ),
+        max_rows=_SINGLE_ORIGIN_ROW_CAP,
+    )
+    provenances = _downstream_anchor_rows(
+        db,
+        model=DatasetSourceProvenance,
+        criteria=(
+            provenance_table.c.connector_run_id
+            == run.connector_run_id,
+            (
+                provenance_table.c.dataset_version_id
+                == target.dataset_version_id
+                if target.dataset_version_id is not None
+                else false()
+            ),
+        ),
+        max_rows=_SINGLE_ORIGIN_ROW_CAP,
+    )
+    intakes = _downstream_anchor_rows(
+        db,
+        model=L3ConnectorSourceIntakeRecord,
+        criteria=(
+            intake_table.c.connector_run_id == run.connector_run_id,
+            intake_table.c.connector_run_target_id
+            == target.connector_run_target_id,
+        ),
+        max_rows=_SINGLE_ORIGIN_ROW_CAP,
+    )
+    if (
+        sum(
+            row.materialize(ConnectorRunEvent).event_type
+            == "campaign_log_capture_sealed"
+            for row in events
+        )
+        > 1
+    ):
+        _downstream_authority_invalid(
+            "Origin authority has contradictory terminal seals."
+        )
+    return _OriginAnchor(
+        target=target_anchor,
+        run=run_anchor,
+        events=events,
+        policy_snapshots=policies,
+        linkages=linkages,
+        dataset_versions=dataset_versions,
+        provenances=provenances,
+        intakes=intakes,
+    )
+
+
+def _downstream_session_origin(
+    db: Session,
+    *,
+    session_id: str,
+) -> _DownstreamResolution:
+    session_table = _model_table(L3Session)
+    session_anchor = _downstream_one(
+        list(
+            _downstream_anchor_rows(
+                db,
+                model=L3Session,
+                criteria=(session_table.c.session_id == session_id,),
+                max_rows=1,
+            )
+        ),
+        label="Layer 3 session",
+    )
+    session = session_anchor.materialize(L3Session)
+    selection_table = _model_table(L3SelectionManifest)
+    selection_rows = _downstream_anchor_rows(
+        db,
+        model=L3SelectionManifest,
+        criteria=(selection_table.c.session_id == session_id,),
+    )
+    selection_models = _downstream_materialize(
+        selection_rows,
+        L3SelectionManifest,
+    )
+    claim_table = _model_table(L3GateBIdempotencyKey)
+    claim_rows = _downstream_anchor_rows(
+        db,
+        model=L3GateBIdempotencyKey,
+        criteria=(claim_table.c.session_id == session_id,),
+    )
+    claims = _downstream_materialize(
+        claim_rows,
+        L3GateBIdempotencyKey,
+    )
+    descriptor_table = _model_table(L3Descriptor)
+    descriptor_rows = _downstream_anchor_rows(
+        db,
+        model=L3Descriptor,
+        criteria=(descriptor_table.c.session_id == session_id,),
+    )
+    descriptors = _downstream_materialize(
+        descriptor_rows,
+        L3Descriptor,
+    )
+    snapshot_table = _model_table(L3MaterialSnapshot)
+    snapshot_rows = _downstream_anchor_rows(
+        db,
+        model=L3MaterialSnapshot,
+        criteria=(snapshot_table.c.session_id == session_id,),
+    )
+    snapshots = _downstream_materialize(
+        snapshot_rows,
+        L3MaterialSnapshot,
+    )
+    snapshot_payloads: dict[str, dict[str, Any]] = {}
+    payload_receipts: list[
+        tuple[str, str, str, int, tuple[str, Any]]
+    ] = []
+    payload_authority_bytes = 0
+    for snapshot in snapshots:
+        payload = _read_downstream_snapshot_payload(
+            {
+                "payload_ref": snapshot.payload_ref,
+                "payload_hash": snapshot.payload_hash,
+            },
+            session_id=session_id,
+        )
+        snapshot_payloads[snapshot.material_snapshot_id] = payload
+        payload_bytes = _downstream_canonical_json_bytes(payload)
+        payload_authority_bytes += len(payload_bytes)
+        if payload_authority_bytes > _DOWNSTREAM_AUTHORITY_BYTE_CAP:
+            _downstream_authority_invalid(
+                "Material snapshot authority exceeds its aggregate byte bound."
+            )
+        payload_receipts.append(
+            (
+                snapshot.material_snapshot_id,
+                str(snapshot.payload_ref),
+                str(snapshot.payload_hash),
+                len(payload_bytes),
+                _freeze_anchor_value(payload),
+            )
+        )
+    surfaces: list[object] = [
+        _downstream_anchor_surface(session_anchor),
+        *(
+            _downstream_anchor_surface(row)
+            for row in selection_rows
+        ),
+        *(
+            _downstream_anchor_surface(row)
+            for row in claim_rows
+        ),
+        *(
+            _downstream_anchor_surface(row)
+            for row in descriptor_rows
+        ),
+        *(
+            _downstream_anchor_surface(row)
+            for row in snapshot_rows
+        ),
+        *snapshot_payloads.values(),
+    ]
+    references = _downstream_scalar_references(*surfaces)
+    record_table = _model_table(L3ConnectorSourceIntakeRecord)
+    linked_record_rows = (
+        _downstream_anchor_rows(
+            db,
+            model=L3ConnectorSourceIntakeRecord,
+            criteria=(
+                record_table.c.connector_source_intake_record_id.in_(
+                    sorted(references["record"])
+                ),
+            ),
+        )
+        if references["record"]
+        else ()
+    )
+    linked_records = _downstream_materialize(
+        linked_record_rows,
+        L3ConnectorSourceIntakeRecord,
+    )
+    for record in linked_records:
+        references["run"].add(record.connector_run_id)
+        references["target"].add(record.connector_run_target_id)
+    document_table = _model_table(ApsContentDocument)
+    document_rows = (
+        _downstream_anchor_rows(
+            db,
+            model=ApsContentDocument,
+            criteria=(
+                document_table.c.content_id.in_(
+                    sorted(references["content"])
+                ),
+            ),
+        )
+        if references["content"]
+        else ()
+    )
+    linked_documents = _downstream_materialize(
+        document_rows,
+        ApsContentDocument,
+    )
+    linkage_table = _model_table(ApsContentLinkage)
+    linked_linkage_rows = (
+        _downstream_anchor_rows(
+            db,
+            model=ApsContentLinkage,
+            criteria=(
+                linkage_table.c.content_id.in_(
+                    sorted(references["content"])
+                ),
+            ),
+        )
+        if references["content"]
+        else ()
+    )
+    linked_linkages = _downstream_materialize(
+        linked_linkage_rows,
+        ApsContentLinkage,
+    )
+    for linkage in linked_linkages:
+        references["run"].add(linkage.run_id)
+        references["target"].add(linkage.target_id)
+    target_table = _model_table(ConnectorRunTarget)
+    linked_target_rows = (
+        _downstream_anchor_rows(
+            db,
+            model=ConnectorRunTarget,
+            criteria=(
+                target_table.c.connector_run_target_id.in_(
+                    sorted(references["target"])
+                ),
+            ),
+        )
+        if references["target"]
+        else ()
+    )
+    linked_targets = _downstream_materialize(
+        linked_target_rows,
+        ConnectorRunTarget,
+    )
+    for target in linked_targets:
+        references["run"].add(target.connector_run_id)
+    run_table = _model_table(ConnectorRun)
+    linked_run_rows = (
+        _downstream_anchor_rows(
+            db,
+            model=ConnectorRun,
+            criteria=(
+                run_table.c.connector_run_id.in_(
+                    sorted(references["run"])
+                ),
+            ),
+        )
+        if references["run"]
+        else ()
+    )
+    linked_runs = _downstream_materialize(
+        linked_run_rows,
+        ConnectorRun,
+    )
+    linked_surfaces = [
+        *(
+            _downstream_anchor_surface(row)
+            for row in linked_record_rows
+        ),
+        *(
+            _downstream_anchor_surface(row)
+            for row in document_rows
+        ),
+        *(
+            _downstream_anchor_surface(row)
+            for row in linked_linkage_rows
+        ),
+        *(
+            _downstream_anchor_surface(row)
+            for row in linked_target_rows
+        ),
+        *(
+            _downstream_anchor_surface(row)
+            for row in linked_run_rows
+        ),
+    ]
+    kind = _downstream_reserved_kind(*surfaces, *linked_surfaces)
+
+    def exact_state(origin_anchor: _OriginAnchor | None) -> _DownstreamState:
+        return _DownstreamState(
+            session=session_anchor,
+            selections=selection_rows,
+            claims=claim_rows,
+            descriptors=descriptor_rows,
+            snapshots=snapshot_rows,
+            documents=document_rows,
+            linked_records=linked_record_rows,
+            linked_runs=linked_run_rows,
+            linked_targets=linked_target_rows,
+            linked_linkages=linked_linkage_rows,
+            payloads=tuple(sorted(payload_receipts)),
+            origin=origin_anchor,
+        )
+
+    context = session.operator_context_json
+    decision_manifest = (
+        context.get("layer3_gate_b_decision_manifest_v1")
+        if isinstance(context, Mapping)
+        else None
+    )
+    items = (
+        decision_manifest.get("items")
+        if isinstance(decision_manifest, Mapping)
+        else None
+    )
+    candidate_items = (
+        [item for item in items if isinstance(item, dict)]
+        if isinstance(items, list)
+        else []
+    )
+    if len(candidate_items) > _DOWNSTREAM_AUTHORITY_ROW_CAP:
+        _downstream_authority_invalid(
+            "Gate B decision authority exceeds its row bound."
+        )
+    if kind is None:
+        return _DownstreamResolution(
+            state=exact_state(None),
+            authority=None,
+        )
+    matching_manifests = [
+        row
+        for row in selection_models
+        if row.selection_manifest_id
+        == session.selection_manifest_id
+    ]
+    manifest = (
+        matching_manifests[0]
+        if len(selection_models) == 1
+        and len(matching_manifests) == 1
+        else None
+    )
+    if (
+        manifest is None
+        or not isinstance(decision_manifest, dict)
+        or not isinstance(items, list)
+        or len(items) > _DOWNSTREAM_AUTHORITY_ROW_CAP
+        or len(candidate_items) != len(items)
+        or layer3_gate_b_state.candidate_decision_manifest(candidate_items)
+        != decision_manifest
+    ):
+        _downstream_authority_invalid(
+            "Reserved origin lacks a canonical Gate B decision manifest."
+        )
+    idempotency = layer3_gate_b_state.gate_b_idempotency_from_session(
+        session
+    )
+    fields = (
+        "client_request_id",
+        "preflight_id",
+        "source_set_id",
+        "material_preview_id",
+        "material_preview_hash",
+        "gate_b_decision_manifest_id",
+    )
+    claim_fields = {
+        field: str((idempotency or {}).get(field) or "")
+        for field in fields
+    }
+    matching_claims = [
+        row
+        for row in claims
+        if row.client_request_id == claim_fields["client_request_id"]
+    ]
+    claim = matching_claims[0] if len(matching_claims) == 1 else None
+    expected_selection_hash = _downstream_stable_hash(
+        {
+            "manifest_json": manifest.manifest_json,
+            "source_plane_hints_json": (
+                manifest.source_plane_hints_json
+            ),
+        }
+    )
+    try:
+        durable_selection_hash = _normalized_sha256(
+            manifest.selection_hash,
+            field="selection manifest selection_hash",
+        )
+    except Layer3OriginContinuityError as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Selection manifest hash is not canonical.",
+        ) from exc
+    if (
+        idempotency is None
+        or claim is None
+        or len(claims) != 1
+        or claim.status != "committed"
+        or claim.session_id != session_id
+        or manifest.session_id != session_id
+        or claim.selection_manifest_id != manifest.selection_manifest_id
+        or not layer3_gate_b_state.gate_b_idempotency_claim_matches(
+            claim, **claim_fields
+        )
+        or claim_fields["gate_b_decision_manifest_id"]
+        != layer3_gate_b_state.gate_b_decision_manifest_id(
+            decision_manifest
+        )
+        or durable_selection_hash != expected_selection_hash
+    ):
+        _downstream_authority_invalid(
+            "Gate B commit authority is incomplete or contradictory."
+        )
+    source_class = (
+        _DOWNSTREAM_SCIENCEBASE_SOURCE_CLASS
+        if kind == "sciencebase_mcs"
+        else _DOWNSTREAM_NRC_SOURCE_CLASS
+    )
+    item = _downstream_one(
+        [
+            candidate
+            for candidate in candidate_items
+            if candidate.get("source_class") == source_class
+            and _downstream_reserved_kind(candidate) == kind
+        ],
+        label=f"approved {kind} decision",
+    )
+    candidate_id = str(item.get("candidate_id") or "")
+    snapshot = _downstream_one(
+        [
+            row
+            for row in snapshots
+            if isinstance(row.source_identity_json, Mapping)
+            and row.source_identity_json.get("candidate_id") == candidate_id
+        ],
+        label="reserved material snapshot",
+    )
+    basis = item.get("decision_basis")
+    if not isinstance(basis, dict):
+        _downstream_authority_invalid(
+            "Reserved Gate B decision_basis must be an object."
+        )
+    expected_material_basis = (
+        layer3_gate_b_state.material_candidate_basis_from_decision(
+            candidate_id=candidate_id,
+            source_class=source_class,
+            decision_basis=basis,
+        )
+    )
+    payload = snapshot_payloads[snapshot.material_snapshot_id]
+    descriptor = _downstream_one(
+        [
+            row
+            for row in descriptors
+            if row.descriptor_id == snapshot.descriptor_id
+        ],
+        label="reserved material descriptor",
+    )
+    manifest_items = (
+        manifest.manifest_json.get("items")
+        if isinstance(manifest.manifest_json, Mapping)
+        else None
+    )
+    descriptor_manifest = {
+        "source_plane": descriptor.source_plane,
+        "descriptor_type": descriptor.descriptor_type,
+        "selector_payload": descriptor.selector_payload_json,
+        "selection_basis": descriptor.selection_basis_json,
+        "expansion_reason": descriptor.expansion_reason,
+    }
+    if (
+        item.get("decision") != "approved"
+        or item.get("material_preview_basis") != expected_material_basis
+        or any(
+            item.get(field) != basis.get(field)
+            for field in (
+                "source_identity",
+                "source_provenance",
+                "payload",
+                "load_summary",
+            )
+        )
+        or descriptor.session_id != session_id
+        or descriptor.selection_manifest_id
+        != manifest.selection_manifest_id
+        or descriptor.source_plane != snapshot.source_plane
+        or descriptor.descriptor_type != source_class
+        or descriptor.selector_payload_json
+        != {"candidate_id": candidate_id}
+        or not isinstance(manifest_items, list)
+        or manifest_items.count(descriptor_manifest) != 1
+        or snapshot.source_shape != source_class
+        or snapshot.source_identity_json
+        != _downstream_expected_snapshot_identity(item, kind=kind)
+        or snapshot.source_provenance_json != basis.get("source_provenance")
+        or snapshot.load_summary_json != basis.get("load_summary")
+        or payload != basis.get("payload")
+    ):
+        _downstream_authority_invalid(
+            "Material snapshot contradicts its Gate B decision."
+    )
+    if kind == "sciencebase_mcs":
+        if not candidate_id.startswith(
+            _DOWNSTREAM_SCIENCEBASE_CANDIDATE_PREFIX
+        ):
+            _downstream_authority_invalid(
+                "ScienceBase candidate_id is not its strict intake binding."
+            )
+        record_id = candidate_id[
+            len(_DOWNSTREAM_SCIENCEBASE_CANDIDATE_PREFIX) :
+        ]
+        matching_records = [
+            row
+            for row in linked_records
+            if row.connector_source_intake_record_id == record_id
+        ]
+        record = (
+            matching_records[0]
+            if len(matching_records) == 1
+            else None
+        )
+        matching_runs = [
+            row
+            for row in linked_runs
+            if record is not None
+            and row.connector_run_id == record.connector_run_id
+        ]
+        run = matching_runs[0] if len(matching_runs) == 1 else None
+        matching_targets = [
+            row
+            for row in linked_targets
+            if record is not None
+            and row.connector_run_target_id
+            == record.connector_run_target_id
+        ]
+        target = (
+            matching_targets[0]
+            if len(matching_targets) == 1
+            else None
+        )
+        if (
+            record is None
+            or run is None
+            or target is None
+            or record.connector_key != kind
+            or run.connector_key != kind
+            or run.source_system != "sciencebase"
+            or run.source_mode != "strict_live_egress"
+            or target.connector_run_id != run.connector_run_id
+            or target.connector_run_target_id
+            != record.connector_run_target_id
+            or record.connector_run_id != run.connector_run_id
+        ):
+            _downstream_authority_invalid("ScienceBase intake is missing.")
+        _downstream_reject_pending_state(
+            db,
+            session_id=session_id,
+            target_id=record.connector_run_target_id,
+            run_id=record.connector_run_id,
+            record_id=record.connector_source_intake_record_id,
+        )
+        try:
+            layer3_connector_source_intake.validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=candidate_id,
+                decision_basis=basis,
+            )
+        except layer3_connector_source_intake.ConnectorSourceIntakeError as exc:
+            raise Layer3OriginContinuityError(
+                "layer3_downstream_origin_authority_invalid",
+                "ScienceBase Gate B authority no longer validates.",
+                details={"cause": exc.code},
+            ) from exc
+        pairs = _downstream_origin_pairs(
+            (
+                item,
+                snapshot.source_identity_json,
+                snapshot.source_provenance_json,
+                record.provenance_json,
+                record.summary_json,
+            )
+        )
+        if not pairs:
+            _downstream_authority_invalid(
+                "ScienceBase authority lacks persisted origin pairs."
+            )
+        origin_anchor = _downstream_exact_origin_anchor(
+            db,
+            target_id=record.connector_run_target_id,
+        )
+        return _DownstreamResolution(
+            state=exact_state(origin_anchor),
+            authority=_DownstreamAuthority(
+                connector_key=kind,
+                target_id=record.connector_run_target_id,
+                origin_pairs=tuple(sorted(pairs)),
+                run_id=record.connector_run_id,
+                record_id=(
+                    record.connector_source_intake_record_id
+                ),
+            ),
+        )
+    identity = item.get("source_identity")
+    provenance = item.get("source_provenance")
+    if not isinstance(identity, dict) or not isinstance(provenance, dict):
+        _downstream_authority_invalid(
+            "NRC APS material authority must use canonical objects."
+        )
+    content_id = str(identity.get("content_id") or "").strip()
+    documents = [
+        row
+        for row in linked_documents
+        if row.content_id == content_id
+        and row.content_contract_id
+        == identity.get("content_contract_id")
+        and row.chunking_contract_id
+        == identity.get("chunking_contract_id")
+    ]
+    document = _downstream_one(
+        documents,
+        label="NRC APS content document",
+    )
+    if _downstream_aps_document_identity(document) != identity:
+        _downstream_authority_invalid(
+            "NRC APS document identity is stale or incomplete."
+        )
+    linkages = sorted(
+        (
+            row
+            for row in linked_linkages
+            if row.content_id == content_id
+        ),
+        key=lambda row: (
+            (
+                row.created_at.isoformat()
+                if isinstance(row.created_at, datetime)
+                else ""
+            ),
+            row.aps_content_linkage_id,
+        ),
+        reverse=True,
+    )
+    expected_linkages = provenance.get("aps_content_linkages")
+    if (
+        not isinstance(expected_linkages, list)
+        or [
+            _downstream_serialize_aps_linkage(linkage)
+            for linkage in linkages
+        ]
+        != expected_linkages
+    ):
+        _downstream_authority_invalid(
+            "NRC APS linkage authority is stale or incomplete."
+    )
+    reserved: list[tuple[ConnectorRun, ConnectorRunTarget]] = []
+    for linkage in linkages:
+        matching_runs = [
+            row
+            for row in linked_runs
+            if row.connector_run_id == linkage.run_id
+        ]
+        matching_targets = [
+            row
+            for row in linked_targets
+            if row.connector_run_target_id == linkage.target_id
+        ]
+        run = matching_runs[0] if len(matching_runs) == 1 else None
+        target = (
+            matching_targets[0]
+            if len(matching_targets) == 1
+            else None
+        )
+        if (
+            run is not None
+            and target is not None
+            and linkage.accession_number == _FIXTURE_ACCESSION
+            and target.stable_release_key == _FIXTURE_ACCESSION
+            and target.stable_release_identifier
+            == f"adams_accession:{_FIXTURE_ACCESSION}"
+        ):
+            reserved.append((run, target))
+    target_ids = {target.connector_run_target_id for _, target in reserved}
+    if (
+        not linkages
+        or len(reserved) != len(linkages)
+        or len(target_ids) != 1
+        or any(
+            run.connector_key != kind
+            or run.source_system != "nrc_adams"
+            or run.source_mode != "strict_live_egress"
+            or target.connector_run_id != run.connector_run_id
+            or target.selection_scope != "dual_live_proof_v1"
+            or target.selection_source != "strict_exact_accession"
+            for run, target in reserved
+        )
+    ):
+        _downstream_authority_invalid(
+            "NRC content lacks one unambiguous linkage target."
+        )
+    run, target = reserved[0]
+    _downstream_reject_pending_state(
+        db,
+        session_id=session_id,
+        target_id=target.connector_run_target_id,
+        run_id=run.connector_run_id,
+        content_id=content_id,
+    )
+    if _downstream_origin_pairs((item, snapshot.source_provenance_json)):
+        _downstream_authority_invalid(
+            "NRC APS linkage must not persist a receipt hash."
+        )
+    origin_anchor = _downstream_exact_origin_anchor(
+        db,
+        target_id=target.connector_run_target_id,
+    )
+    return _DownstreamResolution(
+        state=exact_state(origin_anchor),
+        authority=_DownstreamAuthority(
+            connector_key=kind,
+            target_id=target.connector_run_target_id,
+            origin_pairs=(),
+            run_id=run.connector_run_id,
+            content_id=content_id,
+        ),
+    )
+
+
+def _downstream_engine_url_admitted(url: URL) -> bool:
+    if url.get_backend_name().casefold() != "sqlite":
+        return True
+    database = str(url.database or "").strip()
+    folded_database = database.casefold()
+    query_values = {
+        str(key).casefold(): (
+            tuple(str(item).strip().casefold() for item in value)
+            if isinstance(value, (list, tuple))
+            else (str(value).strip().casefold(),)
+        )
+        for key, value in url.query.items()
+    }
+    return bool(
+        database
+        and folded_database != ":memory:"
+        and not folded_database.startswith("file::memory:")
+        and "mode=memory" not in folded_database
+        and "memory" not in query_values.get("mode", ())
+        and "memdb" not in query_values.get("vfs", ())
+    )
+
+
+def _downstream_committed_engine(db: Session) -> Engine:
+    bind = db.get_bind()
+    engine = (
+        bind
+        if isinstance(bind, Engine)
+        else bind.engine
+        if isinstance(bind, Connection)
+        else None
+    )
+    if (
+        engine is None
+        or not isinstance(engine.pool, (QueuePool, NullPool))
+        or not _downstream_engine_url_admitted(engine.url)
+    ):
+        _downstream_authority_invalid(
+            "Downstream committed authority requires an admitted Engine "
+            "with QueuePool or NullPool."
+        )
+    return engine
+
+
+def _downstream_generic_bypass_allowed(db: Session) -> bool:
+    bind = db.get_bind()
+    engine = (
+        bind
+        if isinstance(bind, Engine)
+        else bind.engine
+        if isinstance(bind, Connection)
+        else None
+    )
+    if (
+        engine is None
+        or not isinstance(engine.pool, StaticPool)
+        or engine.url.get_backend_name().casefold() != "sqlite"
+    ):
+        return False
+    database = str(engine.url.database or "").strip().casefold()
+    if database == ":memory:":
+        return True
+    query_values = {
+        str(key).casefold(): (
+            tuple(str(item).strip().casefold() for item in value)
+            if isinstance(value, (list, tuple))
+            else (str(value).strip().casefold(),)
+        )
+        for key, value in engine.url.query.items()
+    }
+    uri_enabled = query_values.get("uri") in {
+        ("1",),
+        ("true",),
+    }
+    shared_cache = query_values.get("cache") == ("shared",)
+    if database == "file::memory:":
+        return uri_enabled and shared_cache
+    return bool(
+        database.startswith("file:")
+        and query_values.get("mode") == ("memory",)
+        and uri_enabled
+        and shared_cache
+    )
+
+
+def _downstream_verified_projection(
+    db: Session,
+    *,
+    authority: _DownstreamAuthority,
+) -> dict[str, str]:
+    try:
+        projection = verified_connector_origin_projection(
+            db,
+            connector_run_target_id=authority.target_id,
+        )
+    except RecursionError as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Canonical connector authority exceeds recursion bounds.",
+        ) from exc
+    if set(projection) != {
+        "connector_run_target_id",
+        "connector_origin_receipt_hash",
+    }:
+        _downstream_authority_invalid(
+            "Canonical connector projection has an invalid shape."
+        )
+    canonical_hash = _normalized_sha256(
+        projection.get("connector_origin_receipt_hash"),
+        field="canonical connector_origin_receipt_hash",
+    )
+    if projection.get("connector_run_target_id") != authority.target_id:
+        _downstream_authority_invalid(
+            "Canonical connector projection targets different authority."
+        )
+    return {
+        "connector_run_target_id": authority.target_id,
+        "connector_origin_receipt_hash": canonical_hash,
+    }
+
+
+def _assert_downstream_connector_origin(
+    db: Session,
+    *,
+    session_id: str,
+    expected_receipt_hash: str | None,
+    boundary: str,
+) -> dict[str, Any]:
+    """Verify one boundary from independently committed durable authority.
+
+    The repeated reads detect disagreement in this bounded verification
+    window. They do not claim serializability, ABA exclusion, or a
+    concurrent-writer snapshot beyond the database guarantees in force.
+    """
+
+    _require_caller_transaction(db)
+    session_id = _required_text(session_id, field="session_id")
+    if boundary not in _DOWNSTREAM_ORIGIN_BOUNDARIES:
+        _fail(
+            "layer3_downstream_origin_boundary_invalid",
+            "The downstream origin boundary is not admitted.",
+        )
+    expected_hash = (
+        _normalized_sha256(
+            expected_receipt_hash,
+            field="expected_receipt_hash",
+        )
+        if expected_receipt_hash is not None
+        else None
+    )
+    _downstream_managed_root(
+        Path(settings.storage_dir),
+        field="storage_dir",
+    )
+    engine = _downstream_committed_engine(db)
+    with db.no_autoflush:
+        _downstream_reject_pending_state(db, session_id=session_id)
+        caller_before = _downstream_session_origin(
+            db,
+            session_id=session_id,
+        )
+        caller_authority = caller_before.authority
+        caller_projection: dict[str, str] | None = None
+        if caller_authority is not None:
+            _downstream_reject_pending_state(
+                db,
+                session_id=session_id,
+                target_id=caller_authority.target_id,
+                run_id=caller_authority.run_id,
+                record_id=caller_authority.record_id or None,
+                content_id=caller_authority.content_id or None,
+            )
+            caller_projection = _downstream_verified_projection(
+                db,
+                authority=caller_authority,
+            )
+            if (
+                expected_hash is not None
+                and caller_projection["connector_origin_receipt_hash"]
+                != expected_hash
+            ):
+                _fail(
+                    "layer3_downstream_origin_hash_mismatch",
+                    "Expected hash does not equal fresh connector origin.",
+                )
+        caller_connection = db.connection()
+        caller_driver = caller_connection.connection.dbapi_connection
+        result: dict[str, Any]
+        with engine.connect() as committed_connection:
+            committed_driver = (
+                committed_connection.connection.dbapi_connection
+            )
+            if committed_driver is caller_driver:
+                _downstream_authority_invalid(
+                    "Committed authority did not use a distinct connection."
+                )
+            isolation = (
+                committed_connection.get_isolation_level()
+                .replace("_", " ")
+                .strip()
+                .upper()
+            )
+            if isolation == "READ UNCOMMITTED":
+                _downstream_authority_invalid(
+                    "READ UNCOMMITTED cannot prove committed authority."
+                )
+            with Session(
+                bind=committed_connection,
+                autoflush=False,
+                expire_on_commit=False,
+            ) as committed_db:
+                if (
+                    committed_db.new
+                    or committed_db.dirty
+                    or committed_db.deleted
+                ):
+                    _downstream_authority_invalid(
+                        "Independent authority Session is not clean."
+                    )
+                with committed_db.begin():
+                    with committed_db.no_autoflush:
+                        committed = _downstream_session_origin(
+                            committed_db,
+                            session_id=session_id,
+                        )
+                        if committed != caller_before:
+                            _downstream_authority_invalid(
+                                "Caller authority is not committed-readable."
+                            )
+                        committed_authority = committed.authority
+                        if committed_authority is None:
+                            committed_reread = _downstream_session_origin(
+                                committed_db,
+                                session_id=session_id,
+                            )
+                            if committed_reread != committed:
+                                _downstream_authority_invalid(
+                                    "Committed generic authority changed."
+                                )
+                            result = {
+                                "applicability": "not_applicable",
+                                "boundary": boundary,
+                            }
+                        else:
+                            projection = _downstream_verified_projection(
+                                committed_db,
+                                authority=committed_authority,
+                            )
+                            if projection != caller_projection:
+                                _downstream_authority_invalid(
+                                    "Independent canonical projection "
+                                    "contradicts caller authority."
+                                )
+                            canonical_hash = projection[
+                                "connector_origin_receipt_hash"
+                            ]
+                            if any(
+                                pair
+                                != (
+                                    committed_authority.target_id,
+                                    canonical_hash,
+                                )
+                                for pair in (
+                                    committed_authority.origin_pairs
+                                )
+                            ):
+                                _downstream_authority_invalid(
+                                    "Persisted origin pair contradicts "
+                                    "canonical origin."
+                                )
+                            receipt = derive_connector_origin_receipt(
+                                committed_db,
+                                connector_run_target_id=(
+                                    committed_authority.target_id
+                                ),
+                            )
+                            proof_class = str(
+                                receipt.get("proof_class") or ""
+                            ).strip()
+                            if (
+                                receipt.get("connector_run_target_id")
+                                != committed_authority.target_id
+                                or receipt.get("connector_key")
+                                != committed_authority.connector_key
+                                or receipt.get("receipt_hash")
+                                != canonical_hash
+                                or not proof_class
+                            ):
+                                _downstream_authority_invalid(
+                                    "Derived receipt contradicts "
+                                    "downstream authority."
+                                )
+                            assert_connector_origin_continuity(
+                                committed_db,
+                                connector_run_target_id=(
+                                    committed_authority.target_id
+                                ),
+                                expected_receipt_hash=canonical_hash,
+                                expected_bindings={
+                                    "connector_run_target_id": (
+                                        committed_authority.target_id
+                                    ),
+                                    "connector_key": (
+                                        committed_authority.connector_key
+                                    ),
+                                    "proof_class": proof_class,
+                                },
+                            )
+                            committed_reread = _downstream_session_origin(
+                                committed_db,
+                                session_id=session_id,
+                            )
+                            final_authority = committed_reread.authority
+                            if final_authority is None:
+                                _downstream_authority_invalid(
+                                    "Committed reserved authority disappeared."
+                                )
+                            final_projection = _downstream_verified_projection(
+                                committed_db,
+                                authority=final_authority,
+                            )
+                            if (
+                                committed_reread != committed
+                                or final_projection != projection
+                            ):
+                                _downstream_authority_invalid(
+                                    "Committed authority changed during "
+                                    "verification."
+                                )
+                            result = {
+                                "connector_run_target_id": (
+                                    committed_authority.target_id
+                                ),
+                                "connector_origin_receipt_hash": (
+                                    canonical_hash
+                                ),
+                                "proof_class": proof_class,
+                                "connector_key": (
+                                    committed_authority.connector_key
+                                ),
+                                "boundary": boundary,
+                            }
+        caller_after = _downstream_session_origin(
+            db,
+            session_id=session_id,
+        )
+        if caller_after != caller_before:
+            _downstream_authority_invalid(
+                "Caller authority changed during verification."
+            )
+        if caller_authority is not None:
+            final_caller_authority = caller_after.authority
+            if final_caller_authority is None:
+                _downstream_authority_invalid(
+                    "Caller reserved authority disappeared."
+                )
+            caller_final_projection = _downstream_verified_projection(
+                db,
+                authority=final_caller_authority,
+            )
+            if caller_final_projection != caller_projection:
+                _downstream_authority_invalid(
+                    "Caller canonical projection changed during verification."
+                )
+        return result
+
+
+def assert_downstream_connector_origin(
+    db: Session,
+    *,
+    session_id: str,
+    expected_receipt_hash: str,
+    boundary: Literal[
+        "execution_output",
+        "result_review",
+        "package_commit",
+        "package_submit",
+        "handoff_prepare",
+    ],
+) -> dict[str, Any]:
+    """Fail closed unless all four bounded authority phases agree.
+
+    Agreement detects sustained drift within these reads. It does not claim
+    serializability, ABA exclusion, or a stronger database snapshot.
+    """
+
+    try:
+        return _assert_downstream_connector_origin(
+            db,
+            session_id=session_id,
+            expected_receipt_hash=expected_receipt_hash,
+            boundary=boundary,
+        )
+    except RecursionError as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Downstream authority exceeds recursion bounds.",
+        ) from exc
+
+
+def _normalized_connector_origin_integrity(
+    value: object,
+) -> dict[str, str]:
+    fields = {
+        "schema_id",
+        "connector_key",
+        "connector_run_target_id",
+        "connector_origin_receipt_hash",
+        "proof_class",
+    }
+    if not isinstance(value, Mapping) or set(value) != fields:
+        _downstream_authority_invalid(
+            "Connector origin integrity is missing or malformed."
+        )
+    normalized = {
+        field: _required_text(value.get(field), field=field)
+        for field in fields
+    }
+    receipt_hash = _normalized_sha256(
+        normalized["connector_origin_receipt_hash"],
+        field="connector_origin_receipt_hash",
+    )
+    if (
+        normalized["schema_id"] != CONNECTOR_ORIGIN_INTEGRITY_SCHEMA_ID
+        or normalized["connector_key"] not in _ALLOWED_CONNECTORS
+        or normalized["proof_class"]
+        not in {FRESH_LIVE_PROOF_CLASS, OFFLINE_FIXTURE_PROOF_CLASS}
+    ):
+        _downstream_authority_invalid(
+            "Connector origin integrity contains invalid canonical values."
+        )
+    return {
+        "schema_id": CONNECTOR_ORIGIN_INTEGRITY_SCHEMA_ID,
+        "connector_key": normalized["connector_key"],
+        "connector_run_target_id": (
+            normalized["connector_run_target_id"]
+        ),
+        "connector_origin_receipt_hash": receipt_hash,
+        "proof_class": normalized["proof_class"],
+    }
+
+
+def _connector_origin_integrity_from_result(
+    result: Mapping[str, Any],
+) -> dict[str, str] | None:
+    if set(result) == {"applicability", "boundary"}:
+        if result.get("applicability") != "not_applicable":
+            _downstream_authority_invalid(
+                "Generic connector origin result is malformed."
+            )
+        return None
+    fields = {
+        "connector_key",
+        "connector_run_target_id",
+        "connector_origin_receipt_hash",
+        "proof_class",
+        "boundary",
+    }
+    if set(result) != fields:
+        _downstream_authority_invalid(
+            "Verified connector origin result is malformed."
+        )
+    return _normalized_connector_origin_integrity(
+        {
+            "schema_id": CONNECTOR_ORIGIN_INTEGRITY_SCHEMA_ID,
+            "connector_key": result.get("connector_key"),
+            "connector_run_target_id": result.get(
+                "connector_run_target_id"
+            ),
+            "connector_origin_receipt_hash": result.get(
+                "connector_origin_receipt_hash"
+            ),
+            "proof_class": result.get("proof_class"),
+        }
+    )
+
+
+def _downstream_session_reserved_row_kind(
+    db: Session,
+    *,
+    session_id: str,
+) -> str | None:
+    models: tuple[type[Any], ...] = (
+        L3Session,
+        L3SelectionManifest,
+        L3GateBIdempotencyKey,
+        L3Descriptor,
+        L3MaterialSnapshot,
+    )
+    rows_by_model: list[tuple[_AnchorRow, ...]] = []
+    for model in models:
+        table = _model_table(model)
+        rows_by_model.append(
+            _downstream_anchor_rows(
+                db,
+                model=model,
+                criteria=(table.c.session_id == session_id,),
+            )
+        )
+    _downstream_one(
+        list(rows_by_model[0]),
+        label="Layer 3 session",
+    )
+    return _downstream_reserved_kind(
+        *(
+            _downstream_anchor_surface(row)
+            for rows in rows_by_model
+            for row in rows
+        )
+    )
+
+
+def resolve_downstream_connector_origin(
+    db: Session,
+    *,
+    session_id: str,
+    boundary: Literal["gate_c_typing", "pass_selection"],
+) -> dict[str, str] | None:
+    try:
+        _require_caller_transaction(db)
+        normalized_session_id = _required_text(
+            session_id,
+            field="session_id",
+        )
+        if boundary not in {"gate_c_typing", "pass_selection"}:
+            _fail(
+                "layer3_downstream_origin_boundary_invalid",
+                "The downstream origin boundary is not admitted.",
+            )
+        with db.no_autoflush:
+            _downstream_reject_pending_state(
+                db,
+                session_id=normalized_session_id,
+            )
+            reserved_kind = _downstream_session_reserved_row_kind(
+                db,
+                session_id=normalized_session_id,
+            )
+        if (
+            reserved_kind is None
+            and _downstream_generic_bypass_allowed(db)
+        ):
+            return None
+        result = _assert_downstream_connector_origin(
+            db,
+            session_id=normalized_session_id,
+            expected_receipt_hash=None,
+            boundary=boundary,
+        )
+        if result.get("applicability") == "not_applicable":
+            return None
+        return _connector_origin_integrity_from_result(result)
+    except RecursionError as exc:
+        raise Layer3OriginContinuityError(
+            "layer3_downstream_origin_authority_invalid",
+            "Downstream authority exceeds recursion bounds.",
+        ) from exc
+
+
+def downstream_connector_origin_required(*surfaces: object) -> bool:
+    return _downstream_reserved_kind(*surfaces) is not None
+
+
+def assert_pass_downstream_connector_origin(
+    db: Session,
+    *,
+    pass_run: L3PassRun,
+    boundary: Literal[
+        "execution_output",
+        "result_review",
+        "package_commit",
+        "package_submit",
+        "handoff_prepare",
+    ],
+) -> dict[str, str] | None:
+    summary = pass_run.summary_json
+    if not isinstance(summary, Mapping):
+        _downstream_authority_invalid(
+            "Layer 3 pass summary is malformed."
+        )
+    stored = summary.get(CONNECTOR_ORIGIN_INTEGRITY_KEY)
+    kind = _downstream_reserved_kind(summary)
+    if kind is None and stored is None:
+        if _downstream_generic_bypass_allowed(db):
+            return None
+        try:
+            result = _assert_downstream_connector_origin(
+                db,
+                session_id=pass_run.session_id,
+                expected_receipt_hash=None,
+                boundary=boundary,
+            )
+        except RecursionError as exc:
+            raise Layer3OriginContinuityError(
+                "layer3_downstream_origin_authority_invalid",
+                "Downstream authority exceeds recursion bounds.",
+            ) from exc
+        if result.get("applicability") == "not_applicable":
+            return None
+        _downstream_authority_invalid(
+            "Layer 3 pass summary cannot downgrade reserved session authority."
+        )
+    expected = _normalized_connector_origin_integrity(stored)
+    if kind is None or expected["connector_key"] != kind:
+        _downstream_authority_invalid(
+            "Layer 3 pass reserved origin disagrees with its plan."
+        )
+    result = assert_downstream_connector_origin(
+        db,
+        session_id=pass_run.session_id,
+        expected_receipt_hash=expected[
+            "connector_origin_receipt_hash"
+        ],
+        boundary=boundary,
+    )
+    actual = _connector_origin_integrity_from_result(result)
+    if actual is None or actual != expected:
+        _downstream_authority_invalid(
+            "Layer 3 pass origin integrity is not currently authoritative."
+        )
+    return actual

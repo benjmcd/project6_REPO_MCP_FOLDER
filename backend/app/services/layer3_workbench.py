@@ -7,6 +7,7 @@ import hmac
 import json
 import os
 import time
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -16,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.models import (
+    AnalysisArtifact,
     AnalysisRun,
     ApsContentChunk,
     ApsContentDocument,
@@ -88,7 +90,15 @@ from app.services.layer3_execution_state import (
     pass_run_execution_started as _pass_run_execution_started,
 )
 from app.services.layer3_execution_errors import analysis_execution_start_workbench_error
-from app.services.layer3_execution_output import output_metadata_summary as _output_metadata_summary
+from app.services.layer3_execution_output import (
+    assert_pass_output_integrity,
+    build_connector_output_integrity,
+    output_metadata_summary as _output_metadata_summary,
+)
+from app.services.layer3_origin_continuity import (
+    assert_pass_downstream_connector_origin,
+    resolve_downstream_connector_origin,
+)
 from app.services.layer3_pdf_location import (
     pdf_location_projection_for_session as _pdf_location_projection_for_session,
 )
@@ -132,6 +142,7 @@ from app.services.layer3_package_entry import (
     Layer3PackageEntryError,
     materialize_mixed_source_package_commit,
     materialize_workbench_package_commit,
+    verify_package_payload_bytes,
 )
 from app.services.layer3_package_submit_response import (
     COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
@@ -2739,6 +2750,46 @@ def _stamp_api_dataset_cohort_method_authority(
         }
 
 
+def _gate_c_connector_origin_state(
+    connector_origin_integrity: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    if connector_origin_integrity is None:
+        return {
+            "schema_id": "layer3.gate_c_connector_origin_state.v1",
+            "applicability": "not_applicable",
+        }
+    return {
+        "schema_id": "layer3.gate_c_connector_origin_state.v1",
+        "applicability": "applicable",
+        "connector_origin_integrity_v1": _json_clone(
+            connector_origin_integrity
+        ),
+    }
+
+
+def _assert_gate_c_connector_origin_state(
+    *,
+    session: L3Session,
+    connector_origin_integrity: Mapping[str, Any] | None,
+) -> None:
+    stored = (session.summary_json or {}).get(
+        "gate_c_connector_origin_state_v1"
+    )
+    expected = _gate_c_connector_origin_state(
+        connector_origin_integrity
+    )
+    if stored is None and connector_origin_integrity is None:
+        return
+    if stored != expected:
+        raise Layer3WorkbenchError(
+            "gate_c_connector_origin_mismatch",
+            "Gate C connector origin does not equal current server authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["session_id"],
+        )
+
+
 def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     session_id = str(payload.get("session_id") or "").strip()
@@ -2751,8 +2802,28 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     commit_typing = bool(payload.get("commit_typing"))
     try:
         if commit_typing:
+            session = (
+                db.query(L3Session)
+                .filter(L3Session.session_id == session_id)
+                .with_for_update()
+                .populate_existing()
+                .one()
+            )
+            connector_origin_integrity = resolve_downstream_connector_origin(
+                db,
+                session_id=session.session_id,
+                boundary="gate_c_typing",
+            )
             result = materialize_typing_entry(db, session_id=session_id)
             _stamp_api_dataset_cohort_method_authority(db, analysis_sets=result.analysis_sets)
+            session.summary_json = {
+                **_json_clone(session.summary_json or {}),
+                "gate_c_connector_origin_state_v1": (
+                    _gate_c_connector_origin_state(
+                        connector_origin_integrity
+                    )
+                ),
+            }
             db.commit()
             typing_records = [_serialize_typing_record(record) for record in result.typing_records]
             analysis_units = [_serialize_analysis_unit(unit) for unit in result.analysis_units]
@@ -4443,10 +4514,37 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             http_status=409,
         )
     approved_plan = approved_plans[0]
+    connector_origin_integrity = resolve_downstream_connector_origin(
+        db,
+        session_id=session_id,
+        boundary="pass_selection",
+    )
+    _assert_gate_c_connector_origin_state(
+        session=session,
+        connector_origin_integrity=connector_origin_integrity,
+    )
 
     existing_selection = _execution_selection_from_session(session)
     existing_pass_runs = _execution_selection_pass_runs(db, session_id=session_id)
     if existing_selection is not None:
+        for existing_pass_run in existing_pass_runs:
+            stored_origin = (
+                existing_pass_run.summary_json or {}
+            ).get("connector_origin_integrity_v1")
+            if (
+                connector_origin_integrity is None
+                and stored_origin is not None
+            ) or (
+                connector_origin_integrity is not None
+                and stored_origin != connector_origin_integrity
+            ):
+                raise Layer3WorkbenchError(
+                    "execution_selection_origin_mismatch",
+                    "Stored execution-selection origin contradicts current server authority.",
+                    status="conflict",
+                    http_status=409,
+                    blocked_fields=["pass_run_ids"],
+                )
         stored_pass_run_ids = list(existing_selection.get("pass_run_ids_json") or [])
         existing_pass_run_ids = [pass_run.pass_run_id for pass_run in existing_pass_runs]
         if stored_pass_run_ids != existing_pass_run_ids:
@@ -4572,6 +4670,15 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 "analysis_run_id": None,
                 "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
                 "planned_pass": _json_clone(planned_pass),
+                **(
+                    {
+                        "connector_origin_integrity_v1": _json_clone(
+                            connector_origin_integrity
+                        )
+                    }
+                    if connector_origin_integrity is not None
+                    else {}
+                ),
                 "selected_at": selected_at,
             },
             created_at=datetime.now(timezone.utc),
@@ -5099,8 +5206,18 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
             http_status=409,
         )
 
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="execution_output",
+    )
     existing_start = _analysis_execution_start_from_pass_run(pass_run)
     if existing_start is not None:
+        if connector_origin_integrity is not None:
+            assert_pass_output_integrity(
+                db,
+                pass_run_id=pass_run.pass_run_id,
+            )
         if str(existing_start.get("client_request_id") or "") == request_id:
             status = "already_completed" if pass_run.status in {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS} else pass_run.status
             return _analysis_execution_start_response(
@@ -5150,6 +5267,45 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
                 planned_pass=planned_pass,
                 client_request_id=request_id,
             )
+        if connector_origin_integrity is not None:
+            analysis_run_id = _pass_run_analysis_run_id(pass_run)
+            artifacts = (
+                db.query(AnalysisArtifact)
+                .filter(
+                    AnalysisArtifact.analysis_run_id == analysis_run_id
+                )
+                .order_by(
+                    AnalysisArtifact.artifact_type.asc(),
+                    AnalysisArtifact.artifact_id.asc(),
+                )
+                .all()
+                if analysis_run_id
+                else []
+            )
+            output_ref = str(pass_run.output_payload_ref or "").strip()
+            if not output_ref:
+                raise Layer3WorkbenchError(
+                    "connector_output_manifest_missing",
+                    "Reserved connector execution produced no output manifest.",
+                    status="conflict",
+                    http_status=409,
+                )
+            connector_output_integrity = (
+                build_connector_output_integrity(
+                    artifacts,
+                    output_manifest_ref=output_ref,
+                    connector_origin_integrity=(
+                        connector_origin_integrity
+                    ),
+                )
+            )
+            pass_run.summary_json = {
+                **_json_clone(pass_run.summary_json or {}),
+                "connector_output_integrity_v1": (
+                    connector_output_integrity
+                ),
+            }
+            db.flush()
     except (Layer3PassEntryError, Layer3QualApsExecutionError) as exc:
         raise analysis_execution_start_workbench_error(exc) from exc
 
@@ -5624,8 +5780,32 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             next_allowed_actions=["inspect_execution_result_status"],
         )
 
-    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
-    pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
+    session = (
+        db.query(L3Session)
+        .filter(L3Session.session_id == session_id)
+        .with_for_update()
+        .populate_existing()
+        .one_or_none()
+    )
+    analysis_plan = (
+        db.query(L3AnalysisPlan)
+        .filter(
+            L3AnalysisPlan.analysis_plan_id == analysis_plan_id,
+            L3AnalysisPlan.session_id == session_id,
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
+            L3AnalysisPlan.approved_by_operator.is_(True),
+        )
+        .with_for_update()
+        .populate_existing()
+        .one_or_none()
+    )
+    pass_run = (
+        db.query(L3PassRun)
+        .filter(L3PassRun.pass_run_id == pass_run_id)
+        .with_for_update()
+        .populate_existing()
+        .one_or_none()
+    )
     if session is None or pass_run is None:
         raise Layer3WorkbenchError(
             "execution_result_review_inconsistent",
@@ -5633,13 +5813,104 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             status="conflict",
             http_status=409,
         )
+    if analysis_plan is None:
+        raise Layer3WorkbenchError(
+            "approved_plan_mismatch",
+            "Execution result-review must reference the current approved analysis plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["analysis_plan_id"],
+        )
+    if (
+        pass_run.session_id != session_id
+        or pass_run.analysis_plan_id != analysis_plan.analysis_plan_id
+    ):
+        raise Layer3WorkbenchError(
+            "execution_result_review_pass_run_mismatch",
+            "Execution result-review pass_run_id must belong to the supplied session and approved plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+    locked_output_metadata, locked_output_error = (
+        _output_metadata_summary(pass_run)
+    )
+    locked_analysis_run_id = _pass_run_analysis_run_id(pass_run)
+    status_analysis_run_id = (
+        str(status_body.get("analysis_run_id") or "").strip() or None
+    )
+    locked_summary = pass_run.summary_json or {}
+    locked_planned_pass = locked_summary.get("planned_pass")
+    if not isinstance(locked_planned_pass, dict):
+        locked_planned_pass = {}
+    locked_status_bindings = {
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan.analysis_plan_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "pass_run_status": pass_run.status,
+        "output_payload_ref": pass_run.output_payload_ref,
+        "engine_family": pass_run.engine_family,
+        "pass_type": pass_run.pass_type,
+        "pass_scope": (
+            locked_summary.get("pass_scope")
+            or locked_planned_pass.get("pass_scope")
+        ),
+        "selected_method_name": locked_summary.get(
+            "selected_method_name"
+        ),
+        "dataset_version_id": locked_summary.get(
+            "dataset_version_id"
+        ),
+    }
+    changed_status_fields = [
+        field
+        for field, expected in locked_status_bindings.items()
+        if status_body.get(field) != expected
+    ]
+    status_preview = status_body.get("preview_identity")
+    if (
+        not isinstance(status_preview, dict)
+        or status_preview.get("preview_id") != preview_id
+        or status_preview.get("preview_hash") != preview_hash
+    ):
+        changed_status_fields.append("preview_identity")
+    if (
+        locked_output_error is not None
+        or not isinstance(locked_output_metadata, dict)
+        or locked_output_metadata.get("readable") is not True
+        or locked_output_metadata != output_metadata_summary
+        or locked_analysis_run_id != status_analysis_run_id
+        or changed_status_fields
+    ):
+        raise Layer3WorkbenchError(
+            "execution_result_review_authority_changed",
+            "Execution result-review authority changed before its mutation locks were acquired.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id", "analysis_run_id"],
+            next_allowed_actions=["inspect_execution_result_status"],
+        )
+    output_metadata_summary = locked_output_metadata
     _ensure_result_review_source_admitted(
         status_body=status_body,
         pass_run=pass_run,
         output_metadata_summary=output_metadata_summary,
     )
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="result_review",
+    )
+    connector_output_integrity = (
+        assert_pass_output_integrity(
+            db,
+            pass_run_id=pass_run.pass_run_id,
+        )
+        if connector_origin_integrity is not None
+        else None
+    )
 
-    analysis_run_id = str(status_body.get("analysis_run_id") or "").strip() or None
+    analysis_run_id = locked_analysis_run_id
     reviewed_items, unresolved_trace_count = _normalize_result_review_items(
         items=payload.get("reviewed_output_items"),
         session_id=session_id,
@@ -5690,6 +5961,29 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
 
     existing_review = _execution_result_review_from_pass_run(pass_run)
     if existing_review is not None:
+        existing_origin = existing_review.get(
+            "connector_origin_integrity_v1"
+        )
+        existing_output = existing_review.get(
+            "connector_output_integrity_v1"
+        )
+        if (
+            connector_origin_integrity is None
+            and (existing_origin is not None or existing_output is not None)
+        ) or (
+            connector_origin_integrity is not None
+            and (
+                existing_origin != connector_origin_integrity
+                or existing_output != connector_output_integrity
+            )
+        ):
+            raise Layer3WorkbenchError(
+                "execution_result_review_integrity_mismatch",
+                "Stored result-review integrity contradicts current server authority.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["pass_run_id"],
+            )
         if (
             existing_review.get("client_request_id") == request_id
             and existing_review.get("review_record_ref") == review_record_ref
@@ -5738,6 +6032,19 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
         "cohort_shape": output_metadata_summary.get("cohort_shape") or pass_summary.get("cohort_shape"),
         "requested_method_name": output_metadata_summary.get("requested_method_name") or pass_summary.get("requested_method_name"),
         "requested_method_source": output_metadata_summary.get("requested_method_source") or pass_summary.get("requested_method_source"),
+        **(
+            {
+                "connector_origin_integrity_v1": _json_clone(
+                    connector_origin_integrity
+                ),
+                "connector_output_integrity_v1": _json_clone(
+                    connector_output_integrity
+                ),
+            }
+            if connector_origin_integrity is not None
+            and connector_output_integrity is not None
+            else {}
+        ),
         "recorded_at": _utcnow_iso(),
         "package_review_enabled": False,
         "handoff_enabled": False,
@@ -7982,6 +8289,19 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="package_commit",
+    )
+    connector_output_integrity = (
+        assert_pass_output_integrity(
+            db,
+            pass_run_id=pass_run.pass_run_id,
+        )
+        if connector_origin_integrity is not None
+        else None
+    )
     associated_cohort_commit = False
     if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
         associated_cohort_commit = _associated_cohort_result_source_admitted(
@@ -8212,6 +8532,8 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             authority_schema_id=authority_schema_id,
             authority_basis_extra=authority_basis_extra,
             package_payload_extras_by_kind=package_payload_extras_by_kind,
+            connector_origin_integrity=connector_origin_integrity,
+            connector_output_integrity=connector_output_integrity,
         )
     except Layer3PackageEntryError as exc:
         raise Layer3WorkbenchError(
@@ -8499,11 +8821,22 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    analysis_plan = (
+        db.query(L3AnalysisPlan)
+        .filter(
+            L3AnalysisPlan.analysis_plan_id == analysis_plan_id,
+            L3AnalysisPlan.session_id == session_id,
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
+            L3AnalysisPlan.approved_by_operator.is_(True),
+        )
+        .with_for_update()
+        .one_or_none()
+    )
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
-    if session is None or pass_run is None:
+    if session is None or analysis_plan is None or pass_run is None:
         raise Layer3WorkbenchError(
             "package_review_submit_inconsistent",
-            "Package-review submit could not reload the selected session or pass run.",
+            "Package-review submit could not reload selected authority.",
             status="conflict",
             http_status=409,
         )
@@ -8739,6 +9072,22 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             next_allowed_actions=["inspect_existing_package_state"],
         )
     ordered_packages = _packages_in_review_order(packages)
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="package_submit",
+    )
+    connector_output_integrity = None
+    if connector_origin_integrity is not None:
+        connector_output_integrity = assert_pass_output_integrity(
+            db,
+            pass_run_id=pass_run.pass_run_id,
+        )
+    verify_package_payload_bytes(
+        ordered_packages,
+        expected_connector_origin=connector_origin_integrity,
+        expected_connector_output=connector_output_integrity,
+    )
     if not isinstance(raw_output_package_ids, list):
         raise Layer3WorkbenchError(
             "package_review_submit_package_ids_invalid",
@@ -8957,6 +9306,29 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         )
     submit_record_ref = _stable_id("l3-package-review-submit", submit_basis)
     if existing_submit is not None:
+        existing_origin = existing_submit.get(
+            "connector_origin_integrity_v1"
+        )
+        existing_output = existing_submit.get(
+            "connector_output_integrity_v1"
+        )
+        if (
+            connector_origin_integrity is None
+            and (existing_origin is not None or existing_output is not None)
+        ) or (
+            connector_origin_integrity is not None
+            and (
+                existing_origin != connector_origin_integrity
+                or existing_output != connector_output_integrity
+            )
+        ):
+            raise Layer3WorkbenchError(
+                "package_review_submit_integrity_mismatch",
+                "Stored package-review integrity contradicts current server authority.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["reconciliation_record_id"],
+            )
         existing_submit_ref = str(existing_submit.get("submit_record_ref") or "")
         legacy_submit_record_ref = _legacy_package_review_submit_record_ref(
             submit_basis=submit_basis,
@@ -9046,6 +9418,19 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "handoff_enabled": False,
         "export_enabled": False,
         "downstream_unavailable": list(downstream_unavailable),
+        **(
+            {
+                "connector_origin_integrity_v1": _json_clone(
+                    connector_origin_integrity
+                ),
+                "connector_output_integrity_v1": _json_clone(
+                    connector_output_integrity
+                ),
+            }
+            if connector_origin_integrity is not None
+            and connector_output_integrity is not None
+            else {}
+        ),
     }
     if source_intake_submit:
         submit_state.update(
@@ -9655,6 +10040,55 @@ def _mixed_source_handoff_export_prepare(db: Session, payload: dict[str, Any]) -
     )
 
 
+def _assert_handoff_prepare_connector_integrity(
+    *,
+    prepare_state: Mapping[str, Any],
+    connector_origin_integrity: Mapping[str, Any] | None,
+    connector_output_integrity: Mapping[str, Any] | None,
+) -> None:
+    envelope = prepare_state.get("handoff_export_envelope")
+    operator_decision = str(
+        prepare_state.get("operator_decision") or ""
+    )
+    if operator_decision != "authorize_prepare":
+        if envelope is not None:
+            raise Layer3WorkbenchError(
+                "handoff_export_prepare_integrity_mismatch",
+                "A non-authorized handoff decision cannot retain an export envelope.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["reconciliation_record_id"],
+            )
+        return
+    if not isinstance(envelope, Mapping):
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_integrity_mismatch",
+            "An authorized handoff decision is missing its export envelope.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+    stored_origin = envelope.get("connector_origin_integrity_v1")
+    stored_output = envelope.get("connector_output_integrity_v1")
+    if (
+        connector_origin_integrity is None
+        and (stored_origin is not None or stored_output is not None)
+    ) or (
+        connector_origin_integrity is not None
+        and (
+            stored_origin != connector_origin_integrity
+            or stored_output != connector_output_integrity
+        )
+    ):
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_integrity_mismatch",
+            "Stored handoff integrity contradicts current server authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+
+
 def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
@@ -9855,6 +10289,17 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    analysis_plan = (
+        db.query(L3AnalysisPlan)
+        .filter(
+            L3AnalysisPlan.analysis_plan_id == analysis_plan_id,
+            L3AnalysisPlan.session_id == session_id,
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
+            L3AnalysisPlan.approved_by_operator.is_(True),
+        )
+        .with_for_update()
+        .one_or_none()
+    )
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
     reconciliation = (
         db.query(L3ReconciliationRecord)
@@ -9871,6 +10316,14 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "Handoff/export preparation could not reload the selected session or pass run.",
             status="conflict",
             http_status=409,
+        )
+    if analysis_plan is None:
+        raise Layer3WorkbenchError(
+            "approved_plan_mismatch",
+            "Handoff/export preparation must reference the current approved analysis plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["analysis_plan_id"],
         )
     if pass_run.session_id != session_id or pass_run.analysis_plan_id != analysis_plan_id:
         raise Layer3WorkbenchError(
@@ -10072,6 +10525,22 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             next_allowed_actions=["inspect_existing_package_state"],
         )
     ordered_packages = _packages_in_review_order(packages)
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="handoff_prepare",
+    )
+    connector_output_integrity = None
+    if connector_origin_integrity is not None:
+        connector_output_integrity = assert_pass_output_integrity(
+            db,
+            pass_run_id=pass_run.pass_run_id,
+        )
+    verify_package_payload_bytes(
+        ordered_packages,
+        expected_connector_origin=connector_origin_integrity,
+        expected_connector_output=connector_output_integrity,
+    )
     if not isinstance(raw_output_package_ids, list):
         raise Layer3WorkbenchError(
             "handoff_export_prepare_package_ids_invalid",
@@ -10245,6 +10714,29 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             http_status=409,
             blocked_fields=["package_review_submit_record_ref"],
             next_allowed_actions=["submit_package_review_approval"],
+        )
+    submit_origin = package_review_submit.get(
+        "connector_origin_integrity_v1"
+    )
+    submit_output = package_review_submit.get(
+        "connector_output_integrity_v1"
+    )
+    if (
+        connector_origin_integrity is None
+        and (submit_origin is not None or submit_output is not None)
+    ) or (
+        connector_origin_integrity is not None
+        and (
+            submit_origin != connector_origin_integrity
+            or submit_output != connector_output_integrity
+        )
+    ):
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_submit_integrity_mismatch",
+            "Approved package-review integrity contradicts current package authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_submit_record_ref"],
         )
     if package_review_submit.get("package_review_state") != PACKAGE_REVIEW_APPROVED_STATE:
         raise Layer3WorkbenchError(
@@ -10559,6 +11051,11 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         )
     prepare_record_ref = _stable_id("l3-handoff-export-prepare", preparation_basis)
     if existing_prepare is not None:
+        _assert_handoff_prepare_connector_integrity(
+            prepare_state=existing_prepare,
+            connector_origin_integrity=connector_origin_integrity,
+            connector_output_integrity=connector_output_integrity,
+        )
         if existing_prepare.get("prepare_record_ref") == prepare_record_ref:
             existing_decision = str(existing_prepare.get("operator_decision") or operator_decision)
             existing_status = HANDOFF_EXPORT_PREPARE_STATUS_BY_DECISION.get(existing_decision, "recorded")
@@ -10626,6 +11123,9 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "provider_public_url_enabled": False,
             "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         }
+        if connector_origin_integrity is not None:
+            envelope["connector_origin_integrity_v1"] = _json_clone(connector_origin_integrity)
+            envelope["connector_output_integrity_v1"] = _json_clone(connector_output_integrity)
         if active_authority_projection is not None:
             envelope.update(active_authority_projection)
         if source_intake_prepare:

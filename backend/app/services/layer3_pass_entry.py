@@ -52,6 +52,16 @@ from app.services.layer3_qual_aps_execution import (
     QUAL_APS_SOURCE_GATE,
     qualitative_aps_candidate_exclusion_reason,
 )
+from app.services.layer3_execution_output import (
+    Layer3ExecutionOutputIntegrityError,
+    build_connector_output_integrity,
+    persist_output_manifest as _persist_managed_output_manifest,
+)
+from app.services.layer3_origin_continuity import (
+    Layer3OriginContinuityError,
+    assert_pass_downstream_connector_origin,
+    downstream_connector_origin_required,
+)
 from app.services.layer3_utils import (
     json_clone as _json_clone,
     stable_hash as _stable_hash,
@@ -1386,9 +1396,15 @@ def _persist_cohort_dataset_version(
 
 
 def _persist_output_manifest(*, pass_run_id: str, payload: dict[str, Any]) -> str:
-    output_path = _layer3_artifact_dir() / f"l3_pass_run_{pass_run_id}.json"
-    output_path.write_text(json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False), encoding="utf-8")
-    return str(output_path)
+    try:
+        return _persist_managed_output_manifest(
+            pass_run_id=pass_run_id,
+            payload=payload,
+        )
+    except Layer3ExecutionOutputIntegrityError as exc:
+        raise Layer3PassEntryError(
+            "Output manifest publication failed closed"
+        ) from exc
 
 
 def _has_analysis_warnings(db: Session, *, analysis_run_id: str) -> bool:
@@ -1415,6 +1431,11 @@ def execute_selected_pass_run(
         raise Layer3PassEntryError(
             f"Selected pass run '{pass_run_id}' uses unsupported engine family '{pass_run.engine_family}'"
         )
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="execution_output",
+    )
 
     summary = _json_clone(pass_run.summary_json or {})
     if summary.get("analysis_run_id"):
@@ -1441,12 +1462,7 @@ def execute_selected_pass_run(
                 f"Selected pass run '{pass_run_id}' uses unsupported method '{selected_method_name}'"
             )
     elif planned_pass_type == PASS_TYPE_ASSOCIATED_COHORT:
-        dataset_version_id, input_payload_ref, cohort_execution_metadata = _prepare_selected_cohort_execution_input(
-            db,
-            pass_run=pass_run,
-            planned_pass=planned_pass,
-            summary=summary,
-        )
+        dataset_version_id = ""
         selected_method_name = "descriptive_summary"
     else:
         raise Layer3PassEntryError(
@@ -1454,37 +1470,55 @@ def execute_selected_pass_run(
         )
 
     started_at = _utcnow()
-    pass_run.status = PASS_STATUS_RUNNING
-    pass_run.started_at = started_at
-    pass_run.input_payload_ref = input_payload_ref
-    pass_run.summary_json = {
-        **summary,
-        **(cohort_execution_metadata or {}),
-        "execution_started": True,
-        "analysis_run_id": None,
-        "dataset_version_id": dataset_version_id,
-        "selected_method_name": selected_method_name,
-        "input_payload_ref": input_payload_ref,
-        "analysis_execution_start": {
-            "schema_id": "layer3.analysis_execution_start_state.v1",
-            "client_request_id": client_request_id,
-            "state": "execution_pass_running",
-            "started_at": _utc_isoformat(started_at),
-        },
-    }
-    db.flush()
-
     try:
-        analysis_run = run_analysis(
-            db,
-            dataset_version_id=dataset_version_id,
-            method_name=selected_method_name,
-            goal_type=None,
-            parameters={},
-            annotation_window_id=None,
-        )
+        with db.begin_nested():
+            if planned_pass_type == PASS_TYPE_ASSOCIATED_COHORT:
+                (
+                    dataset_version_id,
+                    input_payload_ref,
+                    cohort_execution_metadata,
+                ) = _prepare_selected_cohort_execution_input(
+                    db,
+                    pass_run=pass_run,
+                    planned_pass=planned_pass,
+                    summary=summary,
+                )
+            pass_run.status = PASS_STATUS_RUNNING
+            pass_run.started_at = started_at
+            pass_run.input_payload_ref = input_payload_ref
+            pass_run.summary_json = {
+                **summary,
+                **(cohort_execution_metadata or {}),
+                "execution_started": True,
+                "analysis_run_id": None,
+                "dataset_version_id": dataset_version_id,
+                "selected_method_name": selected_method_name,
+                "input_payload_ref": input_payload_ref,
+                "analysis_execution_start": {
+                    "schema_id": "layer3.analysis_execution_start_state.v1",
+                    "client_request_id": client_request_id,
+                    "state": "execution_pass_running",
+                    "started_at": _utc_isoformat(started_at),
+                },
+            }
+            db.flush()
+            analysis_run = run_analysis(
+                db,
+                dataset_version_id=dataset_version_id,
+                method_name=selected_method_name,
+                goal_type=None,
+                parameters={},
+                annotation_window_id=None,
+                commit=False,
+                connector_origin_integrity=connector_origin_integrity,
+            )
+    except (
+        Layer3ExecutionOutputIntegrityError,
+        Layer3OriginContinuityError,
+        Layer3PassEntryError,
+    ):
+        raise
     except Exception as exc:
-        db.rollback()
         failed_pass_run = db.get(L3PassRun, pass_run_id)
         if failed_pass_run is None:
             raise Layer3PassEntryError(f"Selected pass run '{pass_run_id}' disappeared during execution") from exc
@@ -1554,6 +1588,20 @@ def execute_selected_pass_run(
         .order_by(AnalysisArtifact.created_at.asc(), AnalysisArtifact.artifact_id.asc())
         .all()
     )
+    if (
+        connector_origin_integrity is not None
+        and connector_origin_integrity["connector_key"] == "sciencebase_mcs"
+        and (
+            selected_method_name != "descriptive_summary"
+            or len(artifacts) != 1
+            or artifacts[0].artifact_type
+            != "descriptive_summary_result"
+        )
+    ):
+        raise Layer3ExecutionOutputIntegrityError(
+            "layer3_output_integrity_mismatch",
+            "Reserved ScienceBase execution requires one descriptive result.",
+        )
     output_manifest_ref = _persist_output_manifest(
         pass_run_id=pass_run.pass_run_id,
         payload={
@@ -1572,6 +1620,15 @@ def execute_selected_pass_run(
     pass_run.status = PASS_STATUS_COMPLETED_WITH_WARNINGS if has_warnings else PASS_STATUS_COMPLETED
     pass_run.completed_at = completed_at
     pass_run.output_payload_ref = output_manifest_ref
+    connector_output_integrity = (
+        build_connector_output_integrity(
+            artifacts,
+            output_manifest_ref=output_manifest_ref,
+            connector_origin_integrity=connector_origin_integrity,
+        )
+        if connector_origin_integrity is not None
+        else None
+    )
     pass_run.summary_json = {
         **_json_clone(pass_run.summary_json or {}),
         **(cohort_execution_metadata or {}),
@@ -1583,6 +1640,15 @@ def execute_selected_pass_run(
         "artifact_refs_json": [artifact.storage_ref for artifact in artifacts],
         "artifact_types_json": [artifact.artifact_type for artifact in artifacts],
         "pass_status_from_analysis": analysis_run.status,
+        **(
+            {
+                "connector_output_integrity_v1": (
+                    connector_output_integrity
+                )
+            }
+            if connector_output_integrity is not None
+            else {}
+        ),
         "analysis_execution_start": {
             "schema_id": "layer3.analysis_execution_start_state.v1",
             "client_request_id": client_request_id,
@@ -1611,6 +1677,23 @@ def _execute_passes(
     session_id: str,
     admitted: list[_AdmittedSetCandidate],
 ) -> tuple[list[L3PassRun], list[str]]:
+    for candidate in admitted:
+        snapshot_surfaces = [
+            surface
+            for snapshot in candidate.snapshots
+            for surface in (
+                snapshot.source_identity_json,
+                snapshot.source_provenance_json,
+                snapshot.load_summary_json,
+            )
+        ]
+        if downstream_connector_origin_required(
+            _initial_pass_summary(candidate),
+            *snapshot_surfaces,
+        ):
+            raise Layer3PassEntryError(
+                "Reserved connector execution requires the selected workbench path"
+            )
     pass_runs: list[L3PassRun] = []
     wrapped_analysis_run_ids: list[str] = []
 

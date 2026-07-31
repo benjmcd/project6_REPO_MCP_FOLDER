@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
 import uuid
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,6 +23,12 @@ from app.core.config import settings
 from app.models import AnalysisArtifact, AnalysisRun, AnnotationWindow, AssumptionCheck, CaveatNote, Dataset, DatasetVersion, VariableDefinition, VariableProfile
 from app.services.data_utils import classify_numeric_token, coerce_numeric_series
 from app.services.dataframe_io import load_version_dataframe
+from app.services.layer3_execution_output import (
+    Layer3ExecutionOutputIntegrityError,
+    _managed_regular_file,
+    _managed_root,
+    _stable_managed_file,
+)
 from app.services.profiling import _detect_stationarity
 
 NONSTATIONARY_HINTS = {'likely_nonstationary', 'trend_stationary_or_mixed'}
@@ -144,9 +153,21 @@ def _supported_method_message() -> str:
 
 
 def _artifact_dir() -> Path:
+    storage_root = _managed_root(
+        Path(settings.storage_dir),
+        field="storage_dir",
+    )
     path = Path(settings.artifact_storage_dir)
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    if path != storage_root / "artifacts":
+        raise Layer3ExecutionOutputIntegrityError(
+            "layer3_output_binding_invalid",
+            "artifact_storage_dir does not equal managed artifact storage.",
+        )
+    path.mkdir(exist_ok=True)
+    return _managed_root(
+        path,
+        field="artifact_storage_dir",
+    )
 
 
 def _artifact_storage_path(storage_ref: str) -> Path:
@@ -165,7 +186,187 @@ def _json_default(value: Any) -> Any:
     return value
 
 
-def _persist_artifact_json(run: AnalysisRun, artifact_type: str, title: str, payload: dict[str, Any], summary: str | None = None) -> AnalysisArtifact:
+def _reserved_artifact_origin(
+    value: Mapping[str, Any],
+) -> dict[str, str]:
+    fields = {
+        'schema_id',
+        'connector_key',
+        'connector_run_target_id',
+        'connector_origin_receipt_hash',
+        'proof_class',
+    }
+    if set(value) != fields:
+        raise ValueError('reserved artifact origin integrity is malformed')
+    normalized = {field: str(value.get(field) or '').strip() for field in fields}
+    receipt_hash = normalized['connector_origin_receipt_hash']
+    if (
+        normalized['schema_id'] != 'layer3.connector_origin_integrity.v1'
+        or normalized['connector_key'] not in {'sciencebase_mcs', 'nrc_adams_aps'}
+        or normalized['proof_class'] not in {'fresh_live', 'offline_fixture'}
+        or not normalized['connector_run_target_id']
+        or len(receipt_hash) != 64
+        or any(char not in '0123456789abcdef' for char in receipt_hash)
+    ):
+        raise ValueError('reserved artifact origin integrity is invalid')
+    return normalized
+
+
+def _archive_staged_artifact(stage_path: Path) -> None:
+    archive_dir = _artifact_dir() / 'archive'
+    archive_dir.mkdir(exist_ok=True)
+    archive_dir = _managed_root(
+        archive_dir,
+        field='reserved artifact archive root',
+    )
+    archived_path = archive_dir / f'{stage_path.stem}-{uuid.uuid4().hex[:8]}.stage'
+    os.rename(stage_path, archived_path)
+
+
+def _persist_reserved_artifact_json(
+    run: AnalysisRun,
+    artifact_type: str,
+    title: str,
+    payload: dict[str, Any],
+    *,
+    summary: str | None,
+    connector_origin_integrity: Mapping[str, Any],
+) -> AnalysisArtifact:
+    origin = _reserved_artifact_origin(connector_origin_integrity)
+    payload_bytes = json.dumps(
+        payload,
+        indent=2,
+        default=_json_default,
+    ).encode('utf-8')
+    artifact_root = _artifact_dir()
+    stage_dir = artifact_root / 'stage'
+    stage_dir.mkdir(exist_ok=True)
+    stage_dir = _managed_root(
+        stage_dir,
+        field='reserved artifact stage root',
+    )
+    stage_path = stage_dir / f'{uuid.uuid4().hex}.tmp'
+    payload_hash = ''
+    artifact_path: Path | None = None
+    artifact_created = False
+    try:
+        with stage_path.open('xb') as handle:
+            handle.write(payload_bytes)
+            handle.flush()
+            os.fsync(handle.fileno())
+        staged_info = _managed_regular_file(stage_dir, stage_path)
+        if int(getattr(staged_info, 'st_nlink', 1)) != 1:
+            raise OSError('staged artifact has multiple links')
+        _, _, staged_bytes = _stable_managed_file(
+            stage_dir,
+            stage_path,
+            initial=staged_info,
+            read_bytes=True,
+        )
+        if staged_bytes is None:
+            raise OSError('staged artifact bytes are missing')
+        payload_hash = hashlib.sha256(staged_bytes).hexdigest()
+        if staged_bytes != payload_bytes:
+            raise OSError('staged artifact bytes changed')
+        artifact_path = (
+            artifact_root
+            / f'{artifact_type}_{run.analysis_run_id}_{payload_hash[:12]}.json'
+        )
+        try:
+            with artifact_path.open('xb') as handle:
+                artifact_created = True
+                handle.write(staged_bytes)
+                handle.flush()
+                os.fsync(handle.fileno())
+        except FileExistsError:
+            existing_info = _managed_regular_file(
+                artifact_root,
+                artifact_path,
+            )
+            if int(getattr(existing_info, 'st_nlink', 1)) != 1:
+                raise ValueError(
+                    'authoritative reserved artifact has multiple links'
+                )
+            _, _, existing = _stable_managed_file(
+                artifact_root,
+                artifact_path,
+                initial=existing_info,
+                read_bytes=True,
+            )
+            if existing != staged_bytes:
+                raise ValueError(
+                    'authoritative reserved artifact path has conflicting bytes'
+                )
+        final_info = _managed_regular_file(
+            artifact_root,
+            artifact_path,
+        )
+        if int(getattr(final_info, 'st_nlink', 1)) != 1:
+            raise OSError('published artifact has multiple links')
+        _, _, published = _stable_managed_file(
+            artifact_root,
+            artifact_path,
+            initial=final_info,
+            read_bytes=True,
+        )
+        if (
+            published is None
+            or published != payload_bytes
+            or hashlib.sha256(published).hexdigest() != payload_hash
+        ):
+            raise OSError('published artifact bytes changed')
+        _archive_staged_artifact(stage_path)
+    except Exception:
+        if artifact_created and artifact_path is not None and artifact_path.exists():
+            _archive_staged_artifact(artifact_path)
+        if stage_path.exists():
+            _archive_staged_artifact(stage_path)
+        raise
+    assert artifact_path is not None
+    return AnalysisArtifact(
+        analysis_run_id=run.analysis_run_id,
+        artifact_type=artifact_type,
+        title=title,
+        storage_ref=f'/storage/artifacts/{artifact_path.name}',
+        summary=summary,
+        metadata_json={
+            **dict(payload.get('summary_stats', {})),
+            'artifact_sha256': payload_hash,
+            'artifact_size_bytes': len(payload_bytes),
+            'connector_origin_receipt_hash': (
+                origin['connector_origin_receipt_hash']
+            ),
+            'proof_class': origin['proof_class'],
+        },
+    )
+
+
+def _persist_artifact_json(
+    run: AnalysisRun,
+    artifact_type: str,
+    title: str,
+    payload: dict[str, Any],
+    summary: str | None = None,
+    *,
+    connector_origin_integrity: Mapping[str, Any] | None = None,
+) -> AnalysisArtifact:
+    if connector_origin_integrity is not None:
+        try:
+            return _persist_reserved_artifact_json(
+                run,
+                artifact_type,
+                title,
+                payload,
+                summary=summary,
+                connector_origin_integrity=connector_origin_integrity,
+            )
+        except Layer3ExecutionOutputIntegrityError:
+            raise
+        except Exception as exc:
+            raise Layer3ExecutionOutputIntegrityError(
+                "layer3_output_integrity_mismatch",
+                "Reserved artifact publication failed closed.",
+            ) from exc
     artifact_path = _artifact_dir() / f'{artifact_type}_{run.analysis_run_id}_{uuid.uuid4().hex[:8]}.json'
     artifact_path.write_text(json.dumps(payload, indent=2, default=_json_default))
     artifact = AnalysisArtifact(
@@ -605,7 +806,15 @@ def _descriptive_column_summary(series: pd.Series, *, is_time_column: bool) -> d
     return summary
 
 
-def _run_descriptive_summary(db: Session, run: AnalysisRun, dataset_version_id: str, dataset: Dataset, df: pd.DataFrame) -> None:
+def _run_descriptive_summary(
+    db: Session,
+    run: AnalysisRun,
+    dataset_version_id: str,
+    dataset: Dataset,
+    df: pd.DataFrame,
+    *,
+    connector_origin_integrity: Mapping[str, Any] | None = None,
+) -> None:
     row_count = int(len(df))
     column_count = int(len(df.columns))
     has_data = row_count > 0 and column_count > 0
@@ -717,6 +926,7 @@ def _run_descriptive_summary(db: Session, run: AnalysisRun, dataset_version_id: 
         'Descriptive summary results',
         payload,
         summary=f'Descriptive summary for {row_count} rows and {column_count} columns.',
+        connector_origin_integrity=connector_origin_integrity,
     ))
 
 
@@ -891,7 +1101,17 @@ def _run_structural_break(db: Session, run: AnalysisRun, dataset_version_id: str
         db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='no_structural_break_artifacts', severity='medium', message='No variables produced structural break artifacts.'))
 
 
-def run_analysis(db: Session, dataset_version_id: str, method_name: str, goal_type: str | None, parameters: dict[str, Any], annotation_window_id: str | None) -> AnalysisRun:
+def run_analysis(
+    db: Session,
+    dataset_version_id: str,
+    method_name: str,
+    goal_type: str | None,
+    parameters: dict[str, Any],
+    annotation_window_id: str | None,
+    *,
+    commit: bool = True,
+    connector_origin_integrity: Mapping[str, Any] | None = None,
+) -> AnalysisRun:
     version = db.get(DatasetVersion, dataset_version_id)
     if not version:
         raise ValueError('dataset version not found')
@@ -902,6 +1122,13 @@ def run_analysis(db: Session, dataset_version_id: str, method_name: str, goal_ty
     df = load_version_dataframe(db, dataset_version_id)
     df = _apply_window(df, dataset, window)
     recommendation = recommend_analysis(db, dataset_version_id, goal_type)
+    if (
+        connector_origin_integrity is not None
+        and method_name != 'descriptive_summary'
+    ):
+        raise ValueError(
+            'reserved connector execution requires descriptive_summary'
+        )
     run = AnalysisRun(
         dataset_version_id=dataset_version_id,
         method_name=method_name,
@@ -926,10 +1153,20 @@ def run_analysis(db: Session, dataset_version_id: str, method_name: str, goal_ty
     elif method_spec.runner == 'structural_break':
         _run_structural_break(db, run, dataset_version_id, dataset, df)
     elif method_spec.runner == 'descriptive_summary':
-        _run_descriptive_summary(db, run, dataset_version_id, dataset, df)
+        _run_descriptive_summary(
+            db,
+            run,
+            dataset_version_id,
+            dataset,
+            df,
+            connector_origin_integrity=connector_origin_integrity,
+        )
     else:
         raise RuntimeError(f'Analysis method registry runner is unsupported: {method_spec.runner}')
 
-    db.commit()
-    db.refresh(run)
+    if commit:
+        db.commit()
+        db.refresh(run)
+    else:
+        db.flush()
     return run

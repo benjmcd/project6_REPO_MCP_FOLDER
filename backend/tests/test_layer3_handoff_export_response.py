@@ -4,6 +4,8 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+
 os.environ["DB_INIT_MODE"] = "none"
 
 BACKEND = Path(__file__).resolve().parents[1]
@@ -25,6 +27,7 @@ from app.services.layer3_package_submit_response import (
     QUAL_APS_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
 )
 from app.services.layer3_workbench_package_state import HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 def _package(package_kind: str, output_package_id: str, *, payload_hash: str) -> L3OutputPackage:
@@ -41,6 +44,24 @@ def _reconciliation() -> L3ReconciliationRecord:
 
 
 def _prepare_state(**overrides) -> dict:
+    origin_integrity = {
+        "schema_id": "layer3.connector_origin_integrity.v1",
+        "connector_key": "sciencebase_mcs",
+        "connector_run_target_id": "target-handoff",
+        "connector_origin_receipt_hash": "a" * 64,
+        "proof_class": "offline_fixture",
+    }
+    output_integrity = {
+        "schema_id": "layer3.connector_output_integrity.v1",
+        **{
+            key: value
+            for key, value in origin_integrity.items()
+            if key != "schema_id"
+        },
+        "artifact_receipts": [],
+        "artifact_set_hash": "b" * 64,
+        "output_manifest_sha256": "c" * 64,
+    }
     state = {
         "package_review_submit_record_ref": "layer3://package-review-submit/session/record",
         "package_review_state": "package_review_approved",
@@ -54,6 +75,8 @@ def _prepare_state(**overrides) -> dict:
             "external_handoff_enabled": False,
             "external_export_enabled": False,
             "dispatch_enabled": False,
+            "connector_origin_integrity_v1": origin_integrity,
+            "connector_output_integrity_v1": output_integrity,
         },
         "pass_type": "single_item",
         "pass_scope": "quant_single_item",
@@ -127,6 +150,35 @@ def test_handoff_export_prepare_response_preserves_workbench_projection() -> Non
     assert response["authority_rail"]["persistence_mode"] == "durable_handoff_export_prepare"
     assert response["authority_rail"]["downstream_unavailable"] == list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE)
     assert response["handoff_export_envelope"]["dispatch_enabled"] is False
+    assert response["handoff_export_envelope"]["connector_origin_integrity_v1"] == (
+        kwargs["prepare_state"]["handoff_export_envelope"]["connector_origin_integrity_v1"]
+    )
+    assert response["handoff_export_envelope"]["connector_output_integrity_v1"] == (
+        kwargs["prepare_state"]["handoff_export_envelope"]["connector_output_integrity_v1"]
+    )
+
+
+def test_handoff_replay_rejects_stored_connector_integrity_drift() -> None:
+    prepare_state = _prepare_state()
+    envelope = prepare_state["handoff_export_envelope"]
+    expected_origin = envelope["connector_origin_integrity_v1"]
+    expected_output = envelope["connector_output_integrity_v1"]
+    envelope["connector_origin_integrity_v1"] = {
+        **expected_origin,
+        "connector_origin_receipt_hash": "d" * 64,
+    }
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_workbench._assert_handoff_prepare_connector_integrity(  # type: ignore[attr-defined]
+            prepare_state=prepare_state,
+            connector_origin_integrity=expected_origin,
+            connector_output_integrity=expected_output,
+        )
+
+    assert (
+        excinfo.value.error_code
+        == "handoff_export_prepare_integrity_mismatch"
+    )
 
 
 def test_handoff_export_prepare_response_preserves_cohort_schema_and_provenance() -> None:
