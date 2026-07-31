@@ -772,6 +772,7 @@ class ProofLocks:
         "_acquiring_thread_id",
         "_root_owned",
         "_campaign_owned",
+        "_registered",
         "_closed",
     )
 
@@ -791,6 +792,7 @@ class ProofLocks:
         self._acquiring_thread_id: int | None = None
         self._root_owned = False
         self._campaign_owned = False
+        self._registered = False
         self._closed = False
 
     @classmethod
@@ -816,6 +818,7 @@ class ProofLocks:
         instance._acquiring_thread_id = threading.get_ident()
         instance._root_owned = True
         instance._campaign_owned = True
+        instance._registered = True
         return instance
 
     def __enter__(self) -> ProofLocks:
@@ -828,9 +831,6 @@ class ProofLocks:
 
     def close(self) -> None:
         if self._closed:
-            return
-        if self._campaign_mutex is None and self._root_mutex is None:
-            self._closed = True
             return
         assert _kernel32 is not None
         if (
@@ -875,9 +875,11 @@ class ProofLocks:
                 self._security_descriptor = None
         if cleanup_failed:
             _fail("dual_live_lock_cleanup_failed")
-        with _held_lock:
-            _held_roots.discard(self.root_identity_sha256)
-            _held_campaigns.discard(self.campaign_identity_sha256)
+        if self._registered:
+            with _held_lock:
+                _held_roots.discard(self.root_identity_sha256)
+                _held_campaigns.discard(self.campaign_identity_sha256)
+            self._registered = False
         self._closed = True
 
 
@@ -908,6 +910,56 @@ def _verify_private_handle(handle: int, user_sid: str, expected_mask: int) -> No
     )
     if entries != (("S-1-5-18", expected_mask), (user_sid, expected_mask)):
         _fail("dual_live_lock_acl_mismatch")
+
+
+def _cleanup_failed_lock_acquisition(
+    *,
+    root_identity_sha256: str,
+    campaign_identity_sha256: str,
+    root_registered: bool,
+    root_directory: int | None,
+    namespace_handle: int | None,
+    boundary_descriptor: int | None,
+    security_descriptor: int | None,
+    root_mutex: int | None,
+    campaign_mutex: int | None,
+    root_owned: bool,
+    campaign_owned: bool,
+) -> None:
+    assert _kernel32 is not None
+    cleanup_failed = False
+
+    if campaign_owned:
+        if _kernel32.ReleaseMutex(campaign_mutex):
+            campaign_owned = False
+        else:
+            cleanup_failed = True
+    if root_owned:
+        if _kernel32.ReleaseMutex(root_mutex):
+            root_owned = False
+        else:
+            cleanup_failed = True
+
+    for handle, still_owned in (
+        (campaign_mutex, campaign_owned),
+        (root_mutex, root_owned),
+        (root_directory, False),
+    ):
+        if handle and not still_owned and not _kernel32.CloseHandle(handle):
+            cleanup_failed = True
+    if namespace_handle and not _kernel32.ClosePrivateNamespace(namespace_handle, 0):
+        cleanup_failed = True
+    if boundary_descriptor:
+        _kernel32.DeleteBoundaryDescriptor(boundary_descriptor)
+    if security_descriptor and _kernel32.LocalFree(security_descriptor):
+        cleanup_failed = True
+
+    if cleanup_failed:
+        _fail("dual_live_lock_cleanup_failed")
+    if root_registered:
+        with _held_lock:
+            _held_roots.discard(root_identity_sha256)
+            _held_campaigns.discard(campaign_identity_sha256)
 
 
 def acquire_proof_locks(
@@ -943,6 +995,7 @@ def acquire_proof_locks(
     root_mutex: int | None = None
     campaign_mutex: int | None = None
     root_owned = False
+    campaign_owned = False
     root_registered = False
     try:
         with _held_lock:
@@ -1013,6 +1066,7 @@ def acquire_proof_locks(
             _fail("dual_live_lock_namespace_squatted")
         _verify_private_handle(campaign_mutex, sid_text, _MUTEX_ALL_ACCESS)
         _wait_mutex(campaign_mutex, wait_ms)
+        campaign_owned = True
         return ProofLocks._from_owned_handles(
             root_identity_sha256,
             campaign_identity_sha256,
@@ -1024,23 +1078,23 @@ def acquire_proof_locks(
             campaign_mutex=int(campaign_mutex),
         )
     except BaseException:
-        if campaign_mutex:
-            _close_handle(campaign_mutex)
-        if root_owned and root_mutex:
-            _kernel32.ReleaseMutex(root_mutex)
-        if root_registered:
-            with _held_lock:
-                _held_roots.discard(root_identity_sha256)
-                _held_campaigns.discard(campaign_identity_sha256)
-        if root_mutex:
-            _close_handle(root_mutex)
-        if namespace_handle:
-            _kernel32.ClosePrivateNamespace(namespace_handle, 0)
-        if boundary_descriptor:
-            _kernel32.DeleteBoundaryDescriptor(boundary_descriptor)
-        if security_descriptor.value:
-            _kernel32.LocalFree(security_descriptor)
-        _close_handle(root_directory)
+        _cleanup_failed_lock_acquisition(
+            root_identity_sha256=root_identity_sha256,
+            campaign_identity_sha256=campaign_identity_sha256,
+            root_registered=root_registered,
+            root_directory=root_directory,
+            namespace_handle=int(namespace_handle) if namespace_handle else None,
+            boundary_descriptor=(
+                int(boundary_descriptor) if boundary_descriptor else None
+            ),
+            security_descriptor=(
+                int(security_descriptor.value) if security_descriptor.value else None
+            ),
+            root_mutex=int(root_mutex) if root_mutex else None,
+            campaign_mutex=int(campaign_mutex) if campaign_mutex else None,
+            root_owned=root_owned,
+            campaign_owned=campaign_owned,
+        )
         raise
 
 

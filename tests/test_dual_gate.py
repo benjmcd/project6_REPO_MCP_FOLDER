@@ -595,6 +595,207 @@ def test_proof_lock_partial_release_failure_is_retryable(
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+@pytest.mark.parametrize("failed_resource", ("root_directory", "namespace", "security"))
+def test_proof_lock_cleanup_failure_retries_remaining_resource(
+    tmp_path: Path,
+    failed_resource: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    locks = acquire_proof_locks(
+        tmp_path,
+        CAMPAIGN_ID,
+        CAMPAIGN_FINGERPRINT,
+        DEFINITION_SHA,
+    )
+    root_directory = locks._root_directory
+    namespace_handle = locks._namespace_handle
+    security_descriptor = locks._security_descriptor
+    original_close = dual_live_windows._kernel32.CloseHandle
+    original_close_namespace = dual_live_windows._kernel32.ClosePrivateNamespace
+    original_local_free = dual_live_windows._kernel32.LocalFree
+    failed_once = False
+
+    def close_handle_once(handle: object) -> int:
+        nonlocal failed_once
+        if (
+            failed_resource == "root_directory"
+            and int(handle) == root_directory
+            and not failed_once
+        ):
+            failed_once = True
+            return 0
+        return int(original_close(handle))
+
+    def close_namespace_once(handle: object, flags: int) -> int:
+        nonlocal failed_once
+        if (
+            failed_resource == "namespace"
+            and int(handle) == namespace_handle
+            and not failed_once
+        ):
+            failed_once = True
+            return 0
+        return int(original_close_namespace(handle, flags))
+
+    def local_free_once(handle: object) -> object:
+        nonlocal failed_once
+        handle_value = ctypes.cast(handle, ctypes.c_void_p).value
+        if (
+            failed_resource == "security"
+            and handle_value == security_descriptor
+            and not failed_once
+        ):
+            failed_once = True
+            return handle
+        return original_local_free(handle)
+
+    monkeypatch.setattr(dual_live_windows._kernel32, "CloseHandle", close_handle_once)
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "ClosePrivateNamespace",
+        close_namespace_once,
+    )
+    monkeypatch.setattr(dual_live_windows._kernel32, "LocalFree", local_free_once)
+
+    with pytest.raises(DualLiveWindowsError, match="dual_live_lock_cleanup_failed"):
+        locks.close()
+    assert failed_once
+    assert not locks._closed
+    assert locks._registered
+    assert locks.root_identity_sha256 in dual_live_windows._held_roots
+    assert locks.campaign_identity_sha256 in dual_live_windows._held_campaigns
+
+    locks.close()
+    assert locks._closed
+    assert not locks._registered
+    assert locks.root_identity_sha256 not in dual_live_windows._held_roots
+    assert locks.campaign_identity_sha256 not in dual_live_windows._held_campaigns
+    with acquire_proof_locks(
+        tmp_path,
+        CAMPAIGN_ID,
+        CAMPAIGN_FINGERPRINT,
+        DEFINITION_SHA,
+    ):
+        pass
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_proof_lock_final_transfer_failure_cleans_and_allows_reacquire(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail_transfer(*args: object, **kwargs: object) -> object:
+        raise DualLiveWindowsError("dual_live_lock_transfer_failed")
+
+    monkeypatch.setattr(
+        dual_live_windows.ProofLocks,
+        "_from_owned_handles",
+        classmethod(fail_transfer),
+    )
+    with pytest.raises(DualLiveWindowsError, match="dual_live_lock_transfer_failed"):
+        acquire_proof_locks(
+            tmp_path,
+            CAMPAIGN_ID,
+            CAMPAIGN_FINGERPRINT,
+            DEFINITION_SHA,
+        )
+    assert not dual_live_windows._held_roots
+    assert not dual_live_windows._held_campaigns
+
+    monkeypatch.undo()
+    with acquire_proof_locks(
+        tmp_path,
+        CAMPAIGN_ID,
+        CAMPAIGN_FINGERPRINT,
+        DEFINITION_SHA,
+    ):
+        pass
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_failed_lock_acquisition_release_failure_retains_registry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    locks = acquire_proof_locks(
+        tmp_path,
+        CAMPAIGN_ID,
+        CAMPAIGN_FINGERPRINT,
+        DEFINITION_SHA,
+    )
+    resources = {
+        "root_identity_sha256": locks.root_identity_sha256,
+        "campaign_identity_sha256": locks.campaign_identity_sha256,
+        "root_registered": True,
+        "root_directory": locks._root_directory,
+        "namespace_handle": locks._namespace_handle,
+        "boundary_descriptor": locks._boundary_descriptor,
+        "security_descriptor": locks._security_descriptor,
+        "root_mutex": locks._root_mutex,
+        "campaign_mutex": locks._campaign_mutex,
+        "root_owned": True,
+        "campaign_owned": True,
+    }
+    campaign_mutex = locks._campaign_mutex
+    locks._root_directory = None
+    locks._namespace_handle = None
+    locks._boundary_descriptor = None
+    locks._security_descriptor = None
+    locks._root_mutex = None
+    locks._campaign_mutex = None
+    locks._root_owned = False
+    locks._campaign_owned = False
+    locks._registered = False
+    locks._closed = True
+
+    original_release = dual_live_windows._kernel32.ReleaseMutex
+
+    def fail_campaign_release(handle: object) -> int:
+        if int(handle) == campaign_mutex:
+            return 0
+        return int(original_release(handle))
+
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "ReleaseMutex",
+        fail_campaign_release,
+    )
+    try:
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_lock_cleanup_failed",
+        ):
+            dual_live_windows._cleanup_failed_lock_acquisition(**resources)
+        assert resources["root_identity_sha256"] in dual_live_windows._held_roots
+        assert (
+            resources["campaign_identity_sha256"]
+            in dual_live_windows._held_campaigns
+        )
+        with pytest.raises(DualLiveWindowsError, match="dual_live_lock_busy"):
+            acquire_proof_locks(
+                tmp_path,
+                CAMPAIGN_ID,
+                CAMPAIGN_FINGERPRINT,
+                DEFINITION_SHA,
+            )
+    finally:
+        monkeypatch.setattr(
+            dual_live_windows._kernel32,
+            "ReleaseMutex",
+            original_release,
+        )
+        assert original_release(campaign_mutex)
+        assert dual_live_windows._kernel32.CloseHandle(campaign_mutex)
+        with dual_live_windows._held_lock:
+            dual_live_windows._held_roots.discard(
+                resources["root_identity_sha256"]
+            )
+            dual_live_windows._held_campaigns.discard(
+                resources["campaign_identity_sha256"]
+            )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
 def test_proof_lock_acl_mismatch_refuses(tmp_path: Path) -> None:
     locks = acquire_proof_locks(
         tmp_path,
