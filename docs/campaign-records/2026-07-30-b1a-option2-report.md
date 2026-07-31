@@ -122,3 +122,22 @@ Branch: `codex/dual-live-plan`
 - `2111c72fd6dd84e6524bf55609a5f3ed5005dbcf` — `test(sec-xbrl): harden receipt redaction scan`
 
 Tracked worktree and index are clean. No AI trailers. No fetch, network acquisition, push, PR, merge, external reseal, or live-runtime authority action was performed.
+
+## Adversarial verification (Fable, 2026-07-30) — B1A-OPTION2-SOUND
+No coverage laundering. Independent AST reconstruction (location-stripped ast.dump, per-fn sha256):
+all 9 successor tests IDENTICAL to their 8ec90984 predecessors; all 13 restored pilot tests
+byte-identical to sealed13 by blob identity; old22 − sealed13 = exactly the 9 successor tests (zero
+overlap/missing/extra). Seal assertion at vertical_loop.py:2767 provably FIRED against the restored
+bytes (seven sealed instruments present → EARLY_EXTERNAL_SEAL_RECEIPTS armed, not vacuous). Both
+"test-only" fixes verified genuinely test-only: StaticPool (canonical sqlite fresh-DB-per-connection
+fix, production admission untouched) and — critically — the sec-xbrl REDACTION change STRENGTHENED
+(exact-equality assert on recorded_at + fixed "200"-containing timestamp pins the flake permanently;
+banned-substring set + _LONG_HEX_RUN unchanged; nothing loosened). Touched surface reproduced: 131
+passed exit 0. Scope confirmed: seal constant untouched, successor self-contained (zero pilot-module
+import), 5 test files + 1 report only, no push.
+THREE MINORS (auditability, non-blocking — folded into the G1-completion dispatch):
+1. Successor tests fall outside the conventional 10-file V4 gate command (V7 broad -k catches them);
+   append tests/test_layer3_intake_successor.py to the V4 list.
+2. _decision_basis helper in the successor dropped a dead include_connector_target param (no test
+   uses it; report's "test BODIES AST-identical" claim remains precise).
+3. Successor module lacks a provenance docstring citing predecessor blob 8ec90984.
