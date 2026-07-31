@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import os
 import shutil
@@ -13,9 +14,42 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 GATE = ROOT / "tools" / "dual_live_gate.py"
 PROJECT6 = ROOT / "project6.ps1"
+FROZEN_PLAN = ROOT / "docs" / "superpowers" / "plans" / "2026-07-29-dual-live-proof.md"
+PILOT_TEST = ROOT / "backend" / "tests" / "test_layer3_connector_vertical_loop.py"
 POWERSHELL = shutil.which("powershell") or shutil.which("pwsh")
 CAMPAIGN_ID = "123e4567-e89b-42d3-a456-426614174000"
 CAMPAIGN_FINGERPRINT = "a" * 64
+EXPECTED_FROZEN_PLAN_BLOB = "68f740af86dc7d1ac2227f81a6ea28e7e2c7458f"
+TASK8_IMPLEMENTATION_BASE = "49cc7e20d1a4dcd6f84df076aafc18d0cd03b876"
+FORBIDDEN_REQUIRED_ALIASES = (
+    "DUAL_LIVE_POSTRUN",
+    "DUAL_LIVE_ATTESTATION",
+    "DUAL_LIVE_ISSUER",
+)
+FORBIDDEN_PRODUCTION_PATHS = (
+    "backend/app/services/dual_live_postrun_evidence.py",
+    "tools/dual_live_issue.py",
+)
+ALLOWED_NEW_PRODUCTION_PATHS = (
+    "backend/app/services/dual_live_runtime.py",
+    "backend/app/services/dual_live_windows.py",
+    "tools/dual_live_run.py",
+)
+FIRST_TRANCHE_REQUIRED_PRODUCTION_PATHS = (
+    "backend/app/services/dual_live_runtime.py",
+)
+ALLOWED_CHANGED_PRODUCTION_PATHS = frozenset(
+    (
+        *ALLOWED_NEW_PRODUCTION_PATHS,
+        "backend/app/services/connector_egress_authorization.py",
+        "backend/app/services/connector_egress_transport.py",
+        "backend/app/services/connector_egress_arming.py",
+        "backend/app/services/connector_campaign_log_capture.py",
+        "backend/app/services/dual_live_evaluator.py",
+        "tools/dual_live_gate.py",
+        "project6.ps1",
+    )
+)
 AUTHORITY_VARIABLES = (
     "CONNECTOR_CAMPAIGN_DEFINITION_PATH",
     "CONNECTOR_CAMPAIGN_DEFINITION_SHA256",
@@ -46,6 +80,92 @@ EXPECTED_REPORT = {
         "no production readiness claim",
     ],
 }
+
+
+def _git_output(*args: str) -> str:
+    completed = subprocess.run(
+        ["git", *args],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return completed.stdout.strip()
+
+
+def _is_production_path(path: str) -> bool:
+    return (
+        path == "project6.ps1"
+        or path.startswith("backend/app/")
+        or path.startswith("tools/")
+    )
+
+
+def _changed_production_paths() -> frozenset[str]:
+    changed = _git_output(
+        "diff",
+        "--name-only",
+        "--diff-filter=ACMR",
+        TASK8_IMPLEMENTATION_BASE,
+    ).splitlines()
+    untracked = _git_output(
+        "ls-files",
+        "--others",
+        "--exclude-standard",
+        "--",
+        "backend/app",
+        "tools",
+        "project6.ps1",
+    ).splitlines()
+    return frozenset(path for path in (*changed, *untracked) if _is_production_path(path))
+
+
+def _tracked_source_text() -> str:
+    paths = ALLOWED_CHANGED_PRODUCTION_PATHS | _changed_production_paths()
+    return "\n".join(
+        (ROOT / path).read_text(encoding="utf-8")
+        for path in sorted(paths)
+        if (ROOT / path).is_file()
+    )
+
+
+def _git_blob_sha(path: Path) -> str:
+    return _git_output("hash-object", str(path.relative_to(ROOT)))
+
+
+def _pilot_seal() -> str:
+    tree = ast.parse(PILOT_TEST.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if isinstance(target, ast.Name) and target.id == "FIXTURE_SOURCE_FILE_GIT_BLOB":
+            value = ast.literal_eval(node.value)
+            assert isinstance(value, str)
+            return value
+    raise AssertionError("pilot seal constant is missing")
+
+
+def test_a_scoped_build_adds_no_attestation_index_or_env_contract() -> None:
+    tracked = _tracked_source_text()
+    assert all(alias not in tracked for alias in FORBIDDEN_REQUIRED_ALIASES)
+    assert all(not (ROOT / path).exists() for path in FORBIDDEN_PRODUCTION_PATHS)
+
+
+def test_a_scoped_changed_production_surface_is_allowlisted() -> None:
+    assert _changed_production_paths() <= ALLOWED_CHANGED_PRODUCTION_PATHS
+
+
+def test_frozen_and_sealed_authority_files_are_unchanged() -> None:
+    assert _git_blob_sha(FROZEN_PLAN) == EXPECTED_FROZEN_PLAN_BLOB
+    assert _pilot_seal() == "b8a89df28ed1ed5adfd8ded7ee12d28863cf0ed2"
+
+
+def test_a_scoped_build_has_required_runtime_units() -> None:
+    assert all(
+        (ROOT / path).is_file() for path in FIRST_TRANCHE_REQUIRED_PRODUCTION_PATHS
+    )
 
 
 def _compact(payload: dict[str, object]) -> bytes:
