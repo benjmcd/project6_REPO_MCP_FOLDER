@@ -195,6 +195,24 @@ class ReplacementFilter(logging.Filter):
         return True
 
 
+class ExitCensusMutationLogger(logging.Logger):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.mutate_on_census = False
+        self.mutation_denied = False
+
+    def getEffectiveLevel(self) -> int:
+        if self.mutate_on_census:
+            self.mutate_on_census = False
+            try:
+                self.addFilter(ReplacementFilter())
+            except DualLiveRuntimeError as exc:
+                if exc.code != "dual_live_logger_topology_frozen":
+                    raise
+                self.mutation_denied = True
+        return super().getEffectiveLevel()
+
+
 class ArbitraryHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         return None
@@ -845,6 +863,27 @@ def test_r07_logger_freeze_blocks_normal_mutation_and_rechecks_exact_topology(
     assert final["topology_sha256"]
 
 
+def test_r07_logger_exit_census_keeps_guards_until_comparison_then_restores(
+    isolated_logging: logging.RootLogger,
+) -> None:
+    isolated_logging.handlers.clear()
+    manager = logging.Logger.manager
+    logger = ExitCensusMutationLogger("task8.exit-census")
+    logger.parent = isolated_logging
+    logger.manager = manager
+    manager.loggerDict[logger.name] = logger
+    recheck = freeze_logger_topology(frozenset())
+
+    logger.mutate_on_census = True
+    final = recheck()
+
+    assert final["topology_sha256"]
+    assert logger.mutation_denied is True
+    assert logger.filters == []
+    logger.addFilter(NamedFilter())
+    assert len(logger.filters) == 1
+
+
 def test_r07_logger_freeze_guards_future_logger_creation_and_restores_global_api(
     isolated_logging: logging.RootLogger,
 ) -> None:
@@ -878,12 +917,16 @@ def test_r07_logger_exit_recheck_detects_direct_late_handler_and_filter_change(
     logger = logging.getLogger("task8.real")
     logger.addFilter(NamedFilter())
     original_get_logger = logging.getLogger
+    original_level = logger.level
     recheck = freeze_logger_topology(frozenset(("app-pipe", "late-pipe")))
 
     isolated_logging.handlers.append(_pipe_handler("late-pipe"))
     with pytest.raises(DualLiveRuntimeError, match="dual_live_logger_topology_changed"):
         recheck()
     assert logging.getLogger is original_get_logger
+    logger.setLevel(logging.INFO)
+    assert logger.level == logging.INFO
+    logger.setLevel(original_level)
 
     isolated_logging.handlers.pop()
     filter_recheck = freeze_logger_topology(

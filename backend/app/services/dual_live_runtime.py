@@ -779,65 +779,71 @@ def _project_placeholder(name: str) -> dict[str, Any]:
     }
 
 
+def _census_loggers_locked(
+    allowed_pipe_tokens: frozenset[str],
+) -> dict[str, Any]:
+    root = logging.root
+    manager = logging.Logger.manager
+    if not isinstance(root, logging.RootLogger) or manager.root is not root:
+        _fail("dual_live_logger_manager_invalid")
+    seen_pipe_tokens: set[str] = set()
+    entries = [
+        _project_logger(
+            root,
+            name="",
+            kind="root",
+            allowed_pipe_tokens=allowed_pipe_tokens,
+            seen_pipe_tokens=seen_pipe_tokens,
+        )
+    ]
+    for name, value in sorted(manager.loggerDict.items()):
+        if not isinstance(name, str):
+            _fail("dual_live_logger_entry_invalid")
+        if isinstance(value, logging.Logger):
+            entries.append(
+                _project_logger(
+                    value,
+                    name=name,
+                    kind="logger",
+                    allowed_pipe_tokens=allowed_pipe_tokens,
+                    seen_pipe_tokens=seen_pipe_tokens,
+                )
+            )
+        elif type(value) is logging.PlaceHolder:
+            entries.append(_project_placeholder(name))
+        else:
+            _fail("dual_live_logger_entry_invalid")
+
+    last_resort_handler = logging.lastResort
+    last_resort = (
+        _project_handler(
+            last_resort_handler,
+            allowed_pipe_tokens=allowed_pipe_tokens,
+            seen_pipe_tokens=seen_pipe_tokens,
+        )
+        if last_resort_handler is not None
+        else None
+    )
+    preimage: dict[str, Any] = {
+        "schema_id": LOGGER_TOPOLOGY_SCHEMA_ID,
+        "loggers": entries,
+        "last_resort": last_resort,
+        "handler_count": sum(len(entry["handlers"]) for entry in entries)
+        + (1 if last_resort is not None else 0),
+    }
+    return {
+        **preimage,
+        "topology_sha256": hashlib.sha256(
+            canonical_json_bytes(preimage)
+        ).hexdigest(),
+    }
+
+
 def census_loggers(allowed_pipe_tokens: frozenset[str]) -> dict[str, Any]:
     _require_allowed_pipe_tokens(allowed_pipe_tokens)
     logging._acquireLock()
     try:
-        root = logging.getLogger()
-        manager = logging.Logger.manager
-        if not isinstance(root, logging.RootLogger) or manager.root is not root:
-            _fail("dual_live_logger_manager_invalid")
-        seen_pipe_tokens: set[str] = set()
-        entries = [
-            _project_logger(
-                root,
-                name="",
-                kind="root",
-                allowed_pipe_tokens=allowed_pipe_tokens,
-                seen_pipe_tokens=seen_pipe_tokens,
-            )
-        ]
-        for name, value in sorted(manager.loggerDict.items()):
-            if not isinstance(name, str):
-                _fail("dual_live_logger_entry_invalid")
-            if isinstance(value, logging.Logger):
-                entries.append(
-                    _project_logger(
-                        value,
-                        name=name,
-                        kind="logger",
-                        allowed_pipe_tokens=allowed_pipe_tokens,
-                        seen_pipe_tokens=seen_pipe_tokens,
-                    )
-                )
-            elif type(value) is logging.PlaceHolder:
-                entries.append(_project_placeholder(name))
-            else:
-                _fail("dual_live_logger_entry_invalid")
-
-        last_resort_handler = logging.lastResort
-        last_resort = (
-            _project_handler(
-                last_resort_handler,
-                allowed_pipe_tokens=allowed_pipe_tokens,
-                seen_pipe_tokens=seen_pipe_tokens,
-            )
-            if last_resort_handler is not None
-            else None
-        )
-        preimage: dict[str, Any] = {
-            "schema_id": LOGGER_TOPOLOGY_SCHEMA_ID,
-            "loggers": entries,
-            "last_resort": last_resort,
-            "handler_count": sum(len(entry["handlers"]) for entry in entries)
-            + (1 if last_resort is not None else 0),
-        }
-        return {
-            **preimage,
-            "topology_sha256": hashlib.sha256(
-                canonical_json_bytes(preimage)
-            ).hexdigest(),
-        }
+        return _census_loggers_locked(allowed_pipe_tokens)
     finally:
         logging._releaseLock()
 
@@ -872,11 +878,12 @@ def _restore_logging_attributes(
 def freeze_logger_topology(
     allowed_pipe_tokens: frozenset[str],
 ) -> Callable[[], dict[str, Any]]:
+    _require_allowed_pipe_tokens(allowed_pipe_tokens)
     patched: list[tuple[object, str, object]] = []
     logging._acquireLock()
     try:
-        initial = census_loggers(allowed_pipe_tokens)
-        root = logging.getLogger()
+        initial = _census_loggers_locked(allowed_pipe_tokens)
+        root = logging.root
         manager = logging.Logger.manager
         logger_values = [
             value
@@ -953,11 +960,13 @@ def freeze_logger_topology(
             if finished:
                 _fail("dual_live_logger_recheck_already_completed")
             finished = True
-            _restore_logging_attributes(patched)
-            current = census_loggers(allowed_pipe_tokens)
-            if current != initial:
-                _fail("dual_live_logger_topology_changed")
-            return current
+            try:
+                current = _census_loggers_locked(allowed_pipe_tokens)
+                if current != initial:
+                    _fail("dual_live_logger_topology_changed")
+                return current
+            finally:
+                _restore_logging_attributes(patched)
         finally:
             logging._releaseLock()
 
