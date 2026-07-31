@@ -50,6 +50,18 @@ WINDOWS_MIB_TCP_STATES = (
 _LOWERCASE_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _LOWERCASE_CODE_REVISION = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 _PHASES = frozenset(("wrapper", "A", "B"))
+_EVENT_PHASES = {
+    "runtime_start": frozenset(("wrapper",)),
+    "phase_child_start": frozenset(("A", "B")),
+    "logger_census": frozenset(("A", "B")),
+    "phase_go": frozenset(("A", "B")),
+    "stop_latched": frozenset(("wrapper",)),
+    "socket_census": frozenset(("A", "B")),
+    "job_zero": frozenset(("A", "B")),
+    "authority_cleared": frozenset(("A", "B")),
+    "phase_complete": frozenset(("A", "B")),
+    "runtime_complete": frozenset(("wrapper",)),
+}
 _FSM_STATES = frozenset(
     (
         "A_BOOT_DENY",
@@ -72,6 +84,10 @@ _PHASE_GO_EDGES = frozenset(
         ("B_CENSUS_OK", "B_GO"),
     )
 )
+_PHASE_GO_EDGE_BY_PHASE = {
+    "A": ("A_CENSUS_OK", "A_GO"),
+    "B": ("B_CENSUS_OK", "B_GO"),
+}
 _STOP_REASONS = frozenset(
     (
         "child_exit_nonzero",
@@ -263,6 +279,7 @@ def _validate_payload(event: str, payload: Mapping[str, Any]) -> dict[str, Any]:
         _require_sha256(payload["process_identity_sha256"], code)
         _require_bool(payload["stable"], code)
     elif event == "job_zero":
+        _require_nonnegative_int(payload["active_process_count"], code)
         if payload["active_process_count"] != 0:
             _fail(code)
         _require_sha256(payload["process_list_sha256"], code)
@@ -281,6 +298,21 @@ def _validate_payload(event: str, payload: Mapping[str, Any]) -> dict[str, Any]:
     if not isinstance(copied, dict):  # pragma: no cover - mapping narrows this
         _fail(code)
     return {key: copied[key] for key in expected_keys}
+
+
+def _require_event_phase(
+    *,
+    phase: str,
+    event: str,
+    payload: Mapping[str, Any] | None,
+    code: str,
+) -> None:
+    if phase not in _EVENT_PHASES[event]:
+        _fail(code)
+    if event == "phase_go" and payload is not None:
+        edge = (payload["prior_state"], payload["next_state"])
+        if _PHASE_GO_EDGE_BY_PHASE.get(phase) != edge:
+            _fail(code)
 
 
 def _record_hash(record: Mapping[str, Any]) -> str:
@@ -343,9 +375,19 @@ class RuntimeRecordWriter:
             _require_uuid4(process_boot_id, "dual_live_runtime_process_boot_id_invalid")
         if event not in _EVENT_PAYLOAD_KEYS:
             _fail("dual_live_runtime_event_invalid")
-        if event in ("runtime_start", "runtime_complete") and phase != "wrapper":
-            _fail("dual_live_runtime_phase_invalid")
+        _require_event_phase(
+            phase=phase,
+            event=event,
+            payload=None,
+            code="dual_live_runtime_phase_invalid",
+        )
         event_payload = _validate_payload(event, payload)
+        _require_event_phase(
+            phase=phase,
+            event=event,
+            payload=event_payload,
+            code="dual_live_runtime_phase_invalid",
+        )
         if event == "runtime_start" and any(
             event_payload[field] != getattr(self._identity, field)
             for field in (
@@ -406,9 +448,9 @@ def _validate_runtime_record(record: Mapping[str, Any]) -> dict[str, Any]:
     event = record["event"]
     if not isinstance(event, str) or event not in _EVENT_PAYLOAD_KEYS:
         _fail(code)
-    if event in ("runtime_start", "runtime_complete") and phase != "wrapper":
-        _fail(code)
+    _require_event_phase(phase=phase, event=event, payload=None, code=code)
     payload = _validate_payload(event, record["payload"])
+    _require_event_phase(phase=phase, event=event, payload=payload, code=code)
     previous = record["previous_record_sha256"]
     if previous is not None:
         _require_sha256(previous, code)
@@ -555,21 +597,68 @@ class PipeFrameBudget:
             self._total_bytes = next_total_bytes
 
 
+class CampaignPipeSink:
+    __slots__ = ("_bound_handler", "_lock", "_pipe_token", "_writer")
+
+    def __init__(self, pipe_token: str, writer: BinaryIO) -> None:
+        if (
+            not isinstance(pipe_token, str)
+            or _PIPE_TOKEN.fullmatch(pipe_token) is None
+            or not callable(getattr(writer, "write", None))
+        ):
+            _fail("dual_live_logger_pipe_sink_invalid")
+        self._pipe_token = pipe_token
+        self._writer = writer
+        self._bound_handler: CampaignPipeHandler | None = None
+        self._lock = threading.Lock()
+
+    @property
+    def pipe_token(self) -> str:
+        return self._pipe_token
+
+    def _bind(self, handler: CampaignPipeHandler) -> None:
+        with self._lock:
+            if (
+                type(handler) is not CampaignPipeHandler
+                or self._bound_handler is not None
+            ):
+                _fail("dual_live_logger_pipe_binding_invalid")
+            self._bound_handler = handler
+
+    def _is_bound_to(self, handler: CampaignPipeHandler) -> bool:
+        with self._lock:
+            return self._bound_handler is handler
+
+    def _write_frame(self, handler: CampaignPipeHandler, frame: bytes) -> None:
+        with self._lock:
+            if self._bound_handler is not handler:
+                _fail("dual_live_logger_pipe_binding_invalid")
+            written = self._writer.write(frame)
+        if written is not None and (
+            isinstance(written, bool)
+            or not isinstance(written, int)
+            or written != len(frame)
+        ):
+            _fail("dual_live_logger_pipe_write_failed")
+
+
 class CampaignPipeHandler(logging.Handler):
     def __init__(
         self,
         pipe_token: str,
-        append_frame: Callable[[bytes], int | None],
+        sink: CampaignPipeSink,
     ) -> None:
         if (
             not isinstance(pipe_token, str)
             or _PIPE_TOKEN.fullmatch(pipe_token) is None
-            or not callable(append_frame)
+            or type(sink) is not CampaignPipeSink
+            or sink.pipe_token != pipe_token
         ):
             _fail("dual_live_logger_pipe_handler_invalid")
         super().__init__()
         self._pipe_token = pipe_token
-        self._append_frame = append_frame
+        self._sink = sink
+        sink._bind(self)
 
     @property
     def pipe_token(self) -> str:
@@ -578,13 +667,7 @@ class CampaignPipeHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         payload = self.format(record).encode("utf-8", errors="strict")
         framed = encode_pipe_frame(payload)
-        written = self._append_frame(framed)
-        if written is not None and (
-            isinstance(written, bool)
-            or not isinstance(written, int)
-            or written != len(framed)
-        ):
-            _fail("dual_live_logger_pipe_write_failed")
+        self._sink._write_frame(self, framed)
 
 
 def _type_id(value: object) -> str:
@@ -614,6 +697,13 @@ def _project_handler(
 ) -> dict[str, Any]:
     if type(handler) is CampaignPipeHandler:
         pipe_token: str | None = handler.pipe_token
+        sink = getattr(handler, "_sink", None)
+        if (
+            type(sink) is not CampaignPipeSink
+            or sink.pipe_token != pipe_token
+            or not sink._is_bound_to(handler)
+        ):
+            _fail("dual_live_logger_pipe_binding_invalid")
         if pipe_token not in allowed_pipe_tokens:
             _fail("dual_live_logger_pipe_token_invalid")
         if pipe_token in seen_pipe_tokens:
@@ -756,67 +846,114 @@ def _deny_logger_topology_mutation(*args: object, **kwargs: object) -> None:
     _fail("dual_live_logger_topology_frozen")
 
 
+_MISSING_LOGGING_ATTRIBUTE = object()
+
+
+def _patch_logging_attribute(
+    patched: list[tuple[object, str, object]],
+    target: object,
+    name: str,
+) -> None:
+    previous = vars(target).get(name, _MISSING_LOGGING_ATTRIBUTE)
+    patched.append((target, name, previous))
+    setattr(target, name, _deny_logger_topology_mutation)
+
+
+def _restore_logging_attributes(
+    patched: list[tuple[object, str, object]],
+) -> None:
+    for target, name, previous in reversed(patched):
+        if previous is _MISSING_LOGGING_ATTRIBUTE:
+            delattr(target, name)
+        else:
+            setattr(target, name, previous)
+
+
 def freeze_logger_topology(
     allowed_pipe_tokens: frozenset[str],
 ) -> Callable[[], dict[str, Any]]:
-    initial = census_loggers(allowed_pipe_tokens)
-    root = logging.getLogger()
-    logger_values = [
-        value
-        for value in logging.Logger.manager.loggerDict.values()
-        if isinstance(value, logging.Logger)
-    ]
-    loggers = [root, *logger_values]
-    handlers = [handler for logger in loggers for handler in logger.handlers]
-    if logging.lastResort is not None:
-        handlers.append(logging.lastResort)
+    patched: list[tuple[object, str, object]] = []
+    logging._acquireLock()
+    try:
+        initial = census_loggers(allowed_pipe_tokens)
+        root = logging.getLogger()
+        manager = logging.Logger.manager
+        logger_values = [
+            value
+            for value in manager.loggerDict.values()
+            if isinstance(value, logging.Logger)
+        ]
+        loggers = [root, *logger_values]
+        handler_values = [
+            handler
+            for logger in loggers
+            for handler in logger.handlers
+        ]
+        if logging.lastResort is not None:
+            handler_values.append(logging.lastResort)
+        handlers = list({id(handler): handler for handler in handler_values}.values())
 
-    patched_methods: list[tuple[object, str, bool, object | None]] = []
-    for logger in loggers:
-        for method_name in (
-            "addFilter",
-            "addHandler",
-            "removeFilter",
-            "removeHandler",
-            "setLevel",
+        for target, method_names in (
+            (logging, ("basicConfig", "getLogger", "setLoggerClass")),
+            (logging.Manager, ("getLogger", "setLoggerClass")),
+            (
+                logging.Logger,
+                (
+                    "addFilter",
+                    "addHandler",
+                    "removeFilter",
+                    "removeHandler",
+                    "setLevel",
+                ),
+            ),
+            (
+                logging.Handler,
+                (
+                    "addFilter",
+                    "close",
+                    "removeFilter",
+                    "setFormatter",
+                    "setLevel",
+                ),
+            ),
+            (manager, ("getLogger", "setLoggerClass")),
         ):
-            had_instance_value = method_name in logger.__dict__
-            previous = logger.__dict__.get(method_name)
-            patched_methods.append(
-                (logger, method_name, had_instance_value, previous)
-            )
-            setattr(logger, method_name, _deny_logger_topology_mutation)
-    for handler in handlers:
-        for method_name in (
-            "addFilter",
-            "close",
-            "removeFilter",
-            "setFormatter",
-            "setLevel",
-        ):
-            had_instance_value = method_name in handler.__dict__
-            previous = handler.__dict__.get(method_name)
-            patched_methods.append(
-                (handler, method_name, had_instance_value, previous)
-            )
-            setattr(handler, method_name, _deny_logger_topology_mutation)
+            for method_name in method_names:
+                _patch_logging_attribute(patched, target, method_name)
+        for logger in loggers:
+            for method_name in (
+                "addFilter",
+                "addHandler",
+                "removeFilter",
+                "removeHandler",
+                "setLevel",
+            ):
+                _patch_logging_attribute(patched, logger, method_name)
+        for handler in handlers:
+            for method_name in (
+                "addFilter",
+                "close",
+                "removeFilter",
+                "setFormatter",
+                "setLevel",
+            ):
+                _patch_logging_attribute(patched, handler, method_name)
+    except BaseException:
+        _restore_logging_attributes(patched)
+        raise
+    finally:
+        logging._releaseLock()
 
     finished = False
 
     def _recheck() -> dict[str, Any]:
         nonlocal finished
-        if finished:
-            _fail("dual_live_logger_recheck_already_completed")
-        finished = True
         logging._acquireLock()
         try:
-            for target, method_name, had_instance_value, previous in reversed(
-                patched_methods
-            ):
-                if had_instance_value:
-                    setattr(target, method_name, previous)
-                else:
-                    delattr(target, method_name)
+            if finished:
+                _fail("dual_live_logger_recheck_already_completed")
+            finished = True
+            _restore_logging_attributes(patched)
             current = census_loggers(allowed_pipe_tokens)
             if current != initial:
                 _fail("dual_live_logger_topology_changed")

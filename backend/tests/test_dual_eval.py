@@ -9,6 +9,7 @@ import logging.handlers
 import queue
 import subprocess
 import sys
+from contextlib import suppress
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,7 @@ from app.services.dual_live_runtime import (
     RUNTIME_SCHEMA_ID,
     WINDOWS_MIB_TCP_STATES,
     CampaignPipeHandler,
+    CampaignPipeSink,
     DualLiveRuntimeError,
     PipeFrameBudget,
     RuntimeIdentity,
@@ -172,6 +174,17 @@ class MemorySink(io.BytesIO):
         return self.getvalue()
 
 
+def _pipe_handler(
+    pipe_token: str,
+    writer: MemorySink | None = None,
+) -> CampaignPipeHandler:
+    actual_writer = writer if writer is not None else MemorySink()
+    return CampaignPipeHandler(
+        pipe_token,
+        CampaignPipeSink(pipe_token, actual_writer),
+    )
+
+
 class NamedFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         return True
@@ -185,6 +198,23 @@ class ReplacementFilter(logging.Filter):
 class ArbitraryHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         return None
+
+
+def test_r06_pipe_handler_rejects_arbitrary_callback_even_with_allowed_token() -> None:
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_logger_pipe_handler_invalid",
+    ):
+        CampaignPipeHandler("app-pipe", MemorySink().write)
+
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_logger_pipe_handler_invalid",
+    ):
+        CampaignPipeHandler(
+            "app-pipe",
+            CampaignPipeSink("other-pipe", MemorySink()),
+        )
 
 
 @pytest.fixture
@@ -399,6 +429,51 @@ def test_r05_runtime_record_event_union_accepts_exact_payloads(
     assert record["payload"] == payload
 
 
+def test_r05_job_zero_rejects_bool_false_as_active_process_count() -> None:
+    writer = RuntimeRecordWriter(MemorySink().write, identity=RUNTIME_IDENTITY)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_runtime_payload_invalid"):
+        writer.append(
+            phase="A",
+            event="job_zero",
+            process_boot_id=BOOT_ID,
+            payload={
+                "active_process_count": False,
+                "process_list_sha256": "e" * 64,
+            },
+        )
+
+
+def test_r05_runtime_event_phase_matrix_rejects_cross_phase_records() -> None:
+    writer = RuntimeRecordWriter(MemorySink().write, identity=RUNTIME_IDENTITY)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_runtime_phase_invalid"):
+        writer.append(
+            phase="wrapper",
+            event="phase_child_start",
+            process_boot_id=None,
+            payload=CHILD_START_PAYLOAD,
+        )
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_runtime_phase_invalid"):
+        writer.append(
+            phase="A",
+            event="stop_latched",
+            process_boot_id=BOOT_ID,
+            payload={"reason_code": "protocol_failure", "monotonic_tick_ns": 0},
+        )
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_runtime_phase_invalid"):
+        writer.append(
+            phase="B",
+            event="phase_go",
+            process_boot_id=BOOT_ID,
+            payload={
+                "prior_state": "A_CENSUS_OK",
+                "next_state": "A_GO",
+                "control_nonce_sha256": "c" * 64,
+            },
+        )
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -489,6 +564,30 @@ def test_r05_runtime_reader_rejects_rehashed_invalid_event_phase() -> None:
         read_runtime_records(canonical_json_bytes(record) + b"\n")
 
 
+def test_r05_runtime_reader_rejects_rehashed_phase_go_edge_mismatch() -> None:
+    record = RuntimeRecordWriter(
+        MemorySink().write,
+        identity=RUNTIME_IDENTITY,
+    ).append(
+        phase="A",
+        event="phase_go",
+        process_boot_id=BOOT_ID,
+        payload={
+            "prior_state": "A_CENSUS_OK",
+            "next_state": "A_GO",
+            "control_nonce_sha256": "c" * 64,
+        },
+    )
+    record["phase"] = "B"
+    preimage = {key: value for key, value in record.items() if key != "record_sha256"}
+    record["record_sha256"] = hashlib.sha256(
+        canonical_json_bytes(preimage)
+    ).hexdigest()
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_runtime_record_invalid"):
+        read_runtime_records(canonical_json_bytes(record) + b"\n")
+
+
 def test_r05_pipe_frame_accepts_exact_64_kib_and_clean_eof() -> None:
     payload = b"x" * MAX_FRAME_BYTES
     encoded = encode_pipe_frame(payload)
@@ -560,7 +659,7 @@ def test_r06_logger_census_projects_root_real_placeholder_and_last_resort(
     isolated_logging.handlers.clear()
     secret = "never-project-pipe-callable-state"
     sink = MemorySink()
-    root_handler = CampaignPipeHandler("app-pipe", sink.write)
+    root_handler = _pipe_handler("app-pipe", sink)
     root_handler.setLevel(logging.INFO)
     root_handler.setFormatter(logging.Formatter("%(message)s"))
     root_handler.addFilter(NamedFilter())
@@ -572,9 +671,9 @@ def test_r06_logger_census_projects_root_real_placeholder_and_last_resort(
     real_logger.setLevel(logging.DEBUG)
     real_logger.propagate = False
     real_logger.addFilter(NamedFilter())
-    real_logger.addHandler(CampaignPipeHandler("http-pipe", sink.write))
+    real_logger.addHandler(_pipe_handler("http-pipe", sink))
     logging.getLogger("task8.placeholder.child")
-    last_resort = CampaignPipeHandler("last-pipe", lambda data: len(data) + len(secret))
+    last_resort = _pipe_handler("last-pipe", sink)
     monkeypatch.setattr(logging, "lastResort", last_resort)
 
     census = census_loggers(frozenset(("app-pipe", "http-pipe", "last-pipe")))
@@ -699,9 +798,9 @@ def test_r06_logger_census_rejects_duplicate_or_unknown_pipe_destination(
     isolated_logging: logging.RootLogger,
 ) -> None:
     isolated_logging.handlers.clear()
-    isolated_logging.addHandler(CampaignPipeHandler("same-pipe", MemorySink().write))
+    isolated_logging.addHandler(_pipe_handler("same-pipe"))
     child = logging.getLogger("task8.child")
-    child.addHandler(CampaignPipeHandler("same-pipe", MemorySink().write))
+    child.addHandler(_pipe_handler("same-pipe"))
 
     with pytest.raises(DualLiveRuntimeError, match="dual_live_logger_duplicate_pipe"):
         census_loggers(frozenset(("same-pipe",)))
@@ -711,18 +810,30 @@ def test_r06_logger_census_rejects_duplicate_or_unknown_pipe_destination(
         census_loggers(frozenset(("different-pipe",)))
 
 
+def test_r06_logger_census_rejects_broken_handler_sink_identity(
+    isolated_logging: logging.RootLogger,
+) -> None:
+    isolated_logging.handlers.clear()
+    handler = _pipe_handler("app-pipe")
+    handler._sink = CampaignPipeSink("app-pipe", MemorySink())
+    isolated_logging.addHandler(handler)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_logger_pipe_binding_invalid"):
+        census_loggers(frozenset(("app-pipe",)))
+
+
 def test_r07_logger_freeze_blocks_normal_mutation_and_rechecks_exact_topology(
     isolated_logging: logging.RootLogger,
 ) -> None:
     isolated_logging.handlers.clear()
-    handler = CampaignPipeHandler("app-pipe", MemorySink().write)
+    handler = _pipe_handler("app-pipe")
     isolated_logging.addHandler(handler)
     logger = logging.getLogger("task8.real")
     logger.addFilter(NamedFilter())
     recheck = freeze_logger_topology(frozenset(("app-pipe",)))
 
     with pytest.raises(DualLiveRuntimeError, match="dual_live_logger_topology_frozen"):
-        logger.addHandler(CampaignPipeHandler("late-pipe", MemorySink().write))
+        logger.addHandler(_pipe_handler("late-pipe"))
     with pytest.raises(DualLiveRuntimeError, match="dual_live_logger_topology_frozen"):
         isolated_logging.removeHandler(handler)
     with pytest.raises(DualLiveRuntimeError, match="dual_live_logger_topology_frozen"):
@@ -734,20 +845,45 @@ def test_r07_logger_freeze_blocks_normal_mutation_and_rechecks_exact_topology(
     assert final["topology_sha256"]
 
 
+def test_r07_logger_freeze_guards_future_logger_creation_and_restores_global_api(
+    isolated_logging: logging.RootLogger,
+) -> None:
+    isolated_logging.handlers.clear()
+    original_get_logger = logging.getLogger
+    recheck = freeze_logger_topology(frozenset())
+
+    try:
+        with pytest.raises(
+            DualLiveRuntimeError,
+            match="dual_live_logger_topology_frozen",
+        ):
+            logging.getLogger("task8.future")
+        with pytest.raises(
+            DualLiveRuntimeError,
+            match="dual_live_logger_topology_frozen",
+        ):
+            logging.Logger.manager.getLogger("task8.future.manager")
+    finally:
+        with suppress(DualLiveRuntimeError):
+            recheck()
+
+    assert logging.getLogger is original_get_logger
+
+
 def test_r07_logger_exit_recheck_detects_direct_late_handler_and_filter_change(
     isolated_logging: logging.RootLogger,
 ) -> None:
     isolated_logging.handlers.clear()
-    isolated_logging.addHandler(CampaignPipeHandler("app-pipe", MemorySink().write))
+    isolated_logging.addHandler(_pipe_handler("app-pipe"))
     logger = logging.getLogger("task8.real")
     logger.addFilter(NamedFilter())
+    original_get_logger = logging.getLogger
     recheck = freeze_logger_topology(frozenset(("app-pipe", "late-pipe")))
 
-    isolated_logging.handlers.append(
-        CampaignPipeHandler("late-pipe", MemorySink().write)
-    )
+    isolated_logging.handlers.append(_pipe_handler("late-pipe"))
     with pytest.raises(DualLiveRuntimeError, match="dual_live_logger_topology_changed"):
         recheck()
+    assert logging.getLogger is original_get_logger
 
     isolated_logging.handlers.pop()
     filter_recheck = freeze_logger_topology(

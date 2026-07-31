@@ -102,11 +102,11 @@ def _is_production_path(path: str) -> bool:
     )
 
 
-def _changed_production_paths() -> frozenset[str]:
-    changed = _git_output(
+def _changed_production_surface() -> tuple[frozenset[str], frozenset[str]]:
+    diff_lines = _git_output(
         "diff",
-        "--name-only",
-        "--diff-filter=ACMR",
+        "--name-status",
+        "--diff-filter=ACMRD",
         TASK8_IMPLEMENTATION_BASE,
     ).splitlines()
     untracked = _git_output(
@@ -118,7 +118,45 @@ def _changed_production_paths() -> frozenset[str]:
         "tools",
         "project6.ps1",
     ).splitlines()
-    return frozenset(path for path in (*changed, *untracked) if _is_production_path(path))
+    changed: set[str] = set()
+    deleted: set[str] = set()
+    for line in diff_lines:
+        fields = line.split("\t")
+        status = fields[0]
+        if status.startswith("R"):
+            old_path, new_path = fields[1:]
+            if _is_production_path(old_path):
+                changed.add(old_path)
+                deleted.add(old_path)
+            if _is_production_path(new_path):
+                changed.add(new_path)
+        elif status.startswith("C"):
+            new_path = fields[-1]
+            if _is_production_path(new_path):
+                changed.add(new_path)
+        else:
+            path = fields[-1]
+            if _is_production_path(path):
+                changed.add(path)
+                if status == "D":
+                    deleted.add(path)
+    changed.update(path for path in untracked if _is_production_path(path))
+    return frozenset(changed), frozenset(deleted)
+
+
+def _changed_production_paths() -> frozenset[str]:
+    changed, _ = _changed_production_surface()
+    return changed
+
+
+def _deleted_production_paths() -> frozenset[str]:
+    _, deleted = _changed_production_surface()
+    return deleted
+
+
+def _a_scoped_production_surface_is_allowed() -> bool:
+    changed, deleted = _changed_production_surface()
+    return not deleted and changed <= ALLOWED_CHANGED_PRODUCTION_PATHS
 
 
 def _tracked_source_text() -> str:
@@ -154,7 +192,24 @@ def test_a_scoped_build_adds_no_attestation_index_or_env_contract() -> None:
 
 
 def test_a_scoped_changed_production_surface_is_allowlisted() -> None:
-    assert _changed_production_paths() <= ALLOWED_CHANGED_PRODUCTION_PATHS
+    assert _a_scoped_production_surface_is_allowed()
+
+
+def test_deleted_production_path_is_detected_and_forbidden(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    deleted = "backend/app/services/dual_live_runtime.py"
+
+    def fake_git_output(*args: str) -> str:
+        if args and args[0] == "diff":
+            return f"D\t{deleted}"
+        return ""
+
+    monkeypatch.setattr(sys.modules[__name__], "_git_output", fake_git_output)
+
+    assert deleted in _changed_production_paths()
+    assert deleted in _deleted_production_paths()
+    assert not _a_scoped_production_surface_is_allowed()
 
 
 def test_frozen_and_sealed_authority_files_are_unchanged() -> None:
