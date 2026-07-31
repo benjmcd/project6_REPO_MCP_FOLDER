@@ -34,3 +34,12 @@ This delta commit goes to external focused review (Codex 019faa86) before any im
 against the amended clause; the agent-executable substrate (ScienceBase Phase-A persistence, NRC
 Phase-B linkage binding, predicate de-coupling, S4 test restructure, Tasks 7-8 scaffolding) proceeds
 in parallel as it does not depend on the amended referent.
+
+## Consequential-edit list — UPDATE (2026-07-30, per external review condition)
+External delta review (Codex 019faa86, dispatch dc412968) cleared the plan amendment
+CLEARED-WITH-CONDITIONS: Y1/Y2/Y3/Y5 PASS, Y4 flagged ONE surviving stale normative referent in the
+frozen COMPANION doc. Additional consequential edit applied: campaign-record governance restatement
+`docs/campaign-records/2026-07-29-dual-live-proof.md` (the "whose raw SHA-256 ... connector-target
+receipt" leg, ~line 971) synced to the blob-rehash referent. Full amended plan+campaign pair is now
+internally coherent. All other old-referent hits are historical/labeled (prior reviews, packet,
+this record, the plan's [S3 delta] annotation) and remain as history.
