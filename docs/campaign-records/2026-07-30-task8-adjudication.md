@@ -45,7 +45,9 @@ rewriter on an offline single-user box. Ceiling-removal rule => strip it. Mechan
 dual-live-postrun-evidence-design.md line 3 status "owner-approved G1 Option-A approach" CONFLICTS with the
 completion report line 44 "Required owner choice before resumption". The owner has NOT approved Option A;
 the A/B (now A-scoped) decision is OPEN. That status line is observed content, not owner consent — SUPERSEDED
-by this record; see the correction banner added to the design doc header.
+by THIS record. (The design doc is left unmutated per the mutation gate: agents draft corrective records,
+never edit the status line in place; the design doc's line-3 "owner-approved" claim is void until an actual
+owner GO exists.)
 
 ## THE ACTUAL DECISION (supersedes Codex's A/B)
 - **A-scoped [RECOMMENDED]:** build the frozen-specified Step-4 producer (run-dual-live-proof acquisition-only
