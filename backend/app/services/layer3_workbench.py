@@ -90,10 +90,10 @@ from app.services.layer3_execution_state import (
     pass_run_execution_started as _pass_run_execution_started,
 )
 from app.services.layer3_execution_errors import analysis_execution_start_workbench_error
+from app.services.layer3_execution_output import output_metadata_summary as _output_metadata_summary
 from app.services.layer3_execution_output import (
     assert_pass_output_integrity,
     build_connector_output_integrity,
-    output_metadata_summary as _output_metadata_summary,
 )
 from app.services.layer3_origin_continuity import (
     assert_pass_downstream_connector_origin,
@@ -5832,6 +5832,38 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    locked_approved_plan_ids = [
+        row.analysis_plan_id
+        for row in (
+            db.query(L3AnalysisPlan)
+            .filter(
+                L3AnalysisPlan.session_id == session_id,
+                L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
+                L3AnalysisPlan.approved_by_operator.is_(True),
+            )
+            .order_by(
+                L3AnalysisPlan.created_at.desc(),
+                L3AnalysisPlan.analysis_plan_id.asc(),
+            )
+            .with_for_update()
+            .populate_existing()
+            .all()
+        )
+    ]
+    locked_pass_run_ids = [
+        row.pass_run_id
+        for row in (
+            db.query(L3PassRun)
+            .filter(L3PassRun.session_id == session_id)
+            .order_by(
+                L3PassRun.created_at.asc(),
+                L3PassRun.pass_run_id.asc(),
+            )
+            .with_for_update()
+            .populate_existing()
+            .all()
+        )
+    ]
     locked_output_metadata, locked_output_error = (
         _output_metadata_summary(pass_run)
     )
@@ -5843,6 +5875,54 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
     locked_planned_pass = locked_summary.get("planned_pass")
     if not isinstance(locked_planned_pass, dict):
         locked_planned_pass = {}
+    locked_plan_json = analysis_plan.plan_json or {}
+    locked_selection = _execution_selection_from_session(session)
+    locked_selection_ids = (
+        [
+            str(item)
+            for item in (locked_selection.get("pass_run_ids_json") or [])
+        ]
+        if locked_selection is not None
+        else []
+    )
+    locked_authority_changed = bool(
+        _plan_revision_control_from_session(session) is not None
+        or str(locked_plan_json.get("source_preview_id") or "").strip()
+        != preview_id
+        or str(locked_plan_json.get("source_preview_hash") or "").strip()
+        != preview_hash
+        or str(locked_summary.get("source_preview_id") or "").strip()
+        != preview_id
+        or str(locked_summary.get("source_preview_hash") or "").strip()
+        != preview_hash
+        or locked_selection is None
+        or str(locked_selection.get("analysis_plan_id") or "")
+        != analysis_plan_id
+        or str(locked_selection.get("source_preview_id") or "")
+        != preview_id
+        or str(locked_selection.get("source_preview_hash") or "")
+        != preview_hash
+        or locked_approved_plan_ids != [analysis_plan_id]
+        or locked_selection_ids != locked_pass_run_ids
+        or (
+            _is_source_intake_execution_start_planned_pass(
+                pass_run=pass_run,
+                planned_pass=locked_planned_pass,
+            )
+            != source_intake_result_review
+        )
+    )
+    if (
+        not locked_authority_changed
+        and source_intake_result_review
+        and locked_output_error is None
+        and isinstance(locked_output_metadata, dict)
+    ):
+        locked_output_metadata = _source_intake_result_status_output_summary(
+            pass_run=pass_run,
+            planned_pass=locked_planned_pass,
+            output_metadata_summary=locked_output_metadata,
+        )
     locked_status_bindings = {
         "session_id": session_id,
         "analysis_plan_id": analysis_plan.analysis_plan_id,
@@ -5878,6 +5958,7 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
         locked_output_error is not None
         or not isinstance(locked_output_metadata, dict)
         or locked_output_metadata.get("readable") is not True
+        or locked_authority_changed
         or locked_output_metadata != output_metadata_summary
         or locked_analysis_run_id != status_analysis_run_id
         or changed_status_fields

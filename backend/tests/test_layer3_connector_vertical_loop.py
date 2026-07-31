@@ -4681,16 +4681,29 @@ def test_downstream_reserved_sciencebase_missing_snapshot_fails_closed(
 
 
 @pytest.mark.parametrize(
-    ("source_class", "candidate_id"),
+    ("source_class", "candidate_id", "identity_updates"),
     (
-        ("aps_content_document", "mat-partial-nrc"),
+        (
+            "aps_content_document",
+            "mat-partial-nrc",
+            {"selection_scope": "dual_live_proof_v1"},
+        ),
         (
             "manual_upload",
             "mat-connector_source_intake_record-partial-sciencebase",
+            {
+                "source_system": "sciencebase",
+                "source_mode": "strict_live_egress",
+            },
         ),
         (
             "aps_content_document",
             "mat-connector_source_intake_record-contradictory",
+            {
+                "selection_scope": "dual_live_proof_v1",
+                "source_system": "sciencebase",
+                "source_mode": "strict_live_egress",
+            },
         ),
     ),
 )
@@ -4699,6 +4712,7 @@ def test_downstream_reserved_partial_signals_cannot_downgrade(
     monkeypatch,
     source_class: str,
     candidate_id: str,
+    identity_updates: dict[str, str],
 ) -> None:
     with Session(
         task7_origin_runtime.engine,
@@ -4708,6 +4722,7 @@ def test_downstream_reserved_partial_signals_cannot_downgrade(
         identity = {
             "candidate_id": candidate_id,
             "source_class": source_class,
+            **identity_updates,
         }
         provenance = {"schema_id": "layer3.partial_origin.v1"}
         payload = {"partial": True}
@@ -5029,19 +5044,108 @@ def test_downstream_generic_connector_session_is_not_applicable(
         assert _row_census(db) == before_census
 
 
+@pytest.mark.parametrize(
+    ("connector_key", "source_system", "source_mode", "weak_signal"),
+    (
+        (
+            "nrc_adams_aps",
+            "nrc_adams",
+            "aps",
+            {"source_shape": "aps_content_document"},
+        ),
+        (
+            "sciencebase_mcs",
+            "sciencebase",
+            "public_api",
+            {
+                "candidate_id": (
+                    "mat-connector_source_intake_record-legacy-record"
+                )
+            },
+        ),
+    ),
+)
+def test_downstream_legacy_connector_run_is_not_reserved(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+    connector_key: str,
+    source_system: str,
+    source_mode: str,
+    weak_signal: dict[str, str],
+) -> None:
+    run_id = f"legacy-{connector_key}-run"
+    session_id = f"legacy-{connector_key}-session"
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        db.add_all(
+            [
+                ConnectorRun(
+                    connector_run_id=run_id,
+                    connector_key=connector_key,
+                    source_system=source_system,
+                    source_mode=source_mode,
+                    status="completed",
+                ),
+                L3Session(
+                    session_id=session_id,
+                    status="completed",
+                    selection_manifest_id=f"manifest-{session_id}",
+                    entry_route_context_json={},
+                    operator_context_json={},
+                    summary_json={"run_id": run_id, **weak_signal},
+                ),
+            ]
+        )
+        db.commit()
+        db.begin()
+        monkeypatch.setattr(
+            origin,
+            "verified_connector_origin_projection",
+            lambda *args, **kwargs: pytest.fail(
+                "legacy connector run entered reserved origin verification"
+            ),
+        )
+
+        assert origin.assert_downstream_connector_origin(
+            db,
+            session_id=session_id,
+            expected_receipt_hash="0" * 64,
+            boundary="result_review",
+        ) == {
+            "applicability": "not_applicable",
+            "boundary": "result_review",
+        }
+
+
+@pytest.mark.parametrize(
+    ("database_url", "url_label"),
+    (
+        ("sqlite://", "empty"),
+        ("sqlite:///:memory:", "explicit"),
+    ),
+)
+@pytest.mark.parametrize("generic_aps_signals", (False, True))
 def test_downstream_generic_guards_bypass_staticpool_in_memory_reader(
     tmp_path: Path,
     monkeypatch,
+    database_url: str,
+    url_label: str,
+    generic_aps_signals: bool,
 ) -> None:
     storage_dir = (tmp_path / "generic-storage").resolve()
     bootstrap_storage_tree(storage_dir)
     monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
     engine = create_engine(
-        "sqlite:///:memory:",
+        database_url,
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
+    signal_label = "aps" if generic_aps_signals else "empty"
+    session_id = f"origin-generic-staticpool-{url_label}-{signal_label}"
     with Session(
         engine,
         autoflush=False,
@@ -5049,12 +5153,21 @@ def test_downstream_generic_guards_bypass_staticpool_in_memory_reader(
     ) as db:
         db.add(
             L3Session(
-                session_id="origin-generic-staticpool",
+                session_id=session_id,
                 status="completed",
-                selection_manifest_id="manifest-generic-staticpool",
+                selection_manifest_id=f"manifest-{session_id}",
                 entry_route_context_json={},
                 operator_context_json={},
-                summary_json={},
+                summary_json=(
+                    {
+                        "source_class": "aps_content_document",
+                        "source_shape": "aps_content_document",
+                        "document_class": "nrc_adams_aps",
+                        "accession_number": "ML17123A319",
+                    }
+                    if generic_aps_signals
+                    else {}
+                ),
             )
         )
         db.commit()
@@ -5069,14 +5182,14 @@ def test_downstream_generic_guards_bypass_staticpool_in_memory_reader(
 
         assert origin.resolve_downstream_connector_origin(
             db,
-            session_id="origin-generic-staticpool",
+            session_id=session_id,
             boundary="pass_selection",
         ) is None
         pass_run = L3PassRun(
-            pass_run_id="pass-generic-staticpool",
-            session_id="origin-generic-staticpool",
-            analysis_plan_id="plan-generic-staticpool",
-            analysis_set_id="set-generic-staticpool",
+            pass_run_id=f"pass-{session_id}",
+            session_id=session_id,
+            analysis_plan_id=f"plan-{session_id}",
+            analysis_set_id=f"set-{session_id}",
             pass_type="single_item",
             engine_family="wrapped_quantitative_analysis",
             status="selected_not_started",
@@ -5089,6 +5202,53 @@ def test_downstream_generic_guards_bypass_staticpool_in_memory_reader(
             boundary="execution_output",
         ) is None
     engine.dispose()
+
+
+def test_downstream_reserved_marker_cannot_bypass_staticpool_memory_reader(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    storage_dir = (tmp_path / "reserved-storage").resolve()
+    bootstrap_storage_tree(storage_dir)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    try:
+        with Session(
+            engine,
+            autoflush=False,
+            expire_on_commit=False,
+        ) as db:
+            db.add(
+                L3Session(
+                    session_id="origin-reserved-staticpool",
+                    status="completed",
+                    selection_manifest_id="manifest-reserved-staticpool",
+                    entry_route_context_json={},
+                    operator_context_json={},
+                    summary_json={"query_basis": "dual-live-proof"},
+                )
+            )
+            db.commit()
+            db.begin()
+
+            with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+                origin.resolve_downstream_connector_origin(
+                    db,
+                    session_id="origin-reserved-staticpool",
+                    boundary="pass_selection",
+                )
+
+            assert (
+                excinfo.value.code
+                == "layer3_downstream_origin_authority_invalid"
+            )
+    finally:
+        engine.dispose()
 
 
 def test_downstream_generic_resolver_rejects_file_staticpool_bypass(

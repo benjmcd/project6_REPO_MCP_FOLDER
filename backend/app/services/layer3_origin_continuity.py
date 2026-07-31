@@ -3502,6 +3502,8 @@ def _downstream_reserved_kind(*surfaces: object) -> str | None:
     _downstream_require_canonical(*surfaces)
     sciencebase = False
     nrc = False
+    sciencebase_hint = False
+    nrc_hint = False
     pending: list[tuple[object, int]] = [
         (surface, 0) for surface in reversed(surfaces)
     ]
@@ -3518,7 +3520,6 @@ def _downstream_reserved_kind(*surfaces: object) -> str | None:
             )
         if isinstance(current, Mapping):
             candidate_id = current.get("candidate_id")
-            source_class = current.get("source_class")
             connector_key = current.get("connector_key")
             if (
                 isinstance(candidate_id, str)
@@ -3526,24 +3527,42 @@ def _downstream_reserved_kind(*surfaces: object) -> str | None:
                     _DOWNSTREAM_SCIENCEBASE_CANDIDATE_PREFIX
                 )
             ):
-                sciencebase = True
-            if connector_key == "sciencebase_mcs" or (
+                sciencebase_hint = True
+            if (
+                connector_key == "sciencebase_mcs"
+                or current.get("source_class")
+                == _DOWNSTREAM_SCIENCEBASE_SOURCE_CLASS
+                or current.get("source_system") == "sciencebase"
+            ):
+                sciencebase_hint = True
+            if (
                 current.get("source_system") == "sciencebase"
                 and current.get("source_mode") == "strict_live_egress"
             ):
                 sciencebase = True
+            # APS shape/accession values predate this campaign; only
+            # campaign-exclusive authority markers reserve the NRC lane.
             if (
-                source_class == _DOWNSTREAM_NRC_SOURCE_CLASS
+                connector_key == "nrc_adams_aps"
+                or current.get("source_class") == _DOWNSTREAM_NRC_SOURCE_CLASS
                 or current.get("source_shape") == _DOWNSTREAM_NRC_SOURCE_CLASS
                 or current.get("document_class") == "nrc_adams_aps"
-                or connector_key == "nrc_adams_aps"
                 or current.get("accession_number") == _FIXTURE_ACCESSION
                 or current.get("stable_release_key") == _FIXTURE_ACCESSION
                 or current.get("stable_release_identifier")
                 == f"adams_accession:{_FIXTURE_ACCESSION}"
-                or current.get("selection_scope") == "dual_live_proof_v1"
+                or current.get("source_system") == "nrc_adams"
+            ):
+                nrc_hint = True
+            if (
+                current.get("selection_scope") == "dual_live_proof_v1"
+                or current.get("query_basis") == "dual-live-proof"
                 or current.get("selection_source")
                 == "strict_exact_accession"
+                or (
+                    current.get("source_system") == "nrc_adams"
+                    and current.get("source_mode") == "strict_live_egress"
+                )
             ):
                 nrc = True
             pending.extend(
@@ -3565,6 +3584,11 @@ def _downstream_reserved_kind(*surfaces: object) -> str | None:
             "layer3_downstream_origin_authority_invalid",
             "Persisted origin-pair traversal exceeds its bounds.",
         ) from exc
+    # Receipt claims or campaign-exclusive markers promote legacy hints;
+    # hints alone remain compatible with pre-campaign connector workflows.
+    if claims or sciencebase or nrc:
+        sciencebase = sciencebase or sciencebase_hint
+        nrc = nrc or nrc_hint
     kinds = [
         kind
         for kind, present in (
@@ -5102,7 +5126,7 @@ def _downstream_generic_bypass_allowed(db: Session) -> bool:
     ):
         return False
     database = str(engine.url.database or "").strip().casefold()
-    if database == ":memory:":
+    if database in {"", ":memory:"}:
         return True
     query_values = {
         str(key).casefold(): (
