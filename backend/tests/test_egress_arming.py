@@ -810,6 +810,292 @@ def test_evaluate_nrc_acquisition_success_accepts_matching_blob_ledger_counter(
 
 
 @pytest.mark.parametrize(
+    "tamper_blob",
+    [False, True],
+    ids=["agreement", "blob-ledger-mismatch"],
+)
+def test_evaluate_nrc_acquisition_success_uses_real_terminal_ledger(
+    tmp_path,
+    monkeypatch,
+    tamper_blob: bool,
+) -> None:
+    db = _session()
+    factory = sessionmaker(
+        bind=db.get_bind(),
+        autocommit=False,
+        autoflush=False,
+        future=True,
+    )
+    monkeypatch.setattr(transport_module, "SESSION_FACTORY", factory)
+    monkeypatch.setattr(settings, "connector_live_egress_enabled", True)
+    monkeypatch.setattr(
+        settings,
+        "connector_live_egress_exclusive_proof_mode",
+        True,
+    )
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path / "storage"))
+
+    run, grant = _created_arming(db, tmp_path)
+    monkeypatch.setattr(
+        settings,
+        "connector_nrc_aps_grant_sha256",
+        grant.raw_sha256,
+    )
+    monkeypatch.setattr(
+        arming_module,
+        "resolve_current_connector_egress_grant",
+        lambda **_: grant,
+    )
+    monkeypatch.setattr(
+        arming_module,
+        "resolve_current_egress_authority",
+        lambda *_args, **_kwargs: grant,
+    )
+
+    run.status = "running"
+    run.execution_lease_owner = "strict-worker"
+    run.execution_lease_token = "lease-token"
+    run.execution_lease_expires_at = datetime.now(UTC) + timedelta(minutes=5)
+    db.commit()
+    envelope = run.request_config_json["connector_egress_arming"]
+
+    log_dir = tmp_path / "logs"
+    log_dir.mkdir()
+    counter_path = log_dir / "http.jsonl"
+    timeline = datetime.now(UTC) - timedelta(seconds=12)
+
+    first_body = b"{}"
+    first_hash = hashlib.sha256(first_body).hexdigest()
+    first_reserved_at = timeline
+    first_send_at = timeline + timedelta(seconds=1)
+    first_completed_at = timeline + timedelta(seconds=2)
+    first_reservation = transport_module.reserve_physical_request(
+        connector_run_id=run.connector_run_id,
+        lease_token="lease-token",
+        arming_fingerprint=envelope["arming_fingerprint"],
+        ordinal=1,
+        stage="exact_accession_api",
+        request=transport_module.FrozenPhysicalRequest(
+            method="GET",
+            url=(
+                "https://adams-api.nrc.gov/aps/api/search/"
+                "ML17123A319"
+            ),
+            headers={
+                "Accept-Encoding": "identity",
+                "Ocp-Apim-Subscription-Key": "secret",
+            },
+            credential_audience="nrc_aps_api_key",
+        ),
+        expected_derived_arming_hash=None,
+        now=first_reserved_at,
+    )
+    transport_module.complete_physical_request(
+        reservation=first_reservation,
+        outcome=transport_module.PhysicalRequestOutcome(
+            outcome_class="completed",
+            response_status=200,
+            byte_count=len(first_body),
+            body_sha256=first_hash,
+            counted_status_header_bytes=17,
+            delivered_body_bytes=len(first_body),
+            decoded_body_bytes=len(first_body),
+            decoded_body_sha256=first_hash,
+            send_started_at=first_send_at,
+            completed_at=first_completed_at,
+        ),
+    )
+    transport_module._append_counter_record(
+        counter_path,
+        {
+            "schema_id": "project6.connector_http_counter.v1",
+            "ordinal": 1,
+            "stage": "exact_accession_api",
+            "request_fingerprint": first_reservation.request_fingerprint,
+            "canonical_status_header_bytes": 17,
+            "delivered_body_bytes": len(first_body),
+            "decoded_body_bytes": len(first_body),
+            "decoded_body_sha256": first_hash,
+            "response_status": 200,
+            "error_class": None,
+            "monotonic_started_at": 1.0,
+            "monotonic_stopped_at": 1.5,
+            "evidence_started_at": transport_module.utc_six_z(first_send_at),
+            "evidence_stopped_at": transport_module.utc_six_z(
+                first_completed_at
+            ),
+        },
+    )
+
+    artifact_url = "https://www.nrc.gov/docs/ML1712/ML17123A319.pdf"
+    derived = commit_derived_url_arming(
+        db,
+        run=run,
+        lease_token="lease-token",
+        ordinal=2,
+        stage="artifact",
+        normalized_url=artifact_url,
+        verified_grant=grant,
+    )
+    artifact_body = b"%PDF-1.7\nclause-5-real-ledger\n"
+    artifact_hash = hashlib.sha256(artifact_body).hexdigest()
+    second_reserved_at = timeline + timedelta(seconds=3)
+    second_send_at = timeline + timedelta(seconds=4)
+    second_completed_at = timeline + timedelta(seconds=5)
+    second_reservation = transport_module.reserve_physical_request(
+        connector_run_id=run.connector_run_id,
+        lease_token="lease-token",
+        arming_fingerprint=envelope["arming_fingerprint"],
+        ordinal=2,
+        stage="artifact",
+        request=transport_module.FrozenPhysicalRequest(
+            method="GET",
+            url=artifact_url,
+            headers={"Accept-Encoding": "identity"},
+            credential_audience="none",
+        ),
+        expected_derived_arming_hash=derived.url_sha256,
+        now=second_reserved_at,
+        counter_path=counter_path,
+    )
+    transport_module.complete_physical_request(
+        reservation=second_reservation,
+        outcome=transport_module.PhysicalRequestOutcome(
+            outcome_class="completed",
+            response_status=200,
+            byte_count=len(artifact_body),
+            body_sha256=artifact_hash,
+            counted_status_header_bytes=19,
+            delivered_body_bytes=len(artifact_body),
+            decoded_body_bytes=len(artifact_body),
+            decoded_body_sha256=artifact_hash,
+            send_started_at=second_send_at,
+            completed_at=second_completed_at,
+        ),
+    )
+    transport_module._append_counter_record(
+        counter_path,
+        {
+            "schema_id": "project6.connector_http_counter.v1",
+            "ordinal": 2,
+            "stage": "artifact",
+            "request_fingerprint": second_reservation.request_fingerprint,
+            "canonical_status_header_bytes": 19,
+            "delivered_body_bytes": len(artifact_body),
+            "decoded_body_bytes": len(artifact_body),
+            "decoded_body_sha256": artifact_hash,
+            "response_status": 200,
+            "error_class": None,
+            "monotonic_started_at": 2.0,
+            "monotonic_stopped_at": 2.5,
+            "evidence_started_at": transport_module.utc_six_z(second_send_at),
+            "evidence_stopped_at": transport_module.utc_six_z(
+                second_completed_at
+            ),
+        },
+    )
+
+    stored = artifact_module.write_blob_content_addressed(
+        raw_root=settings.connector_raw_dir,
+        content=artifact_body,
+    )
+    db.add(
+        ConnectorRunTarget(
+            connector_run_target_id="nrc-real-ledger-target",
+            connector_run_id=run.connector_run_id,
+            ordinal=1,
+            status="downloaded",
+            downloaded_sha256=artifact_hash,
+            raw_storage_ref=str(stored["blob_ref"]),
+            sciencebase_download_uri=None,
+            source_reference_json={},
+        )
+    )
+    db.commit()
+    finalize_strict_run(
+        db,
+        run=run,
+        lease_token="lease-token",
+        terminal_status="completed",
+        outcome_class="nrc_raw_admission_completed",
+        now=timeline + timedelta(seconds=6),
+    )
+    capture = SimpleNamespace(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        campaign_definition_sha256=CAMPAIGN_RAW_SHA256,
+        code_revision=CODE_REVISION,
+        expected_stream_files=(
+            "app.jsonl",
+            "http.jsonl",
+            "stdout.log",
+            "stderr.log",
+        ),
+        log_dir_relative_path="logs",
+    )
+    grant.verified_campaign.index_chain = SimpleNamespace(
+        head=SimpleNamespace(log_captures=(capture,))
+    )
+
+    real_ledger = transport_module.derive_terminal_request_ledger(
+        db,
+        connector_run_id=run.connector_run_id,
+        counter_path=counter_path,
+    )
+    assert real_ledger.eligible is True
+    assert real_ledger.validation_errors == ()
+    assert [(entry["ordinal"], entry["stage"]) for entry in real_ledger.entries] == [
+        (1, "exact_accession_api"),
+        (2, "artifact"),
+    ]
+    assert real_ledger.entries[-1]["body_sha256"] == artifact_hash
+    assert (
+        db.query(ConnectorRunEvent)
+        .filter(
+            ConnectorRunEvent.event_type.in_(
+                [
+                    transport_module.RESERVATION_EVENT_TYPE,
+                    transport_module.COMPLETION_EVENT_TYPE,
+                ]
+            )
+        )
+        .count()
+        == 4
+    )
+
+    blob_path = Path(str(stored["blob_ref"]))
+    if tamper_blob:
+        tampered_body = b"X" + artifact_body[1:]
+        assert len(tampered_body) == len(artifact_body)
+        blob_path.write_bytes(tampered_body)
+    baseline = _db_state_snapshot(db)
+
+    if tamper_blob:
+        with pytest.raises(ConnectorEgressArmingError) as exc:
+            evaluate_nrc_acquisition_success(
+                db,
+                verified_definition=grant.verified_campaign,
+            )
+        assert exc.value.code == "nrc_acquisition_success_blob_mismatch"
+        assert exc.value.status_code == 409
+    else:
+        evidence = evaluate_nrc_acquisition_success(
+            db,
+            verified_definition=grant.verified_campaign,
+        )
+        assert evidence.connector_run_id == run.connector_run_id
+        assert evidence.ledger_terminal_hash == real_ledger.ledger_terminal_hash
+        assert evidence.blob_rehash_raw_sha256 == artifact_hash
+        assert evidence.counter_reconciliation == {
+            "record_count": 2,
+            "artifact_ordinal": 2,
+            "artifact_stage": "artifact",
+            "artifact_decoded_body_sha256": artifact_hash,
+        }
+    assert _db_state_snapshot(db) == baseline
+
+
+@pytest.mark.parametrize(
     ("failure", "expected_code"),
     [
         ("blob_vs_ledger", "nrc_acquisition_success_blob_mismatch"),
