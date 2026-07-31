@@ -39,7 +39,6 @@ from app.services.connector_egress_authorization import (
     resolve_current_connector_egress_grant,
     resolve_current_dual_live_campaign_definition,
     resolve_historical_connector_grant_evidence,
-    strict_json_loads,
 )
 from app.services import nrc_aps_artifact_ingestion
 from app.services.raw_storage_handles import (
@@ -475,24 +474,6 @@ def _existing_creation(
     return run
 
 
-_NRC_COUNTER_RECORD_KEYS = frozenset(
-    {
-        "schema_id",
-        "ordinal",
-        "stage",
-        "request_fingerprint",
-        "canonical_status_header_bytes",
-        "delivered_body_bytes",
-        "decoded_body_bytes",
-        "decoded_body_sha256",
-        "response_status",
-        "error_class",
-        "monotonic_started_at",
-        "monotonic_stopped_at",
-        "evidence_started_at",
-        "evidence_stopped_at",
-    }
-)
 _NRC_TERMINAL_METRIC_KEYS = frozenset(
     {
         "outcome_class",
@@ -504,6 +485,11 @@ _NRC_TERMINAL_METRIC_KEYS = frozenset(
 
 
 def _load_nrc_counter_records(path: Path) -> tuple[dict[str, Any], ...]:
+    from app.services.connector_egress_transport import (
+        CounterEvidenceError,
+        parse_connector_counter_records,
+    )
+
     try:
         payload = path.read_bytes()
     except OSError as exc:
@@ -511,36 +497,13 @@ def _load_nrc_counter_records(path: Path) -> tuple[dict[str, Any], ...]:
             "nrc_acquisition_success_counter_unavailable",
             "manifest-bound NRC HTTP counter is unavailable",
         ) from exc
-    if not payload or len(payload) > 1_048_576 or not payload.endswith(b"\n"):
+    try:
+        return parse_connector_counter_records(payload)
+    except CounterEvidenceError as exc:
         raise ConnectorEgressArmingError(
             "nrc_acquisition_success_counter_invalid",
-            "NRC HTTP counter is empty, oversized, or not newline terminated",
-        )
-    records: list[dict[str, Any]] = []
-    for raw_line in payload.splitlines():
-        if not raw_line:
-            raise ConnectorEgressArmingError(
-                "nrc_acquisition_success_counter_invalid",
-                "NRC HTTP counter contains an empty record",
-            )
-        try:
-            parsed = strict_json_loads(raw_line)
-        except (TypeError, ValueError) as exc:
-            raise ConnectorEgressArmingError(
-                "nrc_acquisition_success_counter_invalid",
-                "NRC HTTP counter contains an unparseable record",
-            ) from exc
-        if (
-            not isinstance(parsed, dict)
-            or set(parsed) != _NRC_COUNTER_RECORD_KEYS
-            or authority_canonical_json_bytes(parsed) != raw_line
-        ):
-            raise ConnectorEgressArmingError(
-                "nrc_acquisition_success_counter_invalid",
-                "NRC HTTP counter record is not exact canonical evidence",
-            )
-        records.append(dict(parsed))
-    return tuple(records)
+            "NRC HTTP counter is not one exact homogeneous counter stream",
+        ) from exc
 
 
 def _assert_nrc_terminal_transition(
@@ -712,7 +675,10 @@ def _reconcile_nrc_counter_records(
     for record, entry in zip(records, entries, strict=True):
         if (
             record.get("schema_id")
-            != "project6.connector_http_counter.v1"
+            not in (
+                "project6.connector_http_counter.v1",
+                "project6.connector_http_counter.v2",
+            )
             or record.get("ordinal") != entry.get("ordinal")
             or record.get("stage") != entry.get("stage")
             or record.get("request_fingerprint")
@@ -955,6 +921,15 @@ def evaluate_nrc_acquisition_success(
         verified_grant=verified_grant,
     )
     records = _load_nrc_counter_records(resolved_counter)
+    if (
+        not records
+        or records[0].get("schema_id")
+        != "project6.connector_http_counter.v2"
+    ):
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_counter_v2_required",
+            "dual-live NRC success requires one boot-bound counter-v2 stream",
+        )
     _reconcile_nrc_counter_records(records, entries=entries)
 
     artifact = entries[-1]

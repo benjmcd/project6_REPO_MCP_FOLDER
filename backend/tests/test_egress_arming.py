@@ -58,6 +58,41 @@ from app.services.connector_egress_arming import (
 from app.services.connector_egress_authorization import canonical_json_bytes
 
 
+COUNTER_RUNTIME_INSTANCE_ID = "223e4567-e89b-42d3-a456-426614174000"
+COUNTER_PROCESS_BOOT_ID = "7" * 64
+
+
+def _counter_record(
+    *,
+    schema_id: str,
+    ordinal: int,
+    stage: str,
+    request_fingerprint: str,
+) -> dict[str, object]:
+    record: dict[str, object] = {
+        "schema_id": schema_id,
+        "ordinal": ordinal,
+        "stage": stage,
+        "request_fingerprint": request_fingerprint,
+        "canonical_status_header_bytes": 1,
+        "delivered_body_bytes": 1,
+        "decoded_body_bytes": 1,
+        "decoded_body_sha256": "1" * 64,
+        "response_status": 200,
+        "error_class": None,
+        "monotonic_started_at": float(ordinal),
+        "monotonic_stopped_at": float(ordinal),
+        "evidence_started_at": "2026-01-01T00:00:00.000000Z",
+        "evidence_stopped_at": "2026-01-01T00:00:00.000000Z",
+    }
+    if schema_id == "project6.connector_http_counter.v2":
+        record.update(
+            runtime_instance_id=COUNTER_RUNTIME_INSTANCE_ID,
+            process_boot_id=COUNTER_PROCESS_BOOT_ID,
+        )
+    return record
+
+
 def test_canonical_arming_fingerprint_is_key_order_independent() -> None:
     left = {
         "campaign": {"id": "campaign-1", "revision": 7},
@@ -632,7 +667,7 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
     )
     records = tuple(
         {
-            "schema_id": "project6.connector_http_counter.v1",
+            "schema_id": "project6.connector_http_counter.v2",
             "ordinal": entry["ordinal"],
             "stage": entry["stage"],
             "request_fingerprint": entry["request_fingerprint"],
@@ -646,6 +681,8 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
             "monotonic_stopped_at": entry["ordinal"],
             "evidence_started_at": timestamp,
             "evidence_stopped_at": timestamp,
+            "runtime_instance_id": COUNTER_RUNTIME_INSTANCE_ID,
+            "process_boot_id": COUNTER_PROCESS_BOOT_ID,
         }
         for entry in entries
     )
@@ -716,6 +753,92 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
         artifact_hash=artifact_hash,
         blob_path=Path(str(stored["blob_ref"])),
     )
+
+
+@pytest.mark.parametrize(
+    "schema_id",
+    [
+        "project6.connector_http_counter.v1",
+        "project6.connector_http_counter.v2",
+    ],
+)
+def test_nrc_counter_loader_accepts_exact_historical_v1_and_v2(
+    tmp_path,
+    schema_id: str,
+) -> None:
+    record = _counter_record(
+        schema_id=schema_id,
+        ordinal=1,
+        stage="exact_accession_api",
+        request_fingerprint="4" * 64,
+    )
+    counter_path = tmp_path / "http.jsonl"
+    counter_path.write_bytes(canonical_json_bytes(record) + b"\n")
+
+    assert arming_module._load_nrc_counter_records(counter_path) == (record,)
+
+
+@pytest.mark.parametrize("case", ["mixed_schema", "mixed_runtime", "mixed_boot"])
+def test_nrc_counter_loader_rejects_mixed_schema_runtime_or_boot(
+    tmp_path,
+    case: str,
+) -> None:
+    first = _counter_record(
+        schema_id="project6.connector_http_counter.v2",
+        ordinal=1,
+        stage="exact_accession_api",
+        request_fingerprint="4" * 64,
+    )
+    second = _counter_record(
+        schema_id="project6.connector_http_counter.v2",
+        ordinal=2,
+        stage="artifact",
+        request_fingerprint="5" * 64,
+    )
+    if case == "mixed_schema":
+        second = _counter_record(
+            schema_id="project6.connector_http_counter.v1",
+            ordinal=2,
+            stage="artifact",
+            request_fingerprint="5" * 64,
+        )
+    elif case == "mixed_runtime":
+        second["runtime_instance_id"] = "323e4567-e89b-42d3-a456-426614174000"
+    else:
+        second["process_boot_id"] = "8" * 64
+    counter_path = tmp_path / "http.jsonl"
+    counter_path.write_bytes(
+        canonical_json_bytes(first) + b"\n" + canonical_json_bytes(second) + b"\n"
+    )
+
+    with pytest.raises(ConnectorEgressArmingError) as exc:
+        arming_module._load_nrc_counter_records(counter_path)
+    assert exc.value.code == "nrc_acquisition_success_counter_invalid"
+
+
+def test_nrc_dual_live_success_refuses_historical_v1_pass(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    db = _session()
+    state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    historical = []
+    for value in state.records:
+        record = dict(value)
+        record["schema_id"] = "project6.connector_http_counter.v1"
+        record.pop("runtime_instance_id")
+        record.pop("process_boot_id")
+        historical.append(record)
+    state.counter_path.write_bytes(
+        b"".join(canonical_json_bytes(record) + b"\n" for record in historical)
+    )
+
+    with pytest.raises(ConnectorEgressArmingError) as exc:
+        evaluate_nrc_acquisition_success(
+            db,
+            verified_definition=state.grant.verified_campaign,
+        )
+    assert exc.value.code == "nrc_acquisition_success_counter_v2_required"
 
 
 def _db_state_snapshot(db: Session) -> dict[str, tuple[tuple[object, ...], ...]]:
@@ -908,7 +1031,7 @@ def test_evaluate_nrc_acquisition_success_uses_real_terminal_ledger(
     transport_module._append_counter_record(
         counter_path,
         {
-            "schema_id": "project6.connector_http_counter.v1",
+            "schema_id": "project6.connector_http_counter.v2",
             "ordinal": 1,
             "stage": "exact_accession_api",
             "request_fingerprint": first_reservation.request_fingerprint,
@@ -924,6 +1047,8 @@ def test_evaluate_nrc_acquisition_success_uses_real_terminal_ledger(
             "evidence_stopped_at": transport_module.utc_six_z(
                 first_completed_at
             ),
+            "runtime_instance_id": COUNTER_RUNTIME_INSTANCE_ID,
+            "process_boot_id": COUNTER_PROCESS_BOOT_ID,
         },
     )
 
@@ -976,7 +1101,7 @@ def test_evaluate_nrc_acquisition_success_uses_real_terminal_ledger(
     transport_module._append_counter_record(
         counter_path,
         {
-            "schema_id": "project6.connector_http_counter.v1",
+            "schema_id": "project6.connector_http_counter.v2",
             "ordinal": 2,
             "stage": "artifact",
             "request_fingerprint": second_reservation.request_fingerprint,
@@ -992,6 +1117,8 @@ def test_evaluate_nrc_acquisition_success_uses_real_terminal_ledger(
             "evidence_stopped_at": transport_module.utc_six_z(
                 second_completed_at
             ),
+            "runtime_instance_id": COUNTER_RUNTIME_INSTANCE_ID,
+            "process_boot_id": COUNTER_PROCESS_BOOT_ID,
         },
     )
 

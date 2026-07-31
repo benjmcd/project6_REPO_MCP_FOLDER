@@ -1,20 +1,23 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import hashlib
 import http.client
 import ipaddress
 import math
 import os
 from pathlib import Path
+import re
 import socket
+import threading
 import time
 from types import MappingProxyType
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from http.cookiejar import DefaultCookiePolicy
-from typing import Any, Callable, Iterable, Mapping, NoReturn
+from typing import Any, Callable, Iterable, Iterator, Literal, Mapping, NoReturn, Sequence
 from urllib.parse import parse_qsl, urlsplit
-from uuid import NAMESPACE_URL, uuid5
+from uuid import NAMESPACE_URL, UUID, uuid5
 
 import requests  # type: ignore[import-untyped]
 from requests.adapters import HTTPAdapter  # type: ignore[import-untyped]
@@ -129,7 +132,9 @@ _COMPLETION_METRIC_KEYS = frozenset(
         "completed_at",
     }
 )
-_COUNTER_RECORD_KEYS = frozenset(
+COUNTER_V1_SCHEMA_ID = "project6.connector_http_counter.v1"
+COUNTER_V2_SCHEMA_ID = "project6.connector_http_counter.v2"
+COUNTER_V1_KEYS = frozenset(
     {
         "schema_id",
         "ordinal",
@@ -147,6 +152,10 @@ _COUNTER_RECORD_KEYS = frozenset(
         "evidence_stopped_at",
     }
 )
+COUNTER_V2_EXTRA_KEYS = frozenset(("runtime_instance_id", "process_boot_id"))
+COUNTER_V2_KEYS = COUNTER_V1_KEYS | COUNTER_V2_EXTRA_KEYS
+_LOWERCASE_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
+_PHYSICAL_SEND_LOCK = threading.Lock()
 
 
 class ConnectorEgressTransportError(RuntimeError):
@@ -154,6 +163,76 @@ class ConnectorEgressTransportError(RuntimeError):
         self.code = str(code)
         self.message = str(message or code)
         super().__init__(self.message)
+
+
+class CounterEvidenceError(ValueError):
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
+
+
+@dataclass(frozen=True, slots=True)
+class ConnectorCounterRuntimeContext:
+    runtime_instance_id: str
+    process_boot_id: str
+    append_frame: Callable[[bytes], None] = field(repr=False)
+    revocation_is_set: Callable[[], bool] = field(repr=False)
+    acquire_send_idle: Callable[[], None] = field(repr=False)
+    release_send_idle: Callable[[], None] = field(repr=False)
+
+    def __post_init__(self) -> None:
+        try:
+            runtime_id = UUID(self.runtime_instance_id)
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise ConnectorEgressTransportError(
+                "connector_counter_runtime_context_invalid"
+            ) from exc
+        if (
+            runtime_id.version != 4
+            or str(runtime_id) != self.runtime_instance_id
+            or not isinstance(self.process_boot_id, str)
+            or _LOWERCASE_SHA256.fullmatch(self.process_boot_id) is None
+            or any(
+                not callable(callback)
+                for callback in (
+                    self.append_frame,
+                    self.revocation_is_set,
+                    self.acquire_send_idle,
+                    self.release_send_idle,
+                )
+            )
+        ):
+            raise ConnectorEgressTransportError(
+                "connector_counter_runtime_context_invalid"
+            )
+
+
+_COUNTER_RUNTIME_INSTALL_LOCK = threading.Lock()
+_COUNTER_RUNTIME_CONTEXT: ConnectorCounterRuntimeContext | None = None
+_COUNTER_RUNTIME_RECORDS: list[dict[str, Any]] = []
+
+
+@contextmanager
+def connector_counter_runtime(
+    context: ConnectorCounterRuntimeContext,
+) -> Iterator[ConnectorCounterRuntimeContext]:
+    if type(context) is not ConnectorCounterRuntimeContext:
+        _fail("connector_counter_runtime_context_invalid")
+    global _COUNTER_RUNTIME_CONTEXT
+    with _PHYSICAL_SEND_LOCK:
+        with _COUNTER_RUNTIME_INSTALL_LOCK:
+            if _COUNTER_RUNTIME_CONTEXT is not None:
+                _fail("connector_counter_runtime_already_installed")
+            _COUNTER_RUNTIME_CONTEXT = context
+            _COUNTER_RUNTIME_RECORDS.clear()
+    try:
+        yield context
+    finally:
+        with _PHYSICAL_SEND_LOCK:
+            with _COUNTER_RUNTIME_INSTALL_LOCK:
+                if _COUNTER_RUNTIME_CONTEXT is context:
+                    _COUNTER_RUNTIME_CONTEXT = None
+                    _COUNTER_RUNTIME_RECORDS.clear()
 
 
 @dataclass(frozen=True)
@@ -331,6 +410,80 @@ def _parse_utc(value: Any, *, code: str) -> datetime:
 
 def _canonical_json_bytes(payload: Mapping[str, Any]) -> bytes:
     return canonical_json_bytes(payload)
+
+
+def _counter_schema(record: Mapping[str, Any]) -> Literal["v1", "v2"]:
+    keys = set(record)
+    if record.get("schema_id") == COUNTER_V1_SCHEMA_ID and keys == COUNTER_V1_KEYS:
+        return "v1"
+    if record.get("schema_id") == COUNTER_V2_SCHEMA_ID and keys == COUNTER_V2_KEYS:
+        return "v2"
+    raise CounterEvidenceError("connector_http_counter_schema_invalid")
+
+
+def _validate_v2_counter_identity(record: Mapping[str, Any]) -> tuple[str, str]:
+    runtime_instance_id = record.get("runtime_instance_id")
+    process_boot_id = record.get("process_boot_id")
+    try:
+        runtime_id = UUID(runtime_instance_id)  # type: ignore[arg-type]
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise CounterEvidenceError("connector_http_counter_runtime_invalid") from exc
+    if runtime_id.version != 4 or str(runtime_id) != runtime_instance_id:
+        raise CounterEvidenceError("connector_http_counter_runtime_invalid")
+    if (
+        not isinstance(process_boot_id, str)
+        or _LOWERCASE_SHA256.fullmatch(process_boot_id) is None
+    ):
+        raise CounterEvidenceError("connector_http_counter_boot_invalid")
+    assert isinstance(runtime_instance_id, str)
+    return runtime_instance_id, process_boot_id
+
+
+def parse_connector_counter_records(
+    payload: bytes,
+    *,
+    empty_is_valid: bool = False,
+) -> tuple[dict[str, Any], ...]:
+    if not isinstance(payload, bytes):
+        raise CounterEvidenceError("connector_http_counter_stream_invalid")
+    if not payload:
+        if empty_is_valid:
+            return ()
+        raise CounterEvidenceError("connector_http_counter_stream_invalid")
+    if len(payload) > 1_048_576 or not payload.endswith(b"\n"):
+        raise CounterEvidenceError("connector_http_counter_stream_invalid")
+
+    records: list[dict[str, Any]] = []
+    expected_schema: Literal["v1", "v2"] | None = None
+    expected_runtime_instance_id: str | None = None
+    expected_process_boot_id: str | None = None
+    for raw_line in payload.splitlines():
+        if not raw_line:
+            raise CounterEvidenceError("connector_http_counter_stream_invalid")
+        try:
+            parsed = strict_json_loads(raw_line)
+        except (TypeError, ValueError) as exc:
+            raise CounterEvidenceError("connector_http_counter_record_invalid") from exc
+        if not isinstance(parsed, dict):
+            raise CounterEvidenceError("connector_http_counter_record_invalid")
+        schema = _counter_schema(parsed)
+        if _canonical_json_bytes(parsed) != raw_line:
+            raise CounterEvidenceError("connector_http_counter_record_noncanonical")
+        if expected_schema is None:
+            expected_schema = schema
+        elif schema != expected_schema:
+            raise CounterEvidenceError("connector_http_counter_schema_mixed")
+        if schema == "v2":
+            runtime_instance_id, process_boot_id = _validate_v2_counter_identity(parsed)
+            if expected_runtime_instance_id is None:
+                expected_runtime_instance_id = runtime_instance_id
+                expected_process_boot_id = process_boot_id
+            elif runtime_instance_id != expected_runtime_instance_id:
+                raise CounterEvidenceError("connector_http_counter_runtime_mixed")
+            elif process_boot_id != expected_process_boot_id:
+                raise CounterEvidenceError("connector_http_counter_boot_mixed")
+        records.append(dict(parsed))
+    return tuple(records)
 
 
 def _sha256_bytes(payload: bytes) -> str:
@@ -800,31 +953,32 @@ def _load_counter_records(
         raise ConnectorEgressTransportError(
             "connector_egress_prior_counter_unresolved"
         ) from exc
-    if not payload:
-        if empty_is_valid:
-            return ()
-        _fail("connector_egress_prior_counter_unresolved")
-    if len(payload) > 1_048_576 or not payload.endswith(b"\n"):
-        _fail("connector_egress_prior_counter_unresolved")
+    try:
+        return parse_connector_counter_records(
+            payload,
+            empty_is_valid=empty_is_valid,
+        )
+    except CounterEvidenceError as exc:
+        raise ConnectorEgressTransportError(
+            "connector_egress_prior_counter_unresolved"
+        ) from exc
 
-    records: list[dict[str, Any]] = []
-    for raw_line in payload.splitlines():
-        if not raw_line:
-            _fail("connector_egress_prior_counter_unresolved")
-        try:
-            parsed = strict_json_loads(raw_line)
-        except (TypeError, ValueError) as exc:
-            raise ConnectorEgressTransportError(
-                "connector_egress_prior_counter_unresolved"
-            ) from exc
-        if (
-            not isinstance(parsed, dict)
-            or set(parsed) != _COUNTER_RECORD_KEYS
-            or _canonical_json_bytes(parsed) != raw_line
-        ):
-            _fail("connector_egress_prior_counter_unresolved")
-        records.append(dict(parsed))
-    return tuple(records)
+
+def _validate_counter_record_sequence(
+    records: Sequence[Mapping[str, Any]],
+    *,
+    empty_is_valid: bool,
+) -> tuple[dict[str, Any], ...]:
+    payload = b"".join(_canonical_json_bytes(record) + b"\n" for record in records)
+    try:
+        return parse_connector_counter_records(
+            payload,
+            empty_is_valid=empty_is_valid,
+        )
+    except CounterEvidenceError as exc:
+        raise ConnectorEgressTransportError(
+            "connector_egress_prior_counter_unresolved"
+        ) from exc
 
 
 def _counter_value_is_nonnegative_int(value: Any) -> bool:
@@ -836,6 +990,7 @@ def _reconcile_prior_counter_stream(
     *,
     before_ordinal: int,
     counter_path: Path | None,
+    counter_records: Sequence[Mapping[str, Any]] | None = None,
     expected_ordinals: set[int] | None = None,
 ) -> int:
     expected = (
@@ -848,11 +1003,19 @@ def _reconcile_prior_counter_stream(
         range(expected_order[0], expected_order[-1] + 1)
     ):
         _fail("connector_egress_prior_counter_unresolved")
-    if counter_path is None:
+    if counter_path is not None and counter_records is not None:
+        _fail("connector_egress_prior_counter_unresolved")
+    if counter_records is not None:
+        records = _validate_counter_record_sequence(
+            counter_records,
+            empty_is_valid=not expected,
+        )
+    elif counter_path is None:
         if not expected:
             return 0
         _fail("connector_egress_prior_counter_unresolved")
-    records = _load_counter_records(counter_path, empty_is_valid=not expected)
+    else:
+        records = _load_counter_records(counter_path, empty_is_valid=not expected)
     if not expected:
         return 0
 
@@ -952,7 +1115,8 @@ def _reconcile_prior_counter_stream(
             else completion_metrics.get("outcome_class")
         )
         if (
-            record.get("schema_id") != "project6.connector_http_counter.v1"
+            record.get("schema_id")
+            not in (COUNTER_V1_SCHEMA_ID, COUNTER_V2_SCHEMA_ID)
             or not _counter_value_is_nonnegative_int(status_header_bytes)
             or not _counter_value_is_nonnegative_int(delivered_body_bytes)
             or not _counter_value_is_nonnegative_int(decoded_body_bytes)
@@ -1094,6 +1258,7 @@ def reserve_physical_request(
     expected_derived_arming_hash: str | None,
     now: datetime,
     counter_path: Path | None = None,
+    counter_records: Sequence[Mapping[str, Any]] | None = None,
 ) -> PhysicalRequestReservation:
     assert_pinned_http_parser_limits()
     if isinstance(ordinal, bool) or not isinstance(ordinal, int) or ordinal < 1:
@@ -1152,6 +1317,7 @@ def reserve_physical_request(
                 events,
                 before_ordinal=ordinal,
                 counter_path=counter_path,
+                counter_records=counter_records,
             )
             if counter_counted_bytes != prior_counted_bytes:
                 _fail("connector_egress_prior_counter_unresolved")
@@ -1160,6 +1326,7 @@ def reserve_physical_request(
                 db,
                 connector_run_id=connector_run_id,
                 counter_path=counter_path,
+                counter_records=counter_records,
             )
             if not prior_ledger.eligible or [
                 entry["ordinal"] for entry in prior_ledger.entries
@@ -1620,6 +1787,7 @@ def derive_terminal_request_ledger(
     *,
     connector_run_id: str,
     counter_path: Path | None = None,
+    counter_records: Sequence[Mapping[str, Any]] | None = None,
 ) -> VerifiedTerminalRequestLedger:
     run = db.get(ConnectorRun, connector_run_id)
     if run is None:
@@ -1896,6 +2064,7 @@ def derive_terminal_request_ledger(
                 _events_for_run(db, connector_run_id),
                 before_ordinal=reservation_ordinals[-1] + 1,
                 counter_path=counter_path,
+                counter_records=counter_records,
                 expected_ordinals=sent_ordinals,
             )
             if reconciled_counted != total_counted:
@@ -2181,7 +2350,7 @@ class BoundedConnectorTransport:
         connector_run_id: str,
         lease_token: str,
         arming_fingerprint: str,
-        counter_path: str | Path,
+        counter_path: str | Path | None = None,
         send_callable: Callable[..., Response] | None = None,
         dns_resolver: Callable[[str, int], Iterable[str]] | None = None,
         prepared_request_adapter: (
@@ -2196,7 +2365,13 @@ class BoundedConnectorTransport:
         self.connector_run_id = connector_run_id
         self.lease_token = lease_token
         self.arming_fingerprint = arming_fingerprint
-        self.counter_path = Path(counter_path)
+        self._counter_runtime_context = _COUNTER_RUNTIME_CONTEXT
+        if self._counter_runtime_context is None:
+            if counter_path is None:
+                _fail("connector_egress_counter_path_required")
+            self.counter_path: Path | None = Path(counter_path)
+        else:
+            self.counter_path = None
         self._send_callable = send_callable
         self._dns_resolver = dns_resolver or _default_dns_resolver
         self._prepared_request_adapter = prepared_request_adapter or (
@@ -2207,6 +2382,49 @@ class BoundedConnectorTransport:
         self._sleeper = sleeper or time.sleep
         self._last_send_start = rate_state if rate_state is not None else {}
         self._authority_deadline_monotonic: float | None = None
+
+    def _runtime_revoked(self) -> bool:
+        context = self._counter_runtime_context
+        if context is None:
+            return False
+        if _COUNTER_RUNTIME_CONTEXT is not context:
+            _fail("connector_counter_runtime_not_installed")
+        try:
+            revoked = context.revocation_is_set()
+        except Exception as exc:
+            raise ConnectorEgressTransportError(
+                "connector_egress_revocation_check_failed"
+            ) from exc
+        if type(revoked) is not bool:
+            _fail("connector_egress_revocation_check_failed")
+        return revoked
+
+    def _acquire_send_idle(self) -> bool:
+        context = self._counter_runtime_context
+        if context is None:
+            return False
+        try:
+            result = context.acquire_send_idle()
+        except Exception as exc:
+            raise ConnectorEgressTransportError(
+                "connector_egress_send_idle_acquire_failed"
+            ) from exc
+        if result is not None:
+            _fail("connector_egress_send_idle_acquire_failed")
+        return True
+
+    def _release_send_idle(self) -> None:
+        context = self._counter_runtime_context
+        if context is None:
+            return
+        try:
+            result = context.release_send_idle()
+        except Exception as exc:
+            raise ConnectorEgressTransportError(
+                "connector_egress_send_idle_release_failed"
+            ) from exc
+        if result is not None:
+            _fail("connector_egress_send_idle_release_failed")
 
     def _bind_authority_deadline(self, envelope: Mapping[str, Any]) -> float:
         monotonic_now = self._monotonic_clock()
@@ -2273,8 +2491,8 @@ class BoundedConnectorTransport:
             if response_status is None and not decoded_body
             else _sha256_bytes(decoded_body)
         )
-        return {
-            "schema_id": "project6.connector_http_counter.v1",
+        record = {
+            "schema_id": COUNTER_V1_SCHEMA_ID,
             "ordinal": reservation.ordinal,
             "stage": reservation.stage,
             "request_fingerprint": reservation.request_fingerprint,
@@ -2289,6 +2507,32 @@ class BoundedConnectorTransport:
             "evidence_started_at": utc_six_z(evidence_started_at),
             "evidence_stopped_at": utc_six_z(evidence_stopped_at),
         }
+        context = self._counter_runtime_context
+        if context is not None:
+            record.update(
+                schema_id=COUNTER_V2_SCHEMA_ID,
+                runtime_instance_id=context.runtime_instance_id,
+                process_boot_id=context.process_boot_id,
+            )
+        return record
+
+    def _write_counter_record(self, record: Mapping[str, Any]) -> None:
+        context = self._counter_runtime_context
+        if context is None:
+            if self.counter_path is None:  # pragma: no cover - constructor invariant
+                _fail("connector_egress_counter_path_required")
+            _append_counter_record(self.counter_path, record)
+            return
+        encoded = _canonical_json_bytes(record)
+        try:
+            result = context.append_frame(encoded)
+        except Exception as exc:
+            raise ConnectorEgressTransportError(
+                "connector_egress_counter_write_failed"
+            ) from exc
+        if result is not None:
+            _fail("connector_egress_counter_write_failed")
+        _COUNTER_RUNTIME_RECORDS.append(dict(record))
 
     def _record_terminal(
         self,
@@ -2364,6 +2608,22 @@ class BoundedConnectorTransport:
         request: FrozenPhysicalRequest,
         expected_derived_arming_hash: str | None = None,
     ) -> BoundedConnectorResponse:
+        with _PHYSICAL_SEND_LOCK:
+            return self._send_once_serialized(
+                ordinal=ordinal,
+                stage=stage,
+                request=request,
+                expected_derived_arming_hash=expected_derived_arming_hash,
+            )
+
+    def _send_once_serialized(
+        self,
+        *,
+        ordinal: int,
+        stage: str,
+        request: FrozenPhysicalRequest,
+        expected_derived_arming_hash: str | None,
+    ) -> BoundedConnectorResponse:
         assert_pinned_http_parser_limits()
         host = _preflight_exact_request(
             connector_run_id=self.connector_run_id,
@@ -2375,7 +2635,28 @@ class BoundedConnectorTransport:
             now=_as_utc(self._utc_clock()),
         )
         _assert_all_addresses_public(self._dns_resolver(host, 443))
+        if self._runtime_revoked():
+            _fail("connector_egress_revoked")
+        send_idle_acquired = self._acquire_send_idle()
+        try:
+            return self._send_once_after_idle_acquired(
+                ordinal=ordinal,
+                stage=stage,
+                request=request,
+                expected_derived_arming_hash=expected_derived_arming_hash,
+            )
+        finally:
+            if send_idle_acquired:
+                self._release_send_idle()
 
+    def _send_once_after_idle_acquired(
+        self,
+        *,
+        ordinal: int,
+        stage: str,
+        request: FrozenPhysicalRequest,
+        expected_derived_arming_hash: str | None,
+    ) -> BoundedConnectorResponse:
         reservation = reserve_physical_request(
             connector_run_id=self.connector_run_id,
             lease_token=self.lease_token,
@@ -2386,6 +2667,11 @@ class BoundedConnectorTransport:
             expected_derived_arming_hash=expected_derived_arming_hash,
             now=_as_utc(self._utc_clock()),
             counter_path=self.counter_path,
+            counter_records=(
+                tuple(_COUNTER_RUNTIME_RECORDS)
+                if self._counter_runtime_context is not None
+                else None
+            ),
         )
         if reservation.already_reserved:
             _fail("connector_egress_reservation_already_spent")
@@ -2482,9 +2768,13 @@ class BoundedConnectorTransport:
         error_class: str | None = None
         safe_headers: dict[str, str] = {}
         location_values: tuple[str, ...] = ()
+        physical_send_started = False
 
         try:
             remaining = max(0.001, deadline - self._monotonic_clock())
+            if self._runtime_revoked():
+                _fail("connector_egress_revoked")
+            physical_send_started = True
             if self._send_callable is None:
                 response = session.send(
                     prepared,
@@ -2565,6 +2855,13 @@ class BoundedConnectorTransport:
             outcome_class = "timeout"
             error_class = "timeout"
         except ConnectorEgressTransportError as exc:
+            if not physical_send_started and exc.code in {
+                "connector_egress_revoked",
+                "connector_egress_revocation_check_failed",
+            }:
+                session.close()
+                self._complete_reserved_not_sent(reservation)
+                raise
             if (
                 exc.code == "connector_egress_prepared_request_mismatch"
                 and self._send_callable is None
@@ -2594,7 +2891,7 @@ class BoundedConnectorTransport:
             evidence_stopped_at=evidence_stopped_at,
         )
         try:
-            _append_counter_record(self.counter_path, record)
+            self._write_counter_record(record)
             self._record_terminal(
                 reservation=reservation,
                 outcome_class=outcome_class,

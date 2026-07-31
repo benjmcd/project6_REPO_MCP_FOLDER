@@ -8,7 +8,7 @@ import io
 import json
 from pathlib import Path
 import sys
-from threading import Barrier
+from threading import Barrier, Event, Lock
 from types import SimpleNamespace
 from typing import Any
 
@@ -98,10 +98,14 @@ def _strict_envelope() -> dict:
     }
 
 
-def _seed_running_run(factory) -> ConnectorRun:
+def _seed_running_run(
+    factory,
+    *,
+    connector_run_id: str = "strict-nrc-run",
+) -> ConnectorRun:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     run = ConnectorRun(
-        connector_run_id="strict-nrc-run",
+        connector_run_id=connector_run_id,
         connector_key="nrc_adams_aps",
         source_system="nrc_adams_aps",
         source_mode="strict_live_egress",
@@ -173,6 +177,24 @@ def _counter_record(
     }
 
 
+COUNTER_RUNTIME_INSTANCE_ID = "223e4567-e89b-42d3-a456-426614174000"
+COUNTER_PROCESS_BOOT_ID = "7" * 64
+
+
+def _v2_counter_record(
+    record: dict[str, object],
+    *,
+    runtime_instance_id: str = COUNTER_RUNTIME_INSTANCE_ID,
+    process_boot_id: str = COUNTER_PROCESS_BOOT_ID,
+) -> dict[str, object]:
+    return {
+        **record,
+        "schema_id": "project6.connector_http_counter.v2",
+        "runtime_instance_id": runtime_instance_id,
+        "process_boot_id": process_boot_id,
+    }
+
+
 def _write_counter_records(
     path: Path,
     records: list[dict[str, object]],
@@ -219,6 +241,84 @@ def _counter_events(
             )
         )
     return events
+
+
+def test_counter_parser_accepts_exact_historical_v1_and_boot_bound_v2() -> None:
+    now = datetime.now(timezone.utc)
+    v1 = _counter_record(
+        ordinal=1,
+        stage="exact_accession_api",
+        request_fingerprint="1" * 64,
+        now=now,
+    )
+    v2 = _v2_counter_record(v1)
+
+    assert transport.COUNTER_V2_EXTRA_KEYS == frozenset(
+        ("runtime_instance_id", "process_boot_id")
+    )
+    assert transport.COUNTER_V2_KEYS == (
+        transport.COUNTER_V1_KEYS | transport.COUNTER_V2_EXTRA_KEYS
+    )
+    assert transport.parse_connector_counter_records(
+        transport._canonical_json_bytes(v1) + b"\n"
+    ) == (v1,)
+    assert transport.parse_connector_counter_records(
+        transport._canonical_json_bytes(v2) + b"\n"
+    ) == (v2,)
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "mixed_schema",
+        "mixed_runtime",
+        "mixed_boot",
+        "missing_key",
+        "extra_key",
+        "noncanonical_uuid4",
+        "noncanonical_boot",
+    ],
+)
+def test_counter_parser_rejects_mixed_or_nonexact_v2(case: str) -> None:
+    now = datetime.now(timezone.utc)
+    first_v1 = _counter_record(
+        ordinal=1,
+        stage="exact_accession_api",
+        request_fingerprint="1" * 64,
+        now=now,
+    )
+    second_v1 = _counter_record(
+        ordinal=2,
+        stage="artifact",
+        request_fingerprint="2" * 64,
+        now=now,
+    )
+    first = _v2_counter_record(first_v1)
+    second = _v2_counter_record(second_v1)
+    if case == "mixed_schema":
+        records = [first, second_v1]
+    else:
+        records = [first, second]
+        if case == "mixed_runtime":
+            records[1]["runtime_instance_id"] = (
+                "323e4567-e89b-42d3-a456-426614174000"
+            )
+        elif case == "mixed_boot":
+            records[1]["process_boot_id"] = "8" * 64
+        elif case == "missing_key":
+            records[1].pop("process_boot_id")
+        elif case == "extra_key":
+            records[1]["unexpected"] = True
+        elif case == "noncanonical_uuid4":
+            records[1]["runtime_instance_id"] = COUNTER_RUNTIME_INSTANCE_ID.upper()
+        elif case == "noncanonical_boot":
+            records[1]["process_boot_id"] = "A" * 64
+    payload = b"".join(
+        transport._canonical_json_bytes(record) + b"\n" for record in records
+    )
+
+    with pytest.raises(transport.CounterEvidenceError):
+        transport.parse_connector_counter_records(payload)
 
 
 def test_revalidation_delegates_coordinated_tamper_to_canonical_resolver(
@@ -1462,6 +1562,283 @@ def _response(
     for name, value in response.raw.headers.items():
         response.headers[name] = value
     return response
+
+
+def _runtime_context(
+    frames: list[bytes],
+    *,
+    revocation_is_set,
+    lifecycle: list[str],
+) -> transport.ConnectorCounterRuntimeContext:
+    return transport.ConnectorCounterRuntimeContext(
+        runtime_instance_id=COUNTER_RUNTIME_INSTANCE_ID,
+        process_boot_id=COUNTER_PROCESS_BOOT_ID,
+        append_frame=frames.append,
+        revocation_is_set=revocation_is_set,
+        acquire_send_idle=lambda: lifecycle.append("acquire"),
+        release_send_idle=lambda: lifecycle.append("release"),
+    )
+
+
+def test_counter_runtime_emits_only_canonical_v2_to_wrapper_sink(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    frames: list[bytes] = []
+    lifecycle: list[str] = []
+    context = _runtime_context(
+        frames,
+        revocation_is_set=lambda: False,
+        lifecycle=lifecycle,
+    )
+
+    with transport.connector_counter_runtime(context):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: _response(b"payload"),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        result = client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+
+    assert result.outcome_class == "completed"
+    assert lifecycle == ["acquire", "release"]
+    assert len(frames) == 1
+    assert not frames[0].endswith(b"\n")
+    records = transport.parse_connector_counter_records(frames[0] + b"\n")
+    assert records[0]["schema_id"] == "project6.connector_http_counter.v2"
+    assert records[0]["runtime_instance_id"] == COUNTER_RUNTIME_INSTANCE_ID
+    assert records[0]["process_boot_id"] == COUNTER_PROCESS_BOOT_ID
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+            counter_records=records,
+        )
+    assert ledger.eligible is True
+
+
+def test_revocation_before_reservation_creates_no_reservation(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    frames: list[bytes] = []
+    lifecycle: list[str] = []
+    sends: list[object] = []
+    context = _runtime_context(
+        frames,
+        revocation_is_set=lambda: True,
+        lifecycle=lifecycle,
+    )
+
+    with transport.connector_counter_runtime(context):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: sends.append(args),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+            client.send_once(
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            )
+
+    assert exc.value.code == "connector_egress_revoked"
+    assert lifecycle == []
+    assert sends == []
+    assert frames == []
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 0
+
+
+def test_revocation_after_reservation_records_reserved_not_sent_and_signals_idle(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    checks = iter((False, True))
+    frames: list[bytes] = []
+    lifecycle: list[str] = []
+    sends: list[object] = []
+    context = _runtime_context(
+        frames,
+        revocation_is_set=lambda: next(checks),
+        lifecycle=lifecycle,
+    )
+
+    with transport.connector_counter_runtime(context):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=lambda *args, **kwargs: sends.append(args),
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+            client.send_once(
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            )
+
+    assert exc.value.code == "connector_egress_revoked"
+    assert lifecycle == ["acquire", "release"]
+    assert sends == []
+    assert frames == []
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+        )
+    assert ledger.entries[0]["outcome_class"] == "reserved_not_sent"
+    assert ledger.eligible is False
+
+
+def test_in_flight_send_finishes_v2_counter_and_terminal_evidence_after_revocation(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    revoked = [False]
+    frames: list[bytes] = []
+    lifecycle: list[str] = []
+
+    def send(*args, **kwargs):
+        revoked[0] = True
+        return _response(b"completed-in-flight")
+
+    context = _runtime_context(
+        frames,
+        revocation_is_set=lambda: revoked[0],
+        lifecycle=lifecycle,
+    )
+    with transport.connector_counter_runtime(context):
+        client = transport.BoundedConnectorTransport(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            send_callable=send,
+            dns_resolver=lambda host, port: ["8.8.8.8"],
+        )
+        result = client.send_once(
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+        )
+
+    records = transport.parse_connector_counter_records(frames[0] + b"\n")
+    assert revoked == [True]
+    assert result.outcome_class == "completed"
+    assert records[0]["error_class"] is None
+    assert lifecycle == ["acquire", "release"]
+    with session_factory() as db:
+        ledger = transport.derive_terminal_request_ledger(
+            db,
+            connector_run_id="strict-nrc-run",
+            counter_records=records,
+        )
+    assert ledger.entries[0]["outcome_class"] == "completed"
+    assert ledger.eligible is True
+
+
+def test_process_global_physical_send_lock_serializes_transport_instances(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory, connector_run_id="strict-nrc-run-a")
+    _seed_running_run(session_factory, connector_run_id="strict-nrc-run-b")
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+    frames: list[bytes] = []
+    lifecycle: list[str] = []
+    first_entered = Event()
+    release_first = Event()
+    second_entered = Event()
+    call_lock = Lock()
+    calls = [0]
+
+    def send(*args, **kwargs):
+        with call_lock:
+            calls[0] += 1
+            current = calls[0]
+        if current == 1:
+            first_entered.set()
+            assert release_first.wait(5)
+        else:
+            second_entered.set()
+        return _response(f"response-{current}".encode("ascii"))
+
+    context = _runtime_context(
+        frames,
+        revocation_is_set=lambda: False,
+        lifecycle=lifecycle,
+    )
+    with transport.connector_counter_runtime(context):
+        clients = [
+            transport.BoundedConnectorTransport(
+                connector_run_id=connector_run_id,
+                lease_token="lease-token",
+                arming_fingerprint="d" * 64,
+                send_callable=send,
+                dns_resolver=lambda host, port: ["8.8.8.8"],
+            )
+            for connector_run_id in ("strict-nrc-run-a", "strict-nrc-run-b")
+        ]
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first = pool.submit(
+                clients[0].send_once,
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            )
+            assert first_entered.wait(5)
+            second = pool.submit(
+                clients[1].send_once,
+                ordinal=1,
+                stage="exact_accession_api",
+                request=_request(),
+            )
+            assert second_entered.wait(0.25) is False
+            release_first.set()
+            assert first.result(timeout=5).outcome_class == "completed"
+            assert second.result(timeout=5).outcome_class == "completed"
+
+    assert second_entered.is_set()
+    assert lifecycle == ["acquire", "release", "acquire", "release"]
+    assert len(frames) == 2
 
 
 def test_subscription_key_value_is_absent_from_fingerprint_and_repr() -> None:
