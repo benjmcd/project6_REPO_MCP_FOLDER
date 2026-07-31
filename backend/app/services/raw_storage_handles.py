@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 import ctypes
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import errno
 import hashlib
 import os
 from pathlib import Path
 import stat
-from typing import Iterator
+from typing import BinaryIO, Iterator
 
 
 class StableRawStorageError(Exception):
@@ -29,11 +30,19 @@ _GENERIC_READ = 0x80000000
 _GENERIC_WRITE = 0x40000000
 _FILE_SHARE_READ = 0x00000001
 _FILE_SHARE_WRITE = 0x00000002
+_FILE_SHARE_DELETE = 0x00000004
 _CREATE_NEW = 1
 _OPEN_EXISTING = 3
 _ERROR_FILE_EXISTS = 80
 _ERROR_ALREADY_EXISTS = 183
 _FILE_ATTRIBUTE_TAG_INFO_CLASS = 9
+_MOVEFILE_WRITE_THROUGH = 0x00000008
+
+
+@dataclass(frozen=True)
+class StableRawFileIdentity:
+    device_id: int
+    file_id: int
 
 
 @dataclass(frozen=True)
@@ -41,6 +50,77 @@ class LockedRawFileSnapshot:
     canonical_ref: str
     size: int
     sha256: str
+    identity: StableRawFileIdentity | None = field(
+        default=None,
+        compare=False,
+        repr=False,
+    )
+    link_count: int | None = field(
+        default=None,
+        compare=False,
+        repr=False,
+    )
+    parent_identity: StableRawFileIdentity | None = field(
+        default=None,
+        compare=False,
+        repr=False,
+    )
+
+
+class OwnedLockedRawFileWriter:
+    __slots__ = (
+        "_file",
+        "_raw_root",
+        "_canonical_ref",
+        "_identity",
+        "_link_count",
+        "_parent_identity",
+    )
+
+    def __init__(
+        self,
+        file: BinaryIO,
+        *,
+        raw_root: Path,
+        canonical_ref: str,
+        identity: StableRawFileIdentity,
+        link_count: int,
+        parent_identity: StableRawFileIdentity,
+    ) -> None:
+        self._file = file
+        self._raw_root = raw_root
+        self._canonical_ref = canonical_ref
+        self._identity = identity
+        self._link_count = link_count
+        self._parent_identity = parent_identity
+
+    @property
+    def closed(self) -> bool:
+        return self._file.closed
+
+    @property
+    def identity(self) -> StableRawFileIdentity:
+        return self._identity
+
+    @property
+    def link_count(self) -> int:
+        return self._link_count
+
+    @property
+    def parent_identity(self) -> StableRawFileIdentity:
+        return self._parent_identity
+
+    def write(self, content: bytes | bytearray | memoryview) -> int:
+        return self._file.write(content)
+
+    def flush(self) -> None:
+        self._file.flush()
+
+    def fileno(self) -> int:
+        return self._file.fileno()
+
+    def close(self) -> None:
+        self._file.close()
 
 
 if os.name == "nt":
@@ -107,6 +187,13 @@ if os.name == "nt":
         wintypes.DWORD,
     ]
     _get_final_path.restype = wintypes.DWORD
+    _move_file_ex = _kernel32.MoveFileExW
+    _move_file_ex.argtypes = [
+        wintypes.LPCWSTR,
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+    ]
+    _move_file_ex.restype = wintypes.BOOL
     _INVALID_HANDLE_VALUE = ctypes.c_void_p(-1).value
 
 
@@ -141,12 +228,21 @@ def _normalise_windows_handle_path(path: str) -> str:
     return os.path.normcase(os.path.normpath(path))
 
 
-def _handle_identity(handle: int) -> tuple[int, int]:
+def _handle_file_information(handle: int) -> _ByHandleFileInformation:
     info = _ByHandleFileInformation()
     if not _get_file_information(handle, ctypes.byref(info)):
         raise StableRawStorageError("io")
+    return info
+
+
+def _handle_identity(handle: int) -> tuple[int, int]:
+    info = _handle_file_information(handle)
     file_index = (int(info.FileIndexHigh) << 32) | int(info.FileIndexLow)
     return int(info.VolumeSerialNumber), file_index
+
+
+def _handle_link_count(handle: int) -> int:
+    return int(_handle_file_information(handle).NumberOfLinks)
 
 
 def _validate_windows_handle(
@@ -236,6 +332,26 @@ def _open_windows_file_handle(
     return int(handle)
 
 
+def _open_windows_move_handle(path: Path) -> int:
+    handle = _create_file(
+        str(path),
+        _GENERIC_READ | _FILE_READ_ATTRIBUTES,
+        _FILE_SHARE_READ | _FILE_SHARE_DELETE,
+        None,
+        _OPEN_EXISTING,
+        _FILE_ATTRIBUTE_NORMAL | _FILE_FLAG_OPEN_REPARSE_POINT,
+        None,
+    )
+    if handle == _INVALID_HANDLE_VALUE:
+        raise StableRawStorageError("unsafe")
+    try:
+        _validate_windows_handle(handle, path, directory=False)
+    except Exception:
+        _close_handle(handle)
+        raise
+    return int(handle)
+
+
 def _close_windows_handle(handle: int) -> None:
     if not _close_handle(handle):
         raise StableRawStorageError("io")
@@ -309,12 +425,27 @@ def _fd_identity(file_stat: os.stat_result) -> tuple[int, int]:
 
 def _fd_stable_state(
     file_stat: os.stat_result,
-) -> tuple[int, int, int, int]:
+) -> tuple[int, int, int, int, int]:
     return (
         *_fd_identity(file_stat),
         int(file_stat.st_size),
         int(file_stat.st_mtime_ns),
+        int(file_stat.st_nlink),
     )
+
+
+def _stable_identity(value: tuple[int, int]) -> StableRawFileIdentity:
+    return StableRawFileIdentity(device_id=value[0], file_id=value[1])
+
+
+def _fd_file_identity(fd: int) -> tuple[StableRawFileIdentity, int]:
+    if _windows_backend_available():
+        handle = msvcrt.get_osfhandle(fd)
+        return _stable_identity(_handle_identity(handle)), _handle_link_count(
+            handle
+        )
+    file_stat = os.fstat(fd)
+    return _stable_identity(_fd_identity(file_stat)), int(file_stat.st_nlink)
 
 
 @dataclass(frozen=True)
@@ -622,21 +753,39 @@ def _hash_fd(
     fd: int,
     *,
     expected_content: bytes | None = None,
+    max_bytes: int | None = None,
 ) -> tuple[int, str, bool]:
+    if max_bytes is not None and (
+        isinstance(max_bytes, bool)
+        or not isinstance(max_bytes, int)
+        or max_bytes < 0
+    ):
+        raise ValueError("max_bytes must be a non-negative integer")
+    initial_size = int(os.fstat(fd).st_size)
+    if max_bytes is not None and initial_size > max_bytes:
+        raise StableRawStorageError("oversized")
     os.lseek(fd, 0, os.SEEK_SET)
     digest = hashlib.sha256()
     size = 0
     matches = True
-    while True:
-        chunk = os.read(fd, _READ_CHUNK_SIZE)
+    while size < initial_size:
+        chunk = os.read(
+            fd,
+            min(_READ_CHUNK_SIZE, initial_size - size),
+        )
         if not chunk:
-            break
+            raise StableRawStorageError("changed")
         if expected_content is not None:
             matches = matches and (
                 chunk == expected_content[size : size + len(chunk)]
             )
         size += len(chunk)
         digest.update(chunk)
+    final_size = int(os.fstat(fd).st_size)
+    if max_bytes is not None and final_size > max_bytes:
+        raise StableRawStorageError("oversized")
+    if final_size != initial_size:
+        raise StableRawStorageError("changed")
     if expected_content is not None:
         matches = matches and size == len(expected_content)
     return size, digest.hexdigest(), matches
@@ -713,7 +862,15 @@ def _read_windows_snapshot_state(
     fd: int,
     path: Path,
     locked: list[tuple[int, Path, tuple[int, int]]],
-) -> tuple[tuple[int, int], tuple[int, int, int, int], int, str]:
+    *,
+    max_bytes: int | None,
+) -> tuple[
+    StableRawFileIdentity,
+    int,
+    tuple[int, int, int, int, int],
+    int,
+    str,
+]:
     before = os.fstat(fd)
     handle = msvcrt.get_osfhandle(fd)
     handle_identity = _validate_windows_handle(
@@ -721,7 +878,8 @@ def _read_windows_snapshot_state(
         path,
         directory=False,
     )
-    size, digest, _ = _hash_fd(fd)
+    link_count = _handle_link_count(handle)
+    size, digest, _ = _hash_fd(fd, max_bytes=max_bytes)
     after = os.fstat(fd)
     if (
         _fd_identity(before) != _fd_identity(after)
@@ -733,10 +891,17 @@ def _read_windows_snapshot_state(
             directory=False,
         )
         != handle_identity
+        or _handle_link_count(handle) != link_count
     ):
         raise StableRawStorageError("changed")
     _revalidate_windows_directories(locked)
-    return handle_identity, _fd_stable_state(after), size, digest
+    return (
+        _stable_identity(handle_identity),
+        link_count,
+        _fd_stable_state(after),
+        size,
+        digest,
+    )
 
 
 def _read_posix_snapshot_state(
@@ -744,10 +909,18 @@ def _read_posix_snapshot_state(
     parent_fd: int,
     file_name: str,
     locked: list[_PosixDirectoryHandle],
-) -> tuple[tuple[int, int, int, int], int, str]:
+    *,
+    max_bytes: int | None,
+) -> tuple[
+    StableRawFileIdentity,
+    int,
+    tuple[int, int, int, int, int],
+    int,
+    str,
+]:
     before = os.fstat(fd)
     before_identity = _require_posix_regular_file(before)
-    size, digest, _ = _hash_fd(fd)
+    size, digest, _ = _hash_fd(fd, max_bytes=max_bytes)
     after = os.fstat(fd)
     after_identity = _require_posix_regular_file(after)
     path_after = os.stat(
@@ -764,7 +937,13 @@ def _read_posix_snapshot_state(
     ):
         raise StableRawStorageError("changed")
     _revalidate_posix_directories(locked)
-    return _fd_stable_state(after), size, digest
+    return (
+        _stable_identity(after_identity),
+        int(after.st_nlink),
+        _fd_stable_state(after),
+        size,
+        digest,
+    )
 
 
 def _stable_snapshot_error(
@@ -810,6 +989,8 @@ def _raise_snapshot_errors(
 def _locked_windows_raw_file_snapshot(
     raw_root: Path,
     file_path: Path,
+    *,
+    max_bytes: int | None,
 ) -> Iterator[LockedRawFileSnapshot]:
     with _locked_windows_parents(
         raw_root,
@@ -830,13 +1011,21 @@ def _locked_windows_raw_file_snapshot(
         close_error: BaseException | None = None
         try:
             try:
-                identity, stable_state, size, digest = (
-                    _read_windows_snapshot_state(fd, output, locked)
+                identity, link_count, stable_state, size, digest = (
+                    _read_windows_snapshot_state(
+                        fd,
+                        output,
+                        locked,
+                        max_bytes=max_bytes,
+                    )
                 )
                 snapshot = LockedRawFileSnapshot(
                     canonical_ref=str(output.resolve(strict=True)),
                     size=size,
                     sha256=digest,
+                    identity=identity,
+                    link_count=link_count,
+                    parent_identity=_stable_identity(locked[-1][2]),
                 )
             except OSError as exc:
                 primary = _stable_snapshot_error("changed", exc)
@@ -850,6 +1039,7 @@ def _locked_windows_raw_file_snapshot(
                 try:
                     (
                         exit_identity,
+                        exit_link_count,
                         exit_state,
                         exit_size,
                         exit_digest,
@@ -857,9 +1047,11 @@ def _locked_windows_raw_file_snapshot(
                         fd,
                         output,
                         locked,
+                        max_bytes=max_bytes,
                     )
                     if (
                         exit_identity != identity
+                        or exit_link_count != link_count
                         or exit_state != stable_state
                         or exit_size != size
                         or exit_digest != digest
@@ -885,6 +1077,8 @@ def _locked_windows_raw_file_snapshot(
 def _locked_posix_raw_file_snapshot(
     raw_root: Path,
     file_path: Path,
+    *,
+    max_bytes: int | None,
 ) -> Iterator[LockedRawFileSnapshot]:
     with _locked_posix_parents(
         raw_root,
@@ -902,16 +1096,28 @@ def _locked_posix_raw_file_snapshot(
         close_error: BaseException | None = None
         try:
             try:
-                stable_state, size, digest = _read_posix_snapshot_state(
+                (
+                    identity,
+                    link_count,
+                    stable_state,
+                    size,
+                    digest,
+                ) = _read_posix_snapshot_state(
                     fd,
                     parent_fd,
                     file_name,
                     locked,
+                    max_bytes=max_bytes,
                 )
                 snapshot = LockedRawFileSnapshot(
                     canonical_ref=str(output.resolve(strict=True)),
                     size=size,
                     sha256=digest,
+                    identity=identity,
+                    link_count=link_count,
+                    parent_identity=_stable_identity(
+                        locked[-1].identity
+                    ),
                 )
             except OSError as exc:
                 primary = _stable_snapshot_error("changed", exc)
@@ -923,16 +1129,25 @@ def _locked_posix_raw_file_snapshot(
                 except BaseException as exc:
                     primary = exc
                 try:
-                    exit_state, exit_size, exit_digest = (
+                    (
+                        exit_identity,
+                        exit_link_count,
+                        exit_state,
+                        exit_size,
+                        exit_digest,
+                    ) = (
                         _read_posix_snapshot_state(
                             fd,
                             parent_fd,
                             file_name,
                             locked,
+                            max_bytes=max_bytes,
                         )
                     )
                     if (
-                        exit_state != stable_state
+                        exit_identity != identity
+                        or exit_link_count != link_count
+                        or exit_state != stable_state
                         or exit_size != size
                         or exit_digest != digest
                     ):
@@ -953,19 +1168,269 @@ def _locked_posix_raw_file_snapshot(
         )
 
 
+def _require_snapshot_constraints(
+    snapshot: LockedRawFileSnapshot,
+    *,
+    expected_identity: StableRawFileIdentity | None,
+    expected_parent_identity: StableRawFileIdentity | None,
+    required_link_count: int | None,
+) -> None:
+    if (
+        expected_identity is not None
+        and snapshot.identity != expected_identity
+    ):
+        raise StableRawStorageError("changed")
+    if (
+        expected_parent_identity is not None
+        and snapshot.parent_identity != expected_parent_identity
+    ):
+        raise StableRawStorageError("changed")
+    if required_link_count is not None:
+        if (
+            isinstance(required_link_count, bool)
+            or not isinstance(required_link_count, int)
+            or required_link_count < 1
+        ):
+            raise ValueError(
+                "required_link_count must be a positive integer"
+            )
+        if snapshot.link_count != required_link_count:
+            raise StableRawStorageError("unsafe")
+
+
+def _windows_writer_from_handle(
+    handle: int,
+    *,
+    raw_root: Path,
+    output: Path,
+    locked: list[tuple[int, Path, tuple[int, int]]],
+) -> OwnedLockedRawFileWriter:
+    identity = _stable_identity(
+        _validate_windows_handle(handle, output, directory=False)
+    )
+    link_count = _handle_link_count(handle)
+    if link_count != 1:
+        _close_windows_handle(handle)
+        raise StableRawStorageError("unsafe")
+    try:
+        fd = msvcrt.open_osfhandle(handle, os.O_BINARY | os.O_RDWR)
+    except OSError as exc:
+        _close_windows_handle(handle)
+        raise StableRawStorageError("io") from exc
+    try:
+        file = os.fdopen(fd, "w+b", buffering=0)
+    except OSError as exc:
+        os.close(fd)
+        raise StableRawStorageError("io") from exc
+    try:
+        opened_identity, opened_links = _fd_file_identity(file.fileno())
+        if opened_identity != identity or opened_links != link_count:
+            raise StableRawStorageError("changed")
+        if (
+            _stable_identity(
+                _validate_windows_handle(
+                    msvcrt.get_osfhandle(file.fileno()),
+                    output,
+                    directory=False,
+                )
+            )
+            != identity
+        ):
+            raise StableRawStorageError("changed")
+        _revalidate_windows_directories(locked)
+        parent_identity = _stable_identity(locked[-1][2])
+        return OwnedLockedRawFileWriter(
+            file,
+            raw_root=raw_root,
+            canonical_ref=str(output.resolve(strict=True)),
+            identity=identity,
+            link_count=link_count,
+            parent_identity=parent_identity,
+        )
+    except BaseException:
+        file.close()
+        raise
+
+
+def _open_windows_owned_writer(
+    raw_root: Path,
+    file_path: Path,
+    *,
+    create_immediate_parent_exclusive: bool,
+    expected_parent_identity: StableRawFileIdentity | None,
+) -> OwnedLockedRawFileWriter:
+    writer: OwnedLockedRawFileWriter | None = None
+    try:
+        parent_target = (
+            file_path.parent
+            if create_immediate_parent_exclusive
+            else file_path
+        )
+        with _locked_windows_parents(
+            raw_root,
+            parent_target,
+            create=False,
+        ) as (_, locked):
+            output = _lexical_absolute(file_path)
+            if create_immediate_parent_exclusive:
+                parent = output.parent
+                try:
+                    parent.mkdir()
+                except FileExistsError as exc:
+                    raise StableRawStorageError("conflict") from exc
+                parent_handle, parent_raw_identity = (
+                    _open_windows_directory_handle(parent)
+                )
+                locked.append(
+                    (parent_handle, parent, parent_raw_identity)
+                )
+            parent_identity = _stable_identity(locked[-1][2])
+            if (
+                expected_parent_identity is not None
+                and parent_identity != expected_parent_identity
+            ):
+                raise StableRawStorageError("changed")
+            try:
+                handle = _open_windows_file_handle(
+                    output,
+                    create_new=True,
+                )
+            except FileExistsError as exc:
+                raise StableRawStorageError("conflict") from exc
+            writer = _windows_writer_from_handle(
+                handle,
+                raw_root=_lexical_absolute(raw_root),
+                output=output,
+                locked=locked,
+            )
+        return writer
+    except BaseException:
+        if writer is not None:
+            writer.close()
+        raise
+
+
+def _posix_writer_from_fd(
+    fd: int,
+    *,
+    raw_root: Path,
+    output: Path,
+    file_name: str,
+    locked: list[_PosixDirectoryHandle],
+) -> OwnedLockedRawFileWriter:
+    try:
+        file_stat = os.fstat(fd)
+        raw_identity = _require_posix_regular_file(file_stat)
+        identity = _stable_identity(raw_identity)
+        link_count = int(file_stat.st_nlink)
+        if link_count != 1:
+            raise StableRawStorageError("unsafe")
+        path_stat = os.stat(
+            file_name,
+            dir_fd=locked[-1].fd,
+            follow_symlinks=False,
+        )
+        if (
+            _require_posix_regular_file(path_stat) != raw_identity
+            or _fd_stable_state(path_stat) != _fd_stable_state(file_stat)
+        ):
+            raise StableRawStorageError("changed")
+        _revalidate_posix_directories(locked)
+        file = os.fdopen(fd, "w+b", buffering=0)
+    except BaseException:
+        os.close(fd)
+        raise
+    return OwnedLockedRawFileWriter(
+        file,
+        raw_root=raw_root,
+        canonical_ref=str(output),
+        identity=identity,
+        link_count=link_count,
+        parent_identity=_stable_identity(locked[-1].identity),
+    )
+
+
+def _open_posix_owned_writer(
+    raw_root: Path,
+    file_path: Path,
+    *,
+    create_immediate_parent_exclusive: bool,
+    expected_parent_identity: StableRawFileIdentity | None,
+) -> OwnedLockedRawFileWriter:
+    writer: OwnedLockedRawFileWriter | None = None
+    try:
+        parent_target = (
+            file_path.parent
+            if create_immediate_parent_exclusive
+            else file_path
+        )
+        with _locked_posix_parents(
+            raw_root,
+            parent_target,
+            create=False,
+        ) as (_, parent_name, locked):
+            output = _lexical_absolute(file_path)
+            if create_immediate_parent_exclusive:
+                try:
+                    os.mkdir(
+                        parent_name,
+                        0o700,
+                        dir_fd=locked[-1].fd,
+                    )
+                except FileExistsError as exc:
+                    raise StableRawStorageError("conflict") from exc
+                locked.append(
+                    _open_posix_child_directory(
+                        locked[-1],
+                        parent_name,
+                        output.parent,
+                    )
+                )
+            parent_identity = _stable_identity(locked[-1].identity)
+            if (
+                expected_parent_identity is not None
+                and parent_identity != expected_parent_identity
+            ):
+                raise StableRawStorageError("changed")
+            try:
+                fd = _open_posix_file_fd(
+                    locked[-1].fd,
+                    output.name,
+                    create_new=True,
+                )
+            except FileExistsError as exc:
+                raise StableRawStorageError("conflict") from exc
+            writer = _posix_writer_from_fd(
+                fd,
+                raw_root=_lexical_absolute(raw_root),
+                output=output,
+                file_name=output.name,
+                locked=locked,
+            )
+        return writer
+    except BaseException:
+        if writer is not None:
+            writer.close()
+        raise
+
+
 def _persist_windows_locked_raw_file(
     raw_root: Path,
     file_path: Path,
     content: bytes,
+    *,
+    strict_new: bool = False,
 ) -> tuple[int, str, str]:
     with _locked_windows_parents(
         raw_root,
         file_path,
-        create=True,
+        create=not strict_new,
     ) as (output, locked):
         try:
             handle = _open_windows_file_handle(output, create_new=True)
-        except FileExistsError:
+        except FileExistsError as exc:
+            if strict_new:
+                raise StableRawStorageError("conflict") from exc
             handle = _open_windows_file_handle(output, create_new=False)
             size, digest, matches = _use_windows_file_handle(
                 handle,
@@ -982,6 +1447,9 @@ def _persist_windows_locked_raw_file(
                 raise StableRawStorageError("conflict")
             return size, digest, str(output.resolve(strict=True))
 
+        if strict_new and _handle_link_count(handle) != 1:
+            _close_windows_handle(handle)
+            raise StableRawStorageError("unsafe")
         size, digest, matches = _use_windows_file_handle(
             handle,
             output,
@@ -997,11 +1465,22 @@ def _persist_windows_locked_raw_file(
 def _hash_windows_locked_raw_file(
     raw_root: Path,
     file_path: Path,
+    *,
+    max_bytes: int | None = None,
+    expected_identity: StableRawFileIdentity | None = None,
+    required_link_count: int | None = None,
 ) -> tuple[int, str, str]:
     with _locked_windows_raw_file_snapshot(
         raw_root,
         file_path,
+        max_bytes=max_bytes,
     ) as snapshot:
+        _require_snapshot_constraints(
+            snapshot,
+            expected_identity=expected_identity,
+            expected_parent_identity=None,
+            required_link_count=required_link_count,
+        )
         return (
             snapshot.size,
             snapshot.sha256,
@@ -1013,11 +1492,13 @@ def _persist_posix_locked_raw_file(
     raw_root: Path,
     file_path: Path,
     content: bytes,
+    *,
+    strict_new: bool = False,
 ) -> tuple[int, str, str]:
     with _locked_posix_parents(
         raw_root,
         file_path,
-        create=True,
+        create=not strict_new,
     ) as (output, file_name, locked):
         parent_fd = locked[-1].fd
         try:
@@ -1026,7 +1507,9 @@ def _persist_posix_locked_raw_file(
                 file_name,
                 create_new=True,
             )
-        except FileExistsError:
+        except FileExistsError as exc:
+            if strict_new:
+                raise StableRawStorageError("conflict") from exc
             fd = _open_posix_file_fd(
                 parent_fd,
                 file_name,
@@ -1048,6 +1531,9 @@ def _persist_posix_locked_raw_file(
                 raise StableRawStorageError("conflict")
             return size, digest, str(output)
 
+        if strict_new and int(os.fstat(fd).st_nlink) != 1:
+            os.close(fd)
+            raise StableRawStorageError("unsafe")
         size, digest, matches = _use_posix_file_fd(
             fd,
             parent_fd,
@@ -1064,11 +1550,22 @@ def _persist_posix_locked_raw_file(
 def _hash_posix_locked_raw_file(
     raw_root: Path,
     file_path: Path,
+    *,
+    max_bytes: int | None = None,
+    expected_identity: StableRawFileIdentity | None = None,
+    required_link_count: int | None = None,
 ) -> tuple[int, str, str]:
     with _locked_posix_raw_file_snapshot(
         raw_root,
         file_path,
+        max_bytes=max_bytes,
     ) as snapshot:
+        _require_snapshot_constraints(
+            snapshot,
+            expected_identity=expected_identity,
+            expected_parent_identity=None,
+            required_link_count=required_link_count,
+        )
         return (
             snapshot.size,
             snapshot.sha256,
@@ -1076,23 +1573,526 @@ def _hash_posix_locked_raw_file(
         )
 
 
+def _assert_publication_targets_absent(
+    raw_root: Path,
+    final_path: Path,
+    stage_path: Path,
+    *,
+    expected_parent_identity: StableRawFileIdentity | None = None,
+) -> None:
+    if final_path.parent != stage_path.parent:
+        raise StableRawStorageError("unsafe")
+    if _windows_backend_available():
+        with _locked_windows_parents(
+            raw_root,
+            final_path,
+            create=False,
+        ) as (output, locked):
+            if (
+                expected_parent_identity is not None
+                and _stable_identity(locked[-1][2])
+                != expected_parent_identity
+            ):
+                raise StableRawStorageError("changed")
+            forbidden = {
+                final_path.name.casefold(),
+                stage_path.name.casefold(),
+            }
+            if any(
+                child.name.casefold() in forbidden
+                for child in output.parent.iterdir()
+            ):
+                raise StableRawStorageError("conflict")
+            _revalidate_windows_directories(locked)
+        return
+    if _supports_posix_anchored_io():
+        with _locked_posix_parents(
+            raw_root,
+            final_path,
+            create=False,
+        ) as (_, _, locked):
+            if (
+                expected_parent_identity is not None
+                and _stable_identity(locked[-1].identity)
+                != expected_parent_identity
+            ):
+                raise StableRawStorageError("changed")
+            for name in (final_path.name, stage_path.name):
+                try:
+                    os.stat(
+                        name,
+                        dir_fd=locked[-1].fd,
+                        follow_symlinks=False,
+                    )
+                except FileNotFoundError:
+                    continue
+                except OSError as exc:
+                    raise StableRawStorageError("unsafe") from exc
+                raise StableRawStorageError("conflict")
+            _revalidate_posix_directories(locked)
+        return
+    raise StableRawStorageError("unsupported")
+
+
+def _assert_publication_stage_absent(
+    raw_root: Path,
+    final_path: Path,
+    stage_path: Path,
+    *,
+    expected_parent_identity: StableRawFileIdentity | None,
+) -> None:
+    if _windows_backend_available():
+        with _locked_windows_parents(
+            raw_root,
+            final_path,
+            create=False,
+        ) as (output, locked):
+            if (
+                expected_parent_identity is not None
+                and _stable_identity(locked[-1][2])
+                != expected_parent_identity
+            ):
+                raise StableRawStorageError("changed")
+            if any(
+                child.name.casefold() == stage_path.name.casefold()
+                for child in output.parent.iterdir()
+            ):
+                raise StableRawStorageError("conflict")
+            _revalidate_windows_directories(locked)
+        return
+    if _supports_posix_anchored_io():
+        with _locked_posix_parents(
+            raw_root,
+            final_path,
+            create=False,
+        ) as (_, _, locked):
+            if (
+                expected_parent_identity is not None
+                and _stable_identity(locked[-1].identity)
+                != expected_parent_identity
+            ):
+                raise StableRawStorageError("changed")
+            try:
+                os.stat(
+                    stage_path.name,
+                    dir_fd=locked[-1].fd,
+                    follow_symlinks=False,
+                )
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                raise StableRawStorageError("unsafe") from exc
+            else:
+                raise StableRawStorageError("conflict")
+            _revalidate_posix_directories(locked)
+        return
+    raise StableRawStorageError("unsupported")
+
+
+def _atomic_no_replace_windows(
+    raw_root: Path,
+    stage_path: Path,
+    final_path: Path,
+    *,
+    expected_identity: StableRawFileIdentity,
+    expected_parent_identity: StableRawFileIdentity | None,
+) -> None:
+    with _locked_windows_parents(
+        raw_root,
+        final_path,
+        create=False,
+    ) as (output, locked):
+        if (
+            expected_parent_identity is not None
+            and _stable_identity(locked[-1][2])
+            != expected_parent_identity
+        ):
+            raise StableRawStorageError("changed")
+        try:
+            os.lstat(output)
+        except FileNotFoundError:
+            pass
+        else:
+            raise StableRawStorageError("conflict")
+        handle = _open_windows_move_handle(stage_path)
+        try:
+            identity = _stable_identity(_handle_identity(handle))
+            if (
+                identity != expected_identity
+                or _handle_link_count(handle) != 1
+            ):
+                raise StableRawStorageError("changed")
+            if not _move_file_ex(
+                str(stage_path),
+                str(output),
+                _MOVEFILE_WRITE_THROUGH,
+            ):
+                move_error = ctypes.get_last_error()
+                try:
+                    os.lstat(output)
+                except FileNotFoundError:
+                    raise StableRawStorageError("io") from OSError(
+                        move_error,
+                        "atomic no-replace move failed",
+                    )
+                raise StableRawStorageError("conflict")
+            if (
+                _stable_identity(
+                    _validate_windows_handle(
+                        handle,
+                        output,
+                        directory=False,
+                    )
+                )
+                != identity
+                or _handle_link_count(handle) != 1
+            ):
+                raise StableRawStorageError("changed")
+            _revalidate_windows_directories(locked)
+        finally:
+            _close_windows_handle(handle)
+
+
+def _renameat2_no_replace(
+    parent_fd: int,
+    stage_name: str,
+    final_name: str,
+) -> None:
+    try:
+        renameat2 = ctypes.CDLL(None, use_errno=True).renameat2
+    except AttributeError as exc:
+        raise StableRawStorageError("unsupported") from exc
+    renameat2.argtypes = [
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_int,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+    ]
+    renameat2.restype = ctypes.c_int
+    result = renameat2(
+        parent_fd,
+        os.fsencode(stage_name),
+        parent_fd,
+        os.fsencode(final_name),
+        1,
+    )
+    if result == 0:
+        return
+    error = ctypes.get_errno()
+    if error == errno.EEXIST:
+        raise StableRawStorageError("conflict")
+    if error in {errno.ENOSYS, errno.EINVAL}:
+        raise StableRawStorageError("unsupported")
+    raise StableRawStorageError("io")
+
+
+def _atomic_no_replace_posix(
+    raw_root: Path,
+    stage_path: Path,
+    final_path: Path,
+    *,
+    expected_identity: StableRawFileIdentity,
+    expected_parent_identity: StableRawFileIdentity | None,
+) -> None:
+    with _locked_posix_parents(
+        raw_root,
+        final_path,
+        create=False,
+    ) as (_, final_name, locked):
+        if (
+            expected_parent_identity is not None
+            and _stable_identity(locked[-1].identity)
+            != expected_parent_identity
+        ):
+            raise StableRawStorageError("changed")
+        parent_fd = locked[-1].fd
+        try:
+            os.stat(
+                final_name,
+                dir_fd=parent_fd,
+                follow_symlinks=False,
+            )
+        except FileNotFoundError:
+            pass
+        else:
+            raise StableRawStorageError("conflict")
+        stage_fd = _open_posix_file_fd(
+            parent_fd,
+            stage_path.name,
+            create_new=False,
+        )
+        try:
+            stage_stat = os.fstat(stage_fd)
+            if (
+                _stable_identity(_require_posix_regular_file(stage_stat))
+                != expected_identity
+                or int(stage_stat.st_nlink) != 1
+            ):
+                raise StableRawStorageError("changed")
+            _renameat2_no_replace(
+                parent_fd,
+                stage_path.name,
+                final_name,
+            )
+            final_stat = os.stat(
+                final_name,
+                dir_fd=parent_fd,
+                follow_symlinks=False,
+            )
+            if (
+                _stable_identity(_require_posix_regular_file(final_stat))
+                != expected_identity
+                or int(final_stat.st_nlink) != 1
+            ):
+                raise StableRawStorageError("changed")
+            os.fsync(parent_fd)
+            _revalidate_posix_directories(locked)
+        finally:
+            os.close(stage_fd)
+
+
+def open_new_locked_raw_file_writer(
+    raw_root: Path,
+    file_path: Path,
+    *,
+    create_immediate_parent_exclusive: bool = False,
+    expected_parent_identity: StableRawFileIdentity | None = None,
+) -> OwnedLockedRawFileWriter:
+    if _windows_backend_available():
+        return _open_windows_owned_writer(
+            raw_root,
+            file_path,
+            create_immediate_parent_exclusive=(
+                create_immediate_parent_exclusive
+            ),
+            expected_parent_identity=expected_parent_identity,
+        )
+    if _supports_posix_anchored_io():
+        return _open_posix_owned_writer(
+            raw_root,
+            file_path,
+            create_immediate_parent_exclusive=(
+                create_immediate_parent_exclusive
+            ),
+            expected_parent_identity=expected_parent_identity,
+        )
+    raise StableRawStorageError("unsupported")
+
+
+def snapshot_open_locked_raw_file(
+    writer: OwnedLockedRawFileWriter,
+    *,
+    max_bytes: int,
+    expected_identity: StableRawFileIdentity | None = None,
+    expected_parent_identity: StableRawFileIdentity | None = None,
+    required_link_count: int | None = None,
+) -> LockedRawFileSnapshot:
+    if not isinstance(writer, OwnedLockedRawFileWriter) or writer.closed:
+        raise StableRawStorageError("unsafe")
+    writer.flush()
+    os.fsync(writer.fileno())
+    output = Path(writer._canonical_ref)
+    if _windows_backend_available():
+        with _locked_windows_parents(
+            writer._raw_root,
+            output,
+            create=False,
+        ) as (locked_output, locked):
+            identity, link_count, _, size, digest = (
+                _read_windows_snapshot_state(
+                    writer.fileno(),
+                    locked_output,
+                    locked,
+                    max_bytes=max_bytes,
+                )
+            )
+    elif _supports_posix_anchored_io():
+        with _locked_posix_parents(
+            writer._raw_root,
+            output,
+            create=False,
+        ) as (locked_output, file_name, locked):
+            identity, link_count, _, size, digest = (
+                _read_posix_snapshot_state(
+                    writer.fileno(),
+                    locked[-1].fd,
+                    file_name,
+                    locked,
+                    max_bytes=max_bytes,
+                )
+            )
+    else:
+        raise StableRawStorageError("unsupported")
+    snapshot = LockedRawFileSnapshot(
+        canonical_ref=str(locked_output.resolve(strict=True)),
+        size=size,
+        sha256=digest,
+        identity=identity,
+        link_count=link_count,
+        parent_identity=(
+            _stable_identity(locked[-1][2])
+            if _windows_backend_available()
+            else _stable_identity(locked[-1].identity)
+        ),
+    )
+    _require_snapshot_constraints(
+        snapshot,
+        expected_identity=expected_identity or writer.identity,
+        expected_parent_identity=(
+            expected_parent_identity or writer.parent_identity
+        ),
+        required_link_count=required_link_count,
+    )
+    if identity != writer.identity:
+        raise StableRawStorageError("changed")
+    return snapshot
+
+
+def publish_atomic_strict_new_locked_raw_file(
+    raw_root: Path,
+    file_path: Path,
+    content: bytes,
+    *,
+    max_bytes: int,
+    expected_parent_identity: StableRawFileIdentity | None = None,
+) -> LockedRawFileSnapshot:
+    if not isinstance(content, bytes):
+        raise TypeError("content must be bytes")
+    if (
+        isinstance(max_bytes, bool)
+        or not isinstance(max_bytes, int)
+        or max_bytes < 0
+    ):
+        raise ValueError("max_bytes must be a non-negative integer")
+    if len(content) > max_bytes:
+        raise StableRawStorageError("oversized")
+    final_path = _lexical_absolute(file_path)
+    stage_path = final_path.with_name(f".{final_path.name}.stage")
+    _assert_publication_targets_absent(
+        raw_root,
+        final_path,
+        stage_path,
+        expected_parent_identity=expected_parent_identity,
+    )
+    writer = open_new_locked_raw_file_writer(
+        raw_root,
+        stage_path,
+        expected_parent_identity=expected_parent_identity,
+    )
+    stage_snapshot: LockedRawFileSnapshot | None = None
+    try:
+        offset = 0
+        while offset < len(content):
+            written = writer.write(content[offset:])
+            if written is None or written <= 0:
+                raise StableRawStorageError("io")
+            offset += written
+        writer.flush()
+        os.fsync(writer.fileno())
+        stage_snapshot = snapshot_open_locked_raw_file(
+            writer,
+            max_bytes=max_bytes,
+            expected_identity=writer.identity,
+            expected_parent_identity=(
+                expected_parent_identity or writer.parent_identity
+            ),
+            required_link_count=1,
+        )
+        if (
+            stage_snapshot.size != len(content)
+            or stage_snapshot.sha256
+            != hashlib.sha256(content).hexdigest()
+        ):
+            raise StableRawStorageError("changed")
+    finally:
+        writer.close()
+    if stage_snapshot is None:  # pragma: no cover - defensive narrowing
+        raise StableRawStorageError("io")
+    if _windows_backend_available():
+        _atomic_no_replace_windows(
+            _lexical_absolute(raw_root),
+            stage_path,
+            final_path,
+            expected_identity=writer.identity,
+            expected_parent_identity=(
+                expected_parent_identity or writer.parent_identity
+            ),
+        )
+    elif _supports_posix_anchored_io():
+        _atomic_no_replace_posix(
+            _lexical_absolute(raw_root),
+            stage_path,
+            final_path,
+            expected_identity=writer.identity,
+            expected_parent_identity=(
+                expected_parent_identity or writer.parent_identity
+            ),
+        )
+    else:
+        raise StableRawStorageError("unsupported")
+    with locked_raw_file_snapshot(
+        raw_root,
+        final_path,
+        max_bytes=max_bytes,
+        expected_identity=writer.identity,
+        expected_parent_identity=(
+            expected_parent_identity or writer.parent_identity
+        ),
+        required_link_count=1,
+    ) as final_snapshot:
+        if (
+            final_snapshot.size != stage_snapshot.size
+            or final_snapshot.sha256 != stage_snapshot.sha256
+        ):
+            raise StableRawStorageError("changed")
+        _assert_publication_stage_absent(
+            raw_root,
+            final_path,
+            stage_path,
+            expected_parent_identity=(
+                expected_parent_identity or writer.parent_identity
+            ),
+        )
+        return final_snapshot
+
+
 @contextmanager
 def locked_raw_file_snapshot(
     raw_root: Path,
     file_path: Path,
+    *,
+    max_bytes: int | None = None,
+    expected_identity: StableRawFileIdentity | None = None,
+    expected_parent_identity: StableRawFileIdentity | None = None,
+    required_link_count: int | None = None,
 ) -> Iterator[LockedRawFileSnapshot]:
     if _windows_backend_available():
         with _locked_windows_raw_file_snapshot(
             raw_root,
             file_path,
+            max_bytes=max_bytes,
         ) as snapshot:
+            _require_snapshot_constraints(
+                snapshot,
+                expected_identity=expected_identity,
+                expected_parent_identity=expected_parent_identity,
+                required_link_count=required_link_count,
+            )
             yield snapshot
         return
     if _supports_posix_anchored_io():
         with _locked_posix_raw_file_snapshot(
             raw_root,
             file_path,
+            max_bytes=max_bytes,
         ) as snapshot:
+            _require_snapshot_constraints(
+                snapshot,
+                expected_identity=expected_identity,
+                expected_parent_identity=expected_parent_identity,
+                required_link_count=required_link_count,
+            )
             yield snapshot
         return
     raise StableRawStorageError("unsupported")
@@ -1102,14 +2102,30 @@ def persist_locked_raw_file(
     raw_root: Path,
     file_path: Path,
     content: bytes,
+    *,
+    strict_new: bool = False,
 ) -> tuple[int, str, str]:
     if _windows_backend_available():
+        if strict_new:
+            return _persist_windows_locked_raw_file(
+                raw_root,
+                file_path,
+                content,
+                strict_new=True,
+            )
         return _persist_windows_locked_raw_file(
             raw_root,
             file_path,
             content,
         )
     if _supports_posix_anchored_io():
+        if strict_new:
+            return _persist_posix_locked_raw_file(
+                raw_root,
+                file_path,
+                content,
+                strict_new=True,
+            )
         return _persist_posix_locked_raw_file(
             raw_root,
             file_path,
@@ -1121,9 +2137,37 @@ def persist_locked_raw_file(
 def hash_locked_raw_file(
     raw_root: Path,
     file_path: Path,
+    *,
+    max_bytes: int | None = None,
+    expected_identity: StableRawFileIdentity | None = None,
+    required_link_count: int | None = None,
 ) -> tuple[int, str, str]:
     if _windows_backend_available():
+        if (
+            max_bytes is not None
+            or expected_identity is not None
+            or required_link_count is not None
+        ):
+            return _hash_windows_locked_raw_file(
+                raw_root,
+                file_path,
+                max_bytes=max_bytes,
+                expected_identity=expected_identity,
+                required_link_count=required_link_count,
+            )
         return _hash_windows_locked_raw_file(raw_root, file_path)
     if _supports_posix_anchored_io():
+        if (
+            max_bytes is not None
+            or expected_identity is not None
+            or required_link_count is not None
+        ):
+            return _hash_posix_locked_raw_file(
+                raw_root,
+                file_path,
+                max_bytes=max_bytes,
+                expected_identity=expected_identity,
+                required_link_count=required_link_count,
+            )
         return _hash_posix_locked_raw_file(raw_root, file_path)
     raise StableRawStorageError("unsupported")
