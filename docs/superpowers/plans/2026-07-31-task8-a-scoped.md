@@ -316,10 +316,13 @@ FORBIDDEN_PRODUCTION_PATHS = (
     "backend/app/services/dual_live_postrun_evidence.py",
     "tools/dual_live_issue.py",
 )
-REQUIRED_PRODUCTION_PATHS = (
+ALLOWED_NEW_PRODUCTION_PATHS = (
     "backend/app/services/dual_live_runtime.py",
     "backend/app/services/dual_live_windows.py",
     "tools/dual_live_run.py",
+)
+FIRST_TRANCHE_REQUIRED_PRODUCTION_PATHS = (
+    "backend/app/services/dual_live_runtime.py",
 )
 
 def test_a_scoped_build_adds_no_attestation_index_or_env_contract() -> None:
@@ -332,7 +335,7 @@ def test_frozen_and_sealed_authority_files_are_unchanged() -> None:
     assert _pilot_seal() == "b8a89df28ed1ed5adfd8ded7ee12d28863cf0ed2"
 
 def test_a_scoped_build_has_required_runtime_units() -> None:
-    assert all((ROOT / path).is_file() for path in REQUIRED_PRODUCTION_PATHS)
+    assert all((ROOT / path).is_file() for path in FIRST_TRANCHE_REQUIRED_PRODUCTION_PATHS)
 ```
 
 - [ ] **Step 2: Run the tests and verify the implementation-surface assertion fails only because the new allowed file list is not present yet**
@@ -346,11 +349,11 @@ Pop-Location
 python -m pytest tests/test_dual_gate.py -q
 ```
 
-Expected: current scaffold tests pass; the new forward-looking surface test fails with the missing A-scoped units, not a frozen hash or seal mismatch.
+Expected: current scaffold tests pass; the new forward-looking surface test fails because the first-tranche runtime unit is absent, not because of a frozen hash or seal mismatch.
 
 - [ ] **Step 3: Record the exact allowed production file set in the tests**
 
-The allowlist is the production file map in this plan. It excludes the plan itself, tests, and already committed docs. Do not assert an exhaustive repository manifest; assert only that Task-8 production changes are a subset of the enumerated A-scoped files and contain none of the forbidden aliases/paths.
+`ALLOWED_NEW_PRODUCTION_PATHS` is the new-unit subset of the production file map in this plan; the complete changed-production allowlist also contains the narrowly modified existing units listed above. It excludes the plan itself, tests, and already committed docs. Do not assert an exhaustive repository manifest; assert only that Task-8 production changes are a subset of the enumerated A-scoped files and contain none of the forbidden aliases/paths. Later tasks prove their new unit first by import-level RED tests rather than keeping this completed tranche intentionally red.
 
 - [ ] **Step 4: Re-run the two files and preserve the expected pre-implementation failure evidence**
 
