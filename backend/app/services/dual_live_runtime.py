@@ -41,6 +41,7 @@ MAX_FRAMES_PER_STREAM = 10_000
 MAX_STREAM_BYTES = 16 * 1024 * 1024
 MAX_CAPTURE_BYTES = 32 * 1024 * 1024
 PUMP_CANCEL_JOIN_SECONDS = 1.0
+_CHILD_WAIT_POLL_SECONDS = 0.05
 PIPE_STREAM_CLASSES = ("app", "http", "stdout", "stderr")
 LOGGER_TOPOLOGY_SCHEMA_ID = "project6.dual_live_logger_topology.v1"
 WINDOWS_MIB_TCP_STATES = (
@@ -208,6 +209,12 @@ class FirstStopLatch:
             self._event.set()
             return True
 
+    def transition_if_clear(self) -> bool:
+        """Linearize one in-memory transition against first-stop."""
+
+        with self._lock:
+            return self._reason_code is None
+
     def wait(self, timeout: float | None = None) -> bool:
         if timeout is not None and (
             isinstance(timeout, bool)
@@ -352,6 +359,17 @@ class PhaseControlState:
             if self._state != "go_consumed":
                 self._protocol_failure("dual_live_phase_complete_invalid")
             self._state = "complete"
+
+    def linearize_go_if_unstopped(self) -> bool:
+        """Order parsed GO against STOP without holding locks across I/O."""
+
+        with self._lock:
+            if self._state != "go_consumed":
+                self._protocol_failure("dual_live_phase_go_late")
+            if not self._stop_latch.transition_if_clear():
+                self._state = "stopped"
+                return False
+            return True
 
 
 def _require_uuid4(value: object, code: str) -> str:
@@ -1033,6 +1051,53 @@ def decode_child_status_frame(
     return dict(value)
 
 
+def _reader_alias_keys(reader: BinaryIO) -> tuple[tuple[object, ...], ...]:
+    """Return only safely-derived identities for one child pipe reader."""
+
+    code = "dual_live_controller_child_invalid"
+    keys: list[tuple[object, ...]] = []
+    try:
+        fileno = getattr(reader, "fileno", None)
+        handle = getattr(reader, "handle", None)
+    except Exception as exc:
+        raise DualLiveRuntimeError(code) from exc
+
+    descriptor: int | None = None
+    if fileno is not None:
+        if not callable(fileno):
+            _fail(code)
+        try:
+            candidate = fileno()
+        except (OSError, ValueError):
+            candidate = None
+        except Exception as exc:
+            raise DualLiveRuntimeError(code) from exc
+        if candidate is not None:
+            if type(candidate) is not int or candidate < 0:
+                _fail(code)
+            descriptor = candidate
+            keys.append(("descriptor", descriptor))
+
+    if handle is not None:
+        if type(handle) is not int or handle <= 0:
+            _fail(code)
+        keys.append(("handle", handle))
+
+    if descriptor is not None:
+        try:
+            source = os.fstat(descriptor)
+        except (OSError, ValueError):
+            source = None
+        except Exception as exc:
+            raise DualLiveRuntimeError(code) from exc
+        if source is not None:
+            device = int(source.st_dev)
+            inode = int(source.st_ino)
+            if device != 0 or inode != 0:
+                keys.append(("source", device, inode))
+    return tuple(keys)
+
+
 def _writer_destination_identity(writer: BinaryIO) -> tuple[object, ...]:
     if type(writer) is LockedCampaignSink:
         return _writer_destination_identity(writer._writer)
@@ -1463,7 +1528,7 @@ class FourStreamPumpGroup:
 
 @dataclass(frozen=True, slots=True)
 class _ControllerChild:
-    """Explicit Job-child projection for the offline controller spine."""
+    """Job-child projection; ``wait`` is a trusted bounded exit poll."""
 
     process_boot_id: str
     process_creation_identity_sha256: str
@@ -1473,7 +1538,7 @@ class _ControllerChild:
     control_nonce: str
     readers: Mapping[str, BinaryIO]
     send_control: Callable[[bytes], None]
-    wait: Callable[[float], int]
+    wait: Callable[[float], int | None]
     stop: Callable[[], None]
 
     def __post_init__(self) -> None:
@@ -1496,6 +1561,15 @@ class _ControllerChild:
             for reader in readers.values()
         ):
             _fail(code)
+        reader_values = tuple(readers[stream] for stream in PIPE_STREAM_CLASSES)
+        if len({id(reader) for reader in reader_values}) != len(reader_values):
+            _fail("dual_live_pump_reader_alias_invalid")
+        seen_reader_keys: set[tuple[object, ...]] = set()
+        for reader in reader_values:
+            for key in _reader_alias_keys(reader):
+                if key in seen_reader_keys:
+                    _fail("dual_live_pump_reader_alias_invalid")
+                seen_reader_keys.add(key)
         if not all(
             callable(callback)
             for callback in (self.send_control, self.wait, self.stop)
@@ -1629,6 +1703,7 @@ def _run_two_phase_controller(
         census_points: list[tuple[str, int, str]] = []
         phase_error: BaseException | None = None
         exit_code: int | None = None
+        stop_called = False
         stopped = False
 
         def is_writer_failure(error: BaseException) -> bool:
@@ -1658,6 +1733,64 @@ def _run_two_phase_controller(
             elif reason_code == "writer_failure":
                 replacement.__context__ = phase_error
                 phase_error = replacement
+
+        def stop_child_once() -> None:
+            nonlocal stop_called, stopped
+            if child is None or stop_called:
+                return
+            stop_called = True
+            try:
+                result = child.stop()
+                if result is not None:
+                    _fail("dual_live_child_stop_invalid")
+                stopped = True
+            except BaseException as exc:
+                fail("dual_live_child_stop_failed", "protocol_failure", exc)
+
+        def wait_for_child_exit(deadline: float) -> int:
+            if child is None:
+                _fail("dual_live_controller_child_invalid")
+            stop_exit_deadline: float | None = None
+            while True:
+                now = time.monotonic()
+                if stop_latch.is_set:
+                    if not stop_called:
+                        stop_child_once()
+                        stop_exit_deadline = time.monotonic() + min(
+                            timeout_seconds,
+                            PUMP_CANCEL_JOIN_SECONDS,
+                        )
+                    elif stop_exit_deadline is None:
+                        stop_exit_deadline = now + min(
+                            timeout_seconds,
+                            PUMP_CANCEL_JOIN_SECONDS,
+                        )
+                    active_deadline = stop_exit_deadline
+                else:
+                    active_deadline = deadline
+
+                remaining = active_deadline - time.monotonic()
+                if remaining <= 0:
+                    if not stop_latch.is_set:
+                        stop_latch.latch("timeout")
+                        continue
+                    _fail("dual_live_phase_exit_timeout")
+
+                poll_seconds = min(_CHILD_WAIT_POLL_SECONDS, remaining)
+                poll_started = time.monotonic()
+                result = child.wait(poll_seconds)
+                if result is None:
+                    unused_poll = poll_seconds - (time.monotonic() - poll_started)
+                    if unused_poll > 0:
+                        stop_latch.wait(unused_poll)
+                    continue
+                if (
+                    isinstance(result, bool)
+                    or not isinstance(result, int)
+                    or result < 0
+                ):
+                    _fail("dual_live_phase_exit_invalid")
+                return result
 
         try:
             candidate = factory()
@@ -1756,6 +1889,8 @@ def _run_two_phase_controller(
                 control_nonce=child.control_nonce,
             )
             control.consume_frame(io.BytesIO(control_frame))
+            if not control.linearize_go_if_unstopped():
+                _fail("dual_live_phase_stopped")
             runtime_writer.append(
                 phase=phase,
                 event="phase_go",
@@ -1771,13 +1906,9 @@ def _run_two_phase_controller(
             result = child.send_control(control_frame)
             if result is not None:
                 _fail("dual_live_phase_control_invalid")
-            exit_code = child.wait(timeout_seconds)
-            if (
-                isinstance(exit_code, bool)
-                or not isinstance(exit_code, int)
-                or exit_code < 0
-            ):
-                _fail("dual_live_phase_exit_invalid")
+            exit_code = wait_for_child_exit(deadline)
+            if stop_latch.is_set:
+                _fail("dual_live_phase_stopped")
             if exit_code != 0:
                 stop_latch.latch("child_exit_nonzero")
                 _fail("dual_live_phase_failed")
@@ -1806,14 +1937,7 @@ def _run_two_phase_controller(
                 exc,
             )
 
-        if child is not None:
-            try:
-                result = child.stop()
-                stopped = True
-                if result is not None:
-                    _fail("dual_live_child_stop_invalid")
-            except BaseException as exc:
-                fail("dual_live_child_stop_failed", "protocol_failure", exc)
+        stop_child_once()
         if pumps is not None:
             try:
                 pumps.join(timeout=timeout_seconds)
