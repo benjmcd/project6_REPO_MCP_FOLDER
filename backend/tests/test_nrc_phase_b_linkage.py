@@ -800,6 +800,229 @@ def test_verifier_contract_success_is_frozen_and_read_only(
         setattr(state, "content_id", "mutated")
 
 
+def test_explicit_settings_verifier_ignores_global_and_matches_legacy(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db, _ = file_dbs
+    phase_b = _phase_b()
+    _, target, _, _, _, parser_calls = _make_verified_state(db, monkeypatch)
+    target_id = target.connector_run_target_id
+    explicit_settings = settings.model_copy(deep=True)
+    expected_root = Path(explicit_settings.connector_raw_dir).resolve()
+    signature = inspect.signature(
+        phase_b.verify_strict_nrc_phase_b_linkage_read_only
+    )
+    assert list(signature.parameters) == [
+        "db",
+        "connector_run_target_id",
+        "settings",
+    ]
+
+    monkeypatch.setattr(
+        phase_b,
+        "settings",
+        SimpleNamespace(connector_raw_dir=str(expected_root)),
+    )
+    outer = db.begin()
+    try:
+        legacy = phase_b.verify_strict_nrc_phase_b_linkage(
+            db,
+            connector_run_target_id=target_id,
+        )
+    finally:
+        outer.rollback()
+    parser_calls.clear()
+
+    locked_roots: list[tuple[str, Path]] = []
+    real_hash = phase_b.hash_locked_raw_file
+    real_snapshot = phase_b.locked_raw_file_snapshot
+
+    def record_initial(raw_root: Path, file_path: Path) -> Any:
+        locked_roots.append(("initial", Path(raw_root).resolve()))
+        return real_hash(raw_root, file_path)
+
+    @contextmanager
+    def record_final(
+        raw_root: Path,
+        file_path: Path,
+    ) -> Generator[Any, None, None]:
+        locked_roots.append(("final", Path(raw_root).resolve()))
+        with real_snapshot(raw_root, file_path) as snapshot:
+            yield snapshot
+
+    class NoAccess:
+        @property
+        def connector_raw_dir(self) -> str:
+            raise AssertionError("module-global settings accessed")
+
+    monkeypatch.setattr(phase_b, "hash_locked_raw_file", record_initial)
+    monkeypatch.setattr(
+        phase_b,
+        "locked_raw_file_snapshot",
+        record_final,
+    )
+    monkeypatch.setattr(phase_b, "settings", NoAccess())
+
+    outer = db.begin()
+    try:
+        explicit = phase_b.verify_strict_nrc_phase_b_linkage_read_only(
+            db,
+            target_id,
+            explicit_settings,
+        )
+        assert outer.is_active and db.in_transaction()
+    finally:
+        outer.rollback()
+
+    assert explicit == legacy
+    assert parser_calls
+    assert locked_roots == [
+        ("initial", expected_root),
+        ("final", expected_root),
+    ]
+
+
+def test_explicit_settings_verifier_preserves_caller_session(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db, _ = file_dbs
+    phase_b = _phase_b()
+    run, target, _, _, _, _ = _make_verified_state(db, monkeypatch)
+    explicit_settings = settings.model_copy(deep=True)
+    pending = ConnectorRunSubmission(
+        connector_run_submission_id="explicit-verifier-pending",
+        connector_key="other",
+        submission_idempotency_key="explicit-verifier-pending",
+        request_fingerprint="f" * 64,
+        connector_run_id=run.connector_run_id,
+    )
+    db.add(pending)
+    statements: list[str] = []
+
+    def capture(*args: Any) -> None:
+        statements.append(str(args[2]))
+
+    def forbidden(method_name: str) -> Any:
+        def fail(*_args: Any, **_kwargs: Any) -> None:
+            pytest.fail(f"adapter called Session.{method_name}")
+
+        return fail
+
+    engine = db.get_bind()
+    outer = db.get_transaction()
+    assert outer is not None and outer.is_active
+    sa_event.listen(engine, "before_cursor_execute", capture)
+    try:
+        with monkeypatch.context() as method_guard:
+            for method_name in ("flush", "commit", "rollback"):
+                method_guard.setattr(db, method_name, forbidden(method_name))
+            phase_b.verify_strict_nrc_phase_b_linkage_read_only(
+                db,
+                target.connector_run_target_id,
+                explicit_settings,
+            )
+            assert outer.is_active and db.in_transaction()
+            assert pending in db.new and sa_inspect(pending).pending
+    finally:
+        sa_event.remove(engine, "before_cursor_execute", capture)
+        outer.rollback()
+    assert statements and all(
+        item.lstrip().upper().startswith("SELECT")
+        and "FOR UPDATE" not in item.upper()
+        for item in statements
+    )
+
+
+def test_explicit_settings_verifier_requires_active_transaction(
+    file_dbs: tuple[Session, Session],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db, _ = file_dbs
+    phase_b = _phase_b()
+    _, target, _, _, _, parser_calls = _make_verified_state(db, monkeypatch)
+
+    with pytest.raises(phase_b.NrcPhaseBLinkageError) as excinfo:
+        phase_b.verify_strict_nrc_phase_b_linkage_read_only(
+            db,
+            target.connector_run_target_id,
+            settings.model_copy(deep=True),
+        )
+
+    assert excinfo.value.code == "nrc_phase_b_caller_transaction_required"
+    assert parser_calls == []
+    assert not db.in_transaction()
+
+
+def test_explicit_settings_verifier_preserves_root_and_drift_rejections(
+    file_dbs: tuple[Session, Session],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db, _ = file_dbs
+    phase_b = _phase_b()
+    _, target, _, _, _, _ = _make_verified_state(db, monkeypatch)
+    target_id = target.connector_run_target_id
+    explicit_settings = settings.model_copy(deep=True)
+    outside = tmp_path / "outside-explicit-phase-b.pdf"
+    outside.write_bytes(b"%PDF-outside-explicit-phase-b")
+    target.raw_storage_ref = str(outside.resolve())
+    db.commit()
+
+    outer = db.begin()
+    try:
+        with pytest.raises(phase_b.NrcPhaseBLinkageError) as excinfo:
+            phase_b.verify_strict_nrc_phase_b_linkage_read_only(
+                db,
+                target_id,
+                explicit_settings,
+            )
+        assert excinfo.value.code == "nrc_phase_b_raw_path_invalid"
+        assert outer.is_active and db.in_transaction()
+    finally:
+        outer.rollback()
+
+    stored_target = db.get(ConnectorRunTarget, target_id)
+    assert stored_target is not None
+    expected_path = (
+        Path(explicit_settings.connector_raw_dir)
+        / nrc_aps_artifact_ingestion.blob_relative_path(
+            sha256=str(stored_target.downloaded_sha256)
+        )
+    ).resolve()
+    stored_target.raw_storage_ref = str(expected_path)
+    db.commit()
+    real_snapshot = phase_b.locked_raw_file_snapshot
+
+    @contextmanager
+    def drift_after_snapshot(
+        raw_root: Path,
+        file_path: Path,
+    ) -> Generator[Any, None, None]:
+        with real_snapshot(raw_root, file_path) as snapshot:
+            yield snapshot
+            raise raw_handles.StableRawStorageError("explicit drift")
+
+    monkeypatch.setattr(
+        phase_b,
+        "locked_raw_file_snapshot",
+        drift_after_snapshot,
+    )
+    outer = db.begin()
+    try:
+        with pytest.raises(phase_b.NrcPhaseBLinkageError) as excinfo:
+            phase_b.verify_strict_nrc_phase_b_linkage_read_only(
+                db,
+                target_id,
+                explicit_settings,
+            )
+        assert excinfo.value.code == "nrc_phase_b_raw_drift"
+        assert outer.is_active and db.in_transaction()
+    finally:
+        outer.rollback()
+
+
 @pytest.mark.parametrize(
     "mode",
     ["missing_tx", "outer", "nested", "unrelated", "new", "dirty", "deleted"],

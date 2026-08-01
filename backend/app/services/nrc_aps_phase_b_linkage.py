@@ -20,7 +20,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool, QueuePool
 
-from app.core.config import settings
+from app.core.config import Settings, settings
 from app.models import (
     ApsContentChunk,
     ApsContentDocument,
@@ -672,8 +672,11 @@ def _safe_rehash(
     expected_sha256: str,
     expected_size: int,
     drift_phase: bool,
+    raw_root: Path | None = None,
 ) -> Path:
-    raw_root = _lexical_absolute(Path(settings.connector_raw_dir))
+    raw_root = _lexical_absolute(
+        Path(settings.connector_raw_dir) if raw_root is None else raw_root
+    )
     expected_path = _lexical_absolute(
         raw_root
         / nrc_aps_artifact_ingestion.blob_relative_path(
@@ -1506,6 +1509,7 @@ def _verify_strict_nrc_phase_b_linkage_on_connection(
     connection: Connection,
     *,
     target_id: str,
+    raw_root: Path,
 ) -> NrcPhaseBVerifiedState:
     """Verify two visible snapshots without an ABA or serializability claim."""
 
@@ -1535,6 +1539,7 @@ def _verify_strict_nrc_phase_b_linkage_on_connection(
             expected_sha256=raw_sha256,
             expected_size=raw_size,
             drift_phase=False,
+            raw_root=raw_root,
         )
         expected_raw_ref = str(target.raw_storage_ref)
         try:
@@ -1597,7 +1602,7 @@ def _verify_strict_nrc_phase_b_linkage_on_connection(
         )
         try:
             with locked_raw_file_snapshot(
-                Path(settings.connector_raw_dir),
+                raw_root,
                 raw_path,
             ) as raw_snapshot:
                 if (
@@ -1646,12 +1651,13 @@ def _verify_strict_nrc_phase_b_linkage_on_connection(
         return NrcPhaseBVerifiedState(*verified_values)
 
 
-def verify_strict_nrc_phase_b_linkage(
+def _verify_strict_nrc_phase_b_linkage_with_raw_root(
     db: Session,
     *,
     connector_run_target_id: str,
+    raw_root: Path,
 ) -> NrcPhaseBVerifiedState:
-    """Verify committed state without an ABA or serializability claim."""
+    """Verify committed state against one explicit raw root."""
 
     with db.no_autoflush:
         if not db.in_transaction():
@@ -1661,6 +1667,7 @@ def verify_strict_nrc_phase_b_linkage(
             )
         _reject_phase_b_identity_map_state(db)
         target_id = _text(connector_run_target_id)
+        canonical_raw_root = _lexical_absolute(raw_root)
         engine = _independent_committed_engine(db)
         try:
             with engine.connect() as connection:
@@ -1675,11 +1682,45 @@ def verify_strict_nrc_phase_b_linkage(
                     db,
                     connection,
                     target_id=target_id,
+                    raw_root=canonical_raw_root,
                 )
         except NrcPhaseBLinkageError:
             raise
         except Exception as exc:
             _committed_visibility_unavailable(exc)
+
+
+def verify_strict_nrc_phase_b_linkage_read_only(
+    db: Session,
+    connector_run_target_id: str,
+    settings: Settings,
+) -> NrcPhaseBVerifiedState:
+    """Verify committed Phase-B authority from explicit read settings."""
+
+    if not isinstance(settings, Settings):
+        _fail(
+            "nrc_phase_b_settings_invalid",
+            "Read-only Phase B verification requires explicit Settings.",
+        )
+    return _verify_strict_nrc_phase_b_linkage_with_raw_root(
+        db,
+        connector_run_target_id=connector_run_target_id,
+        raw_root=Path(settings.connector_raw_dir),
+    )
+
+
+def verify_strict_nrc_phase_b_linkage(
+    db: Session,
+    *,
+    connector_run_target_id: str,
+) -> NrcPhaseBVerifiedState:
+    """Verify committed state without an ABA or serializability claim."""
+
+    return _verify_strict_nrc_phase_b_linkage_with_raw_root(
+        db,
+        connector_run_target_id=connector_run_target_id,
+        raw_root=Path(settings.connector_raw_dir),
+    )
 
 
 def _bind_strict_nrc_phase_b_linkage_owned(
