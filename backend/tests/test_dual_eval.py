@@ -6,11 +6,13 @@ import io
 import json
 import logging
 import logging.handlers
+import os
 import queue
 import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable
 from contextlib import suppress
 from pathlib import Path
 
@@ -3115,6 +3117,33 @@ class _DescriptorControllerReader(_ControllerReader):
         return self._descriptor
 
 
+class _StuckCloseControllerReader(_ControllerReader):
+    def __init__(
+        self,
+        *,
+        close_started: threading.Event,
+        close_release: threading.Event,
+        closed: threading.Event,
+    ) -> None:
+        super().__init__()
+        self._close_started = close_started
+        self._close_release = close_release
+        self._closed_event = closed
+        self._close_lock = threading.Lock()
+        self.close_calls = 0
+
+    def close(self) -> None:
+        with self._close_lock:
+            self.close_calls += 1
+            call = self.close_calls
+        if call != 1:
+            raise RuntimeError("controller attempted duplicate reader close")
+        self._close_started.set()
+        assert self._close_release.wait(timeout=2)
+        super().close()
+        self._closed_event.set()
+
+
 class _ControllerWriter(io.BytesIO):
     def __init__(self, stream: str, events: list[str]) -> None:
         super().__init__()
@@ -3128,6 +3157,13 @@ class _ControllerWriter(io.BytesIO):
     def close(self) -> None:
         self.events.append(f"close-{self.stream}")
         self.closed_clean = True
+
+
+class _StopRecordControllerWriter(_ControllerWriter):
+    def write(self, content: bytes) -> int:
+        if b'"event":"stop_latched"' in content:
+            self.events.append("record-stop")
+        return super().write(content)
 
 
 class _FailingControllerWriter(_ControllerWriter):
@@ -3208,11 +3244,18 @@ def _controller_child(
     wait_active: threading.Event | None = None,
     wait_release: threading.Event | None = None,
     wait_error: BaseException | None = None,
+    wait_error_once: BaseException | None = None,
+    never_exit: bool = False,
+    send_before_go: Callable[[dict[str, _ControllerReader]], None] | None = None,
+    app_reader: _ControllerReader | None = None,
+    finish_readers: bool = True,
 ) -> object:
     process_boot_id = ("a" if phase == "A" else "b") * 64
     status_nonce_sha256 = ("c" if phase == "A" else "d") * 64
     control_nonce = ("e" if phase == "A" else "f") * 64
     readers = {stream: _ControllerReader() for stream in PIPE_STREAM_CLASSES}
+    if app_reader is not None:
+        readers["app"] = app_reader
     readers["app"].feed(
         encode_child_status_frame(
             phase=phase,
@@ -3227,8 +3270,11 @@ def _controller_child(
             },
         )
     )
+    wait_error_raised = False
 
     def send_control(frame: bytes) -> None:
+        if send_before_go is not None:
+            send_before_go(readers)
         events.append(f"go-{phase}")
         assert frame == encode_child_control_frame(
             phase=phase,
@@ -3271,13 +3317,21 @@ def _controller_child(
         )
         readers["stdout"].feed(encode_pipe_frame(f"out-{phase}".encode()))
         readers["stderr"].feed(encode_pipe_frame(f"err-{phase}".encode()))
-        for reader in readers.values():
-            reader.finish()
+        if finish_readers:
+            for reader in readers.values():
+                reader.finish()
 
     def wait(_timeout: float) -> int | None:
+        nonlocal wait_error_raised
         events.append(f"wait-{phase}")
         if wait_error is not None:
             raise wait_error
+        if wait_error_once is not None and not wait_error_raised:
+            wait_error_raised = True
+            events.append(f"wait-raise-{phase}")
+            raise wait_error_once
+        if never_exit:
+            return None
         if wait_active is not None:
             if not wait_active.is_set():
                 events.append(f"wait-active-{phase}")
@@ -3373,10 +3427,115 @@ def test_controller_child_accepts_distinct_zero_identity_pipe_readers(
     }
     zero_stat = type("ZeroStat", (), {"st_dev": 0, "st_ino": 0})()
     monkeypatch.setattr(dual_live_runtime_module.os, "fstat", lambda _fd: zero_stat)
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_validate_windows_reader_descriptors_distinct",
+        lambda _descriptors: None,
+    )
 
     child = _controller_projection(readers, events)
 
     assert child.readers == readers
+    assert events == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows pipe identity proof")
+def test_controller_child_rejects_duplicated_windows_pipe_descriptor() -> None:
+    events: list[str] = []
+    pipe_pairs = [os.pipe() for _ in range(3)]
+    duplicate = os.dup(pipe_pairs[0][0])
+    descriptors = (
+        pipe_pairs[0][0],
+        duplicate,
+        pipe_pairs[1][0],
+        pipe_pairs[2][0],
+    )
+    owned_descriptors = [
+        descriptor for pair in pipe_pairs for descriptor in pair
+    ] + [duplicate]
+    readers: dict[str, object] = {
+        stream: _DescriptorControllerReader(descriptor)
+        for stream, descriptor in zip(
+            PIPE_STREAM_CLASSES,
+            descriptors,
+            strict=True,
+        )
+    }
+
+    try:
+        with pytest.raises(
+            DualLiveRuntimeError,
+            match="dual_live_pump_reader_alias_invalid",
+        ):
+            _controller_projection(readers, events)
+    finally:
+        for descriptor in owned_descriptors:
+            with suppress(OSError):
+                os.close(descriptor)
+
+    assert events == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows pipe identity proof")
+def test_controller_child_accepts_distinct_windows_pipe_descriptors() -> None:
+    events: list[str] = []
+    pipe_pairs = [os.pipe() for _ in PIPE_STREAM_CLASSES]
+    owned_descriptors = [
+        descriptor for pair in pipe_pairs for descriptor in pair
+    ]
+    readers: dict[str, object] = {
+        stream: _DescriptorControllerReader(pair[0])
+        for stream, pair in zip(PIPE_STREAM_CLASSES, pipe_pairs, strict=True)
+    }
+
+    try:
+        child = _controller_projection(readers, events)
+    finally:
+        for descriptor in owned_descriptors:
+            with suppress(OSError):
+                os.close(descriptor)
+
+    assert child.readers == readers
+    assert events == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows pipe identity proof")
+def test_controller_child_fails_closed_on_windows_pipe_identity_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_windows
+
+    events: list[str] = []
+    pipe_pairs = [os.pipe() for _ in PIPE_STREAM_CLASSES]
+    owned_descriptors = [
+        descriptor for pair in pipe_pairs for descriptor in pair
+    ]
+    readers: dict[str, object] = {
+        stream: _DescriptorControllerReader(pair[0])
+        for stream, pair in zip(PIPE_STREAM_CLASSES, pipe_pairs, strict=True)
+    }
+
+    def identity_failure(_left: int, _right: int) -> bool:
+        raise RuntimeError("opaque pipe identity failure")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "pipe_descriptors_same",
+        identity_failure,
+    )
+    try:
+        with pytest.raises(
+            DualLiveRuntimeError,
+            match="dual_live_controller_child_invalid",
+        ) as exc:
+            _controller_projection(readers, events)
+    finally:
+        for descriptor in owned_descriptors:
+            with suppress(OSError):
+                os.close(descriptor)
+
+    assert isinstance(exc.value.__cause__, RuntimeError)
+    assert str(exc.value) == "dual_live_controller_child_invalid"
     assert events == []
 
 
@@ -3394,6 +3553,31 @@ def test_controller_child_rejects_null_raw_handle() -> None:
         _controller_projection(readers, events)
 
     assert events == []
+
+
+def test_stop_latch_defers_first_reason_and_preserves_first_tick_during_dispatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock = {"tick": 101}
+    monkeypatch.setattr(
+        dual_live_runtime_module.time,
+        "monotonic_ns",
+        lambda: clock["tick"],
+    )
+    stop = FirstStopLatch()
+
+    assert stop.begin_transition()
+    assert stop.latch("writer_failure")
+    clock["tick"] = 202
+    assert stop.reason_code is None
+    assert not stop.is_set
+    assert stop.monotonic_tick_ns == 101
+
+    stop.end_transition()
+
+    assert stop.reason_code == "writer_failure"
+    assert stop.is_set
+    assert stop.monotonic_tick_ns == 101
 
 
 def test_controller_latch_between_control_parse_and_go_prevents_send(
@@ -3438,6 +3622,83 @@ def test_controller_latch_between_control_parse_and_go_prevents_send(
         )
 
     assert "go-A" not in events
+    assert events.count("stop-A") == 1
+    assert "create-B" not in events
+    assert "seal" not in events
+
+
+def test_controller_defers_stop_publication_until_go_dispatch_returns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    send_active = threading.Event()
+    latch_attempted = threading.Event()
+    wait_active = threading.Event()
+    wait_release = threading.Event()
+    captured_latch: list[FirstStopLatch] = []
+    published_during_send: list[bool] = []
+    original_latch = FirstStopLatch.latch
+
+    def observe_latch(stop: FirstStopLatch, reason_code: str) -> bool:
+        won = original_latch(stop, reason_code)
+        if reason_code == "writer_failure" and won:
+            captured_latch.append(stop)
+            latch_attempted.set()
+        return won
+
+    monkeypatch.setattr(FirstStopLatch, "latch", observe_latch)
+    writers = {
+        stream: (
+            _WaitActiveFailWriter(stream, events, wait_active=send_active)
+            if stream == "stdout"
+            else _ControllerWriter(stream, events)
+        )
+        for stream in PIPE_STREAM_CLASSES
+    }
+
+    def fail_writer_before_dispatch(
+        readers: dict[str, _ControllerReader],
+    ) -> None:
+        events.append("send-start-A")
+        send_active.set()
+        readers["stdout"].feed(encode_pipe_frame(b"race"))
+        assert latch_attempted.wait(timeout=2)
+        published_during_send.append(captured_latch[0].is_set)
+        events.append("dispatch-complete-A")
+
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_runtime_writer_failure",
+    ):
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=lambda: _controller_child(
+                "A",
+                events,
+                wait_active=wait_active,
+                wait_release=wait_release,
+                send_before_go=fail_writer_before_dispatch,
+            ),
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda _phase, _child: (
+                _controller_socket_census(),
+                {"active_process_count": 0, "process_list_sha256": "5" * 64},
+            ),
+            clear_authority=lambda _phase, _child: {
+                "authority_posture_sha256": "6" * 64,
+                "all_required_absent": True,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=2,
+        )
+
+    assert published_during_send == [False]
+    assert events.index("writer-fail-stdout") < events.index("dispatch-complete-A")
+    assert events.index("dispatch-complete-A") < events.index("go-A")
+    assert events.index("go-A") < events.index("stop-A")
     assert events.count("stop-A") == 1
     assert "create-B" not in events
     assert "seal" not in events
@@ -3503,6 +3764,247 @@ def test_controller_writer_failure_during_wait_stops_before_real_exit() -> None:
         "terminal_state": "failed",
         "exit_code": 0,
     }
+
+
+def test_controller_wait_raises_then_stop_repolls_real_exit() -> None:
+    events: list[str] = []
+    wait_active = threading.Event()
+    wait_release = threading.Event()
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_phase_failed") as exc:
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=lambda: _controller_child(
+                "A",
+                events,
+                wait_active=wait_active,
+                wait_release=wait_release,
+                wait_error_once=RuntimeError("wait interrupted"),
+            ),
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda phase, _child: (
+                events.append(f"quiesce-{phase}")
+                or _controller_socket_census(),
+                {"active_process_count": 0, "process_list_sha256": "5" * 64},
+            ),
+            clear_authority=lambda phase, _child: {
+                "authority_posture_sha256": "6" * 64,
+                "all_required_absent": events.append(f"authority-{phase}") is None,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=2,
+        )
+
+    assert isinstance(exc.value.__cause__, RuntimeError)
+    assert events.index("wait-raise-A") < events.index("stop-A")
+    assert events.index("stop-A") < events.index("wait-release-A")
+    assert events.index("wait-release-A") < events.index("quiesce-A")
+    assert events.index("quiesce-A") < events.index("authority-A")
+    assert events.count("stop-A") == 1
+    assert "create-B" not in events
+    assert "seal" not in events
+    completions = [
+        record
+        for record in read_runtime_records(writers["app"].getvalue())
+        if record["event"] == "phase_complete"
+    ]
+    assert len(completions) == 1
+    assert completions[0]["payload"] == {
+        "terminal_state": "failed",
+        "exit_code": 0,
+    }
+
+
+def test_controller_never_exits_skips_teardown_evidence_and_returns_bounded() -> None:
+    events: list[str] = []
+    app_reader = _ControllerReader()
+    captured_readers: list[dict[str, _ControllerReader]] = []
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+    started = time.monotonic()
+
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_capture_ownership_unproven",
+    ) as exc:
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=lambda: _controller_child(
+                "A",
+                events,
+                never_exit=True,
+                app_reader=app_reader,
+                finish_readers=False,
+                send_before_go=lambda readers: captured_readers.append(readers),
+            ),
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda phase, _child: events.append(f"quiesce-{phase}"),
+            clear_authority=lambda phase, _child: events.append(
+                f"authority-{phase}"
+            ),
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=0.05,
+        )
+
+    try:
+        assert time.monotonic() - started < 0.5
+        assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+        assert exc.value.__cause__.code == "dual_live_phase_exit_timeout"
+        assert events.count("stop-A") == 1
+        assert not app_reader._closed
+        assert all(not writer.closed_clean for writer in writers.values())
+        assert not any(event.startswith(("flush-", "close-")) for event in events)
+        assert "quiesce-A" not in events
+        assert "authority-A" not in events
+        assert "create-B" not in events
+        assert "seal" not in events
+        records = read_runtime_records(writers["app"].getvalue())
+        completions = [
+            record for record in records if record["event"] == "phase_complete"
+        ]
+        assert completions == []
+        stop_records = [
+            record for record in records if record["event"] == "stop_latched"
+        ]
+        assert len(stop_records) == 1
+        assert stop_records[0]["payload"]["reason_code"] == "timeout"
+    finally:
+        for reader in captured_readers[0].values():
+            reader.close()
+
+
+def test_controller_stop_record_uses_immutable_first_latch_tick(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    clock = {"tick": 111}
+    monkeypatch.setattr(
+        dual_live_runtime_module.time,
+        "monotonic_ns",
+        lambda: clock["tick"],
+    )
+    original_latch = FirstStopLatch.latch
+
+    def advance_after_latch(stop: FirstStopLatch, reason_code: str) -> bool:
+        won = original_latch(stop, reason_code)
+        if won:
+            clock["tick"] = 222
+        return won
+
+    monkeypatch.setattr(FirstStopLatch, "latch", advance_after_latch)
+    writers = {
+        stream: (
+            _StopRecordControllerWriter(stream, events)
+            if stream == "app"
+            else _ControllerWriter(stream, events)
+        )
+        for stream in PIPE_STREAM_CLASSES
+    }
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_phase_failed"):
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=lambda: _controller_child("A", events, exit_code=9),
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda _phase, _child: (
+                _controller_socket_census(),
+                {"active_process_count": 0, "process_list_sha256": "5" * 64},
+            ),
+            clear_authority=lambda _phase, _child: {
+                "authority_posture_sha256": "6" * 64,
+                "all_required_absent": True,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=2,
+        )
+
+    stop_records = [
+        record
+        for record in read_runtime_records(writers["app"].getvalue())
+        if record["event"] == "stop_latched"
+    ]
+    assert len(stop_records) == 1
+    assert stop_records[0]["payload"]["monotonic_tick_ns"] == 111
+    assert events.index("record-stop") < events.index("stop-A")
+
+
+def test_controller_stuck_pump_cancel_is_not_closed_twice(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dual_live_runtime_module, "PUMP_CANCEL_JOIN_SECONDS", 0.05)
+    events: list[str] = []
+    close_started = threading.Event()
+    close_release = threading.Event()
+    closed = threading.Event()
+    app_reader = _StuckCloseControllerReader(
+        close_started=close_started,
+        close_release=close_release,
+        closed=closed,
+    )
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+    started = time.monotonic()
+
+    try:
+        with pytest.raises(
+            DualLiveRuntimeError,
+            match="dual_live_capture_ownership_unproven",
+        ) as exc:
+            dual_live_runtime_module._run_two_phase_controller(
+                identity=RUNTIME_IDENTITY,
+                runtime_start_payload=RUNTIME_START_PAYLOAD,
+                writers=writers,
+                create_phase_a=lambda: _controller_child(
+                    "A",
+                    events,
+                    app_reader=app_reader,
+                    finish_readers=False,
+                ),
+                create_phase_b=lambda: events.append("create-B"),
+                quiesce_phase=lambda _phase, _child: (
+                    _controller_socket_census(),
+                    {
+                        "active_process_count": 0,
+                        "process_list_sha256": "5" * 64,
+                    },
+                ),
+                clear_authority=lambda _phase, _child: {
+                    "authority_posture_sha256": "6" * 64,
+                    "all_required_absent": True,
+                },
+                http_frame_validator=lambda _payload: None,
+                seal=lambda: events.append("seal"),
+                timeout_seconds=0.05,
+            )
+    finally:
+        elapsed = time.monotonic() - started
+        close_release.set()
+
+    assert elapsed < 0.5
+    assert close_started.is_set()
+    assert closed.wait(timeout=1)
+    assert app_reader.close_calls == 1
+    assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+    assert exc.value.__cause__.code == "dual_live_pump_failed"
+    assert all(not writer.closed_clean for writer in writers.values())
+    assert not any(event.startswith(("flush-", "close-")) for event in events)
+    assert events.count("stop-A") == 1
+    assert "create-B" not in events
+    assert "seal" not in events
 
 
 def test_controller_wait_baseexception_has_no_fabricated_completion() -> None:
