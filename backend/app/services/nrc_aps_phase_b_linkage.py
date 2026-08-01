@@ -475,7 +475,7 @@ def _event_snapshot(
 def _validate_run_shape(run: ConnectorRun) -> None:
     if (
         run.connector_key != "nrc_adams_aps"
-        or run.source_system != "nrc_adams_aps"
+        or run.source_system != "nrc_adams"
         or run.source_mode != "strict_live_egress"
         or run.status != "completed"
         or not connector_egress_arming.is_strict_egress_run(run)

@@ -815,7 +815,7 @@ def _seed_actual_nrc_phase_b(
     run = ConnectorRun(
         connector_run_id="run-nrc-phase-b-origin",
         connector_key="nrc_adams_aps",
-        source_system="nrc_adams_aps",
+        source_system="nrc_adams",
         source_mode="strict_live_egress",
         status="completed",
         submission_idempotency_key="egress-arm:run-nrc-phase-b-origin",

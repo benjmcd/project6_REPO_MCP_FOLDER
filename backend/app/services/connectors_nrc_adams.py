@@ -4123,7 +4123,7 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                 if (
                     not connector_egress_arming.is_strict_egress_run(run)
                     or run.connector_key != "nrc_adams_aps"
-                    or run.source_system != "nrc_adams_aps"
+                    or run.source_system != "nrc_adams"
                 ):
                     _reject_malformed_reserved_egress_run(db, run=run)
                     return

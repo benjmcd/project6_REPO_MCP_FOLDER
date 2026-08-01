@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Generator
+from uuid import UUID
 
 import pytest
 from sqlalchemy import create_engine
@@ -18,6 +19,16 @@ from app.models import (
     ConnectorRun,
     ConnectorRunEvent,
     ConnectorRunTarget,
+)
+from app.schemas.api import (
+    CAMPAIGN_NON_AUTHORITIES,
+    NRC_GRANT_NON_AUTHORITIES,
+    ConnectorEgressArmingIn,
+    ConnectorEgressGrantV1,
+    DualLiveCampaignDefinitionV1,
+    NrcApsFreshTargetV1,
+    ScienceBaseFreshTargetV1,
+    expected_grant_rule_payloads,
 )
 from app.services import connectors_nrc_adams as nrc
 from app.services.connector_egress_transport import (
@@ -33,6 +44,142 @@ def _envelope() -> dict[str, Any]:
         "campaign_introduction_index_revision": 1,
         "campaign_introduction_index_sha256": "b" * 64,
     }
+
+
+def _create_real_nrc_arming(
+    db: Session,
+    tmp_path: Path,
+) -> tuple[ConnectorRun, Any]:
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    campaign_id = "27693345-6a47-45bb-97a7-44c2932ef76b"
+    code_revision = "e" * 40
+    campaign_fingerprint = "c" * 64
+    campaign_raw_sha256 = "d" * 64
+    grant_raw_sha256 = "a" * 64
+    grant_fingerprint = "b" * 64
+    arming_nonce = UUID("ba4613f4-d8e5-4bfd-9447-04d21dbf951b")
+    campaign = DualLiveCampaignDefinitionV1(
+        schema_id="project6.dual_live_campaign_definition.v1",
+        campaign_id=campaign_id,
+        code_revision=code_revision,
+        connector_keys=("sciencebase_mcs", "nrc_adams_aps"),
+        sciencebase_target=ScienceBaseFreshTargetV1(
+            connector_key="sciencebase_mcs",
+            item_id="63d1a3c6d34e06fef15006be",
+            exact_file_name="mcs2023-germa_salient.csv",
+            locator_key="downloadUri",
+        ),
+        nrc_target=NrcApsFreshTargetV1(
+            connector_key="nrc_adams_aps",
+            accession_number=nrc.NRC_FRESH_ACCESSION,
+        ),
+        acceptance_profile="dual_live_to_internal_handoff_v1",
+        evidence_profile="dual_live_evidence_v1",
+        review_policy="security_egress_and_layer3_integrity_v1",
+        required_review_roles=("security_egress", "layer3_integrity"),
+        execution_order="nrc_then_sciencebase",
+        package_kinds=("canonical_internal", "user_facing", "review_facing"),
+        not_before=now - timedelta(hours=1),
+        expires_at=now + timedelta(hours=1),
+        non_authorities=CAMPAIGN_NON_AUTHORITIES,
+    )
+    grant = ConnectorEgressGrantV1(
+        schema_id="project6.connector_egress_grant.v1",
+        grant_id="grant-nrc-real-arming",
+        connector_key="nrc_adams_aps",
+        campaign_id=campaign_id,
+        campaign_fingerprint=campaign_fingerprint,
+        campaign_definition_sha256=campaign_raw_sha256,
+        code_revision=code_revision,
+        arming_nonce=arming_nonce,
+        max_armings=1,
+        supersedes_grant_sha256=None,
+        issued_at=now - timedelta(minutes=30),
+        expires_at=now + timedelta(minutes=30),
+        operator_mode="local_loopback",
+        target=NrcApsFreshTargetV1(
+            connector_key="nrc_adams_aps",
+            accession_number=nrc.NRC_FRESH_ACCESSION,
+        ),
+        request_rules=expected_grant_rule_payloads("nrc_adams_aps"),
+        max_physical_requests=2,
+        max_run_bytes=70 * 1024 * 1024,
+        max_single_send_detection_allowance_bytes=6_684_672,
+        request_timeout_seconds=30,
+        min_request_interval_ms=500,
+        non_authorities=NRC_GRANT_NON_AUTHORITIES,
+    )
+    verified_campaign = SimpleNamespace(
+        model=campaign,
+        raw_bytes=b"campaign",
+        raw_sha256=campaign_raw_sha256,
+        canonical_bytes=b"canonical-campaign",
+        canonical_fingerprint=campaign_fingerprint,
+        introduction_index_revision=1,
+        introduction_index_sha256="f" * 64,
+        evidence_root=tmp_path,
+        definition_archive_path=tmp_path / "definition.json",
+        index_chain=(),
+    )
+    verified_grant = SimpleNamespace(
+        model=grant,
+        raw_bytes=b"grant",
+        raw_sha256=grant_raw_sha256,
+        canonical_bytes=b"canonical-grant",
+        canonical_fingerprint=grant_fingerprint,
+        verified_campaign=verified_campaign,
+        grant_archive_path=tmp_path / "grant.json",
+        consumption_marker_path=tmp_path / f"{grant_raw_sha256}.json",
+        consumption_marker_sha256="",
+        consumption_marker_present=False,
+    )
+    connector_run_id = nrc.connector_egress_arming.compute_parent_arming_id(
+        connector_key=grant.connector_key,
+        campaign_id=str(grant.campaign_id),
+        grant_sha256=grant_raw_sha256,
+        arming_nonce=grant.arming_nonce,
+    )
+    marker_bytes = nrc.connector_egress_arming._marker_bytes(
+        verified_grant=verified_grant,
+        connector_run_id=connector_run_id,
+    )
+    verified_grant.consumption_marker_sha256 = hashlib.sha256(
+        marker_bytes
+    ).hexdigest()
+    payload = ConnectorEgressArmingIn(
+        schema_id="project6.connector_egress_arming.v1",
+        client_request_id="real-nrc-identity",
+        connector_key="nrc_adams_aps",
+        campaign_id=campaign_id,
+        campaign_fingerprint=campaign_fingerprint,
+        grant_sha256=grant_raw_sha256,
+    )
+    receipt = {
+        "schema_id": "project6.connector_egress_authorization_receipt.v1",
+        "connector_key": "nrc_adams_aps",
+        "campaign_id": campaign_id,
+        "campaign_fingerprint": campaign_fingerprint,
+        "campaign_definition_sha256": campaign_raw_sha256,
+        "grant_sha256": grant_raw_sha256,
+        "canonical_grant_fingerprint": grant_fingerprint,
+        "introduction_index_revision": 1,
+        "introduction_index_sha256": "f" * 64,
+        "operator_ref_hash": "1" * 64,
+        "workspace_ref_hash": "2" * 64,
+        "auth_owner_mode": "header_presence",
+        "authorization_mode": "identity_presence",
+        "role": None,
+        "access": "write",
+    }
+    run, created = nrc.connector_egress_arming.create_connector_egress_arming(
+        db,
+        payload=payload,
+        verified_grant=verified_grant,
+        operator_receipt=receipt,
+        code_revision=code_revision,
+    )
+    assert created is True
+    return run, verified_grant
 
 
 @pytest.fixture()
@@ -72,7 +219,7 @@ def _running_run(db: Session, *, run_id: str = "strict-nrc") -> ConnectorRun:
     run = ConnectorRun(
         connector_run_id=run_id,
         connector_key="nrc_adams_aps",
-        source_system="nrc_adams_aps",
+        source_system="nrc_adams",
         source_mode="strict_live_egress",
         status="running",
         submission_idempotency_key="egress-arm:test",
@@ -642,6 +789,101 @@ def test_generic_submit_rejects_reserved_provenance_before_normalization(
     assert db.query(ConnectorRun).count() == 0
 
 
+def test_real_arming_identity_reaches_public_executor_with_fake_transport(
+    db: Session,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run, verified_grant = _create_real_nrc_arming(db, tmp_path)
+    assert run.source_system == "nrc_adams"
+    monkeypatch.setattr(
+        nrc.connector_egress_arming,
+        "resolve_current_egress_authority",
+        lambda *args, **kwargs: verified_grant,
+    )
+    run, claimed = nrc.connector_egress_arming.claim_connector_egress_arming(
+        db,
+        connector_run_id=run.connector_run_id,
+        execution_idempotency_key="real-nrc-execution",
+        expected_arming_fingerprint=str(run.request_fingerprint),
+        now=datetime.now(timezone.utc),
+    )
+    assert claimed is True
+    transport = RecordingTransport(
+        [
+            _response(_detail_body()),
+            _response(
+                b"%PDF-1.7\nreal arming identity\n%%EOF",
+                content_type="application/pdf",
+            ),
+        ]
+    )
+    _patch_authority(monkeypatch)
+    monkeypatch.setattr(nrc, "SessionLocal", lambda: db)
+    monkeypatch.setattr(
+        nrc,
+        "_build_strict_nrc_transport",
+        lambda **kwargs: transport,
+    )
+    monkeypatch.setattr(
+        nrc,
+        "get_nrc_adams_client",
+        lambda *args, **kwargs: pytest.fail("generic NRC client created"),
+    )
+    connector_run_id = run.connector_run_id
+
+    nrc.execute_nrc_adams_run(connector_run_id)
+
+    persisted = db.get(ConnectorRun, connector_run_id)
+    assert persisted is not None
+    assert persisted.source_system == "nrc_adams"
+    assert persisted.status == "completed"
+    assert [call["ordinal"] for call in transport.calls] == [1, 2]
+
+
+def test_alternate_source_identity_is_quarantined_before_transport_send(
+    db: Session,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run, verified_grant = _create_real_nrc_arming(db, tmp_path)
+    monkeypatch.setattr(
+        nrc.connector_egress_arming,
+        "resolve_current_egress_authority",
+        lambda *args, **kwargs: verified_grant,
+    )
+    run, claimed = nrc.connector_egress_arming.claim_connector_egress_arming(
+        db,
+        connector_run_id=run.connector_run_id,
+        execution_idempotency_key="alternate-nrc-source",
+        expected_arming_fingerprint=str(run.request_fingerprint),
+        now=datetime.now(timezone.utc),
+    )
+    assert claimed is True
+    run.source_system = "nrc_adams_aps"
+    db.commit()
+    connector_run_id = run.connector_run_id
+    monkeypatch.setattr(nrc, "SessionLocal", lambda: db)
+    monkeypatch.setattr(
+        nrc,
+        "_build_strict_nrc_transport",
+        lambda **kwargs: pytest.fail("transport created for alternate source"),
+    )
+    monkeypatch.setattr(
+        nrc,
+        "get_nrc_adams_client",
+        lambda *args, **kwargs: pytest.fail("generic NRC client created"),
+    )
+
+    nrc.execute_nrc_adams_run(connector_run_id)
+
+    persisted = db.get(ConnectorRun, connector_run_id)
+    assert persisted is not None
+    assert persisted.status == "failed"
+    assert persisted.error_summary == "reserved_egress_provenance_invalid"
+    assert db.query(ConnectorRunTarget).count() == 0
+
+
 def test_malformed_reserved_provenance_is_quarantined_before_generic_mutation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -649,7 +891,7 @@ def test_malformed_reserved_provenance_is_quarantined_before_generic_mutation(
     run = ConnectorRun(
         connector_run_id="malformed-reserved",
         connector_key="nrc_adams_aps",
-        source_system="nrc_adams_aps",
+        source_system="nrc_adams",
         source_mode="public_api",
         status="pending",
         request_config_json={"connector_egress_arming": {"schema_id": "wrong"}},
@@ -698,7 +940,7 @@ def test_valid_reserved_provenance_dispatches_before_generic_operations(
     run = ConnectorRun(
         connector_run_id="valid-reserved",
         connector_key="nrc_adams_aps",
-        source_system="nrc_adams_aps",
+        source_system="nrc_adams",
         source_mode="strict_live_egress",
         status="pending",
         submission_idempotency_key="egress-arm:valid",

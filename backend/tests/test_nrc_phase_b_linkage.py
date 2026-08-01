@@ -3,13 +3,14 @@ from __future__ import annotations
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import FrozenInstanceError, fields
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import importlib
 import inspect
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Generator
 from uuid import UUID
 
@@ -36,6 +37,11 @@ from app.models import (
     ConnectorRunSubmission,
     ConnectorRunTarget,
 )
+from app.schemas.api import (
+    NRC_GRANT_NON_AUTHORITIES,
+    ConnectorEgressArmingIn,
+    expected_grant_rule_payloads,
+)
 from app.services import connector_egress_arming
 from app.services import connectors_nrc_adams
 from app.services import layer3_origin_continuity as origin
@@ -58,6 +64,108 @@ def _phase_b() -> Any:
     return importlib.import_module(
         "app.services.nrc_aps_phase_b_linkage"
     )
+
+
+def _create_real_nrc_arming(
+    db: Session,
+    tmp_path: Path,
+) -> ConnectorRun:
+    now = datetime.now(timezone.utc).replace(microsecond=0)
+    campaign_id = "27693345-6a47-45bb-97a7-44c2932ef76b"
+    code_revision = "e" * 40
+    campaign_fingerprint = "c" * 64
+    campaign_raw_sha256 = "d" * 64
+    grant_raw_sha256 = "a" * 64
+    grant_fingerprint = "b" * 64
+    grant = SimpleNamespace(
+        connector_key="nrc_adams_aps",
+        campaign_id=campaign_id,
+        campaign_fingerprint=campaign_fingerprint,
+        code_revision=code_revision,
+        max_armings=1,
+        supersedes_grant_sha256=None,
+        grant_id="grant-nrc-phase-b-real-arming",
+        arming_nonce=UUID("ba4613f4-d8e5-4bfd-9447-04d21dbf951b"),
+        operator_mode="local_loopback",
+        non_authorities=NRC_GRANT_NON_AUTHORITIES,
+        target={
+            "connector_key": "nrc_adams_aps",
+            "accession_number": connectors_nrc_adams.NRC_FRESH_ACCESSION,
+        },
+        request_rules=expected_grant_rule_payloads("nrc_adams_aps"),
+        max_physical_requests=2,
+        max_run_bytes=70 * 1024 * 1024,
+        max_single_send_detection_allowance_bytes=6_684_672,
+        request_timeout_seconds=30,
+        min_request_interval_ms=500,
+        issued_at=now - timedelta(minutes=30),
+        expires_at=now + timedelta(minutes=30),
+    )
+    campaign = SimpleNamespace(
+        model=SimpleNamespace(
+            campaign_id=campaign_id,
+            code_revision=code_revision,
+            not_before=now - timedelta(hours=1),
+            expires_at=now + timedelta(hours=1),
+        ),
+        raw_sha256=campaign_raw_sha256,
+        canonical_fingerprint=campaign_fingerprint,
+        introduction_index_revision=1,
+        introduction_index_sha256="f" * 64,
+    )
+    verified_grant = SimpleNamespace(
+        model=grant,
+        raw_sha256=grant_raw_sha256,
+        canonical_fingerprint=grant_fingerprint,
+        verified_campaign=campaign,
+        consumption_marker_path=tmp_path / f"{grant_raw_sha256}.json",
+        consumption_marker_sha256="",
+    )
+    connector_run_id = connector_egress_arming.compute_parent_arming_id(
+        connector_key=grant.connector_key,
+        campaign_id=grant.campaign_id,
+        grant_sha256=grant_raw_sha256,
+        arming_nonce=grant.arming_nonce,
+    )
+    marker_bytes = connector_egress_arming._marker_bytes(
+        verified_grant=verified_grant,
+        connector_run_id=connector_run_id,
+    )
+    verified_grant.consumption_marker_sha256 = hashlib.sha256(
+        marker_bytes
+    ).hexdigest()
+    run, created = connector_egress_arming.create_connector_egress_arming(
+        db,
+        payload=ConnectorEgressArmingIn(
+            schema_id="project6.connector_egress_arming.v1",
+            client_request_id="real-nrc-phase-b-identity",
+            connector_key="nrc_adams_aps",
+            campaign_id=campaign_id,
+            campaign_fingerprint=campaign_fingerprint,
+            grant_sha256=grant_raw_sha256,
+        ),
+        verified_grant=verified_grant,
+        operator_receipt={
+            "schema_id": "project6.connector_egress_authorization_receipt.v1",
+            "connector_key": "nrc_adams_aps",
+            "campaign_id": campaign_id,
+            "campaign_fingerprint": campaign_fingerprint,
+            "campaign_definition_sha256": campaign_raw_sha256,
+            "grant_sha256": grant_raw_sha256,
+            "canonical_grant_fingerprint": grant_fingerprint,
+            "introduction_index_revision": 1,
+            "introduction_index_sha256": "f" * 64,
+            "operator_ref_hash": "1" * 64,
+            "workspace_ref_hash": "2" * 64,
+            "auth_owner_mode": "header_presence",
+            "authorization_mode": "identity_presence",
+            "role": None,
+            "access": "write",
+        },
+        code_revision=code_revision,
+    )
+    assert created is True
+    return run
 
 
 @pytest.fixture()
@@ -214,6 +322,7 @@ def _make_strict_state(
     raw_bytes: bytes = b"%PDF-1.7\nstrict phase B fixture\n%%EOF",
     run_id: str = "strict-nrc-phase-b",
     target_id: str = "strict-nrc-phase-b-target",
+    existing_run: ConnectorRun | None = None,
 ) -> tuple[ConnectorRun, ConnectorRunTarget, Path, str]:
     digest = hashlib.sha256(raw_bytes).hexdigest()
     raw_root = Path(settings.connector_raw_dir)
@@ -222,35 +331,40 @@ def _make_strict_state(
     )
     persist_locked_raw_file(raw_root, raw_path, raw_bytes)
     completed_at = datetime.now(timezone.utc).replace(tzinfo=None)
-    envelope = {
-        "schema_id": "project6.connector_egress_arming.v1",
-        "arming_fingerprint": "a" * 64,
-        "campaign_introduction_index_revision": 1,
-        "campaign_introduction_index_sha256": "b" * 64,
-    }
-    run = ConnectorRun(
-        connector_run_id=run_id,
-        connector_key="nrc_adams_aps",
-        source_system="nrc_adams_aps",
-        source_mode="strict_live_egress",
-        status="completed",
-        submission_idempotency_key=f"egress-arm:{run_id}",
-        request_config_json={"connector_egress_arming": envelope},
-        request_fingerprint="a" * 64,
-        completed_at=completed_at,
-        discovered_count=1,
-        selected_count=1,
-        downloaded_count=1,
-        ingested_count=0,
-        consumed_bytes=len(raw_bytes),
-        failed_count=0,
-        terminal_target_count=1,
-        nonterminal_target_count=0,
-        execution_lease_owner=None,
-        execution_lease_token=None,
-        execution_lease_expires_at=completed_at,
-        error_summary=None,
-    )
+    if existing_run is None:
+        envelope = {
+            "schema_id": "project6.connector_egress_arming.v1",
+            "arming_fingerprint": "a" * 64,
+            "campaign_introduction_index_revision": 1,
+            "campaign_introduction_index_sha256": "b" * 64,
+        }
+        run = ConnectorRun(
+            connector_run_id=run_id,
+            submission_idempotency_key=f"egress-arm:{run_id}",
+            request_config_json={"connector_egress_arming": envelope},
+            request_fingerprint="a" * 64,
+        )
+    else:
+        run = existing_run
+        run_id = run.connector_run_id
+        envelope = dict(run.request_config_json["connector_egress_arming"])
+    run.connector_key = "nrc_adams_aps"
+    run.source_system = "nrc_adams"
+    run.source_mode = "strict_live_egress"
+    run.status = "completed"
+    run.completed_at = completed_at
+    run.discovered_count = 1
+    run.selected_count = 1
+    run.downloaded_count = 1
+    run.ingested_count = 0
+    run.consumed_bytes = len(raw_bytes)
+    run.failed_count = 0
+    run.terminal_target_count = 1
+    run.nonterminal_target_count = 0
+    run.execution_lease_owner = None
+    run.execution_lease_token = None
+    run.execution_lease_expires_at = completed_at
+    run.error_summary = None
     target = ConnectorRunTarget(
         connector_run_target_id=target_id,
         connector_run_id=run_id,
@@ -318,8 +432,12 @@ def _make_strict_state(
         metrics_json={
             "outcome_class": "nrc_raw_admission_completed",
             "arming_fingerprint": envelope["arming_fingerprint"],
-            "campaign_introduction_index_revision": 1,
-            "campaign_introduction_index_sha256": "b" * 64,
+            "campaign_introduction_index_revision": envelope[
+                "campaign_introduction_index_revision"
+            ],
+            "campaign_introduction_index_sha256": envelope[
+                "campaign_introduction_index_sha256"
+            ],
         },
         created_at=completed_at,
     )
@@ -593,6 +711,30 @@ def _verified_error_code(
         return str(excinfo.value.code)
     finally:
         outer.rollback()
+
+
+def test_real_arming_completed_run_reaches_public_phase_b_linkage(
+    db: Session,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    armed = _create_real_nrc_arming(db, tmp_path)
+    assert armed.source_system == "nrc_adams"
+    run, target, _, _ = _make_strict_state(
+        db,
+        target_id="real-arming-phase-b-target",
+        existing_run=armed,
+    )
+    parser_calls = _install_parser(monkeypatch)
+
+    linkage = _phase_b().bind_strict_nrc_phase_b_linkage(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+
+    assert linkage.run_id == run.connector_run_id
+    assert linkage.target_id == target.connector_run_target_id
+    assert len(parser_calls) == 1
 
 
 def test_verifier_contract_success_is_frozen_and_read_only(
