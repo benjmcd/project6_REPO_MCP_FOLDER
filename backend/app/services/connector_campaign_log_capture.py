@@ -16,6 +16,7 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 import weakref
 
 from sqlalchemy import or_, select, text
+from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
 from app.models import ConnectorRun, ConnectorRunEvent
@@ -34,6 +35,7 @@ from app.services.connector_egress_arming import (
     is_strict_egress_run,
 )
 from app.services.connector_egress_authorization import (
+    MAX_EVIDENCE_GRANT_ARCHIVES,
     MAX_EVIDENCE_INDEX_REVISIONS,
     ConnectorEgressAuthorizationError,
     ConnectorEgressAuthorizationReceipt,
@@ -70,6 +72,8 @@ from app.services.raw_storage_handles import (
 MAX_STREAM_BYTES = 16 * 1024 * 1024
 MAX_AGGREGATE_BYTES = 32 * 1024 * 1024
 MAX_PROTECTED_JSON_BYTES = 64 * 1024
+# Grants/markers are separate directories and form the largest protected set.
+MAX_PROTECTED_DIRECTORY_CHILDREN = MAX_EVIDENCE_GRANT_ARCHIVES
 _TERMINAL_STATUSES = frozenset({"completed", "failed", "cancelled"})
 _STREAMS: tuple[tuple[str, Literal["app", "http", "stdout", "stderr"]], ...] = (
     ("app.jsonl", "app"),
@@ -397,10 +401,12 @@ class ConnectorCampaignLogCaptureResult:
 
 @dataclass(frozen=True, slots=True)
 class VerifiedCampaignLogCapture:
-    manifest: ConnectorCampaignLogManifestV1
+    """Transitively immutable verified evidence; no mutable model escapes."""
+
+    manifest_bytes: bytes
     manifest_sha256: str
     file_set_hash: str
-    seal: ConnectorCampaignLogSealV1
+    seal_bytes: bytes
     seal_sha256: str
     stream_bytes: Mapping[str, bytes]
     seal_event_ids: tuple[str, ...]
@@ -687,9 +693,17 @@ def _exact_child(
     must_exist: bool,
     directory: bool,
 ) -> Path:
+    children = tuple(
+        islice(parent.iterdir(), MAX_PROTECTED_DIRECTORY_CHILDREN + 1)
+    )
+    if len(children) > MAX_PROTECTED_DIRECTORY_CHILDREN:
+        _fail(
+            "connector_campaign_log_directory_limit_exceeded",
+            "Protected directory exceeds its frozen membership ceiling.",
+        )
     matches = [
         child
-        for child in parent.iterdir()
+        for child in children
         if child.name.casefold() == name.casefold()
     ]
     exact = [child for child in matches if child.name == name]
@@ -2384,17 +2398,22 @@ def _read_seal_database_snapshot(
         _fail(
             "connector_campaign_log_read_session_dirty",
             "Read-only capture verification requires a clean session.",
-        )
-    expected_ids = seal.connector_run_ids
-    deterministic_ids = tuple(
-        sorted(binding.connector_run_id for binding in expected_bindings.values())
     )
+    expected_ids = seal.connector_run_ids
+    arming = ConnectorRun.request_config_json["connector_egress_arming"]
     with db.no_autoflush:
         candidates = list(
             db.scalars(
                 select(ConnectorRun)
-                .where(ConnectorRun.connector_run_id.in_(deterministic_ids))
+                .where(
+                    ConnectorRun.source_mode == "strict_live_egress",
+                    arming["campaign_id"].as_string()
+                    == authority.campaign_id,
+                    arming["campaign_fingerprint"].as_string()
+                    == authority.campaign_fingerprint,
+                )
                 .order_by(ConnectorRun.connector_run_id)
+                .limit(len(expected_ids) + 1)
                 .execution_options(populate_existing=True)
             ).all()
         )
@@ -2748,10 +2767,10 @@ def _verify_connector_campaign_log_capture_in_owned_transaction(
         for item in first_files
     )
     return VerifiedCampaignLogCapture(
-        manifest=manifest,
+        manifest_bytes=manifest_object.data,
         manifest_sha256=manifest_sha256,
         file_set_hash=file_set_hash,
-        seal=seal,
+        seal_bytes=seal_object.data,
         seal_sha256=seal_sha256,
         stream_bytes=stream_bytes,
         seal_event_ids=first_database.event_ids,
@@ -2765,6 +2784,11 @@ def verify_connector_campaign_log_capture_read_only(
     campaign_id: str,
     expected_campaign_fingerprint: str,
 ) -> VerifiedCampaignLogCapture:
+    """Verify under caller-held campaign ProofLocks mutex.
+
+    This adapter does not provide terminal/preseal continuity or cross-store
+    atomicity; the outer evaluator/gate owns those controls through emission.
+    """
     if not isinstance(db, Session):
         _fail(
             "connector_campaign_log_read_session_invalid",
@@ -2775,14 +2799,34 @@ def verify_connector_campaign_log_capture_read_only(
             "connector_campaign_log_read_transaction_active",
             "Capture verification refuses a caller-active transaction.",
         )
-    transaction = db.begin()
-    try:
-        return _verify_connector_campaign_log_capture_in_owned_transaction(
-            db,
-            chain,
-            campaign_id,
-            expected_campaign_fingerprint,
+    if db.new or db.dirty or db.deleted:
+        _fail(
+            "connector_campaign_log_read_session_dirty",
+            "Capture verification refuses a dirty caller session.",
         )
+    bind = db.get_bind()
+    if isinstance(bind, Connection) and bind.in_transaction():
+        _fail(
+            "connector_campaign_log_read_transaction_active",
+            "Capture verification refuses an externally active bind transaction.",
+        )
+    verification_db = Session(
+        bind=bind,
+        autoflush=False,
+        expire_on_commit=False,
+        future=True,
+    )
+    try:
+        transaction = verification_db.begin()
+        try:
+            return _verify_connector_campaign_log_capture_in_owned_transaction(
+                verification_db,
+                chain,
+                campaign_id,
+                expected_campaign_fingerprint,
+            )
+        finally:
+            if transaction.is_active:
+                transaction.rollback()
     finally:
-        if transaction.is_active:
-            transaction.rollback()
+        verification_db.close()

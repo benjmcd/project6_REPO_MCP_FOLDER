@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass, replace
+from copy import deepcopy
+from dataclasses import FrozenInstanceError, dataclass, fields, replace
 from datetime import UTC, datetime, timedelta
 import hashlib
 import inspect
 import os
 from pathlib import Path
-from types import SimpleNamespace
+from types import MappingProxyType, SimpleNamespace
 from typing import Any
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import pytest
-from sqlalchemy import create_engine, event as sqlalchemy_event, select
+from sqlalchemy import (
+    create_engine,
+    event as sqlalchemy_event,
+    inspect as sqlalchemy_inspect,
+    select,
+)
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -764,6 +770,21 @@ def _close_read_transaction(db: Session) -> None:
     assert not db.in_transaction()
 
 
+def _assert_transitively_immutable(value: Any) -> None:
+    if isinstance(value, (bytes, int, str)):
+        return
+    if isinstance(value, tuple):
+        for item in value:
+            _assert_transitively_immutable(item)
+        return
+    if isinstance(value, MappingProxyType):
+        for key, item in value.items():
+            _assert_transitively_immutable(key)
+            _assert_transitively_immutable(item)
+        return
+    pytest.fail(f"mutable verified evidence escaped: {type(value)!r}")
+
+
 def _rewrite_stream_and_manifest(
     authority: _AuthorityFixture,
     sealed: Any,
@@ -1029,10 +1050,10 @@ def test_read_only_capture_verifier_rehashes_without_mutation(
 
     assert not db.in_transaction()
     assert isinstance(verified, VerifiedCampaignLogCapture)
-    assert verified.manifest == sealed.manifest
+    assert verified.manifest_bytes == canonical_json_bytes(sealed.manifest)
     assert verified.manifest_sha256 == sealed.manifest_sha256
     assert verified.file_set_hash == sealed.file_set_hash
-    assert verified.seal == sealed.seal
+    assert verified.seal_bytes == canonical_json_bytes(sealed.seal)
     assert verified.seal_sha256 == sealed.seal_sha256
     assert verified.seal_event_ids == sealed.event_ids
     expected_paths = tuple(
@@ -1061,11 +1082,118 @@ def test_read_only_capture_verifier_rehashes_without_mutation(
     )
 
 
+def test_read_only_capture_result_is_transitively_immutable(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    authority, chain, _ = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+        connector_keys=("nrc_adams_aps",),
+    )
+    _close_read_transaction(db)
+
+    verified = verify_connector_campaign_log_capture_read_only(
+        db,
+        chain,
+        str(authority.campaign_id),
+        FINGERPRINT,
+    )
+
+    assert not hasattr(verified, "manifest")
+    assert not hasattr(verified, "seal")
+    for field in fields(verified):
+        _assert_transitively_immutable(getattr(verified, field.name))
+    with pytest.raises(FrozenInstanceError):
+        verified.manifest_bytes = b"changed"  # type: ignore[misc]
+    with pytest.raises(TypeError):
+        verified.manifest_bytes[0] = 0  # type: ignore[index]
+    first_path = next(iter(verified.stream_bytes))
+    with pytest.raises(TypeError):
+        verified.stream_bytes[first_path] = b"changed"  # type: ignore[index]
+    with pytest.raises(TypeError):
+        verified.stream_bytes[first_path][0] = 0  # type: ignore[index]
+    with pytest.raises(TypeError):
+        verified.stable_snapshot[0][0] = "changed"  # type: ignore[index]
+
+
+def test_read_only_capture_verifier_isolates_caller_identity_map(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    authority, chain, _ = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+        connector_keys=("nrc_adams_aps",),
+    )
+    run = db.get(ConnectorRun, authority.run_ids["nrc_adams_aps"])
+    assert run is not None
+    db.commit()
+    assert not db.in_transaction()
+    caller_state = sqlalchemy_inspect(run)
+    caller_key = caller_state.key
+    assert caller_key is not None
+    before_keys = tuple(run.__dict__)
+    before_values = deepcopy(
+        {
+            key: value
+            for key, value in run.__dict__.items()
+            if key != "_sa_instance_state"
+        }
+    )
+    before_state_object = run.__dict__["_sa_instance_state"]
+    before_identity = caller_state.identity
+    before_expired = frozenset(caller_state.expired_attributes)
+    evidence_before = _evidence_bytes(authority.evidence_root)
+    runs_before = _connector_run_rows(db)
+    events_before = _connector_event_rows(db)
+
+    def forbidden_caller_query(*_args: Any, **_kwargs: Any) -> Any:
+        pytest.fail("verifier queried or transacted through caller session")
+
+    monkeypatch.setattr(db, "begin", forbidden_caller_query)
+    monkeypatch.setattr(db, "scalars", forbidden_caller_query)
+    monkeypatch.setattr(db, "execute", forbidden_caller_query)
+
+    verify_connector_campaign_log_capture_read_only(
+        db,
+        chain,
+        str(authority.campaign_id),
+        FINGERPRINT,
+    )
+
+    after_state = sqlalchemy_inspect(run)
+    after_values = {
+        key: value
+        for key, value in run.__dict__.items()
+        if key != "_sa_instance_state"
+    }
+    assert not db.in_transaction()
+    assert db.identity_map[caller_key] is run
+    assert after_state is caller_state
+    assert run.__dict__["_sa_instance_state"] is before_state_object
+    assert tuple(run.__dict__) == before_keys
+    assert after_values == before_values
+    assert after_state.identity == before_identity
+    assert frozenset(after_state.expired_attributes) == before_expired
+    assert _evidence_bytes(authority.evidence_root) == evidence_before
+    assert _connector_run_rows(db) == runs_before
+    assert _connector_event_rows(db) == events_before
+
+
 @pytest.mark.parametrize(
     "case",
-    ("deterministic-plus-one", "foreign-nondeterministic"),
+    (
+        "deterministic-plus-one",
+        "same-campaign-foreign",
+        "other-campaign-foreign",
+    ),
 )
-def test_read_only_capture_verifier_queries_only_two_deterministic_run_ids(
+def test_read_only_capture_verifier_enforces_exact_same_campaign_run_set(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
@@ -1085,6 +1213,15 @@ def test_read_only_capture_verifier_queries_only_two_deterministic_run_ids(
         )
     else:
         envelope = _arming_envelope(authority, "nrc_adams_aps")
+        if case == "other-campaign-foreign":
+            envelope = {
+                **envelope,
+                "campaign_id": "123e4567-e89b-42d3-a456-426614174099",
+                "campaign_fingerprint": "9" * 64,
+            }
+            envelope["arming_fingerprint"] = compute_arming_fingerprint(
+                envelope
+            )
         db.add(
             ConnectorRun(
                 connector_run_id="foreign-strict-run",
@@ -1110,28 +1247,96 @@ def test_read_only_capture_verifier_queries_only_two_deterministic_run_ids(
     runs_before = _connector_run_rows(db)
     events_before = _connector_event_rows(db)
     _close_read_transaction(db)
+    run_queries: list[tuple[str, tuple[Any, ...]]] = []
 
-    if case == "deterministic-plus-one":
-        with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
-            verify_connector_campaign_log_capture_read_only(
+    def capture_run_query(
+        _connection: Any,
+        _cursor: Any,
+        statement: str,
+        parameters: Any,
+        _context: Any,
+        _executemany: bool,
+    ) -> None:
+        normalized = " ".join(statement.lower().split())
+        if " from connector_run " in normalized:
+            run_queries.append((normalized, tuple(parameters)))
+
+    bind = db.get_bind()
+    sqlalchemy_event.listen(bind, "before_cursor_execute", capture_run_query)
+    try:
+        if case != "other-campaign-foreign":
+            with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+                verify_connector_campaign_log_capture_read_only(
+                    db,
+                    chain,
+                    str(authority.campaign_id),
+                    FINGERPRINT,
+                )
+            assert (
+                excinfo.value.code
+                == "connector_campaign_log_read_run_set_invalid"
+            )
+        else:
+            verified = verify_connector_campaign_log_capture_read_only(
                 db,
                 chain,
                 str(authority.campaign_id),
                 FINGERPRINT,
             )
-        assert excinfo.value.code == "connector_campaign_log_read_run_set_invalid"
-    else:
-        verified = verify_connector_campaign_log_capture_read_only(
-            db,
-            chain,
-            str(authority.campaign_id),
-            FINGERPRINT,
-        )
-        assert verified.seal_event_ids == sealed.event_ids
+            assert verified.seal_event_ids == sealed.event_ids
+    finally:
+        sqlalchemy_event.remove(bind, "before_cursor_execute", capture_run_query)
+    assert len(run_queries) == (
+        2 if case == "other-campaign-foreign" else 1
+    )
+    for statement, parameters in run_queries:
+        assert "connector_run.source_mode =" in statement
+        assert "connector_run.request_config_json" in statement
+        assert " limit " in statement
+        assert "strict_live_egress" in parameters
+        assert str(authority.campaign_id) in parameters
+        assert FINGERPRINT in parameters
+        assert any("campaign_id" in str(value) for value in parameters)
+        assert any("campaign_fingerprint" in str(value) for value in parameters)
+        assert len(sealed.seal.connector_run_ids) + 1 in parameters
     assert not db.in_transaction()
     assert _evidence_bytes(authority.evidence_root) == evidence_before
     assert _connector_run_rows(db) == runs_before
     assert _connector_event_rows(db) == events_before
+
+
+def test_exact_child_bounds_protected_directory_at_max_plus_one(
+    tmp_path: Path,
+) -> None:
+    from app.services import connector_campaign_log_capture as capture_service
+
+    parent = tmp_path / "bounded-parent"
+    target = parent / "target"
+    target.mkdir(parents=True)
+    ceiling = capture_service.MAX_PROTECTED_DIRECTORY_CHILDREN
+    assert ceiling == 256
+    for ordinal in range(ceiling - 1):
+        (parent / f"member-{ordinal:03}.json").write_bytes(b"{}")
+
+    assert capture_service._exact_child(
+        parent,
+        "target",
+        must_exist=True,
+        directory=True,
+    ) == target
+
+    (parent / "overflow.json").write_bytes(b"{}")
+    with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+        capture_service._exact_child(
+            parent,
+            "target",
+            must_exist=True,
+            directory=True,
+        )
+    assert (
+        excinfo.value.code
+        == "connector_campaign_log_directory_limit_exceeded"
+    )
 
 
 @pytest.mark.parametrize(
@@ -1278,6 +1483,79 @@ def test_read_only_capture_verifier_refuses_caller_transaction(
     assert db.in_transaction()
     assert run in db.dirty
     db.rollback()
+
+
+def test_read_only_capture_verifier_refuses_external_bind_transaction(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import connector_campaign_log_capture as capture_service
+
+    authority, chain, _ = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+        connector_keys=("nrc_adams_aps",),
+    )
+    _close_read_transaction(db)
+    engine = db.get_bind()
+    connection = engine.connect()  # type: ignore[union-attr]
+    external_transaction = connection.begin()
+    external_run_id = "external-uncommitted-run"
+    connection.execute(
+        ConnectorRun.__table__.insert().values(
+            connector_run_id=external_run_id,
+            connector_key="fixture",
+            source_system="fixture",
+            source_mode="public_api",
+            status="pending",
+        )
+    )
+    caller = Session(
+        bind=connection,
+        autoflush=False,
+        expire_on_commit=False,
+        future=True,
+    )
+    before_row = connection.execute(
+        select(ConnectorRun.__table__).where(
+            ConnectorRun.connector_run_id == external_run_id
+        )
+    ).mappings().one()
+
+    def forbidden_verification(*_args: Any, **_kwargs: Any) -> Any:
+        pytest.fail("verifier read through an externally transacted bind")
+
+    monkeypatch.setattr(
+        capture_service,
+        "_verify_connector_campaign_log_capture_in_owned_transaction",
+        forbidden_verification,
+    )
+    try:
+        assert not caller.in_transaction()
+        with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+            verify_connector_campaign_log_capture_read_only(
+                caller,
+                chain,
+                str(authority.campaign_id),
+                FINGERPRINT,
+            )
+        assert excinfo.value.code == "connector_campaign_log_read_transaction_active"
+        assert not caller.in_transaction()
+        assert external_transaction.is_active
+        assert connection.in_transaction()
+        after_row = connection.execute(
+            select(ConnectorRun.__table__).where(
+                ConnectorRun.connector_run_id == external_run_id
+            )
+        ).mappings().one()
+        assert after_row == before_row
+    finally:
+        caller.close()
+        if external_transaction.is_active:
+            external_transaction.rollback()
+        connection.close()
 
 
 def test_read_only_capture_verifier_rechecks_final_campaign_membership(
