@@ -2,21 +2,18 @@ from __future__ import annotations
 
 import ctypes
 import hashlib
+import json
 import math
 import os
 import re
 import subprocess
 import threading
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from ctypes import wintypes
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, BinaryIO
 from uuid import UUID
-
-from app.services.connector_egress_authorization import canonical_json_bytes
-from app.services.dual_live_runtime import WINDOWS_MIB_TCP_STATES
-
 
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _WAIT_OBJECT_0 = 0
@@ -79,6 +76,49 @@ _UDP_TABLE_OWNER_PID = 1
 _OBJECT_TYPE_INFORMATION_CLASS = 2
 _STATUS_INFO_LENGTH_MISMATCH = 0xC0000004
 _PERMITTED_INHERITED_HANDLE_TYPES = frozenset(("Event", "File"))
+WINDOWS_MIB_TCP_STATES = (
+    "MIB_TCP_STATE_CLOSED",
+    "MIB_TCP_STATE_LISTEN",
+    "MIB_TCP_STATE_SYN_SENT",
+    "MIB_TCP_STATE_SYN_RCVD",
+    "MIB_TCP_STATE_ESTAB",
+    "MIB_TCP_STATE_FIN_WAIT1",
+    "MIB_TCP_STATE_FIN_WAIT2",
+    "MIB_TCP_STATE_CLOSE_WAIT",
+    "MIB_TCP_STATE_CLOSING",
+    "MIB_TCP_STATE_LAST_ACK",
+    "MIB_TCP_STATE_TIME_WAIT",
+    "MIB_TCP_STATE_DELETE_TCB",
+)
+
+
+def _canonical_json_value(value: object) -> object:
+    if isinstance(value, Mapping):
+        result: dict[str, object] = {}
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ValueError("canonical JSON requires string object keys")
+            result[key] = _canonical_json_value(item)
+        return result
+    if isinstance(value, list):
+        return [_canonical_json_value(item) for item in value]
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            raise ValueError("canonical JSON rejects non-finite numbers")
+        return value
+    if value is None or isinstance(value, (str, int, bool)):
+        return value
+    raise TypeError(f"canonical JSON cannot encode {type(value).__name__}")
+
+
+def _canonical_json_bytes(value: object) -> bytes:
+    return json.dumps(
+        _canonical_json_value(value),
+        ensure_ascii=False,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
 
 
 class DualLiveWindowsError(ValueError):
@@ -751,7 +791,7 @@ def _open_evidence_root(path: Path) -> tuple[int, str]:
             )
         ).hexdigest()
         identity = hashlib.sha256(
-            canonical_json_bytes(
+            _canonical_json_bytes(
                 {
                     "file_id": bytes(file_id.FileId.Identifier).hex(),
                     "final_path": final_path.value.replace("\\", "/").casefold(),
@@ -949,6 +989,7 @@ def _cleanup_failed_lock_acquisition(
     campaign_mutex: int | None,
     root_owned: bool,
     campaign_owned: bool,
+    campaign_registered: bool | None = None,
 ) -> None:
     assert _kernel32 is not None
     cleanup_failed = False
@@ -980,10 +1021,14 @@ def _cleanup_failed_lock_acquisition(
 
     if cleanup_failed:
         _fail("dual_live_lock_cleanup_failed")
-    if root_registered:
+    if campaign_registered is None:
+        campaign_registered = root_registered
+    if root_registered or campaign_registered:
         with _held_lock:
-            _held_roots.discard(root_identity_sha256)
-            _held_campaigns.discard(campaign_identity_sha256)
+            if root_registered:
+                _held_roots.discard(root_identity_sha256)
+            if campaign_registered:
+                _held_campaigns.discard(campaign_identity_sha256)
 
 
 def acquire_proof_locks(
@@ -993,18 +1038,42 @@ def acquire_proof_locks(
     campaign_definition_sha256: str,
     wait_ms: int = 0,
 ) -> ProofLocks:
-    _require_windows()
-    if not isinstance(evidence_root, Path) or not evidence_root.is_absolute():
-        _fail("dual_live_windows_arguments_invalid")
-    campaign_id = _require_uuid4(campaign_id)
-    campaign_fingerprint = _require_sha256(campaign_fingerprint)
-    campaign_definition_sha256 = _require_sha256(campaign_definition_sha256)
-    if isinstance(wait_ms, bool) or not isinstance(wait_ms, int) or not 0 <= wait_ms < 2**32:
-        _fail("dual_live_windows_arguments_invalid")
+    return _acquire_proof_locks(
+        evidence_root,
+        campaign_id,
+        campaign_fingerprint,
+        campaign_definition_sha256=campaign_definition_sha256,
+        campaign_definition_sha256_resolver=None,
+        wait_ms=wait_ms,
+    )
 
-    root_directory, root_identity_sha256 = _open_evidence_root(evidence_root)
-    campaign_identity_sha256 = hashlib.sha256(
-        canonical_json_bytes(
+
+def acquire_proof_locks_staged(
+    evidence_root: Path,
+    campaign_id: str,
+    campaign_fingerprint: str,
+    campaign_definition_sha256_resolver: Callable[[], str],
+    wait_ms: int = 0,
+) -> ProofLocks:
+    return _acquire_proof_locks(
+        evidence_root,
+        campaign_id,
+        campaign_fingerprint,
+        campaign_definition_sha256=None,
+        campaign_definition_sha256_resolver=(
+            campaign_definition_sha256_resolver
+        ),
+        wait_ms=wait_ms,
+    )
+
+
+def _campaign_lock_identity_sha256(
+    campaign_id: str,
+    campaign_fingerprint: str,
+    campaign_definition_sha256: str,
+) -> str:
+    return hashlib.sha256(
+        _canonical_json_bytes(
             {
                 "campaign_definition_sha256": campaign_definition_sha256,
                 "campaign_fingerprint": campaign_fingerprint,
@@ -1012,6 +1081,44 @@ def acquire_proof_locks(
             }
         )
     ).hexdigest()
+
+
+def _acquire_proof_locks(
+    evidence_root: Path,
+    campaign_id: str,
+    campaign_fingerprint: str,
+    *,
+    campaign_definition_sha256: str | None,
+    campaign_definition_sha256_resolver: Callable[[], str] | None,
+    wait_ms: int,
+) -> ProofLocks:
+    _require_windows()
+    if not isinstance(evidence_root, Path) or not evidence_root.is_absolute():
+        _fail("dual_live_windows_arguments_invalid")
+    campaign_id = _require_uuid4(campaign_id)
+    campaign_fingerprint = _require_sha256(campaign_fingerprint)
+    if campaign_definition_sha256 is not None:
+        fixed_campaign_definition_sha256 = _require_sha256(
+            campaign_definition_sha256
+        )
+
+        def definition_resolver() -> str:
+            return fixed_campaign_definition_sha256
+
+        campaign_identity_sha256 = _campaign_lock_identity_sha256(
+            campaign_id,
+            campaign_fingerprint,
+            fixed_campaign_definition_sha256,
+        )
+    else:
+        if not callable(campaign_definition_sha256_resolver):
+            _fail("dual_live_windows_arguments_invalid")
+        definition_resolver = campaign_definition_sha256_resolver
+        campaign_identity_sha256 = ""
+    if isinstance(wait_ms, bool) or not isinstance(wait_ms, int) or not 0 <= wait_ms < 2**32:
+        _fail("dual_live_windows_arguments_invalid")
+
+    root_directory, root_identity_sha256 = _open_evidence_root(evidence_root)
     sid_buffer: ctypes.Array[ctypes.c_char] | None = None
     security_descriptor = wintypes.LPVOID()
     boundary_descriptor: int | None = None
@@ -1021,16 +1128,22 @@ def acquire_proof_locks(
     root_owned = False
     campaign_owned = False
     root_registered = False
+    campaign_registered = False
     try:
         with _held_lock:
             if (
                 root_identity_sha256 in _held_roots
-                or campaign_identity_sha256 in _held_campaigns
+                or (
+                    campaign_identity_sha256
+                    and campaign_identity_sha256 in _held_campaigns
+                )
             ):
                 _fail("dual_live_lock_busy")
-            _held_roots.add(root_identity_sha256)
-            _held_campaigns.add(campaign_identity_sha256)
             root_registered = True
+            _held_roots.add(root_identity_sha256)
+            if campaign_identity_sha256:
+                campaign_registered = True
+                _held_campaigns.add(campaign_identity_sha256)
         sid_buffer, sid_text = _current_user_sid()
         sddl = f"D:P(A;;GA;;;SY)(A;;GA;;;{sid_text})"
         descriptor_size = wintypes.DWORD()
@@ -1083,6 +1196,24 @@ def acquire_proof_locks(
         root_owned = True
         if root_abandoned:
             _fail("dual_live_lock_abandoned")
+        resolved_campaign_definition_sha256 = _require_sha256(
+            definition_resolver()
+        )
+        resolved_campaign_identity_sha256 = _campaign_lock_identity_sha256(
+            campaign_id,
+            campaign_fingerprint,
+            resolved_campaign_definition_sha256,
+        )
+        if campaign_registered:
+            if resolved_campaign_identity_sha256 != campaign_identity_sha256:
+                _fail("dual_live_windows_arguments_invalid")
+        else:
+            with _held_lock:
+                if resolved_campaign_identity_sha256 in _held_campaigns:
+                    _fail("dual_live_lock_busy")
+                campaign_identity_sha256 = resolved_campaign_identity_sha256
+                campaign_registered = True
+                _held_campaigns.add(campaign_identity_sha256)
         campaign_mutex = _kernel32.CreateMutexW(
             ctypes.byref(security_attributes),
             False,
@@ -1122,6 +1253,7 @@ def acquire_proof_locks(
             campaign_mutex=int(campaign_mutex) if campaign_mutex else None,
             root_owned=root_owned,
             campaign_owned=campaign_owned,
+            campaign_registered=campaign_registered,
         )
         raise
 
@@ -1401,7 +1533,7 @@ def _open_executable_custody(path_text: object) -> _ExecutableCustody:
             _fail("dual_live_executable_invalid")
         sha256 = _hash_file_handle(owned_handle)
         file_identity_sha256 = hashlib.sha256(
-            canonical_json_bytes(
+            _canonical_json_bytes(
                 {
                     "file_attributes": int(attributes.FileAttributes),
                     "file_id": file_id_hex,
@@ -1508,7 +1640,7 @@ def _configure_job(job_handle: int) -> str:
     if not flags & _JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE or flags & forbidden:
         _fail("dual_live_job_policy_invalid")
     return hashlib.sha256(
-        canonical_json_bytes({"limit_flags": flags})
+        _canonical_json_bytes({"limit_flags": flags})
     ).hexdigest()
 
 
@@ -1909,12 +2041,12 @@ def create_child_in_job(
             _fail("dual_live_process_identity_indeterminate")
         pid = int(process_info.dwProcessId)
         process_creation_identity_sha256 = hashlib.sha256(
-            canonical_json_bytes(
+            _canonical_json_bytes(
                 {"creation_filetime": creation_filetime, "pid": pid}
             )
         ).hexdigest()
         process_boot_id = hashlib.sha256(
-            canonical_json_bytes(
+            _canonical_json_bytes(
                 {
                     "executable_sha256": executable_sha256,
                     "pid": pid,
@@ -2024,7 +2156,7 @@ def _validate_retained_processes(child: JobChild) -> None:
             _fail("dual_live_quiescence_indeterminate")
         current_creation = _process_creation_filetime(process_handle)
         expected_identity = hashlib.sha256(
-            canonical_json_bytes(
+            _canonical_json_bytes(
                 {"creation_filetime": current_creation, "pid": pid}
             )
         ).hexdigest()
@@ -2095,7 +2227,7 @@ def _retain_active_job_processes(
             if first_creation != second_creation:
                 _fail("dual_live_quiescence_indeterminate")
             identity = hashlib.sha256(
-                canonical_json_bytes(
+                _canonical_json_bytes(
                     {"creation_filetime": first_creation, "pid": pid}
                 )
             ).hexdigest()
@@ -2353,7 +2485,7 @@ def prove_child_quiescence(child: JobChild) -> dict[str, Any]:
 
     retained_identity_hashes = sorted(
         hashlib.sha256(
-            canonical_json_bytes(
+            _canonical_json_bytes(
                 {
                     "executable_sha256": retained[2],
                     "pid": pid,
@@ -2364,12 +2496,12 @@ def prove_child_quiescence(child: JobChild) -> dict[str, Any]:
         for pid, retained in child._retained_processes.items()
     )
     process_identity_sha256 = hashlib.sha256(
-        canonical_json_bytes(retained_identity_hashes)
+        _canonical_json_bytes(retained_identity_hashes)
     ).hexdigest()
     return {
         "active_process_count": 0,
         "process_list_sha256": hashlib.sha256(
-            canonical_json_bytes([])
+            _canonical_json_bytes([])
         ).hexdigest(),
         "tcp4_state_counts": tcp4_counts,
         "tcp6_state_counts": tcp6_counts,

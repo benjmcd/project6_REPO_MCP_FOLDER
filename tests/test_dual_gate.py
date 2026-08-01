@@ -27,10 +27,14 @@ from app.services.dual_live_windows import (  # noqa: E402
     JobChild,
     ProofLocks,
     acquire_proof_locks,
+    acquire_proof_locks_staged,
     create_child_in_job,
     prove_child_quiescence,
 )
 from app.services import dual_live_windows  # noqa: E402
+from app.services.connector_egress_authorization import (  # noqa: E402
+    canonical_json_bytes as framework_canonical_json_bytes,
+)
 from app.services.dual_live_runtime import WINDOWS_MIB_TCP_STATES  # noqa: E402
 
 
@@ -70,9 +74,11 @@ ALLOWED_CHANGED_PRODUCTION_PATHS = frozenset(
         "backend/app/core/config.py",
         "backend/app/services/connector_egress_authorization.py",
         "backend/app/services/connector_egress_transport.py",
+        "backend/app/services/connectors_nrc_adams.py",
         "backend/app/services/connector_egress_arming.py",
         "backend/app/services/connector_campaign_log_capture.py",
         "backend/app/services/dual_live_evaluator.py",
+        "backend/app/services/nrc_aps_phase_b_linkage.py",
         "tools/dual_live_gate.py",
         "project6.ps1",
     )
@@ -265,6 +271,268 @@ def test_proof_locks_are_root_then_campaign_and_busy_refuses(tmp_path: Path) -> 
                 campaign_fingerprint=CAMPAIGN_FINGERPRINT,
                 campaign_definition_sha256=DEFINITION_SHA,
             )
+
+
+def test_dual_live_windows_import_is_transitive_stdlib_only() -> None:
+    probe = """
+import json
+import sys
+from app.services import dual_live_windows
+print(json.dumps({
+    "config": "app.core.config" in sys.modules,
+    "connector": any(name.startswith("app.services.connector_") for name in sys.modules),
+    "runtime": "app.services.dual_live_runtime" in sys.modules,
+    "sqlalchemy": any(name == "sqlalchemy" or name.startswith("sqlalchemy.") for name in sys.modules),
+}))
+"""
+    environment = dict(os.environ)
+    environment["PYTHONPATH"] = str(BACKEND)
+    completed = subprocess.run(
+        [sys.executable, "-B", "-c", probe],
+        cwd=ROOT,
+        env=environment,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout) == {
+        "config": False,
+        "connector": False,
+        "runtime": False,
+        "sqlalchemy": False,
+    }
+    assert completed.stderr == ""
+
+
+@pytest.mark.parametrize(
+    "preimage",
+    (
+        {
+            "file_id": "00ff",
+            "final_path": "c:/proof/\u2603",
+            "security_descriptor_sha256": "a" * 64,
+            "volume_serial_number": 17,
+        },
+        {
+            "campaign_definition_sha256": "b" * 64,
+            "campaign_fingerprint": "a" * 64,
+            "campaign_id": CAMPAIGN_ID,
+        },
+        {
+            "file_attributes": 32,
+            "file_id": "00ff",
+            "final_path": "c:/python.exe",
+            "volume_serial_number": 17,
+        },
+        {"limit_flags": 8192},
+        {"creation_filetime": 1337, "pid": 42},
+        {
+            "executable_sha256": "c" * 64,
+            "pid": 42,
+            "process_creation_identity_sha256": "d" * 64,
+            "runtime_instance_id": RUNTIME_INSTANCE_ID,
+            "wrapper_nonce_sha256": WRAPPER_NONCE_SHA,
+        },
+        {
+            "executable_sha256": "c" * 64,
+            "pid": 42,
+            "process_creation_identity_sha256": "d" * 64,
+        },
+        ["a" * 64, "b" * 64],
+        [],
+    ),
+)
+def test_dual_live_windows_canonical_hash_preimages_match_framework(
+    preimage: object,
+) -> None:
+    assert dual_live_windows._canonical_json_bytes(
+        preimage
+    ) == framework_canonical_json_bytes(preimage)
+
+
+def test_dual_live_windows_local_canonical_json_is_narrow_and_tcp_states_match(
+) -> None:
+    with pytest.raises(ValueError, match="string object keys"):
+        dual_live_windows._canonical_json_bytes({1: "value"})
+    with pytest.raises(TypeError, match="cannot encode tuple"):
+        dual_live_windows._canonical_json_bytes(("not", "a", "preimage"))
+    with pytest.raises(ValueError, match="non-finite"):
+        dual_live_windows._canonical_json_bytes({"value": float("inf")})
+    assert dual_live_windows.WINDOWS_MIB_TCP_STATES == WINDOWS_MIB_TCP_STATES
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_staged_proof_lock_resolves_once_after_root_owned_and_matches_legacy(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    original_wait = dual_live_windows._wait_mutex
+
+    def recording_wait(handle: int, wait_ms: int) -> bool:
+        result = original_wait(handle, wait_ms)
+        events.append("root_wait" if not events else "campaign_wait")
+        return result
+
+    def resolve() -> str:
+        events.append("resolve")
+        assert len(dual_live_windows._held_roots) == 1
+        assert not dual_live_windows._held_campaigns
+        return DEFINITION_SHA
+
+    monkeypatch.setattr(dual_live_windows, "_wait_mutex", recording_wait)
+    with acquire_proof_locks_staged(
+        tmp_path,
+        CAMPAIGN_ID,
+        CAMPAIGN_FINGERPRINT,
+        resolve,
+    ) as staged:
+        staged_campaign_identity = staged.campaign_identity_sha256
+    assert events == ["root_wait", "resolve", "campaign_wait"]
+
+    monkeypatch.setattr(dual_live_windows, "_wait_mutex", original_wait)
+    with acquire_proof_locks(
+        tmp_path,
+        CAMPAIGN_ID,
+        CAMPAIGN_FINGERPRINT,
+        DEFINITION_SHA,
+    ) as legacy:
+        assert legacy.campaign_identity_sha256 == staged_campaign_identity
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+@pytest.mark.parametrize("mode", ("invalid", "raise"))
+def test_staged_proof_lock_resolver_failure_cleans_root_without_campaign(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+) -> None:
+    created_mutex_names: list[str] = []
+    original_create_mutex = dual_live_windows._kernel32.CreateMutexW
+
+    def recording_create_mutex(*args: object) -> int:
+        created_mutex_names.append(str(args[2]))
+        return int(original_create_mutex(*args))
+
+    def resolve() -> str:
+        if mode == "raise":
+            raise RuntimeError("resolver failed")
+        return "not-a-digest"
+
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "CreateMutexW",
+        recording_create_mutex,
+    )
+    expected = RuntimeError if mode == "raise" else DualLiveWindowsError
+    with pytest.raises(expected):
+        acquire_proof_locks_staged(
+            tmp_path,
+            CAMPAIGN_ID,
+            CAMPAIGN_FINGERPRINT,
+            resolve,
+        )
+
+    assert len(created_mutex_names) == 1
+    assert "\\root-" in created_mutex_names[0]
+    assert not dual_live_windows._held_roots
+    assert not dual_live_windows._held_campaigns
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "CreateMutexW",
+        original_create_mutex,
+    )
+    with acquire_proof_locks(
+        tmp_path,
+        CAMPAIGN_ID,
+        CAMPAIGN_FINGERPRINT,
+        DEFINITION_SHA,
+    ):
+        pass
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+@pytest.mark.parametrize(
+    ("root_outcome", "expected_code"),
+    (
+        ("busy", "dual_live_lock_busy"),
+        ("abandoned", "dual_live_lock_abandoned"),
+        ("access", "dual_live_lock_access_refused"),
+    ),
+)
+def test_staged_proof_lock_root_refusal_never_calls_resolver_and_cleans(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    root_outcome: str,
+    expected_code: str,
+) -> None:
+    resolver_calls = 0
+    original_wait = dual_live_windows._wait_mutex
+
+    def refuse_root(handle: int, wait_ms: int) -> bool:
+        if root_outcome == "busy":
+            raise DualLiveWindowsError("dual_live_lock_busy")
+        if root_outcome == "access":
+            raise DualLiveWindowsError("dual_live_lock_access_refused")
+        assert original_wait(handle, wait_ms) is False
+        return True
+
+    def resolve() -> str:
+        nonlocal resolver_calls
+        resolver_calls += 1
+        return DEFINITION_SHA
+
+    monkeypatch.setattr(dual_live_windows, "_wait_mutex", refuse_root)
+    with pytest.raises(DualLiveWindowsError, match=expected_code):
+        acquire_proof_locks_staged(
+            tmp_path,
+            CAMPAIGN_ID,
+            CAMPAIGN_FINGERPRINT,
+            resolve,
+        )
+
+    assert resolver_calls == 0
+    assert not dual_live_windows._held_roots
+    assert not dual_live_windows._held_campaigns
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_staged_proof_lock_root_acl_refusal_never_calls_resolver_and_cleans(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    resolver_calls = 0
+    original_verify = dual_live_windows._verify_private_handle
+
+    def refuse_root_acl(handle: int, user_sid: str, expected_mask: int) -> None:
+        if expected_mask == dual_live_windows._MUTEX_ALL_ACCESS:
+            raise DualLiveWindowsError("dual_live_lock_acl_mismatch")
+        original_verify(handle, user_sid, expected_mask)
+
+    def resolve() -> str:
+        nonlocal resolver_calls
+        resolver_calls += 1
+        return DEFINITION_SHA
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_verify_private_handle",
+        refuse_root_acl,
+    )
+    with pytest.raises(DualLiveWindowsError, match="dual_live_lock_acl_mismatch"):
+        acquire_proof_locks_staged(
+            tmp_path,
+            CAMPAIGN_ID,
+            CAMPAIGN_FINGERPRINT,
+            resolve,
+        )
+
+    assert resolver_calls == 0
+    assert not dual_live_windows._held_roots
+    assert not dual_live_windows._held_campaigns
 
 
 _LOCK_PROBE = """
@@ -1283,7 +1551,7 @@ def test_job_start_evidence_projects_retained_creation_facts_after_close() -> No
         Path(sys.executable).read_bytes()
     ).hexdigest()
     expected_job_policy_sha256 = hashlib.sha256(
-        dual_live_windows.canonical_json_bytes(
+        dual_live_windows._canonical_json_bytes(
             {"limit_flags": dual_live_windows._JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE}
         )
     ).hexdigest()
@@ -1332,7 +1600,7 @@ def test_job_child_exit_is_identity_bound(exit_code: int) -> None:
         assert len(child.process_creation_identity_sha256) == 64
         executable_sha256 = hashlib.sha256(Path(sys.executable).read_bytes()).hexdigest()
         assert child.process_boot_id == hashlib.sha256(
-            dual_live_windows.canonical_json_bytes(
+            dual_live_windows._canonical_json_bytes(
                 {
                     "executable_sha256": executable_sha256,
                     "pid": child.pid,
@@ -1873,7 +2141,7 @@ def test_nested_job_incompatibility_refuses_without_child_effect(
             ctypes.sizeof(policy),
         )
         return hashlib.sha256(
-            dual_live_windows.canonical_json_bytes(
+            dual_live_windows._canonical_json_bytes(
                 {"limit_flags": int(policy.BasicLimitInformation.LimitFlags)}
             )
         ).hexdigest()
@@ -2135,7 +2403,7 @@ os._exit(0)
             process_handle
         )
         assert record["process_creation_identity_sha256"] == hashlib.sha256(
-            dual_live_windows.canonical_json_bytes(
+            dual_live_windows._canonical_json_bytes(
                 {"creation_filetime": creation_filetime, "pid": record["pid"]}
             )
         ).hexdigest()
