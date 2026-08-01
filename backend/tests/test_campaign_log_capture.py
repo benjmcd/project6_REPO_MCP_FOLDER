@@ -26,6 +26,11 @@ from app.services.connector_campaign_log_capture import (
     begin_connector_campaign_log_capture,
     seal_connector_campaign_log_capture,
 )
+from app.services.dual_live_runtime import (
+    RuntimeIdentity,
+    RuntimeRecordWriter,
+    read_runtime_records,
+)
 from app.services.connector_egress_arming import (
     canonical_arming_payload,
     compute_arming_fingerprint,
@@ -682,6 +687,178 @@ def test_dual_capture_seals_exact_bytes_and_two_events_once(
                 "metrics_json": expected_metrics,
                 "created_at": START + timedelta(seconds=11),
             }
+
+
+@pytest.mark.parametrize(
+    "connector_keys",
+    (
+        ("nrc_adams_aps",),
+        ("nrc_adams_aps", "sciencebase_mcs"),
+    ),
+    ids=("nrc-only", "two-run"),
+)
+def test_task5_controller_closeout_seals_existing_runtime_records_once(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    connector_keys: tuple[str, ...],
+) -> None:
+    authority = _authority_fixture(tmp_path)
+    _install_authority(monkeypatch, authority)
+    index_path = authority.verified_campaign.index_chain.head_path
+    index_path.parent.mkdir()
+    index_bytes = canonical_json_bytes(
+        {
+            "revision": 1,
+            "sha256": INDEX_SHA256,
+        }
+    )
+    index_path.write_bytes(index_bytes)
+
+    capture = begin_connector_campaign_log_capture(
+        campaign_id=authority.campaign_id,
+        expected_campaign_fingerprint=FINGERPRINT,
+        expected_code_revision=CODE_REVISION,
+        now=START,
+    )
+    assert tuple(writer.stream_class for writer in capture.writers) == (
+        "app",
+        "http",
+        "stdout",
+        "stderr",
+    )
+
+    identity = RuntimeIdentity(
+        runtime_instance_id=str(CAMPAIGN_ID),
+        wrapper_nonce_sha256="1" * 64,
+        code_revision=CODE_REVISION,
+        wrapper_image_sha256="2" * 64,
+        interpreter_image_sha256="3" * 64,
+        root_mutex_identity_sha256="4" * 64,
+        campaign_mutex_identity_sha256="5" * 64,
+    )
+    runtime_writer = RuntimeRecordWriter(
+        capture.writers[0].write,
+        identity=identity,
+    )
+    runtime_records = (
+        runtime_writer.append(
+            phase="wrapper",
+            event="runtime_start",
+            process_boot_id=None,
+            payload={
+                "code_revision": CODE_REVISION,
+                "wrapper_image_sha256": identity.wrapper_image_sha256,
+                "interpreter_image_sha256": (
+                    identity.interpreter_image_sha256
+                ),
+                "mutex_identity_sha256": "6" * 64,
+            },
+        ),
+        runtime_writer.append(
+            phase="wrapper",
+            event="runtime_complete",
+            process_boot_id=None,
+            payload={
+                "phase_a_result_sha256": "7" * 64,
+                "phase_b_result_sha256": "8" * 64,
+                "terminal_state": "completed",
+            },
+        ),
+    )
+    app_bytes = b"".join(
+        canonical_json_bytes(record) + b"\n" for record in runtime_records
+    )
+    payload_by_stream = {
+        "http": b"",
+        "stdout": b"phase output\n",
+        "stderr": b"",
+    }
+    for writer in capture.writers[1:]:
+        payload = payload_by_stream[writer.stream_class]
+        if payload:
+            assert writer.write(payload) == len(payload)
+    for writer in capture.writers:
+        writer.flush()
+    for writer in capture.writers:
+        writer.close()
+    assert all(writer.closed for writer in capture.writers)
+
+    _insert_terminal_runs(
+        db,
+        authority,
+        connector_keys=connector_keys,
+    )
+    run_rows_before = _connector_run_rows(db)
+    result = seal_connector_campaign_log_capture(
+        db,
+        capture=capture,
+        runtime_stopped_at=START + timedelta(seconds=10),
+        now=START + timedelta(seconds=11),
+    )
+
+    expected_run_ids = tuple(
+        sorted(authority.run_ids[key] for key in connector_keys)
+    )
+    expected_event_ids = tuple(
+        sorted(_seal_event_id(run_id) for run_id in expected_run_ids)
+    )
+    assert result.seal.connector_run_ids == expected_run_ids
+    assert result.event_ids == expected_event_ids
+    assert _connector_run_rows(db) == run_rows_before
+    manifest_path, seal_path = _artifact_paths(authority)
+    app_path = manifest_path.parent / "app.jsonl"
+    assert app_path.read_bytes() == app_bytes
+    assert read_runtime_records(app_path.read_bytes()) == runtime_records
+    app_manifest = next(
+        item for item in result.manifest.files if item.stream_class == "app"
+    )
+    assert app_manifest.byte_count == len(app_bytes)
+    assert app_manifest.sha256 == hashlib.sha256(app_bytes).hexdigest()
+    assert tuple(item.stream_class for item in result.manifest.files) == (
+        "app",
+        "http",
+        "stdout",
+        "stderr",
+    )
+    assert sorted(path.name for path in manifest_path.parent.iterdir()) == [
+        "app.jsonl",
+        "http.jsonl",
+        "manifest.json",
+        "stderr.log",
+        "stdout.log",
+    ]
+    sealed_events = db.scalars(
+        select(ConnectorRunEvent).where(
+            ConnectorRunEvent.event_type == "campaign_log_capture_sealed"
+        )
+    ).all()
+    assert tuple(
+        sorted(event.connector_run_event_id for event in sealed_events)
+    ) == expected_event_ids
+    assert tuple(
+        sorted(event.connector_run_id for event in sealed_events)
+    ) == expected_run_ids
+    if connector_keys == ("nrc_adams_aps",):
+        assert db.get(
+            ConnectorRun,
+            authority.run_ids["sciencebase_mcs"],
+        ) is None
+
+    manifest_bytes = manifest_path.read_bytes()
+    seal_bytes = seal_path.read_bytes()
+    with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+        begin_connector_campaign_log_capture(
+            campaign_id=authority.campaign_id,
+            expected_campaign_fingerprint=FINGERPRINT,
+            expected_code_revision=CODE_REVISION,
+            now=START,
+        )
+    assert excinfo.value.code == "connector_campaign_log_path_conflict"
+    assert manifest_path.read_bytes() == manifest_bytes
+    assert seal_path.read_bytes() == seal_bytes
+    assert index_path.read_bytes() == index_bytes
+    assert tuple(index_path.parent.iterdir()) == (index_path,)
 
 
 def test_nrc_only_capture_does_not_fabricate_sciencebase(
