@@ -845,7 +845,18 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
             authority.run_ids["sciencebase_mcs"],
         ) is None
 
-    manifest_bytes = manifest_path.read_bytes()
+    campaign_file_bytes = {
+        path.name: path.read_bytes()
+        for path in manifest_path.parent.iterdir()
+        if path.is_file()
+    }
+    assert tuple(sorted(campaign_file_bytes)) == (
+        "app.jsonl",
+        "http.jsonl",
+        "manifest.json",
+        "stderr.log",
+        "stdout.log",
+    )
     seal_bytes = seal_path.read_bytes()
     with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
         begin_connector_campaign_log_capture(
@@ -855,7 +866,11 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
             now=START,
         )
     assert excinfo.value.code == "connector_campaign_log_path_conflict"
-    assert manifest_path.read_bytes() == manifest_bytes
+    assert {
+        path.name: path.read_bytes()
+        for path in manifest_path.parent.iterdir()
+        if path.is_file()
+    } == campaign_file_bytes
     assert seal_path.read_bytes() == seal_bytes
     assert index_path.read_bytes() == index_bytes
     assert tuple(index_path.parent.iterdir()) == (index_path,)
