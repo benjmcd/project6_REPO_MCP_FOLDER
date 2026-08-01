@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import logging
 import math
+import os
 import re
 import threading
 import time
@@ -339,7 +341,7 @@ class PhaseControlState:
     def consume_frame(self, reader: BinaryIO) -> str:
         try:
             payload = _read_control_frame(reader)
-        except DualLiveRuntimeError as exc:
+        except Exception as exc:
             self._protocol_failure("dual_live_phase_control_invalid", cause=exc)
         if payload is None:
             self._protocol_failure("dual_live_phase_control_invalid")
@@ -530,7 +532,7 @@ class RuntimeRecordWriter:
 
     def __init__(
         self,
-        sink: Callable[[bytes], int | None],
+        sink: Callable[[bytes], int],
         *,
         identity: RuntimeIdentity,
     ) -> None:
@@ -602,7 +604,7 @@ class RuntimeRecordWriter:
                 written = self._sink(encoded)
             except Exception as exc:
                 raise DualLiveRuntimeError("dual_live_runtime_writer_failure") from exc
-            if written is not None and (
+            if (
                 isinstance(written, bool)
                 or not isinstance(written, int)
                 or written != len(encoded)
@@ -711,10 +713,11 @@ def _validate_frame_payload(
         value = strict_json_loads(payload)
     except (TypeError, ValueError):
         return
+    schema_id = value.get("schema_id") if isinstance(value, dict) else None
     if (
-        isinstance(value, dict)
-        and value.get("schema_id") in _RESERVED_CAPTURE_SCHEMA_IDS
-        and value.get("schema_id") not in allowed_reserved_schema_ids
+        isinstance(schema_id, str)
+        and schema_id in _RESERVED_CAPTURE_SCHEMA_IDS
+        and schema_id not in allowed_reserved_schema_ids
     ):
         _fail("dual_live_child_reserved_schema")
 
@@ -1011,6 +1014,29 @@ def decode_child_status_frame(
     return dict(value)
 
 
+def _writer_destination_identity(writer: BinaryIO) -> tuple[object, ...]:
+    if isinstance(writer, io.BytesIO):
+        return ("object", id(writer))
+    try:
+        fileno = getattr(writer, "fileno", None)
+    except Exception as exc:
+        raise DualLiveRuntimeError("dual_live_pump_writer_invalid") from exc
+    if fileno is None:
+        _fail("dual_live_pump_writer_invalid")
+    if not callable(fileno):
+        _fail("dual_live_pump_writer_invalid")
+    try:
+        descriptor = fileno()
+        if type(descriptor) is not int or descriptor < 0:
+            _fail("dual_live_pump_writer_invalid")
+        destination = os.fstat(descriptor)
+    except DualLiveRuntimeError:
+        raise
+    except Exception as exc:
+        raise DualLiveRuntimeError("dual_live_pump_writer_invalid") from exc
+    return ("file", int(destination.st_dev), int(destination.st_ino))
+
+
 class LockedCampaignSink:
     """Serialize all wrapper writes to one capture writer."""
 
@@ -1050,8 +1076,6 @@ class LockedCampaignSink:
                 self._failed = True
                 self._stop_latch.latch("writer_failure")
                 raise DualLiveRuntimeError("dual_live_pump_write_failed") from exc
-            if written is None:
-                return len(content)
             if (
                 isinstance(written, bool)
                 or not isinstance(written, int)
@@ -1068,12 +1092,17 @@ class FourStreamPumpGroup:
 
     __slots__ = (
         "_budget",
+        "_cancel_errors",
+        "_cancel_pump_errors",
+        "_cancel_started",
+        "_cancel_threads",
         "_errors",
         "_errors_lock",
         "_expected_status_nonce_sha256",
         "_expected_status_phase",
         "_expected_status_process_boot_id",
         "_http_frame_validator",
+        "_join_active",
         "_lifecycle_lock",
         "_next_status_ordinal",
         "_readers",
@@ -1117,9 +1146,16 @@ class FourStreamPumpGroup:
         ):
             _fail("dual_live_pump_reader_invalid")
         copied_writers = dict(writers)
-        if len({id(writer) for writer in copied_writers.values()}) != len(
-            PIPE_STREAM_CLASSES
+        if any(
+            not callable(getattr(writer, "write", None))
+            for writer in copied_writers.values()
         ):
+            _fail("dual_live_pump_writer_invalid")
+        writer_destinations = tuple(
+            _writer_destination_identity(copied_writers[stream])
+            for stream in PIPE_STREAM_CLASSES
+        )
+        if len(set(writer_destinations)) != len(PIPE_STREAM_CLASSES):
             _fail("dual_live_pump_writer_alias_invalid")
         self._readers = copied_readers
         self._sinks = {
@@ -1138,10 +1174,15 @@ class FourStreamPumpGroup:
         self._next_status_ordinal = 1
         self._budget = PipeFrameBudget()
         self._errors: dict[str, BaseException] = {}
+        self._cancel_errors: dict[str, BaseException] = {}
+        self._cancel_pump_errors: dict[str, BaseException] = {}
         self._errors_lock = threading.Lock()
         self._lifecycle_lock = threading.Lock()
         self._started = False
+        self._join_active = False
+        self._cancel_started = False
         self._threads: tuple[threading.Thread, ...] = ()
+        self._cancel_threads: tuple[threading.Thread, ...] = ()
 
     @property
     def threads_alive(self) -> tuple[str, ...]:
@@ -1177,7 +1218,12 @@ class FourStreamPumpGroup:
                 )
                 self._next_status_ordinal += 1
                 self._budget.consume(stream, len(payload), emitted_bytes=0)
-                result = self._status_callback(status)
+                try:
+                    result = self._status_callback(status)
+                except Exception as exc:
+                    raise DualLiveRuntimeError(
+                        "dual_live_child_status_callback_invalid"
+                    ) from exc
                 if result is not None:
                     _fail("dual_live_child_status_callback_invalid")
                 return
@@ -1185,7 +1231,12 @@ class FourStreamPumpGroup:
                 _fail("dual_live_app_frame_reserved_schema")
             output = payload + b"\n"
         elif stream == "http":
-            result = self._http_frame_validator(payload)
+            try:
+                result = self._http_frame_validator(payload)
+            except Exception as exc:
+                raise DualLiveRuntimeError(
+                    "dual_live_http_frame_validator_invalid"
+                ) from exc
             if result is not None:
                 _fail("dual_live_http_frame_validator_invalid")
             output = payload + b"\n"
@@ -1216,35 +1267,79 @@ class FourStreamPumpGroup:
                 self._write_frame(stream, payload)
         except BaseException as exc:
             with self._errors_lock:
-                self._errors.setdefault(stream, exc)
-            self._stop_latch.latch("pump_failure")
+                if self._cancel_started:
+                    self._cancel_pump_errors.setdefault(stream, exc)
+                else:
+                    self._errors.setdefault(stream, exc)
+                    self._stop_latch.latch("pump_failure")
 
-    def _primary_error(self) -> BaseException | None:
+    def _error_snapshot(self) -> tuple[tuple[str, BaseException], ...]:
         with self._errors_lock:
-            for stream in PIPE_STREAM_CLASSES:
-                error = self._errors.get(stream)
-                if error is not None:
-                    return error
-        return None
+            return tuple(
+                (stream, self._errors[stream])
+                for stream in PIPE_STREAM_CLASSES
+                if stream in self._errors
+            )
+
+    def _cancel_error_snapshot(self) -> tuple[tuple[str, BaseException], ...]:
+        with self._errors_lock:
+            return tuple(
+                (stream, self._cancel_errors[stream])
+                for stream in PIPE_STREAM_CLASSES
+                if stream in self._cancel_errors
+            )
 
     def _join_until(self, deadline: float) -> None:
         for thread in self._threads:
             thread.join(max(0.0, deadline - time.monotonic()))
 
-    def _cancel_readers(self) -> BaseException | None:
-        first_error: BaseException | None = None
-        closed_ids: set[int] = set()
+    def _join_cancel_until(self, deadline: float) -> None:
+        for thread in self._cancel_threads:
+            thread.join(max(0.0, deadline - time.monotonic()))
+
+    def _cancel_reader(self, stream: str, reader: BinaryIO) -> None:
+        try:
+            reader.close()
+        except Exception as exc:
+            with self._errors_lock:
+                self._cancel_errors.setdefault(stream, exc)
+
+    def _begin_cancellation(self) -> None:
+        with self._errors_lock:
+            if self._cancel_started:
+                return
+            if not self._errors:
+                self._stop_latch.latch("timeout")
+            self._cancel_started = True
+        unique_readers: list[tuple[str, BinaryIO]] = []
+        seen_reader_ids: set[int] = set()
         for stream in PIPE_STREAM_CLASSES:
             reader = self._readers[stream]
-            if id(reader) in closed_ids:
+            if id(reader) in seen_reader_ids:
                 continue
-            closed_ids.add(id(reader))
-            try:
-                reader.close()
-            except Exception as exc:
-                if first_error is None:
-                    first_error = exc
-        return first_error
+            seen_reader_ids.add(id(reader))
+            unique_readers.append((stream, reader))
+        self._cancel_threads = tuple(
+            threading.Thread(
+                target=self._cancel_reader,
+                args=(stream, reader),
+                name=f"dual-live-{stream}-cancel",
+                daemon=True,
+            )
+            for stream, reader in unique_readers
+        )
+        for thread in self._cancel_threads:
+            thread.start()
+
+    @staticmethod
+    def _cancel_failure_cause(
+        cancel_errors: tuple[tuple[str, BaseException], ...],
+    ) -> DualLiveRuntimeError:
+        if not cancel_errors:
+            return DualLiveRuntimeError("dual_live_pump_cancel_stuck")
+        failure = DualLiveRuntimeError("dual_live_pump_cancel_reader_failed")
+        failure.__cause__ = cancel_errors[0][1]
+        return failure
 
     def start(self) -> None:
         with self._lifecycle_lock:
@@ -1273,28 +1368,51 @@ class FourStreamPumpGroup:
                 or timeout < 0
             ):
                 _fail("dual_live_pump_join_invalid")
+            if self._join_active:
+                _fail("dual_live_pump_join_in_progress")
+            self._join_active = True
+        try:
             self._join_until(time.monotonic() + timeout)
-            primary_error = self._primary_error()
             alive = any(thread.is_alive() for thread in self._threads)
-            if alive:
-                if primary_error is None:
-                    self._stop_latch.latch("timeout")
-                cancel_error = self._cancel_readers()
-                self._join_until(time.monotonic() + PUMP_CANCEL_JOIN_SECONDS)
-                still_alive = any(thread.is_alive() for thread in self._threads)
-                if primary_error is not None:
-                    raise DualLiveRuntimeError("dual_live_pump_failed") from (
-                        primary_error
-                    )
-                if still_alive:
-                    raise DualLiveRuntimeError("dual_live_pump_cancel_failed") from (
-                        cancel_error
-                    )
-                raise DualLiveRuntimeError("dual_live_pump_join_timeout") from (
-                    cancel_error
+            if not alive:
+                pump_errors = self._error_snapshot()
+                cancel_errors = self._cancel_error_snapshot()
+                cancel_alive = any(
+                    thread.is_alive() for thread in self._cancel_threads
                 )
-            if primary_error is not None:
-                raise DualLiveRuntimeError("dual_live_pump_failed") from primary_error
+                if cancel_alive or cancel_errors:
+                    raise DualLiveRuntimeError(
+                        "dual_live_pump_cancel_failed"
+                    ) from self._cancel_failure_cause(cancel_errors)
+                if pump_errors:
+                    raise DualLiveRuntimeError("dual_live_pump_failed") from (
+                        pump_errors[0][1]
+                    )
+                return
+
+            self._begin_cancellation()
+            cancel_deadline = time.monotonic() + PUMP_CANCEL_JOIN_SECONDS
+            self._join_until(cancel_deadline)
+            self._join_cancel_until(cancel_deadline)
+
+            final_pump_errors = self._error_snapshot()
+            cancel_errors = self._cancel_error_snapshot()
+            still_alive = any(thread.is_alive() for thread in self._threads)
+            cancel_alive = any(
+                thread.is_alive() for thread in self._cancel_threads
+            )
+            if still_alive or cancel_alive or cancel_errors:
+                raise DualLiveRuntimeError("dual_live_pump_cancel_failed") from (
+                    self._cancel_failure_cause(cancel_errors)
+                )
+            if final_pump_errors:
+                raise DualLiveRuntimeError("dual_live_pump_failed") from (
+                    final_pump_errors[0][1]
+                )
+            raise DualLiveRuntimeError("dual_live_pump_join_timeout")
+        finally:
+            with self._lifecycle_lock:
+                self._join_active = False
 
 
 class CampaignPipeSink:
@@ -1333,8 +1451,13 @@ class CampaignPipeSink:
         with self._lock:
             if self._bound_handler is not handler:
                 _fail("dual_live_logger_pipe_binding_invalid")
-            written = self._writer.write(frame)
-        if written is not None and (
+            try:
+                written = self._writer.write(frame)
+            except Exception as exc:
+                raise DualLiveRuntimeError(
+                    "dual_live_logger_pipe_write_failed"
+                ) from exc
+        if (
             isinstance(written, bool)
             or not isinstance(written, int)
             or written != len(frame)

@@ -438,6 +438,48 @@ def test_r05_runtime_records_form_exact_canonical_hash_chain() -> None:
     assert read_runtime_records(sink.bytes()) == (first, second)
 
 
+@pytest.mark.parametrize("bad_count", (None, True, "short", "long", "exception"))
+def test_runtime_writer_requires_exact_int_byte_count(bad_count: object) -> None:
+    class SequenceSink:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def __call__(self, content: bytes) -> int | None:
+            self.calls += 1
+            if self.calls > 1:
+                return len(content)
+            if bad_count == "exception":
+                raise OSError("write failed")
+            if bad_count == "short":
+                return len(content) - 1
+            if bad_count == "long":
+                return len(content) + 1
+            return bad_count  # type: ignore[return-value]
+
+    sink = SequenceSink()
+    writer = RuntimeRecordWriter(sink, identity=RUNTIME_IDENTITY)
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_runtime_writer_failure"
+    ) as exc:
+        writer.append(
+            phase="wrapper",
+            event="runtime_start",
+            process_boot_id=None,
+            payload=RUNTIME_START_PAYLOAD,
+        )
+
+    if bad_count == "exception":
+        assert isinstance(exc.value.__cause__, OSError)
+    retry = writer.append(
+        phase="wrapper",
+        event="runtime_start",
+        process_boot_id=None,
+        payload=RUNTIME_START_PAYLOAD,
+    )
+    assert retry["ordinal"] == 1
+    assert retry["previous_record_sha256"] is None
+
+
 def _rehashed_phase_child_start_record(process_boot_id: str) -> dict[str, object]:
     record = RuntimeRecordWriter(
         MemorySink().write,
@@ -1362,6 +1404,58 @@ def test_locked_campaign_sink_poison_is_permanent_after_short_write() -> None:
     assert stop.reason_code == "writer_failure"
 
 
+@pytest.mark.parametrize("bad_count", (None, True, "long"))
+def test_locked_campaign_sink_invalid_write_count_poison_is_permanent(
+    bad_count: object,
+) -> None:
+    class InvalidCountWriter:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def write(self, content: bytes) -> object:
+            self.calls += 1
+            if bad_count == "long":
+                return len(content) + 1
+            return bad_count
+
+    writer = InvalidCountWriter()
+    stop = FirstStopLatch()
+    sink = LockedCampaignSink(writer, stop_latch=stop)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_write_failed"):
+        sink.write(b"first")
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_writer_poisoned"):
+        sink.write(b"second")
+
+    assert writer.calls == 1
+    assert stop.reason_code == "writer_failure"
+
+
+@pytest.mark.parametrize("bad_count", (None, True, "short", "long", "exception"))
+def test_campaign_pipe_sink_requires_exact_int_byte_count(bad_count: object) -> None:
+    class CountWriter:
+        def write(self, content: bytes) -> int | None:
+            if bad_count == "exception":
+                raise OSError("pipe write failed")
+            if bad_count == "short":
+                return len(content) - 1
+            if bad_count == "long":
+                return len(content) + 1
+            return bad_count  # type: ignore[return-value]
+
+    sink = CampaignPipeSink("app-pipe", CountWriter())
+    handler = CampaignPipeHandler("app-pipe", sink)
+    record = logging.LogRecord("test", logging.INFO, __file__, 1, "message", (), None)
+
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_logger_pipe_write_failed"
+    ) as exc:
+        handler.handle(record)
+
+    if bad_count == "exception":
+        assert isinstance(exc.value.__cause__, OSError)
+
+
 def test_locked_campaign_sink_failure_poison_wins_concurrent_race() -> None:
     class BlockingFailureWriter:
         def __init__(self) -> None:
@@ -1466,6 +1560,105 @@ def test_four_stream_pumps_reject_aliased_capture_writers() -> None:
     with pytest.raises(
         DualLiveRuntimeError, match="dual_live_pump_writer_alias_invalid"
     ):
+        FourStreamPumpGroup(
+            readers=readers,
+            writers=writers,
+            status_callback=lambda _value: None,
+            http_frame_validator=lambda _value: None,
+            stop_latch=FirstStopLatch(),
+            expected_status_phase="A",
+            expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+            expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+        )
+
+
+def test_four_stream_pumps_reject_distinct_writers_for_same_destination(
+    tmp_path: Path,
+) -> None:
+    readers = {
+        stream: io.BytesIO() for stream in ("app", "http", "stdout", "stderr")
+    }
+    capture_path = tmp_path / "capture.log"
+    first = capture_path.open("wb")
+    second = capture_path.open("ab")
+    try:
+        writers = {
+            "app": first,
+            "http": second,
+            "stdout": MemorySink(),
+            "stderr": MemorySink(),
+        }
+
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_pump_writer_alias_invalid"
+        ):
+            FourStreamPumpGroup(
+                readers=readers,
+                writers=writers,
+                status_callback=lambda _value: None,
+                http_frame_validator=lambda _value: None,
+                stop_latch=FirstStopLatch(),
+                expected_status_phase="A",
+                expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+                expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+            )
+    finally:
+        first.close()
+        second.close()
+
+
+@pytest.mark.parametrize("fileno_result", (None, True, -1, "1", "exception"))
+def test_four_stream_pumps_reject_invalid_writer_fileno(
+    fileno_result: object,
+) -> None:
+    class InvalidFilenoWriter:
+        def write(self, content: bytes) -> int:
+            return len(content)
+
+        def fileno(self) -> object:
+            if fileno_result == "exception":
+                raise OSError("invalid handle")
+            return fileno_result
+
+    readers = {
+        stream: io.BytesIO() for stream in ("app", "http", "stdout", "stderr")
+    }
+    writers = {
+        "app": InvalidFilenoWriter(),
+        "http": MemorySink(),
+        "stdout": MemorySink(),
+        "stderr": MemorySink(),
+    }
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_writer_invalid"):
+        FourStreamPumpGroup(
+            readers=readers,
+            writers=writers,
+            status_callback=lambda _value: None,
+            http_frame_validator=lambda _value: None,
+            stop_latch=FirstStopLatch(),
+            expected_status_phase="A",
+            expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+            expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+        )
+
+
+def test_four_stream_pumps_reject_non_memory_writer_without_fileno() -> None:
+    class NoFilenoWriter:
+        def write(self, content: bytes) -> int:
+            return len(content)
+
+    readers = {
+        stream: io.BytesIO() for stream in ("app", "http", "stdout", "stderr")
+    }
+    writers = {
+        "app": NoFilenoWriter(),
+        "http": MemorySink(),
+        "stdout": MemorySink(),
+        "stderr": MemorySink(),
+    }
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_writer_invalid"):
         FourStreamPumpGroup(
             readers=readers,
             writers=writers,
@@ -1616,6 +1809,65 @@ def test_phase_control_protocol_failure_permanently_refuses_go_and_stop() -> Non
 
     assert control.state == "failed"
     assert stop.reason_code == "protocol_failure"
+
+
+@pytest.mark.parametrize("failure", (OSError("read failed"), TypeError("bad read")))
+def test_phase_control_reader_exception_permanently_poison_state(
+    failure: Exception,
+) -> None:
+    class FailingReader:
+        def read(self, _size: int) -> bytes:
+            raise failure
+
+    raw_nonce = "d" * 64
+    stop = FirstStopLatch()
+    control = PhaseControlState(
+        phase="A",
+        control_nonce_sha256=hashlib.sha256(raw_nonce.encode("ascii")).hexdigest(),
+        stop_latch=stop,
+    )
+    control.mark_census_ready()
+
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_phase_control_invalid"
+    ) as exc:
+        control.consume_frame(FailingReader())
+
+    assert exc.value.__cause__ is failure
+    assert control.state == "failed"
+    assert stop.reason_code == "protocol_failure"
+    for frame in (
+        encode_child_control_frame(
+            phase="A", command="GO", control_nonce=raw_nonce
+        ),
+        encode_child_control_frame(
+            phase="A", command="STOP", reason_code="operator_stop"
+        ),
+    ):
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_phase_control_terminal"
+        ):
+            control.consume_frame(io.BytesIO(frame))
+
+
+def test_phase_control_does_not_catch_base_exception() -> None:
+    class InterruptedReader:
+        def read(self, _size: int) -> bytes:
+            raise KeyboardInterrupt
+
+    stop = FirstStopLatch()
+    control = PhaseControlState(
+        phase="A",
+        control_nonce_sha256="a" * 64,
+        stop_latch=stop,
+    )
+    control.mark_census_ready()
+
+    with pytest.raises(KeyboardInterrupt):
+        control.consume_frame(InterruptedReader())
+
+    assert control.state == "census_ready"
+    assert stop.reason_code is None
 
 
 def test_phase_control_rejects_oversized_prefix_without_reading_body() -> None:
@@ -1784,6 +2036,13 @@ def test_public_pipe_encoder_rejects_every_reserved_schema(schema_id: str) -> No
         encode_pipe_frame(canonical_json_bytes({"schema_id": schema_id}))
 
 
+@pytest.mark.parametrize("schema_id", (None, True, 1, [], {}))
+def test_public_pipe_encoder_handles_non_string_schema_id(schema_id: object) -> None:
+    payload = canonical_json_bytes({"schema_id": schema_id})
+
+    assert encode_pipe_frame(payload) == len(payload).to_bytes(4, "big") + payload
+
+
 @pytest.mark.parametrize(
     ("stream", "reserved_kind"),
     (
@@ -1939,6 +2198,64 @@ def test_each_pump_boundary_failure_latches_and_surfaces_exact_cause(
     assert stop.reason_code == expected_stop
 
 
+@pytest.mark.parametrize(
+    ("stream", "expected_code"),
+    (
+        ("app", "dual_live_child_status_callback_invalid"),
+        ("http", "dual_live_http_frame_validator_invalid"),
+    ),
+)
+def test_pump_callback_exception_is_normalized_with_cause(
+    stream: str,
+    expected_code: str,
+) -> None:
+    failure = LookupError(f"{stream} callback failed")
+
+    def raise_failure(_value: object) -> None:
+        raise failure
+
+    readers = {
+        name: io.BytesIO() for name in ("app", "http", "stdout", "stderr")
+    }
+    if stream == "app":
+        readers["app"] = io.BytesIO(
+            encode_child_status_frame(
+                phase="A",
+                event="logger_census",
+                process_boot_id=STATUS_PROCESS_BOOT_ID,
+                status_nonce_sha256=STATUS_NONCE_SHA256,
+                ordinal=1,
+                payload={
+                    "census_point": "pre_activity",
+                    "handler_count": 0,
+                    "topology_sha256": "e" * 64,
+                },
+            )
+        )
+    else:
+        readers["http"] = io.BytesIO(encode_pipe_frame(b"counter"))
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers={name: MemorySink() for name in readers},
+        status_callback=raise_failure if stream == "app" else lambda _value: None,
+        http_frame_validator=(
+            raise_failure if stream == "http" else lambda _value: None
+        ),
+        stop_latch=FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+
+    pumps.start()
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_failed") as exc:
+        pumps.join(timeout=2)
+
+    assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+    assert exc.value.__cause__.code == expected_code
+    assert exc.value.__cause__.__cause__ is failure
+
+
 def test_pump_start_is_one_use_and_join_timeout_latches_first_stop() -> None:
     class BlockingReader:
         def __init__(self) -> None:
@@ -2042,6 +2359,292 @@ def test_pump_join_preserves_primary_error_while_cancelling_blocked_peer() -> No
     assert blocker.closed is True
     assert pumps.threads_alive == ()
     assert stop.reason_code == "pump_failure"
+
+
+def test_pump_join_preserves_late_pre_cancel_errors_in_stream_priority() -> None:
+    class GatedErrorReader:
+        def __init__(self, failure: Exception) -> None:
+            self.failure = failure
+            self.entered = threading.Event()
+            self.release = threading.Event()
+
+        def read(self, _size: int) -> bytes:
+            self.entered.set()
+            self.release.wait()
+            raise self.failure
+
+        def close(self) -> None:
+            self.release.set()
+
+    class BlockingReader:
+        def __init__(self) -> None:
+            self.release = threading.Event()
+
+        def read(self, _size: int) -> bytes:
+            self.release.wait()
+            return b""
+
+        def close(self) -> None:
+            self.release.set()
+
+    app_failure = OSError("late app failure")
+    http_failure = OSError("late http failure")
+    app_reader = GatedErrorReader(app_failure)
+    http_reader = GatedErrorReader(http_failure)
+    blocker = BlockingReader()
+    readers = {
+        "app": app_reader,
+        "http": http_reader,
+        "stdout": io.BytesIO(),
+        "stderr": blocker,
+    }
+    stop = FirstStopLatch()
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers={stream: MemorySink() for stream in readers},
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    pumps.start()
+    assert app_reader.entered.wait(1)
+    assert http_reader.entered.wait(1)
+    join_started = threading.Event()
+    results: list[tuple[str, BaseException | None]] = []
+
+    def join() -> None:
+        join_started.set()
+        try:
+            pumps.join(timeout=0.2)
+        except DualLiveRuntimeError as exc:
+            results.append((exc.code, exc.__cause__))
+
+    caller = threading.Thread(target=join)
+    caller.start()
+    assert join_started.wait(1)
+    app_reader.release.set()
+    http_reader.release.set()
+    caller.join(2)
+
+    assert caller.is_alive() is False
+    assert results == [("dual_live_pump_failed", app_failure)]
+    assert stop.reason_code == "pump_failure"
+    assert pumps.threads_alive == ()
+
+
+def test_pump_join_is_bounded_when_reader_close_blocks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BlockingCloseReader:
+        def __init__(self) -> None:
+            self.read_release = threading.Event()
+            self.close_entered = threading.Event()
+            self.close_release = threading.Event()
+
+        def read(self, _size: int) -> bytes:
+            self.read_release.wait()
+            return b""
+
+        def close(self) -> None:
+            self.close_entered.set()
+            self.close_release.wait()
+            self.read_release.set()
+
+    monkeypatch.setattr(dual_live_runtime_module, "PUMP_CANCEL_JOIN_SECONDS", 0.05)
+    blocker = BlockingCloseReader()
+    readers = {
+        "app": blocker,
+        "http": io.BytesIO(),
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(),
+    }
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers={stream: MemorySink() for stream in readers},
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    pumps.start()
+
+    started = time.monotonic()
+    try:
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_pump_cancel_failed"
+        ) as exc:
+            pumps.join(timeout=0.01)
+        elapsed = time.monotonic() - started
+
+        assert elapsed < 0.5
+        assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+        assert exc.value.__cause__.code == "dual_live_pump_cancel_stuck"
+        assert blocker.close_entered.is_set()
+        related = [
+            thread
+            for thread in threading.enumerate()
+            if thread.name.startswith("dual-live-app-")
+        ]
+        assert related
+        assert all(thread.daemon for thread in related)
+    finally:
+        blocker.close_release.set()
+        blocker.read_release.set()
+
+
+def test_pump_join_reports_reader_close_exception_with_domain_taxonomy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FailingCloseReader:
+        def __init__(self) -> None:
+            self.read_release = threading.Event()
+
+        def read(self, _size: int) -> bytes:
+            self.read_release.wait()
+            return b""
+
+        def close(self) -> None:
+            raise OSError("close failed")
+
+    monkeypatch.setattr(dual_live_runtime_module, "PUMP_CANCEL_JOIN_SECONDS", 0.05)
+    blocker = FailingCloseReader()
+    readers = {
+        "app": blocker,
+        "http": io.BytesIO(),
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(),
+    }
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers={stream: MemorySink() for stream in readers},
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    pumps.start()
+
+    try:
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_pump_cancel_failed"
+        ) as exc:
+            pumps.join(timeout=0)
+
+        assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+        assert exc.value.__cause__.code == "dual_live_pump_cancel_reader_failed"
+        assert isinstance(exc.value.__cause__.__cause__, OSError)
+    finally:
+        blocker.read_release.set()
+
+
+def test_pump_concurrent_join_refuses_while_join_is_active(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class CoordinatedReader:
+        def __init__(self) -> None:
+            self.read_release = threading.Event()
+            self.close_entered = threading.Event()
+            self.close_release = threading.Event()
+
+        def read(self, _size: int) -> bytes:
+            self.read_release.wait()
+            return b""
+
+        def close(self) -> None:
+            self.close_entered.set()
+            self.close_release.wait()
+            self.read_release.set()
+
+    monkeypatch.setattr(dual_live_runtime_module, "PUMP_CANCEL_JOIN_SECONDS", 0.5)
+    blocker = CoordinatedReader()
+    readers = {
+        "app": blocker,
+        "http": io.BytesIO(),
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(),
+    }
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers={stream: MemorySink() for stream in readers},
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    pumps.start()
+    results: list[str] = []
+
+    def join() -> None:
+        try:
+            pumps.join(timeout=0)
+        except DualLiveRuntimeError as exc:
+            results.append(exc.code)
+
+    caller = threading.Thread(target=join)
+    caller.start()
+    assert blocker.close_entered.wait(1)
+    try:
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_pump_join_in_progress"
+        ):
+            pumps.join(timeout=0)
+    finally:
+        blocker.close_release.set()
+        blocker.read_release.set()
+    caller.join(2)
+
+    assert caller.is_alive() is False
+    assert results == ["dual_live_pump_join_timeout"]
+
+
+def test_pump_join_keeps_timeout_when_cancellation_causes_read_errors() -> None:
+    class CancelErrorReader:
+        def __init__(self, failure: Exception) -> None:
+            self.failure = failure
+            self.cancelled = threading.Event()
+
+        def read(self, _size: int) -> bytes:
+            self.cancelled.wait()
+            raise self.failure
+
+        def close(self) -> None:
+            self.cancelled.set()
+
+    app_failure = OSError("app cancelled read")
+    http_failure = OSError("http cancelled read")
+    readers = {
+        "app": CancelErrorReader(app_failure),
+        "http": CancelErrorReader(http_failure),
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(),
+    }
+    stop = FirstStopLatch()
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers={stream: MemorySink() for stream in readers},
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    pumps.start()
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_join_timeout"):
+        pumps.join(timeout=0)
+
+    assert stop.reason_code == "timeout"
+    assert pumps.threads_alive == ()
 
 
 def test_four_stream_pump_concurrent_start_has_exactly_one_winner() -> None:
