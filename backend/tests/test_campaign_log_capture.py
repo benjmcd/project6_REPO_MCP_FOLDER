@@ -845,12 +845,15 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
             authority.run_ids["sciencebase_mcs"],
         ) is None
 
+    campaign_entry_names = tuple(
+        sorted(path.name for path in manifest_path.parent.iterdir())
+    )
     campaign_file_bytes = {
         path.name: path.read_bytes()
         for path in manifest_path.parent.iterdir()
         if path.is_file()
     }
-    assert tuple(sorted(campaign_file_bytes)) == (
+    assert campaign_entry_names == (
         "app.jsonl",
         "http.jsonl",
         "manifest.json",
@@ -871,6 +874,9 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
         for path in manifest_path.parent.iterdir()
         if path.is_file()
     } == campaign_file_bytes
+    assert tuple(
+        sorted(path.name for path in manifest_path.parent.iterdir())
+    ) == campaign_entry_names
     assert seal_path.read_bytes() == seal_bytes
     assert index_path.read_bytes() == index_bytes
     assert tuple(index_path.parent.iterdir()) == (index_path,)
