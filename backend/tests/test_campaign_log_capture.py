@@ -10,7 +10,7 @@ import os
 import queue
 from pathlib import Path
 from types import MappingProxyType, SimpleNamespace
-from typing import Any
+from typing import Any, BinaryIO, Mapping, cast
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import pytest
@@ -1065,7 +1065,10 @@ class _CaptureControllerReader:
             self.finish()
 
 
-def _capture_controller_child(phase: str, events: list[str]) -> object:
+def _capture_controller_child(
+    phase: str,
+    events: list[str],
+) -> dual_live_runtime_module._ControllerChild:
     process_boot_id = ("a" if phase == "A" else "b") * 64
     status_nonce_sha256 = ("c" if phase == "A" else "d") * 64
     control_nonce = ("e" if phase == "A" else "f") * 64
@@ -1134,12 +1137,74 @@ def _capture_controller_child(phase: str, events: list[str]) -> object:
         job_policy_sha256="4" * 64,
         status_nonce_sha256=status_nonce_sha256,
         control_nonce=control_nonce,
-        readers=readers,
+        readers=cast(Mapping[str, BinaryIO], readers),
         send_control=send_control,
         wait=wait,
         stop=stop,
     )
 
+
+class _CaptureOwnedPhaseProcess:
+    def __init__(self, phase: str, events: list[str]) -> None:
+        self.phase = phase
+        self.events = events
+        self._child: dual_live_runtime_module._ControllerChild = (
+            _capture_controller_child(phase, events)
+        )
+        self.process_boot_id = self._child.process_boot_id
+        self.process_creation_identity_sha256 = (
+            self._child.process_creation_identity_sha256
+        )
+        self.executable_sha256 = self._child.executable_sha256
+        self.job_policy_sha256 = self._child.job_policy_sha256
+        self.status_nonce_sha256 = self._child.status_nonce_sha256
+        self.control_nonce = self._child.control_nonce
+        self.readers = self._child.readers
+        self._closed = False
+
+    def send_control(self, frame: bytes) -> None:
+        self._child.send_control(frame)
+
+    def poll_exit(self, timeout: float) -> int | None:
+        return self._child.wait(timeout)
+
+    def revoke_before_stop(self, reason: str) -> None:
+        self.events.append(f"revoke-{self.phase}-{reason}")
+
+    def stop(self) -> None:
+        self._child.stop()
+
+    def quiesce_and_close(
+        self,
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        self.events.append(f"quiesce-{self.phase}")
+        zero_states = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
+        return (
+            {
+                "tcp4_state_counts": zero_states,
+                "tcp6_state_counts": dict(zero_states),
+                "udp4_count": 0,
+                "udp6_count": 0,
+                "process_identity_sha256": "7" * 64,
+                "stable": True,
+            },
+            {"active_process_count": 0, "process_list_sha256": "8" * 64},
+        )
+
+    def authority_cleared_payload(self) -> dict[str, object]:
+        self.events.append(f"authority-{self.phase}")
+        return {
+            "authority_posture_sha256": "9" * 64,
+            "all_required_absent": True,
+        }
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        self.events.append(f"close-{self.phase}")
+        for reader in self.readers.values():
+            reader.close()
 
 @pytest.mark.parametrize(
     "connector_keys",
@@ -1910,6 +1975,495 @@ def test_read_only_capture_verifier_rejects_seal_event_rewrites_without_repair(
     assert _connector_event_rows(db) == events_before
 
 
+def test_production_owned_binding_signature_has_no_injection_seams() -> None:
+    factory = getattr(
+        dual_live_runtime_module,
+        "_make_production_owned_controller_context",
+    )
+    runner = getattr(
+        dual_live_runtime_module,
+        "_run_production_owned_two_phase_controller",
+    )
+
+    signature = inspect.signature(factory)
+    assert tuple(signature.parameters) == (
+        "campaign_id",
+        "expected_campaign_fingerprint",
+        "db",
+        "identity",
+        "runtime_start_payload",
+        "timeout_seconds",
+        "proof_locks",
+    )
+    assert all(
+        parameter.kind is inspect.Parameter.KEYWORD_ONLY
+        for parameter in signature.parameters.values()
+    )
+    assert not {
+        "capture",
+        "writers",
+        "writer",
+        "process_factory",
+        "quiesce",
+        "seal",
+        "clock",
+        "now",
+        "path",
+        "environment",
+    }.intersection(signature.parameters)
+    assert tuple(inspect.signature(runner).parameters) == ("context",)
+
+def _production_identity_and_payload(
+    locks: Any,
+) -> tuple[RuntimeIdentity, dict[str, str]]:
+    identity = RuntimeIdentity(
+        runtime_instance_id=str(uuid4()),
+        wrapper_nonce_sha256="1" * 64,
+        code_revision=CODE_REVISION,
+        wrapper_image_sha256="2" * 64,
+        interpreter_image_sha256="3" * 64,
+        root_mutex_identity_sha256=locks.root_identity_sha256,
+        campaign_mutex_identity_sha256=locks.campaign_identity_sha256,
+    )
+    return identity, {
+        "code_revision": CODE_REVISION,
+        "wrapper_image_sha256": identity.wrapper_image_sha256,
+        "interpreter_image_sha256": identity.interpreter_image_sha256,
+        "mutex_identity_sha256": (
+            dual_live_runtime_module._combined_mutex_identity_sha256(identity)
+        ),
+    }
+
+
+def _production_capture_owner(
+    context: dual_live_runtime_module._ProductionOwnedControllerContext,
+) -> dual_live_runtime_module._OwnedCampaignCapture:
+    capture = cast(
+        dual_live_runtime_module._OwnedCampaignCapture,
+        context._capture,
+    )
+    assert type(capture) is dual_live_runtime_module._OwnedCampaignCapture
+    return capture
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_binding_refuses_inactive_locks_before_capture(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import connector_campaign_log_capture, dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks)
+    locks.close()
+    evidence_before = _evidence_bytes(authority.evidence_root)
+    runs_before = _connector_run_rows(db)
+    events_before = _connector_event_rows(db)
+
+    def forbidden_begin(**_kwargs: Any) -> Any:
+        pytest.fail("inactive locks reached canonical capture begin")
+
+    monkeypatch.setattr(
+        connector_campaign_log_capture,
+        "begin_connector_campaign_log_capture",
+        forbidden_begin,
+    )
+    with pytest.raises(dual_live_windows.DualLiveWindowsError) as excinfo:
+        dual_live_runtime_module._make_production_owned_controller_context(
+            campaign_id=str(authority.campaign_id),
+            expected_campaign_fingerprint=FINGERPRINT,
+            db=db,
+            identity=identity,
+            runtime_start_payload=start_payload,
+            timeout_seconds=2,
+            proof_locks=locks,
+        )
+
+    assert excinfo.value.code == "dual_live_proof_locks_inactive"
+    assert _evidence_bytes(authority.evidence_root) == evidence_before
+    assert _connector_run_rows(db) == runs_before
+    assert _connector_event_rows(db) == events_before
+    _assert_unpublished(authority)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_binding_refuses_dirty_db_before_capture(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import connector_campaign_log_capture, dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks)
+
+    def forbidden_begin(**_kwargs: Any) -> Any:
+        pytest.fail("dirty DB session reached canonical capture begin")
+
+    monkeypatch.setattr(
+        connector_campaign_log_capture,
+        "begin_connector_campaign_log_capture",
+        forbidden_begin,
+    )
+    try:
+        with db.begin():
+            with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+                dual_live_runtime_module._make_production_owned_controller_context(
+                    campaign_id=str(authority.campaign_id),
+                    expected_campaign_fingerprint=FINGERPRINT,
+                    db=db,
+                    identity=identity,
+                    runtime_start_payload=start_payload,
+                    timeout_seconds=2,
+                    proof_locks=locks,
+                )
+        assert excinfo.value.code == "connector_campaign_log_session_not_clean"
+        _assert_unpublished(authority)
+    finally:
+        locks.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_runner_refuses_lost_locks_before_child_and_seal(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _bind_real_evidence_index(authority)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+
+    def forbidden_child(*_args: Any, **_kwargs: Any) -> Any:
+        pytest.fail("lost locks reached child creation")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        forbidden_child,
+    )
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks)
+    context = (
+        dual_live_runtime_module._make_production_owned_controller_context(
+            campaign_id=str(authority.campaign_id),
+            expected_campaign_fingerprint=FINGERPRINT,
+            db=db,
+            identity=identity,
+            runtime_start_payload=start_payload,
+            timeout_seconds=2,
+            proof_locks=locks,
+        )
+    )
+    capture_owner = _production_capture_owner(context)
+    capture = capture_owner._capture
+    evidence_before = _evidence_bytes(authority.evidence_root)
+    runs_before = _connector_run_rows(db)
+    events_before = _connector_event_rows(db)
+    locks.close()
+
+    with pytest.raises(dual_live_windows.DualLiveWindowsError) as excinfo:
+        dual_live_runtime_module._run_production_owned_two_phase_controller(
+            context
+        )
+
+    assert excinfo.value.code == "dual_live_proof_locks_inactive"
+    assert all(writer.closed for writer in capture.writers)
+    assert context.sealed is False
+    assert _evidence_bytes(authority.evidence_root) == evidence_before
+    assert _connector_run_rows(db) == runs_before
+    assert _connector_event_rows(db) == events_before
+    assert (authority.evidence_root / "logs" / FINGERPRINT).is_dir()
+    _assert_unpublished(authority)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_runner_preserves_writers_when_ownership_unproven(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _bind_real_evidence_index(authority)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks)
+    context = (
+        dual_live_runtime_module._make_production_owned_controller_context(
+            campaign_id=str(authority.campaign_id),
+            expected_campaign_fingerprint=FINGERPRINT,
+            db=db,
+            identity=identity,
+            runtime_start_payload=start_payload,
+            timeout_seconds=2,
+            proof_locks=locks,
+        )
+    )
+    capture_owner = _production_capture_owner(context)
+    capture = capture_owner._capture
+
+    def ownership_unproven(_context: object) -> Any:
+        raise dual_live_runtime_module.DualLiveRuntimeError(
+            "dual_live_capture_ownership_unproven"
+        )
+
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_run_bound_owned_two_phase_controller",
+        ownership_unproven,
+    )
+    try:
+        with pytest.raises(
+            dual_live_runtime_module.DualLiveRuntimeError
+        ) as excinfo:
+            dual_live_runtime_module._run_production_owned_two_phase_controller(
+                context
+            )
+
+        assert excinfo.value.code == "dual_live_capture_ownership_unproven"
+        assert all(not writer.closed for writer in capture.writers)
+        assert context.sealed is False
+        _assert_unpublished(authority)
+    finally:
+        locks.close()
+        assert capture_owner._abort_close() is None
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_runner_closes_child_if_locks_lost_during_create(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _bind_real_evidence_index(authority)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks)
+    context = (
+        dual_live_runtime_module._make_production_owned_controller_context(
+            campaign_id=str(authority.campaign_id),
+            expected_campaign_fingerprint=FINGERPRINT,
+            db=db,
+            identity=identity,
+            runtime_start_payload=start_payload,
+            timeout_seconds=2,
+            proof_locks=locks,
+        )
+    )
+    capture_owner = _production_capture_owner(context)
+    capture = capture_owner._capture
+    events: list[str] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        events.append(f"create-{phase}")
+        locks.close()
+        return _CaptureOwnedPhaseProcess(phase, events)
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+    )
+    with pytest.raises(
+        dual_live_runtime_module.DualLiveRuntimeError
+    ) as excinfo:
+        dual_live_runtime_module._run_production_owned_two_phase_controller(
+            context
+        )
+
+    assert excinfo.value.code == "dual_live_phase_failed"
+    assert isinstance(
+        excinfo.value.__cause__,
+        dual_live_windows.DualLiveWindowsError,
+    )
+    assert excinfo.value.__cause__.code == "dual_live_proof_locks_inactive"
+    assert events == [
+        "create-A",
+        "revoke-A-protocol_failure",
+        "close-A",
+    ]
+    assert all(writer.closed for writer in capture.writers)
+    assert context.sealed is False
+    _assert_unpublished(authority)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_binding_begins_runs_and_seals_canonical_capture(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    chain = _bind_real_evidence_index(authority)
+    _install_authority(monkeypatch, authority)
+    connector_keys = ("nrc_adams_aps", "sciencebase_mcs")
+    _insert_terminal_runs(
+        db,
+        authority,
+        connector_keys=connector_keys,
+    )
+
+    clock_values = iter(
+        (
+            START,
+            START + timedelta(seconds=10),
+        )
+    )
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return next(clock_values)
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    events: list[str] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        events.append(f"create-{phase}")
+        return _CaptureOwnedPhaseProcess(phase, events)
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+    )
+
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks)
+    try:
+        context = (
+            dual_live_runtime_module._make_production_owned_controller_context(
+                campaign_id=str(authority.campaign_id),
+                expected_campaign_fingerprint=FINGERPRINT,
+                db=db,
+                identity=identity,
+                runtime_start_payload=start_payload,
+                timeout_seconds=2,
+                proof_locks=locks,
+            )
+        )
+        assert context.nonproduction_mechanical_only is False
+        result = dual_live_runtime_module._run_production_owned_two_phase_controller(
+            context
+        )
+        assert context.sealed is True
+    finally:
+        locks.close()
+
+    assert result.seal.connector_run_ids == tuple(
+        sorted(authority.run_ids[key] for key in connector_keys)
+    )
+    assert events.index("quiesce-A") < events.index("create-B")
+    assert events.index("quiesce-B") < events.index("close-B")
+    verified = verify_connector_campaign_log_capture_read_only(
+        db,
+        chain,
+        str(authority.campaign_id),
+        FINGERPRINT,
+    )
+    app_path = next(
+        path for path in verified.stream_bytes if path.endswith("/app.jsonl")
+    )
+    records = read_runtime_records(verified.stream_bytes[app_path])
+    assert [record["event"] for record in records] == [
+        "runtime_start",
+        "phase_child_start",
+        "logger_census",
+        "phase_go",
+        "logger_census",
+        "socket_census",
+        "job_zero",
+        "authority_cleared",
+        "phase_complete",
+        "phase_child_start",
+        "logger_census",
+        "phase_go",
+        "logger_census",
+        "socket_census",
+        "job_zero",
+        "phase_complete",
+        "runtime_complete",
+    ]
+    assert verified.seal_event_ids == result.event_ids
+
 @pytest.mark.parametrize(
     "connector_keys",
     (
@@ -1967,7 +2521,9 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
     events: list[str] = []
     seal_calls = 0
 
-    def create(phase: str) -> object:
+    def create(
+        phase: str,
+    ) -> dual_live_runtime_module._ControllerChild:
         events.append(f"create-{phase}")
         return _capture_controller_child(phase, events)
 
