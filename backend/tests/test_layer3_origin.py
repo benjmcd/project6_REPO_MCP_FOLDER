@@ -1839,6 +1839,342 @@ def test_live_receipt_passes_only_index_derived_http_counter_path(
         )
 
 
+def test_explicit_settings_read_only_receipt_matches_legacy_and_ignores_globals(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    run, target, digest, storage_ref = _seed_sciencebase(db)
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=_stored_path(storage_ref).stat().st_size,
+            ),
+        ],
+    )
+    explicit_settings = settings.model_copy(deep=True)
+    baseline = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target.connector_run_target_id,
+    )
+    evidence = _evidence(run.connector_key, run.connector_run_id)
+    explicit_calls: list[dict] = []
+
+    def resolve_explicit(read_settings, **kwargs):
+        assert read_settings is explicit_settings
+        explicit_calls.append(kwargs)
+        return evidence
+
+    monkeypatch.setattr(
+        origin,
+        "resolve_historical_connector_grant_evidence_read_only",
+        resolve_explicit,
+    )
+    monkeypatch.setattr(
+        origin,
+        "_resolve_historical_evidence",
+        lambda **kwargs: pytest.fail("legacy historical resolver was called"),
+    )
+    monkeypatch.setattr(
+        origin,
+        "_raw_storage_path",
+        lambda *args, **kwargs: pytest.fail("legacy raw loader was called"),
+    )
+    monkeypatch.setattr(
+        phase_b,
+        "verify_strict_nrc_phase_b_linkage",
+        lambda *args, **kwargs: pytest.fail("legacy Phase-B verifier was called"),
+    )
+    monkeypatch.setattr(
+        settings,
+        "storage_dir",
+        str(tmp_path / "poison-global-storage"),
+    )
+
+    derived = origin.derive_connector_origin_receipt_read_only(
+        db,
+        target.connector_run_target_id,
+        explicit_settings,
+    )
+
+    assert derived == baseline
+    assert explicit_calls == [
+        {
+            "connector_key": run.connector_key,
+            "campaign_id": CAMPAIGN_ID,
+            "expected_campaign_fingerprint": CAMPAIGN_FINGERPRINT,
+            "expected_grant_sha256": GRANT_SHA256,
+        }
+    ]
+
+
+def test_explicit_settings_read_only_nrc_receipt_has_no_global_access(
+    origin_file_dbs,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    db, _ = origin_file_dbs
+    run, target, _, digest, raw_path = _seed_actual_nrc_phase_b(
+        db,
+        monkeypatch,
+    )
+    run_id = run.connector_run_id
+    connector_key = run.connector_key
+    target_id = target.connector_run_target_id
+    _install_live_proof(
+        monkeypatch,
+        run_id=run_id,
+        connector_key=connector_key,
+        entries=[
+            _entry(1, "exact_accession_api"),
+            _entry(
+                2,
+                "artifact",
+                connector_key="nrc_adams_aps",
+                body_sha256=digest,
+                byte_count=raw_path.stat().st_size,
+            ),
+        ],
+    )
+    explicit_settings = settings.model_copy(deep=True)
+    baseline = origin.derive_connector_origin_receipt(
+        db,
+        connector_run_target_id=target_id,
+    )
+    evidence = _evidence(connector_key, run_id)
+    resolver_calls: list[object] = []
+    verifier_calls: list[tuple[object, str, object]] = []
+    real_explicit_verifier = (
+        phase_b.verify_strict_nrc_phase_b_linkage_read_only
+    )
+
+    def resolve_explicit(read_settings, **kwargs):
+        resolver_calls.append(read_settings)
+        return evidence
+
+    def verify_explicit(read_db, read_target_id, read_settings):
+        verifier_calls.append((read_db, read_target_id, read_settings))
+        return real_explicit_verifier(
+            read_db,
+            read_target_id,
+            read_settings,
+        )
+
+    monkeypatch.setattr(
+        origin,
+        "resolve_historical_connector_grant_evidence_read_only",
+        resolve_explicit,
+    )
+    monkeypatch.setattr(
+        origin,
+        "_resolve_historical_evidence",
+        lambda **kwargs: pytest.fail("legacy historical resolver was called"),
+    )
+    monkeypatch.setattr(
+        origin,
+        "_raw_storage_path",
+        lambda *args, **kwargs: pytest.fail("legacy raw loader was called"),
+    )
+    monkeypatch.setattr(
+        phase_b,
+        "verify_strict_nrc_phase_b_linkage",
+        lambda *args, **kwargs: pytest.fail("legacy Phase-B verifier was called"),
+    )
+    monkeypatch.setattr(
+        phase_b,
+        "verify_strict_nrc_phase_b_linkage_read_only",
+        verify_explicit,
+    )
+    monkeypatch.setattr(
+        settings,
+        "storage_dir",
+        str(tmp_path / "poison-global-storage"),
+    )
+
+    derived = origin.derive_connector_origin_receipt_read_only(
+        db,
+        target_id,
+        explicit_settings,
+    )
+
+    assert derived == baseline
+    assert resolver_calls == [explicit_settings]
+    assert verifier_calls == [(db, target_id, explicit_settings)]
+
+
+def test_explicit_settings_read_only_receipt_rejects_raw_root_escape(
+    db,
+    tmp_path: Path,
+) -> None:
+    outside_ref = str((tmp_path / "outside.pdf").resolve())
+    Path(outside_ref).write_bytes(b"%PDF-outside-explicit-root")
+    _, target, _, _ = _seed_nrc(
+        db,
+        content=Path(outside_ref).read_bytes(),
+        storage_ref=outside_ref,
+    )
+    explicit_settings = settings.model_copy(
+        update={"storage_dir": str(tmp_path / "explicit-storage")},
+    )
+
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin.derive_connector_origin_receipt_read_only(
+            db,
+            target.connector_run_target_id,
+            explicit_settings,
+        )
+
+    assert excinfo.value.code == "layer3_origin_storage_ref_not_admitted"
+
+
+def test_explicit_settings_read_only_receipt_rechecks_anchor(
+    origin_file_dbs,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db, competing = origin_file_dbs
+    run, target, _, _ = _seed_nrc_with_live_proof(
+        db,
+        monkeypatch,
+        content=b"%PDF-explicit-anchor-drift",
+    )
+    explicit_settings = settings.model_copy(deep=True)
+    monkeypatch.setattr(
+        phase_b,
+        "verify_strict_nrc_phase_b_linkage_read_only",
+        lambda verify_db, verify_target_id, read_settings: (
+            _verify_synthetic_phase_b(
+                verify_db,
+                connector_run_target_id=verify_target_id,
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        origin,
+        "resolve_historical_connector_grant_evidence_read_only",
+        lambda read_settings, **kwargs: _evidence(
+            run.connector_key,
+            run.connector_run_id,
+        ),
+    )
+    real_validate = origin._validate_fresh_live_evidence_with_resolver
+    mutations = 0
+
+    def validate_then_mutate(*args, **kwargs):
+        nonlocal mutations
+        result = real_validate(*args, **kwargs)
+        mutations += 1
+        competing.query(ConnectorRunTarget).filter(
+            ConnectorRunTarget.connector_run_target_id
+            == target.connector_run_target_id
+        ).update(
+            {"blocked_reason": "explicit-settings-drift"},
+            synchronize_session=False,
+        )
+        competing.commit()
+        return result
+
+    monkeypatch.setattr(
+        origin,
+        "_validate_fresh_live_evidence_with_resolver",
+        validate_then_mutate,
+    )
+
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin.derive_connector_origin_receipt_read_only(
+            db,
+            target.connector_run_target_id,
+            explicit_settings,
+        )
+
+    assert excinfo.value.code == "layer3_origin_authority_drift"
+    assert mutations == 1
+
+
+def test_explicit_settings_read_only_receipt_preserves_caller_state(
+    db,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    run, target, digest, storage_ref = _seed_sciencebase(db)
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=_stored_path(storage_ref).stat().st_size,
+            ),
+        ],
+    )
+    target_id = target.connector_run_target_id
+    evidence = _evidence(run.connector_key, run.connector_run_id)
+    explicit_settings = settings.model_copy(deep=True)
+    monkeypatch.setattr(
+        origin,
+        "resolve_historical_connector_grant_evidence_read_only",
+        lambda read_settings, **kwargs: evidence,
+    )
+    deleted = Dataset(
+        dataset_id="explicit-read-deleted",
+        name="Explicit read deleted",
+    )
+    db.add(deleted)
+    db.commit()
+    dirty = db.get(Dataset, "dataset-sciencebase-origin")
+    assert dirty is not None
+    dirty.name = "Caller-owned dirty dataset"
+    pending = Dataset(
+        dataset_id="explicit-read-pending",
+        name="Explicit read pending",
+    )
+    db.add(pending)
+    db.delete(deleted)
+    expected_new = set(db.new)
+    expected_dirty = set(db.dirty)
+    expected_deleted = set(db.deleted)
+
+    def forbidden(method_name: str):
+        def fail(*args, **kwargs):
+            pytest.fail(f"adapter called Session.{method_name}")
+
+        return fail
+
+    with _record_dml(db, ("INSERT ", "UPDATE ", "DELETE ")) as statements:
+        with monkeypatch.context() as method_guard:
+            for method_name in (
+                "add",
+                "add_all",
+                "flush",
+                "commit",
+                "delete",
+                "rollback",
+            ):
+                method_guard.setattr(db, method_name, forbidden(method_name))
+            receipt = origin.derive_connector_origin_receipt_read_only(
+                db,
+                target_id,
+                explicit_settings,
+            )
+
+    assert receipt["receipt_hash"]
+    assert statements == []
+    assert set(db.new) == expected_new
+    assert set(db.dirty) == expected_dirty
+    assert set(db.deleted) == expected_deleted
+    assert db.in_transaction()
+    db.rollback()
+
+
 def test_live_receipt_uses_real_manifest_bound_counter_reconciliation(
     db,
     monkeypatch: pytest.MonkeyPatch,

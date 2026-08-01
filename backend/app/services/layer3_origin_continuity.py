@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
@@ -19,7 +19,7 @@ from sqlalchemy.engine import Connection, Engine, RowMapping, URL
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool, QueuePool, StaticPool
 
-from app.core.config import settings
+from app.core.config import Settings, settings
 from app.models.models import (
     ApsContentDocument,
     ApsContentLinkage,
@@ -45,6 +45,7 @@ from app.services import (
 from app.services.connector_egress_authorization import (
     VerifiedHistoricalGrantEvidence,
     resolve_historical_connector_grant_evidence,
+    resolve_historical_connector_grant_evidence_read_only,
     strict_json_loads,
 )
 from app.services.connector_egress_arming import (
@@ -368,6 +369,20 @@ class _OriginAnchor:
     intakes: tuple[_AnchorRow, ...]
 
 
+_HistoricalEvidenceResolver = Callable[
+    ...,
+    VerifiedHistoricalGrantEvidence,
+]
+_NrcPhaseBVerifier = Callable[[Session, str], Any]
+
+
+@dataclass(frozen=True)
+class _OriginReadInputs:
+    raw_root: Path | None
+    historical_evidence_resolver: _HistoricalEvidenceResolver | None
+    nrc_phase_b_verifier: _NrcPhaseBVerifier
+
+
 def _index_anchor_authority(
     rows: Sequence[_AnchorRow],
     *,
@@ -423,6 +438,9 @@ class _FrozenLedgerQuery:
 
     def order_by(self, *criteria: object) -> _FrozenLedgerQuery:
         return self
+
+    def limit(self, count: int) -> _FrozenLedgerQuery:
+        return _FrozenLedgerQuery(rows=self.rows[:count])
 
     def all(self) -> list[ConnectorRunEvent]:
         return list(self.rows)
@@ -821,11 +839,24 @@ def _raw_storage_path(
     *,
     allow_fixed_fixture: bool = False,
 ) -> Path:
+    return _raw_storage_path_from_root(
+        storage_ref,
+        raw_root=Path(settings.connector_raw_dir),
+        allow_fixed_fixture=allow_fixed_fixture,
+    )
+
+
+def _raw_storage_path_from_root(
+    storage_ref: object,
+    *,
+    raw_root: Path,
+    allow_fixed_fixture: bool = False,
+) -> Path:
     raw_ref = _required_text(storage_ref, field="raw_storage_ref")
-    raw_root = Path(settings.connector_raw_dir).resolve()
+    admitted_raw_root = raw_root.resolve()
     candidate = Path(raw_ref)
     if not candidate.is_absolute():
-        candidate = raw_root / candidate
+        candidate = admitted_raw_root / candidate
     try:
         resolved = candidate.resolve(strict=True)
     except OSError as exc:
@@ -839,8 +870,8 @@ def _raw_storage_path(
         and resolved.name == _FIXTURE_FILE_NAME
     )
     if (
-        resolved != raw_root
-        and raw_root not in resolved.parents
+        resolved != admitted_raw_root
+        and admitted_raw_root not in resolved.parents
         and not admitted_fixture
     ):
         _fail(
@@ -1274,18 +1305,14 @@ def _verify_committed_nrc_phase_b(
     raw_path: Path,
     raw_sha256: str,
     raw_size: int,
+    verify_phase_b: _NrcPhaseBVerifier,
 ) -> None:
     from app.services import nrc_aps_phase_b_linkage
 
     try:
-        verified = (
-            nrc_aps_phase_b_linkage
-            .verify_strict_nrc_phase_b_linkage(
-                db,
-                connector_run_target_id=(
-                    target.connector_run_target_id
-                ),
-            )
+        verified = verify_phase_b(
+            db,
+            target.connector_run_target_id,
         )
     except nrc_aps_phase_b_linkage.NrcPhaseBLinkageError as exc:
         raise Layer3OriginContinuityError(
@@ -1757,7 +1784,7 @@ def _validate_target_against_grant(
     )
 
 
-def _validate_fresh_live_evidence(
+def _validate_fresh_live_evidence_with_resolver(
     ledger_authority: _FrozenLedgerAuthority,
     *,
     run: ConnectorRun,
@@ -1765,6 +1792,7 @@ def _validate_fresh_live_evidence(
     envelope: Mapping[str, Any],
     raw_sha256: str,
     raw_size: int,
+    historical_evidence_resolver: _HistoricalEvidenceResolver,
 ) -> tuple[dict[str, Any], dict[str, str]]:
     if envelope.get("schema_id") != STRICT_ARMING_SCHEMA_ID:
         _fail(
@@ -1807,7 +1835,7 @@ def _validate_fresh_live_evidence(
         envelope.get("grant_sha256"),
         field="grant_sha256",
     )
-    evidence = _resolve_historical_evidence(
+    evidence = historical_evidence_resolver(
         connector_key=run.connector_key,
         campaign_id=campaign_id,
         expected_campaign_fingerprint=campaign_fingerprint,
@@ -2042,10 +2070,31 @@ def _validate_fresh_live_evidence(
     )
 
 
-def _derive_connector_origin_receipt_from_anchor(
+def _validate_fresh_live_evidence(
+    ledger_authority: _FrozenLedgerAuthority,
+    *,
+    run: ConnectorRun,
+    target: ConnectorRunTarget,
+    envelope: Mapping[str, Any],
+    raw_sha256: str,
+    raw_size: int,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    return _validate_fresh_live_evidence_with_resolver(
+        ledger_authority,
+        run=run,
+        target=target,
+        envelope=envelope,
+        raw_sha256=raw_sha256,
+        raw_size=raw_size,
+        historical_evidence_resolver=_resolve_historical_evidence,
+    )
+
+
+def _derive_connector_origin_receipt_from_anchor_with_inputs(
     db: Session,
     *,
     anchor: _OriginAnchor,
+    read_inputs: _OriginReadInputs,
 ) -> dict[str, Any]:
     target = anchor.target.materialize(ConnectorRunTarget)
     run = anchor.run.materialize(ConnectorRun)
@@ -2065,10 +2114,17 @@ def _derive_connector_origin_receipt_from_anchor(
         run.connector_key == "nrc_adams_aps"
         and run.source_mode == OFFLINE_FIXTURE_PROOF_CLASS
     )
-    raw_path = _raw_storage_path(
-        target.raw_storage_ref,
-        allow_fixed_fixture=is_offline_fixture,
-    )
+    if read_inputs.raw_root is None:
+        raw_path = _raw_storage_path(
+            target.raw_storage_ref,
+            allow_fixed_fixture=is_offline_fixture,
+        )
+    else:
+        raw_path = _raw_storage_path_from_root(
+            target.raw_storage_ref,
+            raw_root=read_inputs.raw_root,
+            allow_fixed_fixture=is_offline_fixture,
+        )
     raw_size, raw_sha256 = _hash_file(raw_path)
     if (
         _normalized_sha256(
@@ -2108,6 +2164,7 @@ def _derive_connector_origin_receipt_from_anchor(
                 raw_path=raw_path,
                 raw_sha256=raw_sha256,
                 raw_size=raw_size,
+                verify_phase_b=read_inputs.nrc_phase_b_verifier,
             )
 
     if not isinstance(run.request_config_json, Mapping):
@@ -2133,14 +2190,32 @@ def _derive_connector_origin_receipt_from_anchor(
                 "layer3_origin_strict_arming_missing",
                 "The run lacks a strict server-derived arming envelope.",
             )
-        authority_bindings, target_identity = _validate_fresh_live_evidence(
-            _FrozenLedgerAuthority.from_anchor(anchor),
-            run=run,
-            target=target,
-            envelope=envelope,
-            raw_sha256=raw_sha256,
-            raw_size=raw_size,
-        )
+        ledger_authority = _FrozenLedgerAuthority.from_anchor(anchor)
+        if read_inputs.historical_evidence_resolver is None:
+            authority_bindings, target_identity = (
+                _validate_fresh_live_evidence(
+                    ledger_authority,
+                    run=run,
+                    target=target,
+                    envelope=envelope,
+                    raw_sha256=raw_sha256,
+                    raw_size=raw_size,
+                )
+            )
+        else:
+            authority_bindings, target_identity = (
+                _validate_fresh_live_evidence_with_resolver(
+                    ledger_authority,
+                    run=run,
+                    target=target,
+                    envelope=envelope,
+                    raw_sha256=raw_sha256,
+                    raw_size=raw_size,
+                    historical_evidence_resolver=(
+                        read_inputs.historical_evidence_resolver
+                    ),
+                )
+            )
         proof_class = FRESH_LIVE_PROOF_CLASS
 
     receipt: dict[str, Any] = {
@@ -2162,6 +2237,76 @@ def _derive_connector_origin_receipt_from_anchor(
     }
     receipt["receipt_hash"] = _stable_hash(receipt)
     return receipt
+
+
+def _legacy_origin_read_inputs() -> _OriginReadInputs:
+    from app.services import nrc_aps_phase_b_linkage
+
+    def verify_nrc_phase_b(
+        db: Session,
+        target_id: str,
+    ) -> Any:
+        return nrc_aps_phase_b_linkage.verify_strict_nrc_phase_b_linkage(
+            db,
+            connector_run_target_id=target_id,
+        )
+
+    return _OriginReadInputs(
+        raw_root=None,
+        historical_evidence_resolver=None,
+        nrc_phase_b_verifier=verify_nrc_phase_b,
+    )
+
+
+def _explicit_origin_read_inputs(
+    configuration: Settings,
+) -> _OriginReadInputs:
+    if not isinstance(configuration, Settings):
+        _fail(
+            "layer3_origin_settings_invalid",
+            "Read-only origin derivation requires explicit Settings.",
+        )
+
+    def resolve_historical_evidence(
+        **kwargs: str,
+    ) -> VerifiedHistoricalGrantEvidence:
+        return resolve_historical_connector_grant_evidence_read_only(
+            configuration,
+            **kwargs,
+        )
+
+    def verify_nrc_phase_b(
+        db: Session,
+        target_id: str,
+    ) -> Any:
+        from app.services import nrc_aps_phase_b_linkage
+
+        return (
+            nrc_aps_phase_b_linkage
+            .verify_strict_nrc_phase_b_linkage_read_only(
+                db,
+                target_id,
+                configuration,
+            )
+        )
+
+    return _OriginReadInputs(
+        raw_root=Path(configuration.connector_raw_dir).resolve(),
+        historical_evidence_resolver=resolve_historical_evidence,
+        nrc_phase_b_verifier=verify_nrc_phase_b,
+    )
+
+
+def _derive_connector_origin_receipt_from_anchor(
+    db: Session,
+    *,
+    anchor: _OriginAnchor,
+) -> dict[str, Any]:
+    return _derive_connector_origin_receipt_from_anchor_with_inputs(
+        db,
+        anchor=anchor,
+        read_inputs=_legacy_origin_read_inputs(),
+    )
 
 
 def _require_caller_transaction(db: Session) -> None:
@@ -3226,6 +3371,32 @@ def derive_connector_origin_receipt(
         receipt = _derive_connector_origin_receipt_from_anchor(
             db,
             anchor=anchor,
+        )
+        _require_anchor_unchanged(
+            db,
+            target_id=target_id,
+            expected=anchor,
+        )
+        return receipt
+
+
+def derive_connector_origin_receipt_read_only(
+    db: Session,
+    connector_run_target_id: str,
+    settings: Settings,
+) -> dict[str, Any]:
+    """Reconstruct origin from explicit read settings without caller mutation."""
+    target_id = _required_text(
+        connector_run_target_id,
+        field="connector_run_target_id",
+    )
+    read_inputs = _explicit_origin_read_inputs(settings)
+    with db.no_autoflush:
+        anchor = _read_origin_anchor(db, target_id=target_id)
+        receipt = _derive_connector_origin_receipt_from_anchor_with_inputs(
+            db,
+            anchor=anchor,
+            read_inputs=read_inputs,
         )
         _require_anchor_unchanged(
             db,
