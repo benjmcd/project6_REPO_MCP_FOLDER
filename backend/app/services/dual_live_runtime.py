@@ -398,10 +398,10 @@ class PhaseControlState:
         with self._lock:
             if self._state != "go_in_flight":
                 _fail("dual_live_phase_control_invalid")
-            if not dispatched:
-                self._state = "failed"
-            elif self._stop_latch.is_set:
+            if self._stop_latch.is_set:
                 self._state = "stopped"
+            elif not dispatched:
+                self._state = "failed"
             else:
                 self._state = "go_dispatched"
 
@@ -1238,8 +1238,11 @@ class FourStreamPumpGroup:
 
     __slots__ = (
         "_budget",
+        "_cancel_completed_reader_ids",
         "_cancel_errors",
+        "_cancel_owned_reader_ids",
         "_cancel_pump_errors",
+        "_cancel_start_errors",
         "_cancel_started",
         "_cancel_threads",
         "_errors",
@@ -1254,6 +1257,7 @@ class FourStreamPumpGroup:
         "_readers",
         "_sinks",
         "_started",
+        "_started_cancel_threads",
         "_started_threads",
         "_status_callback",
         "_stop_latch",
@@ -1325,6 +1329,9 @@ class FourStreamPumpGroup:
         self._errors: dict[str, BaseException] = {}
         self._cancel_errors: dict[str, BaseException] = {}
         self._cancel_pump_errors: dict[str, BaseException] = {}
+        self._cancel_start_errors: dict[str, BaseException] = {}
+        self._cancel_owned_reader_ids: set[int] = set()
+        self._cancel_completed_reader_ids: set[int] = set()
         self._errors_lock = threading.Lock()
         self._lifecycle_lock = threading.Lock()
         self._started = False
@@ -1333,6 +1340,7 @@ class FourStreamPumpGroup:
         self._threads: tuple[threading.Thread, ...] = ()
         self._started_threads: tuple[threading.Thread, ...] = ()
         self._cancel_threads: tuple[threading.Thread, ...] = ()
+        self._started_cancel_threads: tuple[threading.Thread, ...] = ()
 
     @property
     def threads_alive(self) -> tuple[str, ...]:
@@ -1464,12 +1472,22 @@ class FourStreamPumpGroup:
                 if stream in self._cancel_errors
             )
 
+    def _cancel_start_error_snapshot(
+        self,
+    ) -> tuple[tuple[str, BaseException], ...]:
+        with self._errors_lock:
+            return tuple(
+                (stream, self._cancel_start_errors[stream])
+                for stream in PIPE_STREAM_CLASSES
+                if stream in self._cancel_start_errors
+            )
+
     def _join_until(self, deadline: float) -> None:
         for thread in self._started_threads:
             thread.join(max(0.0, deadline - time.monotonic()))
 
     def _join_cancel_until(self, deadline: float) -> None:
-        for thread in self._cancel_threads:
+        for thread in self._started_cancel_threads:
             thread.join(max(0.0, deadline - time.monotonic()))
 
     def _cancel_reader(self, stream: str, reader: BinaryIO) -> None:
@@ -1478,14 +1496,11 @@ class FourStreamPumpGroup:
         except Exception as exc:
             with self._errors_lock:
                 self._cancel_errors.setdefault(stream, exc)
+        finally:
+            with self._errors_lock:
+                self._cancel_completed_reader_ids.add(id(reader))
 
     def _begin_cancellation(self) -> None:
-        with self._errors_lock:
-            if self._cancel_started:
-                return
-            if not self._errors:
-                self._stop_latch.latch("timeout")
-            self._cancel_started = True
         unique_readers: list[tuple[str, BinaryIO]] = []
         seen_reader_ids: set[int] = set()
         for stream in PIPE_STREAM_CLASSES:
@@ -1494,6 +1509,12 @@ class FourStreamPumpGroup:
                 continue
             seen_reader_ids.add(id(reader))
             unique_readers.append((stream, reader))
+        with self._errors_lock:
+            if self._cancel_started:
+                return
+            if not self._errors:
+                self._stop_latch.latch("timeout")
+            self._cancel_started = True
         self._cancel_threads = tuple(
             threading.Thread(
                 target=self._cancel_reader,
@@ -1503,13 +1524,33 @@ class FourStreamPumpGroup:
             )
             for stream, reader in unique_readers
         )
-        for thread in self._cancel_threads:
-            thread.start()
+        started_threads: list[threading.Thread] = []
+        for (stream, reader), thread in zip(
+            unique_readers,
+            self._cancel_threads,
+            strict=True,
+        ):
+            try:
+                thread.start()
+            except BaseException as exc:
+                with self._errors_lock:
+                    self._cancel_start_errors.setdefault(stream, exc)
+                continue
+            started_threads.append(thread)
+            with self._errors_lock:
+                self._cancel_owned_reader_ids.add(id(reader))
+            with self._lifecycle_lock:
+                self._started_cancel_threads = tuple(started_threads)
 
     @staticmethod
     def _cancel_failure_cause(
         cancel_errors: tuple[tuple[str, BaseException], ...],
+        cancel_start_errors: tuple[tuple[str, BaseException], ...],
     ) -> DualLiveRuntimeError:
+        if cancel_start_errors:
+            failure = DualLiveRuntimeError("dual_live_pump_cancel_start_failed")
+            failure.__cause__ = cancel_start_errors[0][1]
+            return failure
         if not cancel_errors:
             return DualLiveRuntimeError("dual_live_pump_cancel_stuck")
         failure = DualLiveRuntimeError("dual_live_pump_cancel_reader_failed")
@@ -1543,13 +1584,20 @@ class FourStreamPumpGroup:
         with self._lifecycle_lock:
             return any(
                 thread.is_alive()
-                for thread in self._started_threads + self._cancel_threads
+                for thread in (
+                    self._started_threads + self._started_cancel_threads
+                )
             )
 
     @property
-    def reader_close_owned_by_cancellation(self) -> bool:
+    def cancellation_reader_custody(
+        self,
+    ) -> tuple[frozenset[int], frozenset[int]]:
         with self._errors_lock:
-            return self._cancel_started
+            return (
+                frozenset(self._cancel_owned_reader_ids),
+                frozenset(self._cancel_completed_reader_ids),
+            )
 
     def wait_for_writer_release(self, *, timeout: float) -> bool:
         """Passively prove that no pump thread retains capture-writer access."""
@@ -1600,13 +1648,17 @@ class FourStreamPumpGroup:
             if not alive:
                 pump_errors = self._error_snapshot()
                 cancel_errors = self._cancel_error_snapshot()
+                cancel_start_errors = self._cancel_start_error_snapshot()
                 cancel_alive = any(
-                    thread.is_alive() for thread in self._cancel_threads
+                    thread.is_alive() for thread in self._started_cancel_threads
                 )
-                if cancel_alive or cancel_errors:
+                if cancel_alive or cancel_errors or cancel_start_errors:
                     raise DualLiveRuntimeError(
                         "dual_live_pump_cancel_failed"
-                    ) from self._cancel_failure_cause(cancel_errors)
+                    ) from self._cancel_failure_cause(
+                        cancel_errors,
+                        cancel_start_errors,
+                    )
                 if pump_errors:
                     raise DualLiveRuntimeError("dual_live_pump_failed") from (
                         pump_errors[0][1]
@@ -1620,15 +1672,24 @@ class FourStreamPumpGroup:
 
             final_pump_errors = self._error_snapshot()
             cancel_errors = self._cancel_error_snapshot()
+            cancel_start_errors = self._cancel_start_error_snapshot()
             still_alive = any(
                 thread.is_alive() for thread in self._started_threads
             )
             cancel_alive = any(
-                thread.is_alive() for thread in self._cancel_threads
+                thread.is_alive() for thread in self._started_cancel_threads
             )
-            if still_alive or cancel_alive or cancel_errors:
+            if (
+                still_alive
+                or cancel_alive
+                or cancel_errors
+                or cancel_start_errors
+            ):
                 raise DualLiveRuntimeError("dual_live_pump_cancel_failed") from (
-                    self._cancel_failure_cause(cancel_errors)
+                    self._cancel_failure_cause(
+                        cancel_errors,
+                        cancel_start_errors,
+                    )
                 )
             if final_pump_errors:
                 raise DualLiveRuntimeError("dual_live_pump_failed") from (
@@ -1806,12 +1867,16 @@ def _run_two_phase_controller(
         error.__cause__ = cause
         return error
 
-    def close_readers(child: _ControllerChild) -> BaseException | None:
+    def close_readers(
+        child: _ControllerChild,
+        *,
+        excluded_reader_ids: frozenset[int] = frozenset(),
+    ) -> BaseException | None:
         first_error: BaseException | None = None
         seen: set[int] = set()
         for stream in PIPE_STREAM_CLASSES:
             reader = child.readers[stream]
-            if id(reader) in seen:
+            if id(reader) in seen or id(reader) in excluded_reader_ids:
                 continue
             seen.add(id(reader))
             try:
@@ -1885,6 +1950,32 @@ def _run_two_phase_controller(
                 record_stop_once()
             except BaseException as exc:
                 fail("dual_live_runtime_writer_failure", "writer_failure", exc)
+
+        def close_controller_owned_readers() -> None:
+            nonlocal capture_close_safe
+            if child is None:
+                return
+            cancellation_owned_reader_ids: frozenset[int] = frozenset()
+            if pumps is not None:
+                if pumps.has_live_workers:
+                    capture_close_safe = False
+                    return
+                owned, completed = pumps.cancellation_reader_custody
+                if owned != completed:
+                    capture_close_safe = False
+                    return
+                cancellation_owned_reader_ids = owned
+            reader_error = close_readers(
+                child,
+                excluded_reader_ids=cancellation_owned_reader_ids,
+            )
+            if reader_error is not None:
+                fail(
+                    "dual_live_reader_close_failed",
+                    "protocol_failure",
+                    reader_error,
+                )
+                record_stop_if_latched()
 
         def poll_child_exit(
             deadline: float,
@@ -2045,6 +2136,9 @@ def _run_two_phase_controller(
                 if result is not None:
                     _fail("dual_live_phase_control_invalid")
                 dispatched = True
+            except BaseException:
+                stop_latch.latch("protocol_failure")
+                raise
             finally:
                 control.finish_go_dispatch(dispatched=dispatched)
             if stop_latch.is_set:
@@ -2128,6 +2222,8 @@ def _run_two_phase_controller(
                     else:
                         fail("dual_live_pump_failed", "pump_failure", exc)
                     record_stop_if_latched()
+            if capture_close_safe:
+                close_controller_owned_readers()
             if phase_error is None:
                 phase_error = normalized_error(
                     "dual_live_phase_exit_unproven",
@@ -2137,11 +2233,11 @@ def _run_two_phase_controller(
                 record_stop_if_latched()
             raise phase_error
 
-        controller_owns_reader_close = pumps is None
+        workers_quiesced = pumps is None
         if pumps is not None:
             try:
                 pumps.join(timeout=timeout_seconds)
-                controller_owns_reader_close = True
+                workers_quiesced = True
             except BaseException as exc:
                 if is_writer_failure(exc):
                     fail(
@@ -2151,17 +2247,12 @@ def _run_two_phase_controller(
                     )
                 else:
                     fail("dual_live_pump_failed", "pump_failure", exc)
-                pumps_have_live_workers = pumps.has_live_workers
-                if pumps_have_live_workers:
+                workers_quiesced = not pumps.has_live_workers
+                if not workers_quiesced:
                     capture_close_safe = False
-                elif not pumps.reader_close_owned_by_cancellation:
-                    controller_owns_reader_close = True
                 record_stop_if_latched()
-        if child is not None and controller_owns_reader_close:
-            reader_error = close_readers(child)
-            if reader_error is not None:
-                fail("dual_live_reader_close_failed", "protocol_failure", reader_error)
-                record_stop_if_latched()
+        if workers_quiesced:
+            close_controller_owned_readers()
         if (
             phase_error is None
             and control is not None

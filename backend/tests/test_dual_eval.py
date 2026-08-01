@@ -2060,6 +2060,30 @@ def test_phase_control_finishes_in_flight_stop_as_stopped() -> None:
     assert control.state == "stopped"
 
 
+def test_phase_control_stop_precedes_failed_dispatch_state() -> None:
+    raw_nonce = "d" * 64
+    stop = FirstStopLatch()
+    control = PhaseControlState(
+        phase="A",
+        control_nonce_sha256=hashlib.sha256(raw_nonce.encode("ascii")).hexdigest(),
+        stop_latch=stop,
+    )
+    control.mark_census_ready()
+    control.consume_frame(
+        io.BytesIO(
+            encode_child_control_frame(
+                phase="A", command="GO", control_nonce=raw_nonce
+            )
+        )
+    )
+
+    assert control.commit_go_if_clear()
+    assert stop.latch("pump_failure")
+    control.finish_go_dispatch(dispatched=False)
+
+    assert control.state == "stopped"
+
+
 def test_phase_control_protocol_failure_permanently_refuses_go_and_stop() -> None:
     raw_nonce = "d" * 64
     stop = FirstStopLatch()
@@ -3825,6 +3849,229 @@ def test_controller_rechecks_stop_after_phase_go_record_before_send(
     assert [record["event"] for record in records].count("phase_go") == 1
 
 
+def test_suppressed_send_stop_accepts_raced_exit_census(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured_latches: list[FirstStopLatch] = []
+    captured_readers: list[dict[str, _ControllerReader]] = []
+    finished_states: list[str] = []
+    exit_observed: list[bool] = []
+    exit_recorded = threading.Event()
+    original_init = FirstStopLatch.__init__
+    original_append = RuntimeRecordWriter.append
+    original_finish = PhaseControlState.finish_go_dispatch
+
+    def capture_latch(stop: FirstStopLatch) -> None:
+        original_init(stop)
+        captured_latches.append(stop)
+
+    def observe_records(
+        writer: RuntimeRecordWriter,
+        *,
+        phase: str,
+        event: str,
+        process_boot_id: str | None,
+        payload: object,
+    ) -> dict[str, object]:
+        record = original_append(
+            writer,
+            phase=phase,
+            event=event,
+            process_boot_id=process_boot_id,
+            payload=payload,
+        )
+        if event == "phase_go":
+            assert len(captured_latches) == 1
+            assert captured_latches[0].latch("pump_failure")
+        if (
+            event == "logger_census"
+            and isinstance(payload, dict)
+            and payload.get("census_point") == "exit"
+        ):
+            exit_recorded.set()
+        return record
+
+    def race_exit_after_finish(
+        control: PhaseControlState,
+        *,
+        dispatched: bool,
+    ) -> None:
+        original_finish(control, dispatched=dispatched)
+        finished_states.append(control.state)
+        readers = captured_readers[0]
+        readers["app"].feed(
+            encode_child_status_frame(
+                phase="A",
+                event="logger_census",
+                process_boot_id="a" * 64,
+                status_nonce_sha256="c" * 64,
+                ordinal=2,
+                payload={
+                    "census_point": "exit",
+                    "handler_count": 1,
+                    "topology_sha256": "1" * 64,
+                },
+            )
+        )
+        for reader in readers.values():
+            reader.finish()
+        exit_observed.append(exit_recorded.wait(timeout=0.2))
+
+    def create_child() -> object:
+        child = _controller_child("A", events, finish_readers=False)
+        captured_readers.append(dict(child.readers))
+        return child
+
+    monkeypatch.setattr(FirstStopLatch, "__init__", capture_latch)
+    monkeypatch.setattr(RuntimeRecordWriter, "append", observe_records)
+    monkeypatch.setattr(
+        PhaseControlState,
+        "finish_go_dispatch",
+        race_exit_after_finish,
+    )
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_phase_stopped"):
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=create_child,
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda _phase, _child: (
+                _controller_socket_census(),
+                {"active_process_count": 0, "process_list_sha256": "5" * 64},
+            ),
+            clear_authority=lambda _phase, _child: {
+                "authority_posture_sha256": "6" * 64,
+                "all_required_absent": True,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=0.5,
+        )
+
+    assert finished_states == ["stopped"]
+    assert exit_observed == [True]
+    assert "go-A" not in events
+    assert "create-B" not in events
+    assert "seal" not in events
+
+
+def test_send_exception_latches_before_raced_exit_census(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured_readers: list[dict[str, _ControllerReader]] = []
+    finished_states: list[str] = []
+    exit_observed: list[bool] = []
+    exit_recorded = threading.Event()
+    original_append = RuntimeRecordWriter.append
+    original_finish = PhaseControlState.finish_go_dispatch
+
+    def observe_exit_record(
+        writer: RuntimeRecordWriter,
+        *,
+        phase: str,
+        event: str,
+        process_boot_id: str | None,
+        payload: object,
+    ) -> dict[str, object]:
+        record = original_append(
+            writer,
+            phase=phase,
+            event=event,
+            process_boot_id=process_boot_id,
+            payload=payload,
+        )
+        if (
+            event == "logger_census"
+            and isinstance(payload, dict)
+            and payload.get("census_point") == "exit"
+        ):
+            exit_recorded.set()
+        return record
+
+    def race_exit_after_finish(
+        control: PhaseControlState,
+        *,
+        dispatched: bool,
+    ) -> None:
+        original_finish(control, dispatched=dispatched)
+        finished_states.append(control.state)
+        readers = captured_readers[0]
+        readers["app"].feed(
+            encode_child_status_frame(
+                phase="A",
+                event="logger_census",
+                process_boot_id="a" * 64,
+                status_nonce_sha256="c" * 64,
+                ordinal=2,
+                payload={
+                    "census_point": "exit",
+                    "handler_count": 1,
+                    "topology_sha256": "1" * 64,
+                },
+            )
+        )
+        for reader in readers.values():
+            reader.finish()
+        exit_observed.append(exit_recorded.wait(timeout=0.2))
+
+    def raise_send(_readers: dict[str, _ControllerReader]) -> None:
+        raise RuntimeError("send failed")
+
+    def create_child() -> object:
+        child = _controller_child(
+            "A",
+            events,
+            send_before_go=raise_send,
+            finish_readers=False,
+        )
+        captured_readers.append(dict(child.readers))
+        return child
+
+    monkeypatch.setattr(RuntimeRecordWriter, "append", observe_exit_record)
+    monkeypatch.setattr(
+        PhaseControlState,
+        "finish_go_dispatch",
+        race_exit_after_finish,
+    )
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_phase_failed") as exc:
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=create_child,
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda _phase, _child: (
+                _controller_socket_census(),
+                {"active_process_count": 0, "process_list_sha256": "5" * 64},
+            ),
+            clear_authority=lambda _phase, _child: {
+                "authority_posture_sha256": "6" * 64,
+                "all_required_absent": True,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=0.5,
+        )
+
+    assert isinstance(exc.value.__cause__, RuntimeError)
+    assert finished_states == ["stopped"]
+    assert exit_observed == [True]
+    assert "go-A" not in events
+    assert "create-B" not in events
+    assert "seal" not in events
+
+
 def test_in_flight_writer_failure_precedes_unproven_child_exit(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4081,6 +4328,59 @@ def test_controller_never_exits_skips_teardown_evidence_and_returns_bounded() ->
             reader.close()
 
 
+def test_exit_unproven_closes_each_dead_pump_reader_once() -> None:
+    events: list[str] = []
+    captured_readers: list[dict[str, _CountingCloseControllerReader]] = []
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+
+    def create_child() -> object:
+        child = _controller_child(
+            "A",
+            events,
+            never_exit=True,
+            reader_factory=_CountingCloseControllerReader,
+        )
+        captured_readers.append(dict(child.readers))
+        return child
+
+    try:
+        with pytest.raises(
+            DualLiveRuntimeError,
+            match="dual_live_phase_exit_timeout",
+        ):
+            dual_live_runtime_module._run_two_phase_controller(
+                identity=RUNTIME_IDENTITY,
+                runtime_start_payload=RUNTIME_START_PAYLOAD,
+                writers=writers,
+                create_phase_a=create_child,
+                create_phase_b=lambda: events.append("create-B"),
+                quiesce_phase=lambda phase, _child: events.append(
+                    f"quiesce-{phase}"
+                ),
+                clear_authority=lambda phase, _child: events.append(
+                    f"authority-{phase}"
+                ),
+                http_frame_validator=lambda _payload: None,
+                seal=lambda: events.append("seal"),
+                timeout_seconds=0.05,
+            )
+
+        readers = tuple(captured_readers[0].values())
+        assert [reader.close_calls for reader in readers] == [1, 1, 1, 1]
+        assert all(reader._closed for reader in readers)
+        assert all(writer.closed_clean for writer in writers.values())
+        assert "quiesce-A" not in events
+        assert "authority-A" not in events
+        assert "create-B" not in events
+        assert "seal" not in events
+    finally:
+        for reader in captured_readers[0].values():
+            if not reader._closed:
+                reader.close()
+
+
 def test_controller_stop_record_uses_immutable_first_latch_tick(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4212,6 +4512,112 @@ def test_partial_pump_start_failure_never_closes_live_writer_ownership(
         for reader in captured_readers[0].values():
             reader.close()
         for thread in started_pumps:
+            thread.join(timeout=1)
+
+
+def test_partial_cancel_start_closes_only_unassigned_readers_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    captured_pumps: list[FourStreamPumpGroup] = []
+    captured_readers: list[_CountingCloseControllerReader] = []
+    started_cancel_threads: list[threading.Thread] = []
+    cancel_start_count = 0
+    original_thread_start = threading.Thread.start
+    original_pump_start = FourStreamPumpGroup.start
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+
+    def reader_factory() -> _CountingCloseControllerReader:
+        reader = _CountingCloseControllerReader()
+        captured_readers.append(reader)
+        return reader
+
+    def capture_pumps_start(pumps: FourStreamPumpGroup) -> None:
+        captured_pumps.append(pumps)
+        original_pump_start(pumps)
+
+    def fail_second_cancel_start(thread: threading.Thread) -> None:
+        nonlocal cancel_start_count
+        if thread.name.startswith("dual-live-") and thread.name.endswith(
+            "-cancel"
+        ):
+            cancel_start_count += 1
+            if cancel_start_count == 2:
+                for reader in captured_readers[1:]:
+                    reader.finish()
+                for started_thread in started_cancel_threads:
+                    started_thread.join(timeout=1)
+                deadline = time.monotonic() + 1
+                while (
+                    captured_pumps[0].threads_alive
+                    and time.monotonic() < deadline
+                ):
+                    time.sleep(0.001)
+                assert captured_pumps[0].threads_alive == ()
+                raise RuntimeError("partial cancel start")
+        original_thread_start(thread)
+        if thread.name.startswith("dual-live-") and thread.name.endswith(
+            "-cancel"
+        ):
+            started_cancel_threads.append(thread)
+
+    monkeypatch.setattr(FourStreamPumpGroup, "start", capture_pumps_start)
+    monkeypatch.setattr(threading.Thread, "start", fail_second_cancel_start)
+    try:
+        with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_failed") as exc:
+            dual_live_runtime_module._run_two_phase_controller(
+                identity=RUNTIME_IDENTITY,
+                runtime_start_payload=RUNTIME_START_PAYLOAD,
+                writers=writers,
+                create_phase_a=lambda: _controller_child(
+                    "A",
+                    events,
+                    reader_factory=reader_factory,
+                    finish_readers=False,
+                ),
+                create_phase_b=lambda: events.append("create-B"),
+                quiesce_phase=lambda _phase, _child: (
+                    _controller_socket_census(),
+                    {
+                        "active_process_count": 0,
+                        "process_list_sha256": "5" * 64,
+                    },
+                ),
+                clear_authority=lambda _phase, _child: {
+                    "authority_posture_sha256": "6" * 64,
+                    "all_required_absent": True,
+                },
+                http_frame_validator=lambda _payload: None,
+                seal=lambda: events.append("seal"),
+                timeout_seconds=0.05,
+            )
+
+        cancel_failure = exc.value.__cause__
+        assert isinstance(cancel_failure, DualLiveRuntimeError)
+        assert cancel_failure.code == "dual_live_pump_cancel_failed"
+        assert isinstance(cancel_failure.__cause__, DualLiveRuntimeError)
+        assert cancel_failure.__cause__.code == "dual_live_pump_cancel_start_failed"
+        assert isinstance(cancel_failure.__cause__.__cause__, RuntimeError)
+        assert cancel_start_count == 4
+        assert len(started_cancel_threads) == 3
+        assert all(not thread.is_alive() for thread in started_cancel_threads)
+        assert captured_pumps[0].threads_alive == ()
+        owned, completed = captured_pumps[0].cancellation_reader_custody
+        assert owned == completed == frozenset(
+            id(captured_readers[index]) for index in (0, 2, 3)
+        )
+        assert [reader.close_calls for reader in captured_readers] == [1, 1, 1, 1]
+        assert all(reader._closed for reader in captured_readers)
+        assert all(writer.closed_clean for writer in writers.values())
+        assert "create-B" not in events
+        assert "seal" not in events
+    finally:
+        for reader in captured_readers:
+            if not reader._closed:
+                reader.close()
+        for thread in started_cancel_threads:
             thread.join(timeout=1)
 
 
