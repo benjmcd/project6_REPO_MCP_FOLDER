@@ -42,6 +42,7 @@
   - Evidence-root then campaign lock acquisition.
   - Atomic child creation inside a kill-on-close/no-breakaway Job.
   - Retained process identity, Job-zero proof, descendant process-table census, and owner-PID TCP4/TCP6/UDP4/UDP6 census.
+  - Public immutable projection of handle-bound child-start evidence for the runtime record.
 - `tools/dual_live_run.py`
   - Strict CLI adapter for wrapper and internal phase child modes.
   - Installs the required pre-import guards for Phase B before importing application services.
@@ -50,10 +51,17 @@
 
 - `backend/app/services/connector_egress_authorization.py`
   - Add explicit-settings read-only evidence-chain and historical-grant adapters; preserve existing default callers.
+  - Add a local-runner owner receipt that is limited to local, non-proxy, exclusive proof mode and a `local_loopback` grant; proxy-owner authority remains request-bound and refused by the CLI.
 - `backend/app/services/connector_egress_transport.py`
   - Add counter-v2/runtime-context parsing and emission, wrapper pipe sink, serialized physical-send boundary, revocation checks, and send-idle lease.
 - `backend/app/services/connector_egress_arming.py`
   - Accept exact v1 or exact v2 counter records and reject mixed runtime/boot identity.
+- `backend/app/services/connectors_nrc_adams.py`
+  - Accept the canonical strict-run `source_system` emitted by the arming and capture owners; retain every other reserved-run guard.
+- `backend/app/services/nrc_aps_phase_b_linkage.py`
+  - Use the same canonical strict NRC run identity during Phase-B linkage.
+- `backend/app/core/config.py`
+  - Disable dotenv loading at module-singleton construction under Python isolated mode before any service import; retain normal non-isolated application startup behavior.
 - `backend/app/services/connector_campaign_log_capture.py`
   - Add read-only manifest/seal/event verification adapter and controller-safe capture metadata projection; preserve strict-new sealing.
 - `backend/app/services/dual_live_evaluator.py`
@@ -74,6 +82,10 @@
   - Counter v1/v2 compatibility, sink, revocation, send-idle, and boot identity.
 - `backend/tests/test_egress_arming.py`
   - NRC v1/v2 acceptance and mixed-identity rejection.
+- `backend/tests/test_nrc_fresh.py`
+  - Real arming-created strict NRC run reaches the public executor.
+- `backend/tests/test_nrc_phase_b_linkage.py`
+  - Real arming-created completed NRC run reaches the public Phase-B linkage.
 - `tests/test_dual_gate.py`
   - Gate posture, read-only SQLite, stable reread, PowerShell run/validate behavior, fake Job/socket integration, and no-effect refusal.
 
@@ -602,6 +614,54 @@ git add backend/app/services/connector_egress_transport.py backend/app/services/
 git commit -m "feat(egress): bind dual-live counters to one process boot"
 ```
 
+## Task 4A: Code-Forced Task-5 Prerequisite Seams
+
+This corrects the execution map, not the frozen plan. The owner-approved CLI wrapper cannot truthfully use private Job fields, load and later clear `.env`, fabricate a loopback `Request`, or rewrite a malformed NRC row in the runtime. These seams therefore land before controller integration.
+
+**Files:**
+- Modify: `backend/app/services/connectors_nrc_adams.py`
+- Modify: `backend/app/services/nrc_aps_phase_b_linkage.py`
+- Modify: `backend/app/services/connector_egress_authorization.py`
+- Modify: `backend/app/services/dual_live_windows.py`
+- Modify: `backend/app/core/config.py`
+- Modify: `backend/tests/test_nrc_fresh.py`
+- Modify: `backend/tests/test_nrc_phase_b_linkage.py`
+- Modify: `backend/tests/test_egress_auth.py`
+- Modify: `tests/test_dual_gate.py`
+
+**Interfaces:**
+- Produces: canonical NRC strict-run identity parity, immutable child-start evidence, isolated no-dotenv imports, and a narrowly bounded local-runner receipt.
+- Preserves: request-bound proxy-owner authority, the normal non-isolated `.env` startup path, frozen ScienceBase raw-custody staging, and every existing default caller.
+
+- [ ] **Step 1: Write failing NRC identity parity tests**
+
+Create an NRC run through the real arming service. Prove the public executor and the public Phase-B binder accept that unchanged row. Reject an alternate source system without mutation or send.
+
+- [ ] **Step 2: Write failing Job-evidence and isolated-config tests**
+
+Prove the public projection exactly exposes the retained handle-bound creation identity, boot ID, executable SHA, and Job-policy SHA and cannot be mutated. In a real `python -I` subprocess with a temporary `.env`, prove `.env`-only key/grant authority is never loaded. Preserve ordinary non-isolated config behavior.
+
+- [ ] **Step 3: Write failing local-runner authorization tests**
+
+The runner entry derives its receipt from server-owned verified grant state plus an OS-derived local-user/workspace identity. It admits only `AUTH_OWNER=none`, local deployment, no trusted proxy, live egress enabled, exclusive proof mode, `operator_mode=local_loopback`, and write access. Proxy-owner, role/header emulation, caller-supplied hashes, nonlocal mode, or disabled/exclusive-false posture refuses. The receipt must revalidate through the existing arming receipt contract.
+
+- [ ] **Step 4: Implement the narrow seams**
+
+Use one shared canonical NRC source-system constant or exact literal in both executor and Phase-B guards. Add a frozen/read-only `JobStartEvidence` projection owned by `dual_live_windows`. At config module initialization use `_env_file=None` when `sys.flags.isolated` is true; do not add an environment switch. Factor receipt construction so the existing Request path and the new local-runner path share exact grant/campaign binding, while only the Request path can authorize `proxy_owner`.
+
+- [ ] **Step 5: Run focused and full owner files**
+
+```powershell
+Push-Location backend
+python -m pytest tests/test_nrc_fresh.py tests/test_nrc_phase_b_linkage.py tests/test_egress_auth.py -q
+Pop-Location
+python -m pytest tests/test_dual_gate.py -q -k "job_start or isolated or dotenv or runner_owner"
+```
+
+- [ ] **Step 6: Commit in narrow reviewed tranches**
+
+Keep identity, runner authorization, and Windows/config seams independently reviewable when their file sets do not overlap.
+
 ## Task 5: Controller, Child Bootstrap, and Existing Capture Integration
 
 **Files:**
@@ -646,7 +706,7 @@ The controller owns all four `ConnectorCampaignLogWriter` objects. Four bounded 
 
 - [ ] **Step 6: Implement Phase-A and Phase-B child boundaries**
 
-Phase A installs reversible accidental-call guards, configures pipe logging, performs the census, waits for GO, installs `ConnectorCounterRuntimeContext`, and calls only strict arming/raw-acquisition services. It must not import or call NRC parsing, source linkage, Layer 3, review, package, submit, or handoff paths. Phase B installs permanent socket/DNS/Requests/connector and subprocess guards before service imports, has no key/definition/grant/digest variables, calls `parse_admitted_blob_strict` for NRC, and then invokes the existing bounded ScienceBase intake and downstream workflow services.
+Phase A installs reversible accidental-call guards, configures pipe logging, performs the census, waits for GO, installs `ConnectorCounterRuntimeContext`, and calls only strict arming/raw-acquisition services. It retains the frozen ScienceBase safety-shape validation and raw-custody `Dataset`/raw `DatasetVersion`/provenance/inert-intake staging required by the original Task 4; that is not Phase-B semantic ingestion. It must not call NRC artifact parsing, origin-receipt minting, material preview, Gate B/C, Layer 3 analysis/execution, review, package, submit, or handoff paths. Phase B installs permanent socket/DNS/Requests/connector and subprocess guards before service imports, has no key/current-definition/current-grant variables, retains only the protected historical evidence index inputs, calls `parse_admitted_blob_strict` for NRC, mints the existing ScienceBase intake row's origin receipt rather than a second intake row, and then invokes the existing downstream workflow services.
 
 - [ ] **Step 7: Implement stop/quiescence/seal ordering**
 
