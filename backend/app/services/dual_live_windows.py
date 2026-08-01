@@ -28,6 +28,7 @@ _WAIT_OBJECT_0 = 0
 _WAIT_ABANDONED_0 = 0x80
 _WAIT_TIMEOUT = 0x102
 _WAIT_FAILED = 0xFFFFFFFF
+_ERROR_INVALID_HANDLE = 6
 _ERROR_ALREADY_EXISTS = 183
 _ERROR_INSUFFICIENT_BUFFER = 122
 _ERROR_INVALID_PARAMETER = 87
@@ -1605,14 +1606,10 @@ def _validated_phase_handles(
     live_handles = tuple(handle for handle in copied.values() if handle is not None)
     if len(set(live_handles)) != len(live_handles):
         _fail("dual_live_phase_channels_invalid")
-    for role in _PHASE_WRAPPER_ROLES:
+    for role in _PHASE_WRAPPER_ROLES + _PHASE_CHILD_ROLES:
         handle = copied[role]
         if handle is not None:
             _validate_phase_handle(role, handle, inheritable=False)
-    for role in _PHASE_CHILD_ROLES:
-        handle = copied[role]
-        if handle is not None:
-            _validate_phase_handle(role, handle, inheritable=True)
     pipe_handles = tuple(
         handle
         for role in _PHASE_WRAPPER_PIPE_ROLES + _PHASE_CHILD_PIPE_ROLES
@@ -1692,10 +1689,11 @@ class PhaseChannels:
         roles: Sequence[str],
         *,
         inheritable: bool,
-    ) -> dict[str, int]:
+    ) -> tuple[dict[str, int], dict[str, int]]:
         _require_phase_channel_apis()
         assert _kernel32 is not None
         duplicates: dict[str, int | None] = {role: None for role in roles}
+        guards: dict[str, int | None] = {role: None for role in roles}
         with _phase_handles_lock:
             originals = {role: self._handles[role] for role in roles}
             if any(handle is None for handle in originals.values()):
@@ -1725,18 +1723,56 @@ class PhaseChannels:
                         int(duplicate.value),
                         inheritable=inheritable,
                     )
+                    guard = wintypes.HANDLE()
+                    guarded = _kernel32.DuplicateHandle(
+                        current_process,
+                        source_handle,
+                        current_process,
+                        ctypes.byref(guard),
+                        0,
+                        False,
+                        _DUPLICATE_SAME_ACCESS,
+                    )
+                    if guard.value:
+                        guards[role] = int(guard.value)
+                    if not guarded or not guard.value:
+                        _fail("dual_live_phase_channels_lease_failed")
+                    _validate_phase_handle(
+                        role,
+                        int(guard.value),
+                        inheritable=False,
+                    )
+                    if not _kernel_objects_same(
+                        int(duplicate.value),
+                        int(guard.value),
+                        indeterminate_code="dual_live_phase_channels_lease_failed",
+                    ):
+                        _fail("dual_live_phase_channels_lease_failed")
             except BaseException:
-                cleanup_ok = _close_provisional_phase_handles(duplicates)
+                cleanup_ok = _close_provisional_phase_lease_handles(
+                    duplicates,
+                    guards,
+                )
                 if not cleanup_ok:
-                    cleanup_ok = _close_provisional_phase_handles(duplicates)
+                    cleanup_ok = _close_provisional_phase_lease_handles(
+                        duplicates,
+                        guards,
+                    )
                 if not cleanup_ok:
                     _fail("dual_live_phase_channels_cleanup_failed")
                 raise
-        return {
-            role: int(handle)
-            for role, handle in duplicates.items()
-            if handle is not None
-        }
+        return (
+            {
+                role: int(handle)
+                for role, handle in duplicates.items()
+                if handle is not None
+            },
+            {
+                role: int(handle)
+                for role, handle in guards.items()
+                if handle is not None
+            },
+        )
 
     @contextmanager
     def _lease_roles(
@@ -1745,22 +1781,33 @@ class PhaseChannels:
         *,
         inheritable: bool,
     ) -> Iterator[Mapping[str, int]]:
-        handles = self._duplicate_roles(roles, inheritable=inheritable)
+        handles, guards = self._duplicate_roles(roles, inheritable=inheritable)
         try:
             yield MappingProxyType(handles)
         finally:
-            provisional = {role: handle for role, handle in handles.items()}
-            cleanup_ok = _close_provisional_phase_handles(provisional)
+            cleanup_ok, lease_compromised = _close_guarded_phase_lease_handles(
+                handles,
+                guards,
+            )
             if not cleanup_ok:
-                cleanup_ok = _close_provisional_phase_handles(provisional)
+                cleanup_ok, retry_compromised = _close_guarded_phase_lease_handles(
+                    handles,
+                    guards,
+                )
+                lease_compromised = lease_compromised or retry_compromised
             if cleanup_ok:
                 handles.clear()
+                guards.clear()
             else:
                 _fail("dual_live_phase_channels_cleanup_failed")
+            if lease_compromised:
+                _fail("dual_live_phase_channels_lease_compromised")
 
     def lease_wrapper_handles(
         self,
     ) -> AbstractContextManager[Mapping[str, int]]:
+        """Yield borrowed noninheritable handles; caller must not close or retain."""
+
         roles = (
             _PHASE_WRAPPER_ROLES
             if self._phase == "A"
@@ -1771,6 +1818,13 @@ class PhaseChannels:
     def lease_child_handles(
         self,
     ) -> AbstractContextManager[Mapping[str, int]]:
+        """Yield borrowed inheritable handles for one serialized child creation.
+
+        Production binders must keep this lease as short as possible and deny or
+        serialize every unrelated subprocess creation until admission completes.
+        Caller must not close, retain, or use handles outside the context.
+        """
+
         roles = _PHASE_CHILD_ROLES if self._phase == "A" else _PHASE_CHILD_PIPE_ROLES
         return self._lease_roles(roles, inheritable=True)
 
@@ -1835,6 +1889,62 @@ def _close_provisional_phase_handles(handles: dict[str, int | None]) -> bool:
     return cleanup_ok and all(handle is None for handle in handles.values())
 
 
+def _close_provisional_phase_lease_handles(
+    handles: dict[str, int | None],
+    guards: dict[str, int | None],
+) -> bool:
+    handles_ok = _close_provisional_phase_handles(handles)
+    guards_ok = _close_provisional_phase_handles(guards)
+    return handles_ok and guards_ok
+
+
+def _close_guarded_phase_lease_handles(
+    handles: dict[str, int],
+    guards: dict[str, int],
+) -> tuple[bool, bool]:
+    assert _kernel32 is not None
+    cleanup_ok = True
+    lease_compromised = False
+    for role in tuple(dict.fromkeys((*handles, *guards))):
+        handle = handles.get(role)
+        guard = guards.get(role)
+        if handle is not None:
+            if guard is None:
+                cleanup_ok = False
+                continue
+            flags = wintypes.DWORD()
+            ctypes.set_last_error(0)
+            if not _kernel32.GetHandleInformation(handle, ctypes.byref(flags)):
+                if ctypes.get_last_error() == _ERROR_INVALID_HANDLE:
+                    handles.pop(role, None)
+                    lease_compromised = True
+                else:
+                    cleanup_ok = False
+            else:
+                try:
+                    same_object = _kernel_objects_same(
+                        handle,
+                        guard,
+                        indeterminate_code="dual_live_phase_channels_cleanup_failed",
+                    )
+                except DualLiveWindowsError:
+                    cleanup_ok = False
+                else:
+                    if not same_object:
+                        handles.pop(role, None)
+                        lease_compromised = True
+                    elif _kernel32.CloseHandle(handle):
+                        handles.pop(role, None)
+                    else:
+                        cleanup_ok = False
+        if role not in handles and guard is not None:
+            if _kernel32.CloseHandle(guard):
+                guards.pop(role, None)
+            else:
+                cleanup_ok = False
+    return cleanup_ok and not handles and not guards, lease_compromised
+
+
 def create_phase_channels(phase: str) -> PhaseChannels:
     _require_phase_channel_apis()
     validated_phase = _require_phase(phase)
@@ -1854,7 +1964,7 @@ def create_phase_channels(phase: str) -> PhaseChannels:
             current_process,
             ctypes.byref(duplicate),
             0,
-            True,
+            False,
             _DUPLICATE_SAME_ACCESS,
         )
         if duplicate.value:

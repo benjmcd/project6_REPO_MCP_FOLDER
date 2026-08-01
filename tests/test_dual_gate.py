@@ -1669,6 +1669,86 @@ def test_phase_channels_expose_only_bounded_handle_leases() -> None:
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+@pytest.mark.parametrize("phase", ("A", "B"))
+def test_phase_factory_retains_only_noninheritable_owner_capabilities(
+    phase: str,
+) -> None:
+    channels = dual_live_windows.create_phase_channels(phase)
+    try:
+        owner_handles = _phase_private_handles(
+            channels,
+            dual_live_windows._PHASE_WRAPPER_ROLES
+            + dual_live_windows._PHASE_CHILD_ROLES,
+        )
+        assert all(_handle_flags(handle) == 0 for handle in owner_handles)
+
+        with channels.lease_child_handles() as child_handles:
+            leased = tuple(child_handles.values())
+            assert set(leased).isdisjoint(owner_handles)
+            assert all(
+                _handle_flags(handle) == dual_live_windows._HANDLE_FLAG_INHERIT
+                for handle in leased
+            )
+        flags = ctypes.wintypes.DWORD()
+        assert all(
+            not dual_live_windows._kernel32.GetHandleInformation(
+                handle,
+                ctypes.byref(flags),
+            )
+            for handle in leased
+        )
+    finally:
+        channels.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_owner_child_events_do_not_reach_unrelated_inherit_all_child() -> None:
+    channels = dual_live_windows.create_phase_channels("A")
+    handles = getattr(channels, "_handles")
+    child_code = r"""
+import ctypes
+import sys
+
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+kernel32.SetEvent(ctypes.c_void_p(int(sys.argv[1])))
+kernel32.ResetEvent(ctypes.c_void_p(int(sys.argv[2])))
+"""
+    try:
+        with channels.lease_wrapper_handles() as wrapper_handles:
+            completed = subprocess.run(
+                (
+                    sys.executable,
+                    "-B",
+                    "-c",
+                    child_code,
+                    str(handles["child_revocation_event_handle"]),
+                    str(handles["child_send_idle_event_handle"]),
+                ),
+                close_fds=False,
+                check=False,
+                env=_job_environment(),
+                timeout=5,
+            )
+            assert completed.returncode == 0
+            assert (
+                dual_live_windows._kernel32.WaitForSingleObject(
+                    wrapper_handles["wrapper_revocation_event_handle"],
+                    0,
+                )
+                == dual_live_windows._WAIT_TIMEOUT
+            )
+            assert (
+                dual_live_windows._kernel32.WaitForSingleObject(
+                    wrapper_handles["wrapper_send_idle_event_handle"],
+                    0,
+                )
+                == dual_live_windows._WAIT_OBJECT_0
+            )
+    finally:
+        channels.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
 def test_phase_factory_rejects_cross_side_pipe_object_alias(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1850,6 +1930,89 @@ def test_phase_handle_lease_remains_valid_during_concurrent_owner_close() -> Non
             )
             for handle in owner_handles
         )
+    finally:
+        channels.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_lease_finalizer_does_not_close_reused_borrowed_handle() -> None:
+    channels = dual_live_windows.create_phase_channels("B")
+    baseline = _process_handle_count()
+    recycled_events: list[int] = []
+    victim = 0
+    try:
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_phase_channels_lease_compromised",
+        ):
+            with channels.lease_wrapper_handles() as wrapper_handles:
+                borrowed = wrapper_handles["wrapper_control_write_handle"]
+                assert dual_live_windows._kernel32.CloseHandle(borrowed)
+                for _ in range(1024):
+                    candidate = dual_live_windows._kernel32.CreateEventW(
+                        None,
+                        True,
+                        False,
+                        None,
+                    )
+                    assert candidate
+                    value = int(candidate)
+                    recycled_events.append(value)
+                    if value == borrowed:
+                        victim = value
+                        break
+                assert victim == borrowed
+
+        assert not wrapper_handles
+        flags = ctypes.wintypes.DWORD()
+        assert dual_live_windows._kernel32.GetHandleInformation(
+            victim,
+            ctypes.byref(flags),
+        )
+        assert (
+            dual_live_windows._kernel32.WaitForSingleObject(victim, 0)
+            == dual_live_windows._WAIT_TIMEOUT
+        )
+        assert _process_handle_count() == baseline + 1
+    finally:
+        flags = ctypes.wintypes.DWORD()
+        for handle in recycled_events:
+            if dual_live_windows._kernel32.GetHandleInformation(
+                handle,
+                ctypes.byref(flags),
+            ):
+                dual_live_windows._kernel32.CloseHandle(handle)
+        channels.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_lease_finalizer_retries_actual_close_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    channels = dual_live_windows.create_phase_channels("B")
+    baseline = _process_handle_count()
+    original_close = dual_live_windows._kernel32.CloseHandle
+    failed_handle = 0
+    failed_once = False
+    calls: list[int] = []
+
+    def fail_once(handle: object) -> int:
+        nonlocal failed_once
+        value = int(handle)
+        calls.append(value)
+        if value == failed_handle and not failed_once:
+            failed_once = True
+            ctypes.set_last_error(5)
+            return 0
+        return int(original_close(handle))
+
+    monkeypatch.setattr(dual_live_windows._kernel32, "CloseHandle", fail_once)
+    try:
+        with channels.lease_wrapper_handles() as wrapper_handles:
+            failed_handle = wrapper_handles["wrapper_control_write_handle"]
+        assert not wrapper_handles
+        assert calls.count(failed_handle) == 2
+        assert _process_handle_count() == baseline
     finally:
         channels.close()
 
@@ -2056,7 +2219,7 @@ def test_phase_handle_validation_rejects_same_pipe_object_under_new_handle() -> 
             dual_live_windows._kernel32.GetCurrentProcess(),
             ctypes.byref(duplicate),
             0,
-            True,
+            False,
             dual_live_windows._DUPLICATE_SAME_ACCESS,
         )
         duplicate_args["child_http_write_handle"] = int(duplicate.value)
@@ -2304,25 +2467,25 @@ def test_child_handle_bootstrap_clears_inheritance_and_rejects_bad_sets(
     channels = dual_live_windows.create_phase_channels("A")
     disallowed, keepalive = _make_inheritable_disallowed_handle("file", tmp_path)
     try:
-        before = _phase_private_handles(
-            channels,
-            dual_live_windows._PHASE_CHILD_ROLES,
-        )
-        assert all(_handle_flags(handle) == 1 for handle in before)
-        dual_live_windows.make_inherited_handles_non_inheritable(before)
-        assert all(_handle_flags(handle) == 0 for handle in before)
-        with pytest.raises(
-            DualLiveWindowsError,
-            match="dual_live_job_inherited_handles_invalid",
-        ):
-            dual_live_windows.make_inherited_handles_non_inheritable(
-                (before[0], before[0])
-            )
-        with pytest.raises(
-            DualLiveWindowsError,
-            match="dual_live_job_inherited_handles_invalid",
-        ):
-            dual_live_windows.make_inherited_handles_non_inheritable((disallowed,))
+        with channels.lease_child_handles() as child_handles:
+            before = tuple(child_handles.values())
+            assert all(_handle_flags(handle) == 1 for handle in before)
+            dual_live_windows.make_inherited_handles_non_inheritable(before)
+            assert all(_handle_flags(handle) == 0 for handle in before)
+            with pytest.raises(
+                DualLiveWindowsError,
+                match="dual_live_job_inherited_handles_invalid",
+            ):
+                dual_live_windows.make_inherited_handles_non_inheritable(
+                    (before[0], before[0])
+                )
+            with pytest.raises(
+                DualLiveWindowsError,
+                match="dual_live_job_inherited_handles_invalid",
+            ):
+                dual_live_windows.make_inherited_handles_non_inheritable(
+                    (disallowed,)
+                )
     finally:
         channels.close()
         if isinstance(keepalive, socket.socket):
@@ -2336,8 +2499,6 @@ def test_child_handle_bootstrap_set_failure_attempts_all_handles_then_retries(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     channels = dual_live_windows.create_phase_channels("A")
-    handles = _phase_private_handles(channels, dual_live_windows._PHASE_CHILD_ROLES)
-    failed_handle = handles[1]
     original_set = dual_live_windows._kernel32.SetHandleInformation
     calls: list[int] = []
     failed_once = False
@@ -2358,26 +2519,32 @@ def test_child_handle_bootstrap_set_failure_attempts_all_handles_then_retries(
         fail_once,
     )
     try:
-        with pytest.raises(
-            DualLiveWindowsError,
-            match="dual_live_job_inherited_handles_invalid",
-        ):
-            dual_live_windows.make_inherited_handles_non_inheritable(handles)
-        assert calls == list(handles)
-        assert _handle_flags(failed_handle) == dual_live_windows._HANDLE_FLAG_INHERIT
-        assert all(
-            _handle_flags(handle) == 0
-            for handle in handles
-            if handle != failed_handle
-        )
+        with channels.lease_child_handles() as child_handles:
+            handles = tuple(child_handles.values())
+            failed_handle = handles[1]
+            with pytest.raises(
+                DualLiveWindowsError,
+                match="dual_live_job_inherited_handles_invalid",
+            ):
+                dual_live_windows.make_inherited_handles_non_inheritable(handles)
+            assert calls == list(handles)
+            assert (
+                _handle_flags(failed_handle)
+                == dual_live_windows._HANDLE_FLAG_INHERIT
+            )
+            assert all(
+                _handle_flags(handle) == 0
+                for handle in handles
+                if handle != failed_handle
+            )
 
-        monkeypatch.setattr(
-            dual_live_windows._kernel32,
-            "SetHandleInformation",
-            original_set,
-        )
-        dual_live_windows.make_inherited_handles_non_inheritable(handles)
-        assert all(_handle_flags(handle) == 0 for handle in handles)
+            monkeypatch.setattr(
+                dual_live_windows._kernel32,
+                "SetHandleInformation",
+                original_set,
+            )
+            dual_live_windows.make_inherited_handles_non_inheritable(handles)
+            assert all(_handle_flags(handle) == 0 for handle in handles)
     finally:
         channels.close()
 
@@ -2387,7 +2554,6 @@ def test_child_handle_bootstrap_readback_failure_is_aggregated_and_retryable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     channels = dual_live_windows.create_phase_channels("A")
-    handles = _phase_private_handles(channels, dual_live_windows._PHASE_CHILD_ROLES)
     original_get = dual_live_windows._kernel32.GetHandleInformation
     calls = 0
 
@@ -2399,27 +2565,29 @@ def test_child_handle_bootstrap_readback_failure_is_aggregated_and_retryable(
             return 0
         return int(original_get(handle, flags_pointer))
 
-    monkeypatch.setattr(
-        dual_live_windows._kernel32,
-        "GetHandleInformation",
-        fail_first_readback,
-    )
     try:
-        with pytest.raises(
-            DualLiveWindowsError,
-            match="dual_live_job_inherited_handles_invalid",
-        ):
-            dual_live_windows.make_inherited_handles_non_inheritable(handles)
-        assert calls == len(handles) * 2
+        with channels.lease_child_handles() as child_handles:
+            handles = tuple(child_handles.values())
+            monkeypatch.setattr(
+                dual_live_windows._kernel32,
+                "GetHandleInformation",
+                fail_first_readback,
+            )
+            with pytest.raises(
+                DualLiveWindowsError,
+                match="dual_live_job_inherited_handles_invalid",
+            ):
+                dual_live_windows.make_inherited_handles_non_inheritable(handles)
+            assert calls == len(handles) * 2
 
-        monkeypatch.setattr(
-            dual_live_windows._kernel32,
-            "GetHandleInformation",
-            original_get,
-        )
-        assert all(_handle_flags(handle) == 0 for handle in handles)
-        dual_live_windows.make_inherited_handles_non_inheritable(handles)
-        assert all(_handle_flags(handle) == 0 for handle in handles)
+            monkeypatch.setattr(
+                dual_live_windows._kernel32,
+                "GetHandleInformation",
+                original_get,
+            )
+            assert all(_handle_flags(handle) == 0 for handle in handles)
+            dual_live_windows.make_inherited_handles_non_inheritable(handles)
+            assert all(_handle_flags(handle) == 0 for handle in handles)
     finally:
         channels.close()
 
