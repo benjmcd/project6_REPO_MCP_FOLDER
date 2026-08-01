@@ -2015,7 +2015,10 @@ def test_production_owned_binding_signature_has_no_injection_seams() -> None:
 
 def _production_identity_and_payload(
     locks: Any,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[RuntimeIdentity, dict[str, str]]:
+    from app.services import dual_live_windows
+
     identity = RuntimeIdentity(
         runtime_instance_id=str(uuid4()),
         wrapper_nonce_sha256="1" * 64,
@@ -2024,6 +2027,18 @@ def _production_identity_and_payload(
         interpreter_image_sha256="3" * 64,
         root_mutex_identity_sha256=locks.root_identity_sha256,
         campaign_mutex_identity_sha256=locks.campaign_identity_sha256,
+    )
+    source_custody = SimpleNamespace(
+        code_revision=identity.code_revision,
+        wrapper_image_sha256=identity.wrapper_image_sha256,
+        interpreter_image_sha256=identity.interpreter_image_sha256,
+        assert_stable=lambda: None,
+        close=lambda: None,
+    )
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_acquire_reviewed_source_custody",
+        lambda: source_custody,
     )
     return identity, {
         "code_revision": CODE_REVISION,
@@ -2044,6 +2059,336 @@ def _production_capture_owner(
     )
     assert type(capture) is dual_live_runtime_module._OwnedCampaignCapture
     return capture
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_binding_derives_source_identity_before_capture(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import connector_campaign_log_capture, dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
+    events: list[str] = []
+
+    class _SourceCustody:
+        code_revision = identity.code_revision
+        wrapper_image_sha256 = "4" * 64
+        interpreter_image_sha256 = identity.interpreter_image_sha256
+
+        def assert_stable(self) -> None:
+            events.append("stable")
+
+        def close(self) -> None:
+            events.append("close")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_acquire_reviewed_source_custody",
+        _SourceCustody,
+        raising=False,
+    )
+
+    def forbidden_begin(**_kwargs: Any) -> Any:
+        pytest.fail("forged source identity reached canonical capture begin")
+
+    monkeypatch.setattr(
+        connector_campaign_log_capture,
+        "begin_connector_campaign_log_capture",
+        forbidden_begin,
+    )
+    try:
+        with pytest.raises(
+            dual_live_runtime_module.DualLiveRuntimeError
+        ) as excinfo:
+            dual_live_runtime_module._make_production_owned_controller_context(
+                campaign_id=str(authority.campaign_id),
+                expected_campaign_fingerprint=FINGERPRINT,
+                db=db,
+                identity=identity,
+                runtime_start_payload=start_payload,
+                timeout_seconds=2,
+                proof_locks=locks,
+            )
+        assert excinfo.value.code == "dual_live_runtime_identity_mismatch"
+        assert events == ["stable", "close"]
+        _assert_unpublished(authority)
+    finally:
+        locks.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_binding_normalizes_source_cleanup_failure(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
+
+    class SourceCloseProbe(RuntimeError):
+        pass
+
+    class _SourceCustody:
+        code_revision = identity.code_revision
+        wrapper_image_sha256 = "4" * 64
+        interpreter_image_sha256 = identity.interpreter_image_sha256
+
+        def assert_stable(self) -> None:
+            return None
+
+        def close(self) -> None:
+            raise SourceCloseProbe("source close")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_acquire_reviewed_source_custody",
+        _SourceCustody,
+    )
+    try:
+        with pytest.raises(
+            dual_live_runtime_module.DualLiveRuntimeError
+        ) as excinfo:
+            dual_live_runtime_module._make_production_owned_controller_context(
+                campaign_id=str(authority.campaign_id),
+                expected_campaign_fingerprint=FINGERPRINT,
+                db=db,
+                identity=identity,
+                runtime_start_payload=start_payload,
+                timeout_seconds=2,
+                proof_locks=locks,
+            )
+        assert excinfo.value.code == "dual_live_source_identity_cleanup_failed"
+        assert isinstance(excinfo.value.__cause__, SourceCloseProbe)
+        assert isinstance(
+            excinfo.value.__context__,
+            dual_live_runtime_module.DualLiveRuntimeError,
+        )
+        assert excinfo.value.__context__.code == "dual_live_runtime_identity_mismatch"
+        _assert_unpublished(authority)
+    finally:
+        locks.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_binding_capture_cleanup_precedes_source_cleanup(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
+
+    class FactoryProbe(RuntimeError):
+        pass
+
+    class CaptureCloseProbe(RuntimeError):
+        pass
+
+    class SourceCloseProbe(RuntimeError):
+        pass
+
+    class _SourceCustody:
+        code_revision = identity.code_revision
+        wrapper_image_sha256 = identity.wrapper_image_sha256
+        interpreter_image_sha256 = identity.interpreter_image_sha256
+
+        def assert_stable(self) -> None:
+            return None
+
+        def close(self) -> None:
+            raise SourceCloseProbe("source close")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_acquire_reviewed_source_custody",
+        _SourceCustody,
+    )
+
+    def reject_owned_capture(**_kwargs: Any) -> Any:
+        raise FactoryProbe("owned capture")
+
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_OwnedCampaignCapture",
+        reject_owned_capture,
+    )
+    original_close = dual_live_runtime_module._close_incomplete_campaign_capture
+
+    def close_then_fail(capture: Any) -> BaseException:
+        assert original_close(capture) is None
+        return CaptureCloseProbe("capture close")
+
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_close_incomplete_campaign_capture",
+        close_then_fail,
+    )
+    try:
+        with pytest.raises(
+            dual_live_runtime_module.DualLiveRuntimeError
+        ) as excinfo:
+            dual_live_runtime_module._make_production_owned_controller_context(
+                campaign_id=str(authority.campaign_id),
+                expected_campaign_fingerprint=FINGERPRINT,
+                db=db,
+                identity=identity,
+                runtime_start_payload=start_payload,
+                timeout_seconds=2,
+                proof_locks=locks,
+            )
+        assert excinfo.value.code == "dual_live_capture_close_failed"
+        assert isinstance(excinfo.value.__cause__, CaptureCloseProbe)
+        assert isinstance(excinfo.value.__cause__.__context__, SourceCloseProbe)
+        assert isinstance(
+            excinfo.value.__cause__.__context__.__context__,
+            FactoryProbe,
+        )
+        _assert_unpublished(authority)
+    finally:
+        locks.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_runner_retains_run_and_both_cleanup_failures(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
+    context = dual_live_runtime_module._make_production_owned_controller_context(
+        campaign_id=str(authority.campaign_id),
+        expected_campaign_fingerprint=FINGERPRINT,
+        db=db,
+        identity=identity,
+        runtime_start_payload=start_payload,
+        timeout_seconds=2,
+        proof_locks=locks,
+    )
+
+    class RunProbe(RuntimeError):
+        pass
+
+    class CaptureCloseProbe(RuntimeError):
+        pass
+
+    class SourceCloseProbe(RuntimeError):
+        pass
+
+    def fail_run(_context: object) -> Any:
+        raise RunProbe("run")
+
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_run_bound_owned_two_phase_controller",
+        fail_run,
+    )
+    original_abort = dual_live_runtime_module._OwnedCampaignCapture._abort_close
+
+    def abort_then_fail(self: Any) -> BaseException:
+        assert original_abort(self) is None
+        return CaptureCloseProbe("capture close")
+
+    monkeypatch.setattr(
+        dual_live_runtime_module._OwnedCampaignCapture,
+        "_abort_close",
+        abort_then_fail,
+    )
+    original_source_close = (
+        dual_live_runtime_module._ProductionOwnedControllerContext._close_source_custody
+    )
+
+    def source_then_fail(self: Any) -> BaseException:
+        assert original_source_close(self) is None
+        return SourceCloseProbe("source close")
+
+    monkeypatch.setattr(
+        dual_live_runtime_module._ProductionOwnedControllerContext,
+        "_close_source_custody",
+        source_then_fail,
+    )
+    try:
+        with pytest.raises(
+            dual_live_runtime_module.DualLiveRuntimeError
+        ) as excinfo:
+            dual_live_runtime_module._run_production_owned_two_phase_controller(
+                context
+            )
+        assert excinfo.value.code == "dual_live_capture_close_failed"
+        assert isinstance(excinfo.value.__cause__, CaptureCloseProbe)
+        assert isinstance(excinfo.value.__cause__.__context__, SourceCloseProbe)
+        assert isinstance(
+            excinfo.value.__cause__.__context__.__context__,
+            RunProbe,
+        )
+        _assert_unpublished(authority)
+    finally:
+        locks.close()
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
@@ -2069,7 +2414,18 @@ def test_production_owned_binding_refuses_inactive_locks_before_capture(
         FINGERPRINT,
         DEFINITION_SHA256,
     )
-    identity, start_payload = _production_identity_and_payload(locks)
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
+    source_calls: list[str] = []
+
+    def forbidden_source_custody() -> Any:
+        source_calls.append("acquire")
+        pytest.fail("inactive locks reached source custody acquisition")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_acquire_reviewed_source_custody",
+        forbidden_source_custody,
+    )
     locks.close()
     evidence_before = _evidence_bytes(authority.evidence_root)
     runs_before = _connector_run_rows(db)
@@ -2098,6 +2454,7 @@ def test_production_owned_binding_refuses_inactive_locks_before_capture(
     assert _evidence_bytes(authority.evidence_root) == evidence_before
     assert _connector_run_rows(db) == runs_before
     assert _connector_event_rows(db) == events_before
+    assert source_calls == []
     _assert_unpublished(authority)
 
 
@@ -2124,7 +2481,7 @@ def test_production_owned_binding_refuses_dirty_db_before_capture(
         FINGERPRINT,
         DEFINITION_SHA256,
     )
-    identity, start_payload = _production_identity_and_payload(locks)
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
 
     def forbidden_begin(**_kwargs: Any) -> Any:
         pytest.fail("dirty DB session reached canonical capture begin")
@@ -2185,7 +2542,7 @@ def test_production_owned_runner_refuses_lost_locks_before_child_and_seal(
         FINGERPRINT,
         DEFINITION_SHA256,
     )
-    identity, start_payload = _production_identity_and_payload(locks)
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
     context = (
         dual_live_runtime_module._make_production_owned_controller_context(
             campaign_id=str(authority.campaign_id),
@@ -2243,7 +2600,7 @@ def test_production_owned_runner_preserves_writers_when_ownership_unproven(
         FINGERPRINT,
         DEFINITION_SHA256,
     )
-    identity, start_payload = _production_identity_and_payload(locks)
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
     context = (
         dual_live_runtime_module._make_production_owned_controller_context(
             campaign_id=str(authority.campaign_id),
@@ -2309,7 +2666,7 @@ def test_production_owned_runner_closes_child_if_locks_lost_during_create(
         FINGERPRINT,
         DEFINITION_SHA256,
     )
-    identity, start_payload = _production_identity_and_payload(locks)
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
     context = (
         dual_live_runtime_module._make_production_owned_controller_context(
             campaign_id=str(authority.campaign_id),
@@ -2359,12 +2716,78 @@ def test_production_owned_runner_closes_child_if_locks_lost_during_create(
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
-def test_production_owned_binding_begins_runs_and_seals_canonical_capture(
+def test_production_owned_runner_refuses_child_interpreter_mismatch(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     from app.services import dual_live_windows
+
+    authority = _authority_fixture(tmp_path)
+    _bind_real_evidence_index(authority)
+    _install_authority(monkeypatch, authority)
+
+    class _Clock:
+        @classmethod
+        def now(cls, _tz: object = None) -> datetime:
+            return START
+
+    monkeypatch.setattr(dual_live_runtime_module, "datetime", _Clock)
+    locks = dual_live_windows.acquire_proof_locks(
+        authority.evidence_root,
+        str(authority.campaign_id),
+        FINGERPRINT,
+        DEFINITION_SHA256,
+    )
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
+    context = dual_live_runtime_module._make_production_owned_controller_context(
+        campaign_id=str(authority.campaign_id),
+        expected_campaign_fingerprint=FINGERPRINT,
+        db=db,
+        identity=identity,
+        runtime_start_payload=start_payload,
+        timeout_seconds=2,
+        proof_locks=locks,
+    )
+    capture_owner = _production_capture_owner(context)
+    events: list[str] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        process = _CaptureOwnedPhaseProcess(phase, events)
+        process.executable_sha256 = "9" * 64
+        return process
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+    )
+    try:
+        with pytest.raises(
+            dual_live_runtime_module.DualLiveRuntimeError
+        ) as excinfo:
+            dual_live_runtime_module._run_production_owned_two_phase_controller(
+                context
+            )
+        assert excinfo.value.code == "dual_live_runtime_identity_mismatch"
+        assert events == [
+            "revoke-A-protocol_failure",
+            "close-A",
+        ]
+        assert all(writer.closed for writer in capture_owner._capture.writers)
+        assert context.sealed is False
+        _assert_unpublished(authority)
+    finally:
+        locks.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_production_owned_binding_begins_runs_and_seals_canonical_capture(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import connector_campaign_log_capture, dual_live_windows
 
     authority = _authority_fixture(tmp_path)
     chain = _bind_real_evidence_index(authority)
@@ -2407,7 +2830,37 @@ def test_production_owned_binding_begins_runs_and_seals_canonical_capture(
         FINGERPRINT,
         DEFINITION_SHA256,
     )
-    identity, start_payload = _production_identity_and_payload(locks)
+    identity, start_payload = _production_identity_and_payload(locks, monkeypatch)
+
+    class _SourceCustody:
+        code_revision = identity.code_revision
+        wrapper_image_sha256 = identity.wrapper_image_sha256
+        interpreter_image_sha256 = identity.interpreter_image_sha256
+
+        def assert_stable(self) -> None:
+            events.append("source-stable")
+
+        def close(self) -> None:
+            events.append("source-close")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_acquire_reviewed_source_custody",
+        _SourceCustody,
+    )
+    canonical_seal = (
+        connector_campaign_log_capture.seal_connector_campaign_log_capture
+    )
+
+    def seal(*args: Any, **kwargs: Any) -> Any:
+        events.append("seal")
+        return canonical_seal(*args, **kwargs)
+
+    monkeypatch.setattr(
+        connector_campaign_log_capture,
+        "seal_connector_campaign_log_capture",
+        seal,
+    )
     try:
         context = (
             dual_live_runtime_module._make_production_owned_controller_context(
@@ -2433,6 +2886,14 @@ def test_production_owned_binding_begins_runs_and_seals_canonical_capture(
     )
     assert events.index("quiesce-A") < events.index("create-B")
     assert events.index("quiesce-B") < events.index("close-B")
+    final_stable = max(
+        index
+        for index, event in enumerate(events)
+        if event == "source-stable"
+    )
+    assert events.index("close-B") < events.index("seal")
+    assert events.index("seal") < final_stable
+    assert final_stable < events.index("source-close")
     verified = verify_connector_campaign_log_capture_read_only(
         db,
         chain,

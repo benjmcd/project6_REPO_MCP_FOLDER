@@ -2801,6 +2801,16 @@ class _OwnedCampaignAuthority(Protocol):
     def campaign_definition_sha256(self) -> str: ...
 
 
+class _ReviewedSourceProjection(Protocol):
+    code_revision: str
+    wrapper_image_sha256: str
+    interpreter_image_sha256: str
+
+    def assert_stable(self) -> None: ...
+
+    def close(self) -> object: ...
+
+
 class _OwnedControllerContext:
     """Shared factory-only state for exact mechanical or campaign ownership."""
 
@@ -2870,6 +2880,12 @@ class _OwnedControllerContext:
         return self._capture.sealed
 
     def _assert_authority_active(self) -> None:
+        return None
+
+    def _prepare_to_seal(self) -> None:
+        return None
+
+    def _after_seal(self) -> None:
         return None
 
     def _begin_run(self) -> None:
@@ -3029,7 +3045,10 @@ class _OwnedControllerContext:
                 or self._closed_process_ids != self._quiesced_process_ids
             ):
                 _fail("dual_live_owned_quiescence_unproven")
-            return self._capture._seal()
+            self._prepare_to_seal()
+            result = self._capture._seal()
+            self._after_seal()
+            return result
 
     def _close_all_processes(self) -> BaseException | None:
         first_error: BaseException | None = None
@@ -3082,7 +3101,12 @@ class _OwnedControllerContext:
 class _ProductionOwnedControllerContext(_OwnedControllerContext):
     """Exact canonical capture and lock binding for the future closed runner."""
 
-    __slots__ = ("_authority", "_proof_locks")
+    __slots__ = (
+        "_authority",
+        "_proof_locks",
+        "_source_custody",
+        "_source_custody_closed",
+    )
 
     def __init__(
         self,
@@ -3094,6 +3118,7 @@ class _ProductionOwnedControllerContext(_OwnedControllerContext):
         timeout_seconds: float,
         authority: _OwnedCampaignAuthority,
         proof_locks: object,
+        source_custody: _ReviewedSourceProjection,
     ) -> None:
         if _token is not _OWNED_CONTEXT_TOKEN:
             raise TypeError(
@@ -3103,6 +3128,8 @@ class _ProductionOwnedControllerContext(_OwnedControllerContext):
             _fail("dual_live_owned_context_invalid")
         self._authority = authority
         self._proof_locks = proof_locks
+        self._source_custody = source_custody
+        self._source_custody_closed = False
         super().__init__(
             _token=_token,
             identity=identity,
@@ -3120,6 +3147,7 @@ class _ProductionOwnedControllerContext(_OwnedControllerContext):
 
         authority = self._authority
         try:
+            self._source_custody.assert_stable()
             dual_live_windows._require_active_proof_locks(
                 self._proof_locks,
                 evidence_root=authority.evidence_root,
@@ -3139,6 +3167,28 @@ class _ProductionOwnedControllerContext(_OwnedControllerContext):
             raise DualLiveRuntimeError(
                 "dual_live_owned_authority_invalid"
             ) from exc
+
+    def _close_source_custody(self) -> BaseException | None:
+        if self._source_custody_closed:
+            return None
+        self._source_custody_closed = True
+        try:
+            if self._source_custody.close() is not None:
+                _fail("dual_live_source_identity_cleanup_failed")
+        except BaseException as exc:
+            return exc
+        return None
+
+    def _prepare_to_seal(self) -> None:
+        self._assert_authority_active()
+
+    def _after_seal(self) -> None:
+        self._assert_authority_active()
+        close_error = self._close_source_custody()
+        if close_error is not None:
+            raise DualLiveRuntimeError(
+                "dual_live_source_identity_cleanup_failed"
+            ) from close_error
 
 
 def _close_incomplete_campaign_capture(
@@ -3226,12 +3276,52 @@ def _make_production_owned_controller_context(
         campaign_mutex_identity_sha256=identity.campaign_mutex_identity_sha256,
     )
 
+    source_custody = dual_live_windows._acquire_reviewed_source_custody()
     capture: object | None = None
     try:
+        source_custody.assert_stable()
+        if any(
+            getattr(source_custody, field) != getattr(identity, field)
+            for field in (
+                "code_revision",
+                "wrapper_image_sha256",
+                "interpreter_image_sha256",
+            )
+        ):
+            _fail("dual_live_runtime_identity_mismatch")
+        payload = {
+            "code_revision": source_custody.code_revision,
+            "wrapper_image_sha256": source_custody.wrapper_image_sha256,
+            "interpreter_image_sha256": source_custody.interpreter_image_sha256,
+            "mutex_identity_sha256": payload["mutex_identity_sha256"],
+        }
+        derived_authority = connector_campaign_log_capture._current_authority(
+            campaign_id=campaign_uuid,
+            expected_campaign_fingerprint=canonical_fingerprint,
+            expected_code_revision=source_custody.code_revision,
+            started_at=started_at,
+        )
+        if derived_authority != authority:
+            _fail("dual_live_owned_authority_changed")
+        dual_live_windows._require_active_proof_locks(
+            proof_locks,
+            evidence_root=authority.evidence_root,
+            campaign_id=authority.campaign_id,
+            campaign_fingerprint=authority.campaign_fingerprint,
+            campaign_definition_sha256=(
+                authority.campaign_definition_sha256
+            ),
+            root_mutex_identity_sha256=(
+                identity.root_mutex_identity_sha256
+            ),
+            campaign_mutex_identity_sha256=(
+                identity.campaign_mutex_identity_sha256
+            ),
+        )
         capture = connector_campaign_log_capture.begin_connector_campaign_log_capture(
             campaign_id=campaign_uuid,
             expected_campaign_fingerprint=canonical_fingerprint,
-            expected_code_revision=identity.code_revision,
+            expected_code_revision=source_custody.code_revision,
             now=started_at,
         )
         binding = connector_campaign_log_capture._require_capture_binding(
@@ -3265,17 +3355,32 @@ def _make_production_owned_controller_context(
             timeout_seconds=float(timeout_seconds),
             authority=authority,
             proof_locks=proof_locks,
+            source_custody=source_custody,
         )
     except BaseException as exc:
+        capture_close_error: BaseException | None = None
         if capture is not None:
-            close_error = _close_incomplete_campaign_capture(capture)
-            if close_error is not None:
-                failure = DualLiveRuntimeError(
-                    "dual_live_capture_close_failed"
-                )
-                failure.__cause__ = close_error
-                failure.__context__ = exc
-                raise failure
+            capture_close_error = _close_incomplete_campaign_capture(capture)
+        source_close_error: BaseException | None = None
+        try:
+            source_custody.close()
+        except BaseException as close_exc:
+            source_close_error = close_exc
+        if capture_close_error is not None:
+            failure = DualLiveRuntimeError("dual_live_capture_close_failed")
+            if source_close_error is not None:
+                source_close_error.__context__ = exc
+                capture_close_error.__context__ = source_close_error
+            else:
+                capture_close_error.__context__ = exc
+            raise failure from capture_close_error
+        if source_close_error is not None:
+            failure = DualLiveRuntimeError(
+                "dual_live_source_identity_cleanup_failed"
+            )
+            failure.__cause__ = source_close_error
+            failure.__context__ = exc
+            raise failure
         raise
 
 
@@ -3330,6 +3435,12 @@ def _run_bound_owned_two_phase_controller(
             ),
         )
         context._bind_process(phase, process)
+        if (
+            not context.nonproduction_mechanical_only
+            and process.executable_sha256
+            != context._identity.interpreter_image_sha256
+        ):
+            _fail("dual_live_runtime_identity_mismatch")
         return _ControllerChild(
             process_boot_id=process.process_boot_id,
             process_creation_identity_sha256=(
@@ -3415,22 +3526,38 @@ def _run_production_owned_two_phase_controller(
 ) -> Any:
     if type(context) is not _ProductionOwnedControllerContext:
         _fail("dual_live_owned_context_invalid")
+    run_error: BaseException | None = None
+    result: Any = None
     try:
-        return _run_bound_owned_two_phase_controller(context)
+        result = _run_bound_owned_two_phase_controller(context)
     except BaseException as exc:
-        if _exception_chain_has_runtime_code(
-            exc,
-            "dual_live_capture_ownership_unproven",
-        ):
-            raise
+        run_error = exc
+
+    capture_close_error: BaseException | None = None
+    if run_error is not None and not _exception_chain_has_runtime_code(
+        run_error,
+        "dual_live_capture_ownership_unproven",
+    ):
         capture = cast(_OwnedCampaignCapture, context._capture)
-        close_error = capture._abort_close()
-        if close_error is not None:
-            failure = DualLiveRuntimeError("dual_live_capture_close_failed")
-            failure.__cause__ = close_error
-            failure.__context__ = exc
-            raise failure
-        raise
+        capture_close_error = capture._abort_close()
+    source_close_error = context._close_source_custody()
+    if capture_close_error is not None:
+        failure = DualLiveRuntimeError("dual_live_capture_close_failed")
+        if source_close_error is not None:
+            source_close_error.__context__ = run_error
+            capture_close_error.__context__ = source_close_error
+        else:
+            capture_close_error.__context__ = run_error
+        raise failure from capture_close_error
+    if source_close_error is not None:
+        failure = DualLiveRuntimeError(
+            "dual_live_source_identity_cleanup_failed"
+        )
+        source_close_error.__context__ = run_error
+        raise failure from source_close_error
+    if run_error is not None:
+        raise run_error
+    return result
 
 
 class CampaignPipeSink:
