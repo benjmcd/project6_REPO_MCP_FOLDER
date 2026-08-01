@@ -552,6 +552,7 @@ def main() -> int:
             or sys.argv[1] != "--owned-child"
             or sys.flags.isolated != 1
             or not sys.dont_write_bytecode
+            or sys.pycache_prefix != "NUL"
         ):
             return _refuse()
         capsule = _decode_capsule(sys.argv[2])

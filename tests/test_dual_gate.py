@@ -213,6 +213,43 @@ def _git_blob_sha(path: Path) -> str:
     return _git_output("hash-object", str(path.relative_to(ROOT)))
 
 
+def _init_source_identity_repo(tmp_path: Path) -> tuple[Path, Path]:
+    git_path = Path(r"C:\Program Files\Git\cmd\git.exe")
+    assert git_path.is_file()
+    repo = tmp_path / "source-repo"
+    wrapper = repo / "tools" / "dual_live_run.py"
+    module = repo / "backend" / "app" / "services" / "runtime.py"
+    readme = repo / "README.md"
+    wrapper.parent.mkdir(parents=True)
+    module.parent.mkdir(parents=True)
+    wrapper.write_bytes(b"print('owned wrapper')\n")
+    module.write_bytes(b"VALUE = 1\n")
+    readme.write_bytes(b"reviewed tree\n")
+    commands = (
+        ("init", "--quiet"),
+        ("config", "user.name", "Project6 Test"),
+        ("config", "user.email", "project6-test@example.invalid"),
+        (
+            "add",
+            "--",
+            "tools/dual_live_run.py",
+            "backend/app/services/runtime.py",
+            "README.md",
+        ),
+        ("commit", "--quiet", "-m", "fixture"),
+    )
+    for command in commands:
+        completed = subprocess.run(
+            [str(git_path), *command],
+            cwd=repo,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert completed.returncode == 0, completed.stderr
+    return repo, wrapper
+
+
 def _pilot_seal() -> str:
     tree = ast.parse(PILOT_TEST.read_text(encoding="utf-8"))
     for node in tree.body:
@@ -8612,3 +8649,304 @@ def test_owned_factory_reader_failure_retains_unpopped_handle(
         flags = ctypes.wintypes.DWORD()
         if target and kernel32.GetHandleInformation(target, ctypes.byref(flags)):
             original_close(target)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows source custody only")
+def test_reviewed_source_tree_derives_clean_head_and_wrapper_bytes(
+    tmp_path: Path,
+) -> None:
+    repo, wrapper = _init_source_identity_repo(tmp_path)
+    git_path = Path(r"C:\Program Files\Git\cmd\git.exe")
+    wrapper_custody = dual_live_windows._open_executable_custody(str(wrapper))
+    try:
+        state = dual_live_windows._verify_reviewed_git_tree(
+            repo,
+            git_path,
+            wrapper_custody,
+        )
+    finally:
+        dual_live_windows._close_handle(wrapper_custody.handle)
+
+    expected_revision = subprocess.run(
+        [str(git_path), "rev-parse", "HEAD"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert state.code_revision == expected_revision
+    assert state.wrapper_image_sha256 == hashlib.sha256(
+        wrapper.read_bytes()
+    ).hexdigest()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows source custody only")
+def test_reviewed_source_tree_computes_wrapper_oid_independently(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repo, wrapper = _init_source_identity_repo(tmp_path)
+    git_path = Path(r"C:\Program Files\Git\cmd\git.exe")
+    original_git = dual_live_windows._run_reviewed_git
+
+    def no_hash_object(
+        git_custody: object,
+        repo_root: Path,
+        *arguments: str,
+        **kwargs: object,
+    ) -> tuple[int, bytes]:
+        assert arguments[:1] != ("hash-object",)
+        return original_git(git_custody, repo_root, *arguments, **kwargs)
+
+    monkeypatch.setattr(dual_live_windows, "_run_reviewed_git", no_hash_object)
+    wrapper_custody = dual_live_windows._open_executable_custody(str(wrapper))
+    try:
+        state = dual_live_windows._verify_reviewed_git_tree(
+            repo,
+            git_path,
+            wrapper_custody,
+        )
+    finally:
+        dual_live_windows._close_handle(wrapper_custody.handle)
+
+    assert state.wrapper_image_sha256 == hashlib.sha256(
+        wrapper.read_bytes()
+    ).hexdigest()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows source custody only")
+def test_reviewed_source_tree_refuses_hidden_tracked_source_drift(
+    tmp_path: Path,
+) -> None:
+    repo, wrapper = _init_source_identity_repo(tmp_path)
+    git_path = Path(r"C:\Program Files\Git\cmd\git.exe")
+    hidden_source = repo / "README.md"
+    marked = subprocess.run(
+        [
+            str(git_path),
+            "update-index",
+            "--assume-unchanged",
+            "--",
+            "README.md",
+        ],
+        cwd=repo,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert marked.returncode == 0, marked.stderr
+    hidden_source.write_bytes(b"VALUE = 2\n")
+    wrapper_custody = dual_live_windows._open_executable_custody(str(wrapper))
+    try:
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_source_identity_invalid",
+        ):
+            dual_live_windows._verify_reviewed_git_tree(
+                repo,
+                git_path,
+                wrapper_custody,
+            )
+    finally:
+        dual_live_windows._close_handle(wrapper_custody.handle)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows source custody only")
+def test_reviewed_source_tree_refuses_process_launching_repo_config(
+    tmp_path: Path,
+) -> None:
+    repo, wrapper = _init_source_identity_repo(tmp_path)
+    git_path = Path(r"C:\Program Files\Git\cmd\git.exe")
+    configured = subprocess.run(
+        [
+            str(git_path),
+            "config",
+            "--local",
+            "filter.project6-evil.process",
+            str(tmp_path / "must-not-run.exe"),
+        ],
+        cwd=repo,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert configured.returncode == 0, configured.stderr
+    wrapper_custody = dual_live_windows._open_executable_custody(str(wrapper))
+    try:
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_source_identity_invalid",
+        ):
+            dual_live_windows._verify_reviewed_git_tree(
+                repo,
+                git_path,
+                wrapper_custody,
+            )
+    finally:
+        dual_live_windows._close_handle(wrapper_custody.handle)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows source custody only")
+def test_reviewed_source_tree_refuses_worktree_config_before_diff(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repo, wrapper = _init_source_identity_repo(tmp_path)
+    git_path = Path(r"C:\Program Files\Git\cmd\git.exe")
+    for arguments in (
+        ("config", "extensions.worktreeConfig", "true"),
+        ("config", "--worktree", "core.attributesFile", str(tmp_path / "attrs")),
+        ("config", "--worktree", "diff.project6.command", "must-not-run.exe"),
+    ):
+        configured = subprocess.run(
+            [str(git_path), *arguments],
+            cwd=repo,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert configured.returncode == 0, configured.stderr
+    calls: list[tuple[str, ...]] = []
+    original_git = dual_live_windows._run_reviewed_git
+
+    def record_git(
+        git_custody: object,
+        repo_root: Path,
+        *arguments: str,
+        **kwargs: object,
+    ) -> tuple[int, bytes]:
+        calls.append(arguments)
+        return original_git(git_custody, repo_root, *arguments, **kwargs)
+
+    monkeypatch.setattr(dual_live_windows, "_run_reviewed_git", record_git)
+    wrapper_custody = dual_live_windows._open_executable_custody(str(wrapper))
+    try:
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_source_identity_invalid",
+        ):
+            dual_live_windows._verify_reviewed_git_tree(
+                repo,
+                git_path,
+                wrapper_custody,
+            )
+    finally:
+        dual_live_windows._close_handle(wrapper_custody.handle)
+
+    assert not any(arguments[:1] == ("diff",) for arguments in calls)
+
+
+def test_runtime_ignored_source_policy_allows_only_redirected_bytecode() -> None:
+    assert dual_live_windows._runtime_ignored_path_allowed(
+        b"backend/app/services/__pycache__/dual_live_runtime.cpython-311.pyc"
+    )
+    assert dual_live_windows._runtime_ignored_path_allowed(
+        b"tools/__pycache__/dual_live_run.cpython-311.pyc"
+    )
+    for path in (
+        b"backend/app/services/dual_live_runtime.py",
+        b"backend/app/services/dual_live_runtime.pyd",
+        b"backend/app/services/runtime.pyc",
+        b"tools/dual_live_run.pyc",
+        b"tools/__pycache__/dual_live_run.pth",
+    ):
+        assert not dual_live_windows._runtime_ignored_path_allowed(path)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows source custody only")
+def test_reviewed_controller_requires_isolated_redirected_bytecode() -> None:
+    with pytest.raises(
+        DualLiveWindowsError,
+        match="dual_live_source_identity_invalid",
+    ):
+        dual_live_windows._require_reviewed_controller_python_posture()
+
+    script = (
+        "import sys;"
+        f"sys.path.insert(0, {str(BACKEND)!r});"
+        "from app.services import dual_live_windows as windows;"
+        "windows._require_reviewed_controller_python_posture()"
+    )
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            "-X",
+            "pycache_prefix=NUL",
+            "-c",
+            script,
+        ],
+        cwd=ROOT,
+        env=_job_environment(),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows source custody only")
+def test_reviewed_source_custody_uses_kernel_process_image(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repo, wrapper = _init_source_identity_repo(tmp_path)
+    actual_image = dual_live_windows._current_process_image_path()
+    monkeypatch.setattr(dual_live_windows, "_reviewed_repo_root", lambda: repo)
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_require_reviewed_controller_python_posture",
+        lambda: None,
+    )
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "forged-python.exe"))
+
+    custody = dual_live_windows._acquire_reviewed_source_custody()
+    try:
+        assert custody.wrapper_image_sha256 == hashlib.sha256(
+            wrapper.read_bytes()
+        ).hexdigest()
+        assert custody.interpreter_image_sha256 == hashlib.sha256(
+            actual_image.read_bytes()
+        ).hexdigest()
+        custody.assert_stable()
+    finally:
+        custody.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows source custody only")
+def test_reviewed_source_custody_refuses_tracked_drift_after_acquisition(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    repo, _wrapper = _init_source_identity_repo(tmp_path)
+    monkeypatch.setattr(dual_live_windows, "_reviewed_repo_root", lambda: repo)
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_require_reviewed_controller_python_posture",
+        lambda: None,
+    )
+    custody = dual_live_windows._acquire_reviewed_source_custody()
+    try:
+        (repo / "README.md").write_bytes(b"drift after acquisition\n")
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_source_identity_invalid",
+        ):
+            custody.assert_stable()
+    finally:
+        custody.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows source custody only")
+def test_owned_child_argv_uses_kernel_process_image(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    actual_image = dual_live_windows._current_process_image_path()
+    monkeypatch.setattr(sys, "executable", str(tmp_path / "forged-python.exe"))
+
+    argv = dual_live_windows._owned_child_argv("opaque-capsule")
+
+    assert argv[0] == str(actual_image)
+    assert argv[1:5] == ("-I", "-B", "-X", "pycache_prefix=NUL")

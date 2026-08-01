@@ -10,6 +10,7 @@ import re
 import subprocess
 import sys
 import threading
+import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
 from ctypes import wintypes
@@ -1771,9 +1772,11 @@ def _owned_child_argv(capsule: str) -> tuple[str, ...]:
     root = Path(__file__).resolve().parents[3]
     tool = root / "tools" / "dual_live_run.py"
     return (
-        str(Path(sys.executable).resolve()),
+        str(_current_process_image_path()),
         "-I",
         "-B",
+        "-X",
+        "pycache_prefix=NUL",
         str(tool),
         "--owned-child",
         capsule,
@@ -2763,6 +2766,47 @@ def _hash_file_handle(handle: int) -> str:
     return digest.hexdigest()
 
 
+def _git_blob_oid_from_handle(handle: int, object_format: str) -> str:
+    assert _kernel32 is not None
+    if object_format == "sha1":
+        digest = hashlib.sha1(usedforsecurity=False)
+    elif object_format == "sha256":
+        digest = hashlib.sha256()
+    else:
+        _fail("dual_live_source_identity_invalid")
+    file_size = ctypes.c_longlong()
+    if (
+        not _kernel32.GetFileSizeEx(handle, ctypes.byref(file_size))
+        or file_size.value <= 0
+        or not _kernel32.SetFilePointerEx(handle, 0, None, _FILE_BEGIN)
+    ):
+        _fail("dual_live_source_identity_invalid")
+    digest.update(f"blob {file_size.value}\0".encode("ascii"))
+    buffer = ctypes.create_string_buffer(1024 * 1024)
+    remaining = int(file_size.value)
+    while remaining:
+        requested = min(remaining, len(buffer))
+        received = wintypes.DWORD()
+        if not _kernel32.ReadFile(
+            handle,
+            buffer,
+            requested,
+            ctypes.byref(received),
+            None,
+        ) or not 0 < received.value <= requested:
+            _fail("dual_live_source_identity_invalid")
+        digest.update(buffer.raw[: received.value])
+        remaining -= int(received.value)
+    extra = wintypes.DWORD()
+    if (
+        not _kernel32.ReadFile(handle, buffer, 1, ctypes.byref(extra), None)
+        or extra.value != 0
+        or not _kernel32.SetFilePointerEx(handle, 0, None, _FILE_BEGIN)
+    ):
+        _fail("dual_live_source_identity_invalid")
+    return digest.hexdigest()
+
+
 class _ExecutableCustody:
     __slots__ = (
         "handle",
@@ -2783,6 +2827,400 @@ class _ExecutableCustody:
         self.final_path = final_path
         self.file_identity_sha256 = file_identity_sha256
         self.sha256 = sha256
+
+
+@dataclass(frozen=True, slots=True)
+class _ReviewedGitTree:
+    code_revision: str
+    wrapper_image_sha256: str
+
+
+class _ReviewedSourceCustody:
+    __slots__ = (
+        "_closed",
+        "_git_path",
+        "_interpreter",
+        "_repo_root",
+        "_wrapper",
+        "code_revision",
+        "interpreter_image_sha256",
+        "wrapper_image_sha256",
+    )
+
+    def __init__(
+        self,
+        *,
+        repo_root: Path,
+        git_path: Path,
+        wrapper: _ExecutableCustody,
+        interpreter: _ExecutableCustody,
+        state: _ReviewedGitTree,
+    ) -> None:
+        self._repo_root = repo_root
+        self._git_path = git_path
+        self._wrapper = wrapper
+        self._interpreter = interpreter
+        self.code_revision = state.code_revision
+        self.wrapper_image_sha256 = state.wrapper_image_sha256
+        self.interpreter_image_sha256 = interpreter.sha256
+        self._closed = False
+
+    def assert_stable(self) -> None:
+        if self._closed:
+            _fail("dual_live_source_identity_invalid")
+        state = _verify_reviewed_git_tree(
+            self._repo_root,
+            self._git_path,
+            self._wrapper,
+        )
+        if (
+            state.code_revision != self.code_revision
+            or state.wrapper_image_sha256 != self.wrapper_image_sha256
+            or _hash_file_handle(self._wrapper.handle)
+            != self.wrapper_image_sha256
+            or _hash_file_handle(self._interpreter.handle)
+            != self.interpreter_image_sha256
+        ):
+            _fail("dual_live_source_identity_invalid")
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        first_error: BaseException | None = None
+        for custody in (self._wrapper, self._interpreter):
+            try:
+                _close_handle(custody.handle)
+            except BaseException as exc:
+                if first_error is None:
+                    first_error = exc
+        self._closed = True
+        if first_error is not None:
+            raise first_error
+
+
+def _reviewed_repo_root() -> Path:
+    return Path(__file__).resolve().parents[3]
+
+
+def _trusted_git_path() -> Path:
+    return Path(r"C:\Program Files\Git\cmd\git.exe")
+
+
+def _reviewed_git_environment() -> dict[str, str]:
+    environment = {
+        name: value
+        for name in ("SYSTEMROOT", "WINDIR", "COMSPEC", "TEMP", "TMP")
+        if (value := os.environ.get(name))
+    }
+    environment.update(
+        {
+            "GIT_ATTR_NOSYSTEM": "1",
+            "GIT_CONFIG_GLOBAL": "NUL",
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_SYSTEM": "NUL",
+            "GIT_NO_REPLACE_OBJECTS": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
+            "GIT_TERMINAL_PROMPT": "0",
+            "LC_ALL": "C",
+        }
+    )
+    return environment
+
+
+def _require_reviewed_controller_python_posture() -> None:
+    if (
+        sys.flags.isolated != 1
+        or sys.dont_write_bytecode is not True
+        or sys.pycache_prefix != "NUL"
+    ):
+        _fail("dual_live_source_identity_invalid")
+
+
+def _runtime_ignored_path_allowed(raw_path: bytes) -> bool:
+    try:
+        path = raw_path.decode("ascii")
+    except UnicodeDecodeError:
+        return False
+    parts = path.split("/")
+    return (
+        len(parts) >= 3
+        and (path.startswith("backend/app/") or path.startswith("tools/"))
+        and parts[-2] == "__pycache__"
+        and parts[-1].endswith(".pyc")
+        and parts[-1] != ".pyc"
+    )
+
+
+def _run_reviewed_git(
+    git_custody: _ExecutableCustody,
+    repo_root: Path,
+    *arguments: str,
+    allowed_codes: frozenset[int] = frozenset((0,)),
+) -> tuple[int, bytes]:
+    process = _STANDARD_POPEN(
+        (
+            git_custody.final_path,
+            "-c",
+            "core.fsmonitor=false",
+            "-c",
+            "core.untrackedCache=false",
+            "-c",
+            "diff.external=",
+            "-c",
+            "submodule.recurse=false",
+            *arguments,
+        ),
+        cwd=str(repo_root),
+        env=_reviewed_git_environment(),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        shell=False,
+    )
+    streams = (process.stdout, process.stderr)
+    if any(stream is None for stream in streams):
+        process.kill()
+        process.wait()
+        _fail("dual_live_source_identity_invalid")
+    limits = (4 * 1024 * 1024, 256 * 1024)
+    outputs: list[bytes | None] = [None, None]
+    read_errors: list[BaseException] = []
+    overflow = threading.Event()
+
+    def read_bounded(index: int) -> None:
+        stream = streams[index]
+        assert stream is not None
+        try:
+            content = stream.read(limits[index] + 1)
+            outputs[index] = bytes(content)
+            if len(content) > limits[index]:
+                overflow.set()
+        except BaseException as exc:
+            read_errors.append(exc)
+            overflow.set()
+
+    readers = tuple(
+        threading.Thread(
+            target=read_bounded,
+            args=(index,),
+            name=f"dual-live-git-{index}",
+        )
+        for index in range(2)
+    )
+    for reader in readers:
+        reader.start()
+    deadline = time.monotonic() + 15
+    while process.poll() is None and not overflow.wait(0.05):
+        if time.monotonic() >= deadline:
+            overflow.set()
+            break
+    if overflow.is_set() and process.poll() is None:
+        process.kill()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait()
+    for reader in readers:
+        reader.join(timeout=5)
+    if any(reader.is_alive() for reader in readers):
+        for stream in streams:
+            assert stream is not None
+            stream.close()
+        for reader in readers:
+            reader.join(timeout=1)
+    else:
+        for stream in streams:
+            assert stream is not None
+            stream.close()
+    stdout, stderr = outputs
+    if (
+        any(reader.is_alive() for reader in readers)
+        or read_errors
+        or stdout is None
+        or stderr is None
+        or overflow.is_set()
+        or process.returncode not in allowed_codes
+        or stderr
+    ):
+        _fail("dual_live_source_identity_invalid")
+    return int(process.returncode), stdout
+
+
+def _verify_reviewed_git_tree(
+    repo_root: Path,
+    git_path: Path,
+    wrapper_custody: _ExecutableCustody,
+) -> _ReviewedGitTree:
+    if (
+        not isinstance(repo_root, Path)
+        or not isinstance(git_path, Path)
+        or type(wrapper_custody) is not _ExecutableCustody
+    ):
+        _fail("dual_live_source_identity_invalid")
+    expected_root = str(repo_root.resolve()).replace("\\", "/").casefold()
+    expected_wrapper = str(
+        (repo_root / "tools" / "dual_live_run.py").resolve()
+    ).replace("\\", "/").casefold()
+    if wrapper_custody.final_path.replace("\\", "/").casefold() != expected_wrapper:
+        _fail("dual_live_source_identity_invalid")
+
+    git_custody = _open_executable_custody(str(git_path))
+    try:
+        _, top_bytes = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "rev-parse",
+            "--path-format=absolute",
+            "--show-toplevel",
+        )
+        try:
+            top = top_bytes.decode("utf-8").strip().replace("\\", "/").casefold()
+        except UnicodeDecodeError:
+            _fail("dual_live_source_identity_invalid")
+        if top != expected_root:
+            _fail("dual_live_source_identity_invalid")
+
+        worktree_config_code, worktree_config = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "config",
+            "--local",
+            "--null",
+            "--get-all",
+            "extensions.worktreeConfig",
+            allowed_codes=frozenset((0, 1)),
+        )
+        if worktree_config_code != 1 or worktree_config:
+            _fail("dual_live_source_identity_invalid")
+
+        config_code, dangerous_config = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "config",
+            "--local",
+            "--null",
+            "--get-regexp",
+            (
+                r"^(alias\.|core\.(attributesfile|excludesfile|fsmonitor|"
+                r"sshcommand)|diff\.|filter\.|include\.|protocol\.|"
+                r"submodule\..*\.update|url\.)"
+            ),
+            allowed_codes=frozenset((0, 1)),
+        )
+        if config_code != 1 or dangerous_config:
+            _fail("dual_live_source_identity_invalid")
+
+        _, revision_bytes = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "rev-parse",
+            "--verify",
+            "HEAD^{commit}",
+        )
+        _, format_bytes = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "rev-parse",
+            "--show-object-format",
+        )
+        revision = revision_bytes.decode("ascii").strip()
+        object_format = format_bytes.decode("ascii").strip()
+        if (
+            object_format not in {"sha1", "sha256"}
+            or len(revision) != (40 if object_format == "sha1" else 64)
+            or any(character not in "0123456789abcdef" for character in revision)
+        ):
+            _fail("dual_live_source_identity_invalid")
+
+        _, tracked_flags = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "ls-files",
+            "-v",
+        )
+        if any(
+            len(line) < 3
+            or line[1:2] != b" "
+            or line[:1] == b"S"
+            or line[:1].islower()
+            for line in tracked_flags.splitlines()
+        ):
+            _fail("dual_live_source_identity_invalid")
+
+        diff_code, _ = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "diff",
+            "--quiet",
+            "--no-ext-diff",
+            "--ignore-submodules=none",
+            "HEAD",
+            "--",
+            allowed_codes=frozenset((0, 1)),
+        )
+        if diff_code != 0:
+            _fail("dual_live_source_identity_invalid")
+        _, untracked = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "-z",
+            "--",
+            "backend/app",
+            "tools",
+        )
+        if untracked:
+            _fail("dual_live_source_identity_invalid")
+        _, ignored = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "ls-files",
+            "--others",
+            "--ignored",
+            "--exclude-standard",
+            "-z",
+            "--",
+            "backend/app",
+            "tools",
+        )
+        ignored_paths = tuple(path for path in ignored.split(b"\0") if path)
+        if any(
+            not _runtime_ignored_path_allowed(path)
+            for path in ignored_paths
+        ):
+            _fail("dual_live_source_identity_invalid")
+
+        _, tree_entry = _run_reviewed_git(
+            git_custody,
+            repo_root,
+            "ls-tree",
+            "-z",
+            "HEAD",
+            "--",
+            "tools/dual_live_run.py",
+        )
+        prefix = b"100644 blob "
+        suffix = b"\ttools/dual_live_run.py\0"
+        if not tree_entry.startswith(prefix) or not tree_entry.endswith(suffix):
+            _fail("dual_live_source_identity_invalid")
+        expected_oid = tree_entry[len(prefix) : -len(suffix)]
+        actual_oid = _git_blob_oid_from_handle(
+            wrapper_custody.handle,
+            object_format,
+        ).encode("ascii")
+        if actual_oid != expected_oid:
+            _fail("dual_live_source_identity_invalid")
+        return _ReviewedGitTree(
+            code_revision=revision,
+            wrapper_image_sha256=wrapper_custody.sha256,
+        )
+    except (UnicodeDecodeError, ValueError):
+        _fail("dual_live_source_identity_invalid")
+    finally:
+        _close_handle(git_custody.handle)
 
 
 def _open_executable_custody(path_text: object) -> _ExecutableCustody:
@@ -2865,6 +3303,55 @@ def _open_executable_custody(path_text: object) -> _ExecutableCustody:
         )
     except BaseException:
         _close_handle(owned_handle)
+        raise
+
+
+def _acquire_reviewed_source_custody() -> _ReviewedSourceCustody:
+    _require_windows()
+    _require_reviewed_controller_python_posture()
+    _drain_native_custody()
+    repo_root = _reviewed_repo_root()
+    git_path = _trusted_git_path()
+    wrapper: _ExecutableCustody | None = None
+    interpreter: _ExecutableCustody | None = None
+    try:
+        wrapper = _open_executable_custody(
+            str(repo_root / "tools" / "dual_live_run.py")
+        )
+        interpreter = _open_executable_custody(
+            str(_current_process_image_path())
+        )
+        state = _verify_reviewed_git_tree(
+            repo_root,
+            git_path,
+            wrapper,
+        )
+        custody = _ReviewedSourceCustody(
+            repo_root=repo_root,
+            git_path=git_path,
+            wrapper=wrapper,
+            interpreter=interpreter,
+            state=state,
+        )
+        custody.assert_stable()
+        return custody
+    except BaseException as exc:
+        cleanup_error: BaseException | None = None
+        for candidate in (wrapper, interpreter):
+            if candidate is None:
+                continue
+            try:
+                _close_handle(candidate.handle)
+            except BaseException as close_exc:
+                if cleanup_error is None:
+                    cleanup_error = close_exc
+        if cleanup_error is not None:
+            failure = DualLiveWindowsError(
+                "dual_live_source_identity_cleanup_failed"
+            )
+            failure.__cause__ = cleanup_error
+            failure.__context__ = exc
+            raise failure
         raise
 
 
@@ -3615,6 +4102,30 @@ def _process_creation_filetime(
     ):
         _fail(refusal_code)
     return _filetime_value(creation)
+
+
+def _current_process_image_path() -> Path:
+    assert _kernel32 is not None
+    process_handle = int(_kernel32.GetCurrentProcess())
+    capacity = 260
+    for _ in range(8):
+        buffer = ctypes.create_unicode_buffer(capacity)
+        size = wintypes.DWORD(capacity)
+        ctypes.set_last_error(0)
+        if _kernel32.QueryFullProcessImageNameW(
+            process_handle,
+            0,
+            buffer,
+            ctypes.byref(size),
+        ):
+            image_path = buffer.value
+            if not image_path or not 0 < size.value < capacity:
+                _fail("dual_live_source_identity_invalid")
+            return _validated_executable_path_text(image_path)
+        if ctypes.get_last_error() != _ERROR_INSUFFICIENT_BUFFER:
+            _fail("dual_live_source_identity_invalid")
+        capacity *= 2
+    _fail("dual_live_source_identity_invalid")
 
 
 def _process_image_sha256(
