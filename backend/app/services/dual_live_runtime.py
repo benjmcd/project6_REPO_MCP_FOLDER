@@ -615,9 +615,13 @@ class RuntimeRecordWriter:
             encoded = canonical_json_bytes(record) + b"\n"
             try:
                 written = self._sink(encoded)
-            except Exception as exc:
+            except BaseException as exc:
                 self._failed = True
-                raise DualLiveRuntimeError("dual_live_runtime_writer_failure") from exc
+                if isinstance(exc, Exception):
+                    raise DualLiveRuntimeError(
+                        "dual_live_runtime_writer_failure"
+                    ) from exc
+                raise
             if (
                 isinstance(written, bool)
                 or not isinstance(written, int)
@@ -1087,10 +1091,12 @@ class LockedCampaignSink:
                 before_write()
             try:
                 written = self._writer.write(content)
-            except Exception as exc:
+            except BaseException as exc:
                 self._failed = True
                 self._stop_latch.latch("writer_failure")
-                raise DualLiveRuntimeError("dual_live_pump_write_failed") from exc
+                if isinstance(exc, Exception):
+                    raise DualLiveRuntimeError("dual_live_pump_write_failed") from exc
+                raise
             if (
                 isinstance(written, bool)
                 or not isinstance(written, int)
@@ -1492,11 +1498,13 @@ class CampaignPipeSink:
                 _fail("dual_live_logger_pipe_writer_poisoned")
             try:
                 written = self._writer.write(frame)
-            except Exception as exc:
+            except BaseException as exc:
                 self._failed = True
-                raise DualLiveRuntimeError(
-                    "dual_live_logger_pipe_write_failed"
-                ) from exc
+                if isinstance(exc, Exception):
+                    raise DualLiveRuntimeError(
+                        "dual_live_logger_pipe_write_failed"
+                    ) from exc
+                raise
             if (
                 isinstance(written, bool)
                 or not isinstance(written, int)

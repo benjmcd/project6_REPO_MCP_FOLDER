@@ -535,6 +535,45 @@ def test_runtime_writer_failure_poison_wins_concurrent_append_race() -> None:
     assert bytes(sink.physical)
 
 
+@pytest.mark.parametrize("failure_type", (KeyboardInterrupt, SystemExit))
+def test_runtime_writer_base_exception_after_partial_write_poison_is_permanent(
+    failure_type: type[BaseException],
+) -> None:
+    class InterruptingSink:
+        def __init__(self) -> None:
+            self.calls = 0
+            self.physical = bytearray()
+
+        def __call__(self, content: bytes) -> int:
+            self.calls += 1
+            self.physical.extend(content[:7])
+            raise failure_type("interrupted")
+
+    sink = InterruptingSink()
+    writer = RuntimeRecordWriter(sink, identity=RUNTIME_IDENTITY)
+
+    with pytest.raises(failure_type):
+        writer.append(
+            phase="wrapper",
+            event="runtime_start",
+            process_boot_id=None,
+            payload=RUNTIME_START_PAYLOAD,
+        )
+    physical_after_failure = bytes(sink.physical)
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_runtime_writer_poisoned"
+    ):
+        writer.append(
+            phase="wrapper",
+            event="runtime_start",
+            process_boot_id=None,
+            payload=RUNTIME_START_PAYLOAD,
+        )
+
+    assert sink.calls == 1
+    assert bytes(sink.physical) == physical_after_failure
+
+
 def _rehashed_phase_child_start_record(process_boot_id: str) -> dict[str, object]:
     record = RuntimeRecordWriter(
         MemorySink().write,
@@ -1575,6 +1614,39 @@ def test_campaign_pipe_sink_failure_poison_wins_concurrent_emit_race() -> None:
     assert bytes(writer.physical)
 
 
+@pytest.mark.parametrize("failure_type", (KeyboardInterrupt, SystemExit))
+def test_campaign_pipe_sink_base_exception_after_partial_write_poison_is_permanent(
+    failure_type: type[BaseException],
+) -> None:
+    class InterruptingWriter:
+        def __init__(self) -> None:
+            self.calls = 0
+            self.physical = bytearray()
+
+        def write(self, content: bytes) -> int:
+            self.calls += 1
+            self.physical.extend(content[:3])
+            raise failure_type("interrupted")
+
+    writer = InterruptingWriter()
+    handler = CampaignPipeHandler(
+        "app-pipe",
+        CampaignPipeSink("app-pipe", writer),
+    )
+    record = logging.LogRecord("test", logging.INFO, __file__, 1, "message", (), None)
+
+    with pytest.raises(failure_type):
+        handler.handle(record)
+    physical_after_failure = bytes(writer.physical)
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_logger_pipe_writer_poisoned"
+    ):
+        handler.handle(record)
+
+    assert writer.calls == 1
+    assert bytes(writer.physical) == physical_after_failure
+
+
 def test_locked_campaign_sink_failure_poison_wins_concurrent_race() -> None:
     class BlockingFailureWriter:
         def __init__(self) -> None:
@@ -1615,6 +1687,35 @@ def test_locked_campaign_sink_failure_poison_wins_concurrent_race() -> None:
         "dual_live_pump_writer_poisoned",
     ]
     assert writer.calls == 1
+    assert stop.reason_code == "writer_failure"
+
+
+@pytest.mark.parametrize("failure_type", (KeyboardInterrupt, SystemExit))
+def test_locked_campaign_sink_base_exception_after_partial_write_poison_is_permanent(
+    failure_type: type[BaseException],
+) -> None:
+    class InterruptingWriter:
+        def __init__(self) -> None:
+            self.calls = 0
+            self.physical = bytearray()
+
+        def write(self, content: bytes) -> int:
+            self.calls += 1
+            self.physical.extend(content[:3])
+            raise failure_type("interrupted")
+
+    writer = InterruptingWriter()
+    stop = FirstStopLatch()
+    sink = LockedCampaignSink(writer, stop_latch=stop)
+
+    with pytest.raises(failure_type):
+        sink.write(b"first")
+    physical_after_failure = bytes(writer.physical)
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_writer_poisoned"):
+        sink.write(b"second")
+
+    assert writer.calls == 1
+    assert bytes(writer.physical) == physical_after_failure
     assert stop.reason_code == "writer_failure"
 
 
