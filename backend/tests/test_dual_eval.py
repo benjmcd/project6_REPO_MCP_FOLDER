@@ -2476,8 +2476,13 @@ def test_pump_callback_exception_is_normalized_with_cause(
     assert exc.value.__cause__.__cause__ is failure
 
 
+@pytest.mark.parametrize(
+    "failure",
+    (None, KeyboardInterrupt("interrupted"), SystemExit("interrupted")),
+)
 def test_pre_cancel_writer_failure_survives_forced_cancel_boundary_race(
     monkeypatch: pytest.MonkeyPatch,
+    failure: BaseException | None,
 ) -> None:
     class CancelErrorReader:
         def __init__(self) -> None:
@@ -2490,7 +2495,7 @@ def test_pre_cancel_writer_failure_survives_forced_cancel_boundary_race(
         def close(self) -> None:
             self.cancelled.set()
 
-    class BlockingShortWriter(MemorySink):
+    class BlockingFailureWriter(MemorySink):
         def __init__(self) -> None:
             super().__init__()
             self.calls = 0
@@ -2498,6 +2503,8 @@ def test_pre_cancel_writer_failure_survives_forced_cancel_boundary_race(
         def write(self, content: bytes) -> int:
             self.calls += 1
             super().write(content[:-1])
+            if failure is not None:
+                raise failure
             return len(content) - 1
 
     writer_failure_latched = threading.Event()
@@ -2518,7 +2525,7 @@ def test_pre_cancel_writer_failure_survives_forced_cancel_boundary_race(
         "stdout": io.BytesIO(),
         "stderr": io.BytesIO(encode_pipe_frame(b"output")),
     }
-    stderr_writer = BlockingShortWriter()
+    stderr_writer = BlockingFailureWriter()
     writers: dict[str, MemorySink] = {
         "app": MemorySink(),
         "http": MemorySink(),
@@ -2563,9 +2570,14 @@ def test_pre_cancel_writer_failure_survives_forced_cancel_boundary_race(
     assert caller.is_alive() is False
     assert len(results) == 1
     assert results[0][0] == "dual_live_pump_failed"
-    assert isinstance(results[0][1], DualLiveRuntimeError)
-    assert results[0][1].code == "dual_live_pump_write_failed"
+    if failure is None:
+        assert isinstance(results[0][1], DualLiveRuntimeError)
+        assert results[0][1].code == "dual_live_pump_write_failed"
+    else:
+        assert results[0][1] is failure
     assert stop.reason_code == "writer_failure"
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_writer_poisoned"):
+        pumps._sinks["stderr"].write(b"again")
     assert stderr_writer.calls == 1
     assert stderr_writer.bytes() == b"outpu"
     assert pumps.threads_alive == ()

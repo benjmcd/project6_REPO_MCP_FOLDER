@@ -1272,7 +1272,7 @@ class FourStreamPumpGroup:
                     emitted_bytes=len(output),
                 ),
             )
-        except DualLiveRuntimeError as exc:
+        except BaseException as exc:
             self._record_pump_error(
                 stream,
                 exc,
