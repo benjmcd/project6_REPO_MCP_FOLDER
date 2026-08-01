@@ -15,7 +15,7 @@ from typing import Any, Literal, NoReturn
 from uuid import NAMESPACE_URL, UUID, uuid5
 import weakref
 
-from sqlalchemy import or_, select, text
+from sqlalchemy import and_, or_, select, text
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Session
 
@@ -1152,15 +1152,23 @@ def _validate_database_snapshot(
         for binding in authority.run_bindings
     }
     expected_ids = tuple(sorted(expected_by_id))
+    arming = ConnectorRun.request_config_json["connector_egress_arming"]
     run_query = (
         select(ConnectorRun)
         .where(
             or_(
-                ConnectorRun.source_mode == "strict_live_egress",
                 ConnectorRun.connector_run_id.in_(expected_ids),
+                and_(
+                    ConnectorRun.source_mode == "strict_live_egress",
+                    arming["campaign_id"].as_string()
+                    == authority.campaign_id,
+                    arming["campaign_fingerprint"].as_string()
+                    == authority.campaign_fingerprint,
+                ),
             )
         )
         .order_by(ConnectorRun.connector_run_id)
+        .limit(len(expected_ids) + 1)
         .execution_options(populate_existing=True)
     )
     if lock_rows and db.get_bind().dialect.name != "sqlite":

@@ -646,6 +646,38 @@ def _insert_terminal_runs(
     db.commit()
 
 
+def _foreign_strict_run(
+    authority: _AuthorityFixture,
+    run_id: str,
+    *,
+    same_campaign: bool,
+) -> ConnectorRun:
+    envelope = _arming_envelope(authority, "nrc_adams_aps")
+    if not same_campaign:
+        envelope = {
+            **envelope,
+            "campaign_id": "123e4567-e89b-42d3-a456-426614174099",
+            "campaign_fingerprint": "9" * 64,
+        }
+        envelope["arming_fingerprint"] = compute_arming_fingerprint(envelope)
+    return ConnectorRun(
+        connector_run_id=run_id,
+        connector_key="nrc_adams_aps",
+        source_system="nrc_adams",
+        source_mode="strict_live_egress",
+        status="completed",
+        request_config_json={"connector_egress_arming": envelope},
+        query_plan_json={},
+        request_fingerprint=envelope["arming_fingerprint"],
+        submission_idempotency_key=f"egress-arm:{run_id}",
+        submitted_at=START + timedelta(seconds=1),
+        started_at=START + timedelta(seconds=2),
+        completed_at=START + timedelta(seconds=4),
+        execution_lease_owner=None,
+        execution_lease_token=None,
+    )
+
+
 def _begin_and_close(
     authority: _AuthorityFixture,
 ) -> Any:
@@ -2052,6 +2084,10 @@ def test_nrc_only_capture_does_not_fabricate_sciencebase(
         ("zero", "connector_campaign_log_run_cardinality_invalid"),
         ("sciencebase_only", "connector_campaign_log_run_cardinality_invalid"),
         ("same_campaign_extra", "connector_campaign_log_run_cardinality_invalid"),
+        (
+            "expected_campaign_mismatch",
+            "connector_campaign_log_run_envelope_mismatch",
+        ),
         ("nonterminal", "connector_campaign_log_run_not_terminal"),
         ("live_lease", "connector_campaign_log_run_not_terminal"),
         ("missing_terminal", "connector_campaign_log_terminal_event_invalid"),
@@ -2099,6 +2135,16 @@ def test_database_adversaries_reject_before_publication(
             completed_at=START + timedelta(seconds=4),
         )
         db.add(extra)
+    elif case == "expected_campaign_mismatch":
+        assert run is not None
+        envelope = {
+            **run.request_config_json["connector_egress_arming"],
+            "campaign_id": "123e4567-e89b-42d3-a456-426614174099",
+            "campaign_fingerprint": "9" * 64,
+        }
+        envelope["arming_fingerprint"] = compute_arming_fingerprint(envelope)
+        run.request_config_json = {"connector_egress_arming": envelope}
+        run.request_fingerprint = envelope["arming_fingerprint"]
     elif case == "nonterminal":
         assert run is not None
         run.status = "running"
@@ -2216,6 +2262,156 @@ def test_database_adversaries_reject_before_publication(
         )
 
     assert excinfo.value.code == expected_code
+    _assert_unpublished(authority)
+
+
+@pytest.mark.parametrize(
+    "connector_keys",
+    (
+        ("nrc_adams_aps",),
+        ("nrc_adams_aps", "sciencebase_mcs"),
+    ),
+    ids=("nrc-only", "two-run"),
+)
+def test_seal_preflight_run_query_is_bounded_and_campaign_scoped(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    connector_keys: tuple[str, ...],
+) -> None:
+    authority = _authority_fixture(tmp_path)
+    _install_authority(monkeypatch, authority)
+    capture = _begin_and_close(authority)
+    _insert_terminal_runs(db, authority, connector_keys=connector_keys)
+    db.add_all(
+        [
+            _foreign_strict_run(
+                authority,
+                f"unrelated-strict-{ordinal:03}",
+                same_campaign=False,
+            )
+            for ordinal in range(64)
+        ]
+    )
+    db.commit()
+    statements: list[tuple[str, tuple[Any, ...]]] = []
+
+    def capture_preflight_query(
+        _connection: Any,
+        _cursor: Any,
+        statement: str,
+        parameters: Any,
+        _context: Any,
+        _executemany: bool,
+    ) -> None:
+        normalized = " ".join(statement.lower().split())
+        if (
+            " from connector_run " in normalized
+            and "connector_run.request_config_json" in normalized
+        ):
+            statements.append((normalized, tuple(parameters)))
+
+    bind = db.get_bind()
+    sqlalchemy_event.listen(bind, "before_cursor_execute", capture_preflight_query)
+    try:
+        result = seal_connector_campaign_log_capture(
+            db,
+            capture=capture,
+            runtime_stopped_at=START + timedelta(seconds=10),
+            now=START + timedelta(seconds=11),
+        )
+    finally:
+        sqlalchemy_event.remove(
+            bind,
+            "before_cursor_execute",
+            capture_preflight_query,
+        )
+
+    assert result.seal.connector_run_ids == tuple(
+        sorted(authority.run_ids[key] for key in connector_keys)
+    )
+    assert len(statements) == 2
+    expected_ids = set(authority.run_ids.values())
+    for statement, parameters in statements:
+        assert "connector_run.connector_run_id in" in statement
+        assert "connector_run.source_mode =" in statement
+        assert "connector_run.request_config_json" in statement
+        assert " or " in statement
+        assert " limit " in statement
+        assert expected_ids.issubset(set(parameters))
+        assert "strict_live_egress" in parameters
+        assert str(authority.campaign_id) in parameters
+        assert FINGERPRINT in parameters
+        assert len(expected_ids) + 1 in parameters
+        assert not any(
+            str(value).startswith("unrelated-strict-")
+            for value in parameters
+        )
+
+
+def test_seal_preflight_run_query_rejects_same_campaign_at_max_plus_one(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    authority = _authority_fixture(tmp_path)
+    _install_authority(monkeypatch, authority)
+    capture = _begin_and_close(authority)
+    _insert_terminal_runs(
+        db,
+        authority,
+        connector_keys=("nrc_adams_aps",),
+    )
+    db.add_all(
+        [
+            _foreign_strict_run(
+                authority,
+                f"rogue-same-campaign-{ordinal}",
+                same_campaign=True,
+            )
+            for ordinal in range(2)
+        ]
+    )
+    db.commit()
+    statements: list[tuple[str, tuple[Any, ...]]] = []
+
+    def capture_preflight_query(
+        _connection: Any,
+        _cursor: Any,
+        statement: str,
+        parameters: Any,
+        _context: Any,
+        _executemany: bool,
+    ) -> None:
+        normalized = " ".join(statement.lower().split())
+        if (
+            " from connector_run " in normalized
+            and "connector_run.request_config_json" in normalized
+        ):
+            statements.append((normalized, tuple(parameters)))
+
+    bind = db.get_bind()
+    sqlalchemy_event.listen(bind, "before_cursor_execute", capture_preflight_query)
+    try:
+        with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+            seal_connector_campaign_log_capture(
+                db,
+                capture=capture,
+                runtime_stopped_at=START + timedelta(seconds=10),
+                now=START + timedelta(seconds=11),
+            )
+    finally:
+        sqlalchemy_event.remove(
+            bind,
+            "before_cursor_execute",
+            capture_preflight_query,
+        )
+
+    assert excinfo.value.code == "connector_campaign_log_run_cardinality_invalid"
+    assert len(statements) == 1
+    statement, parameters = statements[0]
+    assert " limit " in statement
+    assert len(authority.run_ids) + 1 in parameters
     _assert_unpublished(authority)
 
 
