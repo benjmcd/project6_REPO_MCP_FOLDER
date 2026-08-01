@@ -528,7 +528,14 @@ class RuntimeIdentity:
 
 
 class RuntimeRecordWriter:
-    __slots__ = ("_identity", "_lock", "_ordinal", "_previous_record_sha256", "_sink")
+    __slots__ = (
+        "_failed",
+        "_identity",
+        "_lock",
+        "_ordinal",
+        "_previous_record_sha256",
+        "_sink",
+    )
 
     def __init__(
         self,
@@ -543,6 +550,7 @@ class RuntimeRecordWriter:
         self._ordinal = 0
         self._previous_record_sha256: str | None = None
         self._lock = threading.Lock()
+        self._failed = False
 
     def append(
         self,
@@ -552,6 +560,9 @@ class RuntimeRecordWriter:
         process_boot_id: str | None,
         payload: Mapping[str, Any],
     ) -> dict[str, Any]:
+        with self._lock:
+            if self._failed:
+                _fail("dual_live_runtime_writer_poisoned")
         if phase not in _PHASES:
             _fail("dual_live_runtime_phase_invalid")
         if phase == "wrapper":
@@ -588,6 +599,8 @@ class RuntimeRecordWriter:
             _fail("dual_live_runtime_identity_mismatch")
 
         with self._lock:
+            if self._failed:
+                _fail("dual_live_runtime_writer_poisoned")
             record: dict[str, Any] = {
                 "schema_id": RUNTIME_SCHEMA_ID,
                 "ordinal": self._ordinal + 1,
@@ -603,12 +616,14 @@ class RuntimeRecordWriter:
             try:
                 written = self._sink(encoded)
             except Exception as exc:
+                self._failed = True
                 raise DualLiveRuntimeError("dual_live_runtime_writer_failure") from exc
             if (
                 isinstance(written, bool)
                 or not isinstance(written, int)
                 or written != len(encoded)
             ):
+                self._failed = True
                 _fail("dual_live_runtime_writer_failure")
             self._ordinal = record["ordinal"]
             self._previous_record_sha256 = record["record_sha256"]
@@ -1240,14 +1255,24 @@ class FourStreamPumpGroup:
             if result is not None:
                 _fail("dual_live_http_frame_validator_invalid")
             output = payload + b"\n"
-        self._sinks[stream].write(
-            output,
-            before_write=lambda: self._budget.consume(
+        with self._errors_lock:
+            write_started_before_cancel = not self._cancel_started
+        try:
+            self._sinks[stream].write(
+                output,
+                before_write=lambda: self._budget.consume(
+                    stream,
+                    len(payload),
+                    emitted_bytes=len(output),
+                ),
+            )
+        except DualLiveRuntimeError as exc:
+            self._record_pump_error(
                 stream,
-                len(payload),
-                emitted_bytes=len(output),
-            ),
-        )
+                exc,
+                force_pre_cancel=write_started_before_cancel,
+            )
+            raise
 
     def _pump(self, stream: str) -> None:
         try:
@@ -1266,12 +1291,23 @@ class FourStreamPumpGroup:
                     return
                 self._write_frame(stream, payload)
         except BaseException as exc:
-            with self._errors_lock:
-                if self._cancel_started:
-                    self._cancel_pump_errors.setdefault(stream, exc)
-                else:
-                    self._errors.setdefault(stream, exc)
-                    self._stop_latch.latch("pump_failure")
+            self._record_pump_error(stream, exc)
+
+    def _record_pump_error(
+        self,
+        stream: str,
+        error: BaseException,
+        *,
+        force_pre_cancel: bool = False,
+    ) -> None:
+        with self._errors_lock:
+            if self._errors.get(stream) is error:
+                return
+            if force_pre_cancel or not self._cancel_started:
+                self._errors.setdefault(stream, error)
+                self._stop_latch.latch("pump_failure")
+            else:
+                self._cancel_pump_errors.setdefault(stream, error)
 
     def _error_snapshot(self) -> tuple[tuple[str, BaseException], ...]:
         with self._errors_lock:
@@ -1416,7 +1452,7 @@ class FourStreamPumpGroup:
 
 
 class CampaignPipeSink:
-    __slots__ = ("_bound_handler", "_lock", "_pipe_token", "_writer")
+    __slots__ = ("_bound_handler", "_failed", "_lock", "_pipe_token", "_writer")
 
     def __init__(self, pipe_token: str, writer: BinaryIO) -> None:
         if (
@@ -1428,6 +1464,7 @@ class CampaignPipeSink:
         self._pipe_token = pipe_token
         self._writer = writer
         self._bound_handler: CampaignPipeHandler | None = None
+        self._failed = False
         self._lock = threading.Lock()
 
     @property
@@ -1451,18 +1488,22 @@ class CampaignPipeSink:
         with self._lock:
             if self._bound_handler is not handler:
                 _fail("dual_live_logger_pipe_binding_invalid")
+            if self._failed:
+                _fail("dual_live_logger_pipe_writer_poisoned")
             try:
                 written = self._writer.write(frame)
             except Exception as exc:
+                self._failed = True
                 raise DualLiveRuntimeError(
                     "dual_live_logger_pipe_write_failed"
                 ) from exc
-        if (
-            isinstance(written, bool)
-            or not isinstance(written, int)
-            or written != len(frame)
-        ):
-            _fail("dual_live_logger_pipe_write_failed")
+            if (
+                isinstance(written, bool)
+                or not isinstance(written, int)
+                or written != len(frame)
+            ):
+                self._failed = True
+                _fail("dual_live_logger_pipe_write_failed")
 
 
 class CampaignPipeHandler(logging.Handler):

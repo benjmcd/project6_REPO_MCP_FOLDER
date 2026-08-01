@@ -443,18 +443,20 @@ def test_runtime_writer_requires_exact_int_byte_count(bad_count: object) -> None
     class SequenceSink:
         def __init__(self) -> None:
             self.calls = 0
+            self.physical = bytearray()
 
-        def __call__(self, content: bytes) -> int | None:
+        def __call__(self, content: bytes) -> object:
             self.calls += 1
-            if self.calls > 1:
-                return len(content)
             if bad_count == "exception":
+                self.physical.extend(content[:7])
                 raise OSError("write failed")
             if bad_count == "short":
+                self.physical.extend(content[:-1])
                 return len(content) - 1
+            self.physical.extend(content)
             if bad_count == "long":
                 return len(content) + 1
-            return bad_count  # type: ignore[return-value]
+            return bad_count
 
     sink = SequenceSink()
     writer = RuntimeRecordWriter(sink, identity=RUNTIME_IDENTITY)
@@ -470,14 +472,67 @@ def test_runtime_writer_requires_exact_int_byte_count(bad_count: object) -> None
 
     if bad_count == "exception":
         assert isinstance(exc.value.__cause__, OSError)
-    retry = writer.append(
-        phase="wrapper",
-        event="runtime_start",
-        process_boot_id=None,
-        payload=RUNTIME_START_PAYLOAD,
-    )
-    assert retry["ordinal"] == 1
-    assert retry["previous_record_sha256"] is None
+    physical_after_failure = bytes(sink.physical)
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_runtime_writer_poisoned"
+    ):
+        writer.append(
+            phase="wrapper",
+            event="runtime_start",
+            process_boot_id=None,
+            payload=RUNTIME_START_PAYLOAD,
+        )
+    assert sink.calls == 1
+    assert bytes(sink.physical) == physical_after_failure
+
+
+def test_runtime_writer_failure_poison_wins_concurrent_append_race() -> None:
+    class BlockingFailureSink:
+        def __init__(self) -> None:
+            self.calls = 0
+            self.entered = threading.Event()
+            self.release = threading.Event()
+            self.physical = bytearray()
+
+        def __call__(self, content: bytes) -> int:
+            self.calls += 1
+            self.physical.extend(content[:7])
+            self.entered.set()
+            assert self.release.wait(2)
+            raise OSError("write failed")
+
+    sink = BlockingFailureSink()
+    writer = RuntimeRecordWriter(sink, identity=RUNTIME_IDENTITY)
+    errors: list[str] = []
+
+    def append() -> None:
+        try:
+            writer.append(
+                phase="wrapper",
+                event="runtime_start",
+                process_boot_id=None,
+                payload=RUNTIME_START_PAYLOAD,
+            )
+        except DualLiveRuntimeError as exc:
+            errors.append(exc.code)
+
+    first = threading.Thread(target=append)
+    second = threading.Thread(target=append)
+    first.start()
+    assert sink.entered.wait(2)
+    second.start()
+    sink.release.set()
+    first.join(2)
+    second.join(2)
+
+    assert first.is_alive() is False
+    assert second.is_alive() is False
+    assert sorted(errors) == [
+        "dual_live_runtime_writer_failure",
+        "dual_live_runtime_writer_poisoned",
+    ]
+    assert sink.calls == 1
+    assert bytes(sink.physical)
 
 
 def _rehashed_phase_child_start_record(process_boot_id: str) -> dict[str, object]:
@@ -1434,16 +1489,25 @@ def test_locked_campaign_sink_invalid_write_count_poison_is_permanent(
 @pytest.mark.parametrize("bad_count", (None, True, "short", "long", "exception"))
 def test_campaign_pipe_sink_requires_exact_int_byte_count(bad_count: object) -> None:
     class CountWriter:
-        def write(self, content: bytes) -> int | None:
+        def __init__(self) -> None:
+            self.calls = 0
+            self.physical = bytearray()
+
+        def write(self, content: bytes) -> object:
+            self.calls += 1
             if bad_count == "exception":
+                self.physical.extend(content[:3])
                 raise OSError("pipe write failed")
             if bad_count == "short":
+                self.physical.extend(content[:-1])
                 return len(content) - 1
+            self.physical.extend(content)
             if bad_count == "long":
                 return len(content) + 1
-            return bad_count  # type: ignore[return-value]
+            return bad_count
 
-    sink = CampaignPipeSink("app-pipe", CountWriter())
+    writer = CountWriter()
+    sink = CampaignPipeSink("app-pipe", writer)
     handler = CampaignPipeHandler("app-pipe", sink)
     record = logging.LogRecord("test", logging.INFO, __file__, 1, "message", (), None)
 
@@ -1454,6 +1518,61 @@ def test_campaign_pipe_sink_requires_exact_int_byte_count(bad_count: object) -> 
 
     if bad_count == "exception":
         assert isinstance(exc.value.__cause__, OSError)
+    physical_after_failure = bytes(writer.physical)
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_logger_pipe_writer_poisoned"
+    ):
+        handler.handle(record)
+    assert writer.calls == 1
+    assert bytes(writer.physical) == physical_after_failure
+
+
+def test_campaign_pipe_sink_failure_poison_wins_concurrent_emit_race() -> None:
+    class BlockingFailureWriter:
+        def __init__(self) -> None:
+            self.calls = 0
+            self.entered = threading.Event()
+            self.release = threading.Event()
+            self.physical = bytearray()
+
+        def write(self, content: bytes) -> int:
+            self.calls += 1
+            self.physical.extend(content[:3])
+            self.entered.set()
+            assert self.release.wait(2)
+            raise OSError("pipe write failed")
+
+    writer = BlockingFailureWriter()
+    handler = CampaignPipeHandler(
+        "app-pipe",
+        CampaignPipeSink("app-pipe", writer),
+    )
+    record = logging.LogRecord("test", logging.INFO, __file__, 1, "message", (), None)
+    errors: list[str] = []
+
+    def emit() -> None:
+        try:
+            handler.handle(record)
+        except DualLiveRuntimeError as exc:
+            errors.append(exc.code)
+
+    first = threading.Thread(target=emit)
+    second = threading.Thread(target=emit)
+    first.start()
+    assert writer.entered.wait(2)
+    second.start()
+    writer.release.set()
+    first.join(2)
+    second.join(2)
+
+    assert first.is_alive() is False
+    assert second.is_alive() is False
+    assert sorted(errors) == [
+        "dual_live_logger_pipe_write_failed",
+        "dual_live_logger_pipe_writer_poisoned",
+    ]
+    assert writer.calls == 1
+    assert bytes(writer.physical)
 
 
 def test_locked_campaign_sink_failure_poison_wins_concurrent_race() -> None:
@@ -2254,6 +2373,101 @@ def test_pump_callback_exception_is_normalized_with_cause(
     assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
     assert exc.value.__cause__.code == expected_code
     assert exc.value.__cause__.__cause__ is failure
+
+
+def test_pre_cancel_writer_failure_survives_forced_cancel_boundary_race(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class CancelErrorReader:
+        def __init__(self) -> None:
+            self.cancelled = threading.Event()
+
+        def read(self, _size: int) -> bytes:
+            self.cancelled.wait()
+            raise OSError("app cancellation read failure")
+
+        def close(self) -> None:
+            self.cancelled.set()
+
+    class BlockingShortWriter(MemorySink):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls = 0
+
+        def write(self, content: bytes) -> int:
+            self.calls += 1
+            super().write(content[:-1])
+            return len(content) - 1
+
+    writer_failure_latched = threading.Event()
+    allow_sink_raise = threading.Event()
+    original_latch = FirstStopLatch.latch
+
+    def gated_latch(self: FirstStopLatch, reason_code: str) -> bool:
+        won = original_latch(self, reason_code)
+        if reason_code == "writer_failure":
+            writer_failure_latched.set()
+            assert allow_sink_raise.wait(2)
+        return won
+
+    monkeypatch.setattr(FirstStopLatch, "latch", gated_latch)
+    readers = {
+        "app": CancelErrorReader(),
+        "http": io.BytesIO(),
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(encode_pipe_frame(b"output")),
+    }
+    stderr_writer = BlockingShortWriter()
+    writers: dict[str, MemorySink] = {
+        "app": MemorySink(),
+        "http": MemorySink(),
+        "stdout": MemorySink(),
+        "stderr": stderr_writer,
+    }
+    stop = FirstStopLatch()
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers=writers,
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    pumps.start()
+    assert writer_failure_latched.wait(1)
+    results: list[tuple[str, BaseException | None]] = []
+
+    def join() -> None:
+        try:
+            pumps.join(timeout=0)
+        except DualLiveRuntimeError as exc:
+            results.append((exc.code, exc.__cause__))
+
+    caller = threading.Thread(target=join)
+    caller.start()
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        with pumps._errors_lock:
+            if pumps._cancel_started:
+                break
+        time.sleep(0.001)
+    else:
+        pytest.fail("join never marked cancellation boundary")
+
+    allow_sink_raise.set()
+    caller.join(2)
+
+    assert caller.is_alive() is False
+    assert len(results) == 1
+    assert results[0][0] == "dual_live_pump_failed"
+    assert isinstance(results[0][1], DualLiveRuntimeError)
+    assert results[0][1].code == "dual_live_pump_write_failed"
+    assert stop.reason_code == "writer_failure"
+    assert stderr_writer.calls == 1
+    assert stderr_writer.bytes() == b"outpu"
+    assert pumps.threads_alive == ()
 
 
 def test_pump_start_is_one_use_and_join_timeout_latches_first_stop() -> None:
