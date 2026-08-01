@@ -94,6 +94,22 @@ def material_candidate_basis_from_decision(
     }
 
 
+def gate_b_descriptor_selector(decision: dict[str, Any]) -> dict[str, Any]:
+    """Return the one canonical descriptor selector persisted for Gate B."""
+
+    candidate_id = decision["candidate_id"]
+    decision_basis = decision["decision_basis"]
+    source_identity = decision["source_identity"]
+    selector = {
+        "candidate_id": candidate_id,
+        "source_ref": decision_basis.get("source_ref", candidate_id),
+    }
+    dataset_version_id = source_identity.get("dataset_version_id")
+    if dataset_version_id:
+        selector["dataset_version_id"] = dataset_version_id
+    return json_clone(selector)
+
+
 def material_preview_basis(candidate_bases: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "schema_id": MATERIAL_PREVIEW_BASIS_SCHEMA_ID,

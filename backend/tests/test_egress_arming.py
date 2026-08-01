@@ -1564,6 +1564,103 @@ def test_evaluate_nrc_acquisition_success_rejects_failure_like_terminal_outcome(
     assert exc.value.code == "nrc_acquisition_success_terminal_invalid"
 
 
+def _nrc_seal_event(run: ConnectorRun) -> ConnectorRunEvent:
+    envelope = run.request_config_json["connector_egress_arming"]
+    created_at = datetime.now(UTC)
+    return ConnectorRunEvent(
+        connector_run_event_id=arming_module._deterministic_id(
+            run.connector_run_id,
+            "campaign_log_capture_sealed",
+        ),
+        connector_run_id=run.connector_run_id,
+        connector_run_target_id=None,
+        phase="evidence",
+        stage="campaign_log_capture",
+        event_type="campaign_log_capture_sealed",
+        status_before="completed",
+        status_after="completed",
+        reason_code="protected_log_capture_sealed",
+        error_class=None,
+        message=None,
+        metrics_json={
+            "schema_id": "project6.connector_campaign_log_seal_event_metrics.v1",
+            "campaign_id": envelope["campaign_id"],
+            "campaign_fingerprint": envelope["campaign_fingerprint"],
+            "campaign_definition_sha256": envelope[
+                "campaign_definition_sha256"
+            ],
+            "code_revision": envelope["code_revision"],
+            "campaign_introduction_index_revision": envelope[
+                "campaign_introduction_index_revision"
+            ],
+            "campaign_introduction_index_sha256": envelope[
+                "campaign_introduction_index_sha256"
+            ],
+            "manifest_relative_path": "logs/manifest.json",
+            "manifest_sha256": "1" * 64,
+            "file_set_hash": "2" * 64,
+            "seal_relative_path": "logs/seal.json",
+            "seal_sha256": "3" * 64,
+            "connector_run_ids": [run.connector_run_id, "sciencebase-run"],
+            "sealed_at": created_at.isoformat().replace("+00:00", "Z"),
+        },
+        created_at=created_at,
+    )
+
+
+def test_nrc_terminal_transition_admits_one_exact_post_seal_event(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db = _session()
+    state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    events = list(
+        db.scalars(
+            select(ConnectorRunEvent).where(
+                ConnectorRunEvent.connector_run_id
+                == state.run.connector_run_id
+            )
+        )
+    )
+
+    arming_module._assert_nrc_terminal_transition(
+        state.run,
+        events=(*events, _nrc_seal_event(state.run)),
+        now=datetime.now(UTC),
+    )
+
+
+@pytest.mark.parametrize("mutation", ["forged", "duplicate"])
+def test_nrc_terminal_transition_rejects_invalid_post_seal_competitor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mutation: str,
+) -> None:
+    db = _session()
+    state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    events = list(
+        db.scalars(
+            select(ConnectorRunEvent).where(
+                ConnectorRunEvent.connector_run_id
+                == state.run.connector_run_id
+            )
+        )
+    )
+    seal = _nrc_seal_event(state.run)
+    seals = [seal, deepcopy(seal)] if mutation == "duplicate" else [seal]
+    if mutation == "forged":
+        seals[0].reason_code = "forged_seal"
+
+    with pytest.raises(ConnectorEgressArmingError) as exc:
+        arming_module._assert_nrc_terminal_transition(
+            state.run,
+            events=(*events, *seals),
+            now=datetime.now(UTC),
+        )
+
+    assert exc.value.code == "nrc_acquisition_success_terminal_invalid"
+
+
 @pytest.mark.parametrize(
     ("clause", "expected_code"),
     [

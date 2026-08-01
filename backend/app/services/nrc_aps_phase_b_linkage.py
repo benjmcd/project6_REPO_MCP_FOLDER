@@ -14,7 +14,7 @@ import re
 from typing import Any, Mapping, NoReturn
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.engine import Connection, Engine, RowMapping
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -67,6 +67,8 @@ _RowSnapshot = tuple[tuple[str, Any], ...]
 _EventSnapshot = tuple[_RowSnapshot, ...]
 _RowSetSnapshot = tuple[_RowSnapshot, ...]
 _NRC_PHASE_B_EVENT_CAP = 7
+_NRC_CAMPAIGN_SEAL_EVENT_CAP = 1
+_NRC_CAMPAIGN_SEAL_EVENT_TYPE = "campaign_log_capture_sealed"
 _ADMISSION_KEY_SETS = frozenset(
     {
         _ADMISSION_KEYS,
@@ -330,11 +332,38 @@ def _read_verifier_authority(
         criterion=target_table.c.connector_run_id == bounded_run_id,
         max_rows=1,
     )
-    events = _read_bounded_core_rows(
+    phase_events = _read_bounded_core_rows(
         connection,
         event_table,
-        criterion=event_table.c.connector_run_id == bounded_run_id,
+        criterion=(
+            (event_table.c.connector_run_id == bounded_run_id)
+            & or_(
+                event_table.c.event_type
+                != _NRC_CAMPAIGN_SEAL_EVENT_TYPE,
+                event_table.c.event_type.is_(None),
+            )
+        ),
         max_rows=_NRC_PHASE_B_EVENT_CAP,
+    )
+    seal_events = _read_bounded_core_rows(
+        connection,
+        event_table,
+        criterion=(
+            (event_table.c.connector_run_id == bounded_run_id)
+            & (
+                event_table.c.event_type
+                == _NRC_CAMPAIGN_SEAL_EVENT_TYPE
+            )
+        ),
+        max_rows=_NRC_CAMPAIGN_SEAL_EVENT_CAP,
+    )
+    events = tuple(
+        sorted(
+            (*phase_events, *seal_events),
+            key=lambda row: str(
+                row.values.get("connector_run_event_id", "")
+            ),
+        )
     )
     return _VerifierAuthorityRead(
         runs=runs,
@@ -1429,15 +1458,23 @@ def _validate_verifier_authority(
         ConnectorRunTarget,
     )
     _validate_run_shape(run)
-    if len(authority.events) > _NRC_PHASE_B_EVENT_CAP:
-        _fail(
-            "nrc_phase_b_run_invalid",
-            "Strict NRC run exceeds its bounded event authority.",
-        )
     events = [
         _materialize_core_row(row, ConnectorRunEvent)
         for row in authority.events
     ]
+    phase_event_count = sum(
+        event.event_type != _NRC_CAMPAIGN_SEAL_EVENT_TYPE
+        for event in events
+    )
+    seal_event_count = len(events) - phase_event_count
+    if (
+        phase_event_count > _NRC_PHASE_B_EVENT_CAP
+        or seal_event_count > _NRC_CAMPAIGN_SEAL_EVENT_CAP
+    ):
+        _fail(
+            "nrc_phase_b_run_invalid",
+            "Strict NRC run exceeds its bounded event authority.",
+        )
     _validate_run_events(run, events)
     if (
         len(authority.run_targets) != 1

@@ -191,6 +191,7 @@ from app.services.layer3_gate_b_state import (
     find_gate_b_idempotency_claim,
     find_gate_b_idempotency_session,
     gate_b_counts,
+    gate_b_descriptor_selector,
     gate_b_decision_manifest_id as build_gate_b_decision_manifest_id,
     gate_b_idempotency_claim_matches,
     gate_b_idempotency_from_session,
@@ -2510,15 +2511,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             {
                 "source_plane": f"plane_{item['source_class']}_{short_id}",
                 "descriptor_type": item["source_class"],
-                "selector_payload": {
-                    "candidate_id": item["candidate_id"],
-                    "source_ref": item["decision_basis"].get("source_ref", item["candidate_id"]),
-                    **(
-                        {"dataset_version_id": item["source_identity"]["dataset_version_id"]}
-                        if item["source_identity"].get("dataset_version_id")
-                        else {}
-                    ),
-                },
+                "selector_payload": gate_b_descriptor_selector(item),
                 "selection_basis": {
                     "candidate_id": item["candidate_id"],
                     "query_basis": item["decision_basis"].get("query_basis", "operator_intent"),
@@ -10127,6 +10120,32 @@ def _assert_handoff_prepare_connector_integrity(
     connector_origin_integrity: Mapping[str, Any] | None,
     connector_output_integrity: Mapping[str, Any] | None,
 ) -> None:
+    stored_state_origin = prepare_state.get(
+        "connector_origin_integrity_v1"
+    )
+    stored_state_output = prepare_state.get(
+        "connector_output_integrity_v1"
+    )
+    if (
+        connector_origin_integrity is None
+        and (
+            stored_state_origin is not None
+            or stored_state_output is not None
+        )
+    ) or (
+        connector_origin_integrity is not None
+        and (
+            stored_state_origin != connector_origin_integrity
+            or stored_state_output != connector_output_integrity
+        )
+    ):
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_integrity_mismatch",
+            "Stored handoff state integrity contradicts current server authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
     envelope = prepare_state.get("handoff_export_envelope")
     operator_decision = str(
         prepare_state.get("operator_decision") or ""
@@ -11275,6 +11294,13 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "provider_public_url_enabled": False,
         "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
     }
+    if connector_origin_integrity is not None:
+        prepare_state["connector_origin_integrity_v1"] = _json_clone(
+            connector_origin_integrity
+        )
+        prepare_state["connector_output_integrity_v1"] = _json_clone(
+            connector_output_integrity
+        )
     if active_authority_projection is not None:
         prepare_state.update(active_authority_projection)
     if source_intake_prepare:

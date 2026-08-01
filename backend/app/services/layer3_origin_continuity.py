@@ -4998,7 +4998,7 @@ def _downstream_session_origin(
         or descriptor.source_plane != snapshot.source_plane
         or descriptor.descriptor_type != source_class
         or descriptor.selector_payload_json
-        != {"candidate_id": candidate_id}
+        != layer3_gate_b_state.gate_b_descriptor_selector(item)
         or not isinstance(manifest_items, list)
         or manifest_items.count(descriptor_manifest) != 1
         or snapshot.source_shape != source_class

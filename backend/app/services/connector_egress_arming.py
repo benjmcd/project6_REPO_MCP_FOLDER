@@ -482,6 +482,96 @@ _NRC_TERMINAL_METRIC_KEYS = frozenset(
         "campaign_introduction_index_sha256",
     }
 )
+_NRC_SEAL_METRIC_KEYS = frozenset(
+    {
+        "schema_id",
+        "campaign_id",
+        "campaign_fingerprint",
+        "campaign_definition_sha256",
+        "code_revision",
+        "campaign_introduction_index_revision",
+        "campaign_introduction_index_sha256",
+        "manifest_relative_path",
+        "manifest_sha256",
+        "file_set_hash",
+        "seal_relative_path",
+        "seal_sha256",
+        "connector_run_ids",
+        "sealed_at",
+    }
+)
+
+
+def _is_exact_nrc_campaign_seal_event(
+    run: ConnectorRun,
+    event: ConnectorRunEvent,
+    *,
+    envelope: Mapping[str, Any],
+) -> bool:
+    metrics = event.metrics_json
+    run_ids = metrics.get("connector_run_ids") if isinstance(metrics, dict) else None
+    sealed_at = metrics.get("sealed_at") if isinstance(metrics, dict) else None
+    try:
+        parsed_sealed_at = datetime.fromisoformat(
+            str(sealed_at).replace("Z", "+00:00")
+        )
+    except (TypeError, ValueError):
+        return False
+    bound_fields = (
+        "campaign_id",
+        "campaign_fingerprint",
+        "campaign_definition_sha256",
+        "code_revision",
+        "campaign_introduction_index_revision",
+        "campaign_introduction_index_sha256",
+    )
+    digest_fields = (
+        "campaign_fingerprint",
+        "campaign_definition_sha256",
+        "campaign_introduction_index_sha256",
+        "manifest_sha256",
+        "file_set_hash",
+        "seal_sha256",
+    )
+    return bool(
+        isinstance(metrics, dict)
+        and set(metrics) == _NRC_SEAL_METRIC_KEYS
+        and event.connector_run_event_id
+        == _deterministic_id(
+            run.connector_run_id,
+            "campaign_log_capture_sealed",
+        )
+        and event.connector_run_id == run.connector_run_id
+        and event.connector_run_target_id is None
+        and event.phase == "evidence"
+        and event.stage == "campaign_log_capture"
+        and event.event_type == "campaign_log_capture_sealed"
+        and event.status_before == run.status == "completed"
+        and event.status_after == run.status
+        and event.reason_code == "protected_log_capture_sealed"
+        and event.error_class is None
+        and event.message is None
+        and metrics.get("schema_id")
+        == "project6.connector_campaign_log_seal_event_metrics.v1"
+        and all(metrics.get(field) == envelope.get(field) for field in bound_fields)
+        and all(
+            isinstance(metrics.get(field), str)
+            and re.fullmatch(r"[0-9a-f]{64}", str(metrics[field]))
+            for field in digest_fields
+        )
+        and isinstance(metrics.get("code_revision"), str)
+        and re.fullmatch(r"[0-9a-f]{40}", str(metrics["code_revision"]))
+        and all(
+            isinstance(metrics.get(field), str) and bool(str(metrics[field]))
+            for field in ("manifest_relative_path", "seal_relative_path")
+        )
+        and isinstance(run_ids, list)
+        and len(run_ids) == len(set(run_ids))
+        and run.connector_run_id in run_ids
+        and all(isinstance(run_id, str) and bool(run_id) for run_id in run_ids)
+        and event.created_at is not None
+        and _as_utc(parsed_sealed_at) == _as_utc(event.created_at)
+    )
 
 
 def _load_nrc_counter_records(path: Path) -> tuple[dict[str, Any], ...]:
@@ -524,6 +614,31 @@ def _assert_nrc_terminal_transition(
         or event.connector_run_event_id == terminal_id
     ]
     terminal = terminals[0] if len(terminals) == 1 else None
+    seal_id = _deterministic_id(
+        run.connector_run_id,
+        "campaign_log_capture_sealed",
+    )
+    seal_candidates = [
+        event
+        for event in events
+        if event.event_type == "campaign_log_capture_sealed"
+        or event.connector_run_event_id == seal_id
+    ]
+    exact_seals = [
+        event
+        for event in seal_candidates
+        if _is_exact_nrc_campaign_seal_event(
+            run,
+            event,
+            envelope=envelope,
+        )
+    ]
+    seal_event = (
+        exact_seals[0]
+        if len(seal_candidates) == len(exact_seals) == 1
+        else None
+    )
+    invalid_seal_evidence = bool(seal_candidates) and seal_event is None
     metrics = (
         terminal.metrics_json
         if terminal is not None and isinstance(terminal.metrics_json, dict)
@@ -565,6 +680,7 @@ def _assert_nrc_terminal_transition(
     prohibited_tokens = ("cancel", "error", "fail", "terminal")
     competing_evidence = any(
         event is not terminal
+        and event is not seal_event
         and (
             event.status_before in prohibited_statuses
             or event.status_after in prohibited_statuses
@@ -580,6 +696,7 @@ def _assert_nrc_terminal_transition(
     if (
         run.status != "completed"
         or not terminal_shape_valid
+        or invalid_seal_evidence
         or competing_evidence
         or run.cancellation_requested_at is not None
         or run.cancelled_at is not None

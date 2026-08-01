@@ -3516,6 +3516,9 @@ def _commit_origin_test_session(
     decision_manifest_id = gate_b_state.gate_b_decision_manifest_id(
         decision_manifest
     )
+    descriptor_selector = gate_b_state.gate_b_descriptor_selector(
+        normalized_decision
+    )
     material_preview_hash = gate_b_state.material_preview_hash(
         [normalized_decision["material_preview_basis"]]
     )
@@ -3536,9 +3539,7 @@ def _commit_origin_test_session(
             {
                 "source_plane": f"plane-{source_class}",
                 "descriptor_type": source_class,
-                "selector_payload": {
-                    "candidate_id": normalized_decision["candidate_id"],
-                },
+                "selector_payload": copy.deepcopy(descriptor_selector),
                 "selection_basis": {"gate_b_decision": "approved"},
                 "expansion_reason": "gate_b_approved_material",
             }
@@ -3588,9 +3589,7 @@ def _commit_origin_test_session(
         selection_manifest_id=manifest_id,
         source_plane=f"plane-{source_class}",
         descriptor_type=source_class,
-        selector_payload_json={
-            "candidate_id": normalized_decision["candidate_id"]
-        },
+        selector_payload_json=copy.deepcopy(descriptor_selector),
         selection_basis_json={"gate_b_decision": "approved"},
         expansion_reason="gate_b_approved_material",
         status="resolved_loaded",

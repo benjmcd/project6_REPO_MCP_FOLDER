@@ -335,6 +335,10 @@ def _make_strict_state(
         envelope = {
             "schema_id": "project6.connector_egress_arming.v1",
             "arming_fingerprint": "a" * 64,
+            "campaign_id": "27693345-6a47-45bb-97a7-44c2932ef76b",
+            "campaign_fingerprint": "c" * 64,
+            "campaign_definition_sha256": "d" * 64,
+            "code_revision": "e" * 40,
             "campaign_introduction_index_revision": 1,
             "campaign_introduction_index_sha256": "b" * 64,
         }
@@ -444,6 +448,76 @@ def _make_strict_state(
     db.add_all([run, target, terminal])
     db.commit()
     return run, target, raw_path, digest
+
+
+def _make_seal_event(run: ConnectorRun) -> ConnectorRunEvent:
+    envelope = run.request_config_json["connector_egress_arming"]
+    created_at = datetime.now(timezone.utc)
+    return ConnectorRunEvent(
+        connector_run_event_id=connector_egress_arming._deterministic_id(
+            run.connector_run_id,
+            "campaign_log_capture_sealed",
+        ),
+        connector_run_id=run.connector_run_id,
+        connector_run_target_id=None,
+        phase="evidence",
+        stage="campaign_log_capture",
+        event_type="campaign_log_capture_sealed",
+        status_before="completed",
+        status_after="completed",
+        reason_code="protected_log_capture_sealed",
+        error_class=None,
+        message=None,
+        metrics_json={
+            "schema_id": "project6.connector_campaign_log_seal_event_metrics.v1",
+            "campaign_id": envelope["campaign_id"],
+            "campaign_fingerprint": envelope["campaign_fingerprint"],
+            "campaign_definition_sha256": envelope[
+                "campaign_definition_sha256"
+            ],
+            "code_revision": envelope["code_revision"],
+            "campaign_introduction_index_revision": envelope[
+                "campaign_introduction_index_revision"
+            ],
+            "campaign_introduction_index_sha256": envelope[
+                "campaign_introduction_index_sha256"
+            ],
+            "manifest_relative_path": "logs/manifest.json",
+            "manifest_sha256": "1" * 64,
+            "file_set_hash": "2" * 64,
+            "seal_relative_path": "logs/seal.json",
+            "seal_sha256": "3" * 64,
+            "connector_run_ids": [run.connector_run_id, "sciencebase-run"],
+            "sealed_at": created_at.isoformat().replace("+00:00", "Z"),
+        },
+        created_at=created_at,
+    )
+
+
+def _add_benign_run_events(
+    db: Session,
+    run: ConnectorRun,
+    *,
+    count: int,
+) -> None:
+    db.add_all(
+        ConnectorRunEvent(
+            connector_run_event_id=f"benign-phase-b-{index}",
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=None,
+            phase="execution",
+            stage="progress",
+            event_type="progress",
+            status_before="running",
+            status_after="running",
+            reason_code="progress",
+            error_class=None,
+            message=None,
+            metrics_json={"ordinal": index},
+            created_at=datetime.now(timezone.utc),
+        )
+        for index in range(count)
+    )
 
 
 def _install_parser(
@@ -735,6 +809,58 @@ def test_real_arming_completed_run_reaches_public_phase_b_linkage(
     assert linkage.run_id == run.connector_run_id
     assert linkage.target_id == target.connector_run_target_id
     assert len(parser_calls) == 1
+
+
+def test_verifier_accepts_seven_phase_events_plus_exact_campaign_seal(
+    db: Session,
+) -> None:
+    phase_b = _phase_b()
+    run, target, _, _ = _make_strict_state(db)
+    _add_benign_run_events(db, run, count=6)
+    db.add(_make_seal_event(run))
+    db.commit()
+
+    authority = phase_b._read_verifier_authority(
+        db.connection(),
+        target_id=target.connector_run_target_id,
+        expected_run_id=run.connector_run_id,
+    )
+    verified_run, verified_target, _, _ = (
+        phase_b._validate_verifier_authority(
+            authority,
+            target_id=target.connector_run_target_id,
+        )
+    )
+
+    assert len(authority.events) == 8
+    assert verified_run.connector_run_id == run.connector_run_id
+    assert (
+        verified_target.connector_run_target_id
+        == target.connector_run_target_id
+    )
+
+
+def test_verifier_rejects_eighth_non_seal_event_with_exact_campaign_seal(
+    db: Session,
+) -> None:
+    phase_b = _phase_b()
+    run, target, _, _ = _make_strict_state(db)
+    _add_benign_run_events(db, run, count=7)
+    db.add(_make_seal_event(run))
+    db.commit()
+
+    authority = phase_b._read_verifier_authority(
+        db.connection(),
+        target_id=target.connector_run_target_id,
+        expected_run_id=run.connector_run_id,
+    )
+    with pytest.raises(phase_b.NrcPhaseBLinkageError) as excinfo:
+        phase_b._validate_verifier_authority(
+            authority,
+            target_id=target.connector_run_target_id,
+        )
+
+    assert excinfo.value.code == "nrc_phase_b_run_invalid"
 
 
 def test_verifier_contract_success_is_frozen_and_read_only(
