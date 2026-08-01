@@ -16,11 +16,13 @@ from pathlib import Path
 
 import pytest
 
+from app.services import dual_live_runtime as dual_live_runtime_module
 from app.services.dual_live_evaluator import (
     DualLiveEvaluationError,
     evaluate_dual_live_proof,
 )
 from app.services.dual_live_runtime import (
+    CHILD_CONTROL_SCHEMA_ID,
     MAX_CAPTURE_BYTES,
     MAX_FRAME_BYTES,
     MAX_FRAMES_PER_STREAM,
@@ -54,6 +56,8 @@ from app.services.connector_egress_authorization import canonical_json_bytes
 BACKEND = Path(__file__).resolve().parents[1]
 CAMPAIGN_ID = "123e4567-e89b-42d3-a456-426614174000"
 CAMPAIGN_FINGERPRINT = "a" * 64
+STATUS_PROCESS_BOOT_ID = "b" * 64
+STATUS_NONCE_SHA256 = "c" * 64
 EXPECTED_REPORT = {
     "schema_id": "project6.dual_live_evaluation.v1",
     "campaign_id": CAMPAIGN_ID,
@@ -752,6 +756,83 @@ def test_r05_pipe_budget_enforces_fixed_stream_frame_and_aggregate_caps() -> Non
         frame_budget.consume("stderr", 1)
 
 
+def test_pipe_budget_charges_emitted_newlines_and_wrapper_bytes_exactly() -> None:
+    budget = PipeFrameBudget()
+    newline_payload_bytes = MAX_FRAME_BYTES - 1
+    for _ in range(MAX_STREAM_BYTES // MAX_FRAME_BYTES):
+        budget.consume(
+            "app",
+            newline_payload_bytes,
+            emitted_bytes=MAX_FRAME_BYTES,
+        )
+
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_pump_stream_bytes_exceeded"
+    ):
+        budget.consume("app", 1, emitted_bytes=2)
+
+    wrapper_budget = PipeFrameBudget()
+    wrapper_budget.consume_wrapper("app", MAX_STREAM_BYTES)
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_pump_stream_bytes_exceeded"
+    ):
+        wrapper_budget.consume_wrapper("app", 1)
+
+
+def test_pumps_charge_http_newline_and_wrapper_app_write(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dual_live_runtime_module, "MAX_STREAM_BYTES", 4)
+    monkeypatch.setattr(dual_live_runtime_module, "MAX_CAPTURE_BYTES", 8)
+
+    def make_group(
+        http_frames: bytes = b"",
+    ) -> tuple[FourStreamPumpGroup, dict[str, MemorySink]]:
+        readers = {
+            "app": io.BytesIO(),
+            "http": io.BytesIO(http_frames),
+            "stdout": io.BytesIO(),
+            "stderr": io.BytesIO(),
+        }
+        writers = {stream: MemorySink() for stream in readers}
+        return (
+            FourStreamPumpGroup(
+                readers=readers,
+                writers=writers,
+                status_callback=lambda _value: None,
+                http_frame_validator=lambda _value: None,
+                stop_latch=FirstStopLatch(),
+                expected_status_phase="A",
+                expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+                expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+            ),
+            writers,
+        )
+
+    exact, exact_writers = make_group(encode_pipe_frame(b"abc"))
+    exact.start()
+    exact.join(timeout=2)
+    assert exact_writers["http"].bytes() == b"abc\n"
+
+    overflow, overflow_writers = make_group(
+        encode_pipe_frame(b"abc") + encode_pipe_frame(b"x")
+    )
+    overflow.start()
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_failed") as exc:
+        overflow.join(timeout=2)
+    assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+    assert exc.value.__cause__.code == "dual_live_pump_stream_bytes_exceeded"
+    assert overflow_writers["http"].bytes() == b"abc\n"
+
+    wrapper, wrapper_writers = make_group()
+    assert wrapper.app_write(b"1234") == 4
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_pump_stream_bytes_exceeded"
+    ):
+        wrapper.app_write(b"x")
+    assert wrapper_writers["app"].bytes() == b"1234"
+
+
 def test_r06_logger_census_projects_root_real_placeholder_and_last_resort(
     isolated_logging: logging.RootLogger,
     monkeypatch: pytest.MonkeyPatch,
@@ -1072,14 +1153,19 @@ def test_phase_control_stop_is_first_reason_wins_and_late_go_refuses() -> None:
             )
         )
     ) == "STOP"
-    with pytest.raises(DualLiveRuntimeError, match="dual_live_phase_go_late"):
-        control.consume_frame(
-            io.BytesIO(
-                encode_child_control_frame(
-                    phase="B", command="GO", control_nonce=raw_nonce
-                )
-            )
-        )
+    terminal_frames = (
+        encode_child_control_frame(
+            phase="B", command="GO", control_nonce=raw_nonce
+        ),
+        encode_child_control_frame(
+            phase="B", command="STOP", reason_code="timeout"
+        ),
+    )
+    for frame in terminal_frames:
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_phase_control_terminal"
+        ):
+            control.consume_frame(io.BytesIO(frame))
     assert stop.reason_code == "operator_stop"
 
 
@@ -1087,7 +1173,14 @@ def test_four_stream_pumps_intercept_status_and_write_owned_streams() -> None:
     status_frame = encode_child_status_frame(
         phase="A",
         event="logger_census",
-        payload={"topology_sha256": "e" * 64},
+        process_boot_id=STATUS_PROCESS_BOOT_ID,
+        status_nonce_sha256=STATUS_NONCE_SHA256,
+        ordinal=1,
+        payload={
+            "census_point": "pre_activity",
+            "handler_count": 2,
+            "topology_sha256": "e" * 64,
+        },
     )
     app = canonical_json_bytes(
         {"schema_id": "project6.test_app_event.v1", "value": "safe"}
@@ -1110,6 +1203,9 @@ def test_four_stream_pumps_intercept_status_and_write_owned_streams() -> None:
         status_callback=lambda value: statuses.append(value),
         http_frame_validator=lambda value: validated_http.append(value),
         stop_latch=FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
     )
 
     pumps.start()
@@ -1118,9 +1214,16 @@ def test_four_stream_pumps_intercept_status_and_write_owned_streams() -> None:
     assert statuses == [
         {
             "event": "logger_census",
-            "payload": {"topology_sha256": "e" * 64},
+            "ordinal": 1,
+            "payload": {
+                "census_point": "pre_activity",
+                "handler_count": 2,
+                "topology_sha256": "e" * 64,
+            },
             "phase": "A",
+            "process_boot_id": STATUS_PROCESS_BOOT_ID,
             "schema_id": CHILD_STATUS_SCHEMA_ID,
+            "status_nonce_sha256": STATUS_NONCE_SHA256,
         }
     ]
     assert validated_http == [http]
@@ -1128,6 +1231,51 @@ def test_four_stream_pumps_intercept_status_and_write_owned_streams() -> None:
     assert writers["http"].bytes() == http + b"\n"
     assert writers["stdout"].bytes() == b"out"
     assert writers["stderr"].bytes() == b"err"
+
+
+def test_four_stream_pumps_reject_replayed_bound_child_status() -> None:
+    process_boot_id = "b" * 64
+    status_nonce_sha256 = "c" * 64
+    status_frame = encode_child_status_frame(
+        phase="A",
+        event="logger_census",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce_sha256,
+        ordinal=1,
+        payload={
+            "census_point": "pre_activity",
+            "handler_count": 0,
+            "topology_sha256": "e" * 64,
+        },
+    )
+    readers = {
+        "app": io.BytesIO(status_frame + status_frame),
+        "http": io.BytesIO(),
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(),
+    }
+    writers = {stream: MemorySink() for stream in readers}
+    statuses: list[dict[str, object]] = []
+    stop = FirstStopLatch()
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers=writers,
+        status_callback=lambda value: statuses.append(value),
+        http_frame_validator=lambda _value: None,
+        stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=process_boot_id,
+        expected_status_nonce_sha256=status_nonce_sha256,
+    )
+
+    pumps.start()
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_failed") as exc:
+        pumps.join(timeout=2)
+
+    assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+    assert exc.value.__cause__.code == "dual_live_child_status_invalid"
+    assert len(statuses) == 1
+    assert stop.reason_code == "pump_failure"
 
 
 def test_pump_failure_latches_stop_and_writes_no_invalid_app_bytes() -> None:
@@ -1145,6 +1293,9 @@ def test_pump_failure_latches_stop_and_writes_no_invalid_app_bytes() -> None:
         status_callback=lambda _value: None,
         http_frame_validator=lambda _value: None,
         stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
     )
 
     pumps.start()
@@ -1172,7 +1323,7 @@ def test_locked_campaign_sink_serializes_concurrent_wrapper_writes() -> None:
             return len(content)
 
     writer = OverlapDetectingWriter()
-    sink = LockedCampaignSink(writer)
+    sink = LockedCampaignSink(writer, stop_latch=FirstStopLatch())
     threads = [
         threading.Thread(target=sink.write, args=(content,))
         for content in (b"wrapper\n", b"child\n")
@@ -1185,6 +1336,146 @@ def test_locked_campaign_sink_serializes_concurrent_wrapper_writes() -> None:
 
     assert writer.overlap is False
     assert sorted(writer.chunks) == [b"child\n", b"wrapper\n"]
+
+
+def test_locked_campaign_sink_poison_is_permanent_after_short_write() -> None:
+    class ShortOnceWriter:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def write(self, content: bytes) -> int:
+            self.calls += 1
+            if self.calls == 1:
+                return len(content) - 1
+            return len(content)
+
+    writer = ShortOnceWriter()
+    stop = FirstStopLatch()
+    sink = LockedCampaignSink(writer, stop_latch=stop)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_write_failed"):
+        sink.write(b"first")
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_writer_poisoned"):
+        sink.write(b"second")
+
+    assert writer.calls == 1
+    assert stop.reason_code == "writer_failure"
+
+
+def test_locked_campaign_sink_failure_poison_wins_concurrent_race() -> None:
+    class BlockingFailureWriter:
+        def __init__(self) -> None:
+            self.calls = 0
+            self.entered = threading.Event()
+            self.release = threading.Event()
+
+        def write(self, _content: bytes) -> int:
+            self.calls += 1
+            self.entered.set()
+            assert self.release.wait(2)
+            raise OSError("disk failed")
+
+    writer = BlockingFailureWriter()
+    stop = FirstStopLatch()
+    sink = LockedCampaignSink(writer, stop_latch=stop)
+    errors: list[str] = []
+
+    def write(content: bytes) -> None:
+        try:
+            sink.write(content)
+        except DualLiveRuntimeError as exc:
+            errors.append(exc.code)
+
+    first = threading.Thread(target=write, args=(b"first",))
+    second = threading.Thread(target=write, args=(b"second",))
+    first.start()
+    assert writer.entered.wait(2)
+    second.start()
+    writer.release.set()
+    first.join(2)
+    second.join(2)
+
+    assert first.is_alive() is False
+    assert second.is_alive() is False
+    assert sorted(errors) == [
+        "dual_live_pump_write_failed",
+        "dual_live_pump_writer_poisoned",
+    ]
+    assert writer.calls == 1
+    assert stop.reason_code == "writer_failure"
+
+
+def test_wrapper_app_write_latches_writer_failure_and_stays_poisoned(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class ShortWriter(MemorySink):
+        def __init__(self) -> None:
+            super().__init__()
+            self.calls = 0
+
+        def write(self, content: bytes) -> int:
+            self.calls += 1
+            super().write(content)
+            return len(content) - 1
+
+    monkeypatch.setattr(dual_live_runtime_module, "MAX_STREAM_BYTES", 7)
+    monkeypatch.setattr(dual_live_runtime_module, "MAX_CAPTURE_BYTES", 14)
+    readers = {
+        stream: io.BytesIO() for stream in ("app", "http", "stdout", "stderr")
+    }
+    app_writer = ShortWriter()
+    writers: dict[str, MemorySink] = {
+        "app": app_writer,
+        "http": MemorySink(),
+        "stdout": MemorySink(),
+        "stderr": MemorySink(),
+    }
+    stop = FirstStopLatch()
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers=writers,
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_write_failed"):
+        pumps.app_write(b"record\n")
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_writer_poisoned"):
+        pumps.app_write(b"second\n")
+
+    assert app_writer.calls == 1
+    assert stop.reason_code == "writer_failure"
+
+
+def test_four_stream_pumps_reject_aliased_capture_writers() -> None:
+    readers = {
+        stream: io.BytesIO() for stream in ("app", "http", "stdout", "stderr")
+    }
+    shared = MemorySink()
+    writers = {
+        "app": shared,
+        "http": shared,
+        "stdout": MemorySink(),
+        "stderr": MemorySink(),
+    }
+
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_pump_writer_alias_invalid"
+    ):
+        FourStreamPumpGroup(
+            readers=readers,
+            writers=writers,
+            status_callback=lambda _value: None,
+            http_frame_validator=lambda _value: None,
+            stop_latch=FirstStopLatch(),
+            expected_status_phase="A",
+            expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+            expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+        )
 
 
 def test_first_stop_latch_is_idempotent_and_rejects_unknown_reason() -> None:
@@ -1273,61 +1564,311 @@ def test_phase_control_complete_is_terminal() -> None:
     )
     control.complete()
 
-    with pytest.raises(DualLiveRuntimeError, match="dual_live_phase_go_late"):
-        control.consume_frame(
-            io.BytesIO(
-                encode_child_control_frame(
-                    phase="A", command="GO", control_nonce=raw_nonce
-                )
-            )
-        )
+    terminal_frames = (
+        encode_child_control_frame(
+            phase="A", command="GO", control_nonce=raw_nonce
+        ),
+        encode_child_control_frame(
+            phase="A", command="STOP", reason_code="operator_stop"
+        ),
+    )
+    for frame in terminal_frames:
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_phase_control_terminal"
+        ):
+            control.consume_frame(io.BytesIO(frame))
 
     assert stop.reason_code == "protocol_failure"
 
 
+def test_phase_control_protocol_failure_permanently_refuses_go_and_stop() -> None:
+    raw_nonce = "d" * 64
+    stop = FirstStopLatch()
+    control = PhaseControlState(
+        phase="A",
+        control_nonce_sha256=hashlib.sha256(raw_nonce.encode("ascii")).hexdigest(),
+        stop_latch=stop,
+    )
+    control.mark_census_ready()
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_phase_go_invalid"):
+        control.consume_frame(
+            io.BytesIO(
+                encode_child_control_frame(
+                    phase="A", command="GO", control_nonce="e" * 64
+                )
+            )
+        )
+    assert control.state == "failed"
+
+    for frame in (
+        encode_child_control_frame(
+            phase="A", command="GO", control_nonce=raw_nonce
+        ),
+        encode_child_control_frame(
+            phase="A", command="STOP", reason_code="operator_stop"
+        ),
+    ):
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_phase_control_terminal"
+        ):
+            control.consume_frame(io.BytesIO(frame))
+
+    assert control.state == "failed"
+    assert stop.reason_code == "protocol_failure"
+
+
+def test_phase_control_rejects_oversized_prefix_without_reading_body() -> None:
+    class PrefixOnlyReader:
+        def __init__(self) -> None:
+            self.read_sizes: list[int] = []
+
+        def read(self, size: int) -> bytes:
+            self.read_sizes.append(size)
+            if len(self.read_sizes) == 1:
+                return (4097).to_bytes(4, "big")
+            pytest.fail("oversized control body must not be read")
+
+    reader = PrefixOnlyReader()
+    stop = FirstStopLatch()
+    control = PhaseControlState(
+        phase="A",
+        control_nonce_sha256="a" * 64,
+        stop_latch=stop,
+    )
+    control.mark_census_ready()
+
+    with pytest.raises(
+        DualLiveRuntimeError, match="dual_live_phase_control_invalid"
+    ) as exc:
+        control.consume_frame(reader)
+
+    assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+    assert exc.value.__cause__.code == "dual_live_phase_control_oversized"
+    assert reader.read_sizes == [4]
+    assert control.state == "failed"
+    assert stop.reason_code == "protocol_failure"
+
+
+def test_child_status_requires_exact_expected_bindings_and_payload() -> None:
+    process_boot_id = "b" * 64
+    status_nonce_sha256 = "c" * 64
+    frame = encode_child_status_frame(
+        phase="A",
+        event="logger_census",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce_sha256,
+        ordinal=1,
+        payload={
+            "census_point": "pre_activity",
+            "handler_count": 2,
+            "topology_sha256": "e" * 64,
+        },
+    )
+
+    decoded = decode_child_status_frame(
+        frame[4:],
+        expected_phase="A",
+        expected_process_boot_id=process_boot_id,
+        expected_status_nonce_sha256=status_nonce_sha256,
+        expected_ordinal=1,
+    )
+
+    assert decoded == {
+        "event": "logger_census",
+        "ordinal": 1,
+        "payload": {
+            "census_point": "pre_activity",
+            "handler_count": 2,
+            "topology_sha256": "e" * 64,
+        },
+        "phase": "A",
+        "process_boot_id": process_boot_id,
+        "schema_id": CHILD_STATUS_SCHEMA_ID,
+        "status_nonce_sha256": status_nonce_sha256,
+    }
+
+
+def test_child_status_rejects_wrong_bindings_extras_and_unsafe_values() -> None:
+    process_boot_id = "b" * 64
+    status_nonce_sha256 = "c" * 64
+    valid = {
+        "event": "logger_census",
+        "ordinal": 1,
+        "payload": {
+            "census_point": "pre_activity",
+            "handler_count": 0,
+            "topology_sha256": "e" * 64,
+        },
+        "phase": "A",
+        "process_boot_id": process_boot_id,
+        "schema_id": CHILD_STATUS_SCHEMA_ID,
+        "status_nonce_sha256": status_nonce_sha256,
+    }
+    canonical = canonical_json_bytes(valid)
+    invalid_values: list[dict[str, object]] = []
+
+    wrong_schema = dict(valid)
+    wrong_schema["schema_id"] = "project6.wrong.v1"
+    invalid_values.append(wrong_schema)
+
+    extra_envelope = dict(valid)
+    extra_envelope["extra"] = "smuggled"
+    invalid_values.append(extra_envelope)
+
+    for bad_payload in (
+        {
+            **valid["payload"],
+            "extra": "smuggled",
+        },
+        {
+            **valid["payload"],
+            "census_point": "secret=never",
+        },
+        {
+            **valid["payload"],
+            "handler_count": True,
+        },
+        {
+            **valid["payload"],
+            "handler_count": -1,
+        },
+        {
+            **valid["payload"],
+            "topology_sha256": "E" * 64,
+        },
+    ):
+        invalid = dict(valid)
+        invalid["payload"] = bad_payload
+        invalid_values.append(invalid)
+
+    invalid_payloads = [b"{" + b" " + canonical[1:]]
+    invalid_payloads.extend(canonical_json_bytes(value) for value in invalid_values)
+    for payload in invalid_payloads:
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_child_status_invalid"
+        ):
+            decode_child_status_frame(
+                payload,
+                expected_phase="A",
+                expected_process_boot_id=process_boot_id,
+                expected_status_nonce_sha256=status_nonce_sha256,
+                expected_ordinal=1,
+            )
+
+    wrong_expectations = (
+        ("B", process_boot_id, status_nonce_sha256, 1),
+        ("A", "d" * 64, status_nonce_sha256, 1),
+        ("A", process_boot_id, "d" * 64, 1),
+        ("A", process_boot_id, status_nonce_sha256, 2),
+    )
+    for phase, boot_id, nonce_hash, ordinal in wrong_expectations:
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_child_status_invalid"
+        ):
+            decode_child_status_frame(
+                canonical,
+                expected_phase=phase,
+                expected_process_boot_id=boot_id,
+                expected_status_nonce_sha256=nonce_hash,
+                expected_ordinal=ordinal,
+            )
+
+
 @pytest.mark.parametrize(
-    "payload",
-    [
-        b'{"event":"logger_census", "payload":{},"phase":"A",'
-        b'"schema_id":"project6.dual_live_child_status.v1"}',
-        canonical_json_bytes(
-            {
-                "event": "logger_census",
-                "payload": {},
-                "phase": "A",
-                "schema_id": "project6.wrong.v1",
-            }
-        ),
-        canonical_json_bytes(
-            {
-                "event": "logger_census",
-                "payload": {"secret_value": "never"},
-                "phase": "A",
-                "schema_id": CHILD_STATUS_SCHEMA_ID,
-            }
-        ),
-    ],
+    "schema_id",
+    (CHILD_CONTROL_SCHEMA_ID, CHILD_STATUS_SCHEMA_ID, RUNTIME_SCHEMA_ID),
 )
-def test_child_status_rejects_noncanonical_wrong_schema_and_unsafe_fields(
-    payload: bytes,
-) -> None:
-    with pytest.raises(DualLiveRuntimeError, match="dual_live_child_status_invalid"):
-        decode_child_status_frame(payload)
+def test_public_pipe_encoder_rejects_every_reserved_schema(schema_id: str) -> None:
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_child_reserved_schema"):
+        encode_pipe_frame(canonical_json_bytes({"schema_id": schema_id}))
 
 
 @pytest.mark.parametrize(
-    ("case", "expected_cause"),
+    ("stream", "reserved_kind"),
+    (
+        ("app", "control"),
+        ("app", "runtime"),
+        ("stdout", "control"),
+        ("stdout", "status"),
+        ("stdout", "runtime"),
+        ("stderr", "control"),
+        ("stderr", "status"),
+        ("stderr", "runtime"),
+    ),
+)
+def test_pumps_never_capture_reserved_schema_on_wrong_route(
+    stream: str,
+    reserved_kind: str,
+) -> None:
+    if reserved_kind == "control":
+        frame = encode_child_control_frame(
+            phase="A", command="GO", control_nonce="d" * 64
+        )
+    elif reserved_kind == "status":
+        frame = encode_child_status_frame(
+            phase="A",
+            event="logger_census",
+            process_boot_id=STATUS_PROCESS_BOOT_ID,
+            status_nonce_sha256=STATUS_NONCE_SHA256,
+            ordinal=1,
+            payload={
+                "census_point": "pre_activity",
+                "handler_count": 0,
+                "topology_sha256": "e" * 64,
+            },
+        )
+    else:
+        payload = canonical_json_bytes({"schema_id": RUNTIME_SCHEMA_ID})
+        frame = len(payload).to_bytes(4, "big") + payload
+
+    readers = {
+        name: io.BytesIO(frame if name == stream else b"")
+        for name in ("app", "http", "stdout", "stderr")
+    }
+    writers = {name: MemorySink() for name in readers}
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers=writers,
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+
+    pumps.start()
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_failed") as exc:
+        pumps.join(timeout=2)
+
+    assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+    assert exc.value.__cause__.code == "dual_live_child_reserved_schema"
+    assert writers[stream].bytes() == b""
+
+
+@pytest.mark.parametrize(
+    ("case", "expected_cause", "expected_stop"),
     [
-        ("partial_eof", "dual_live_frame_unexpected_eof"),
-        ("http_validator", "dual_live_http_frame_validator_invalid"),
-        ("status_callback", "dual_live_child_status_callback_invalid"),
-        ("short_writer", "dual_live_pump_write_failed"),
-        ("reserved_app", "dual_live_app_frame_reserved_schema"),
+        ("partial_eof", "dual_live_frame_unexpected_eof", "pump_failure"),
+        (
+            "http_validator",
+            "dual_live_http_frame_validator_invalid",
+            "pump_failure",
+        ),
+        (
+            "status_callback",
+            "dual_live_child_status_callback_invalid",
+            "pump_failure",
+        ),
+        ("short_writer", "dual_live_pump_write_failed", "writer_failure"),
+        ("reserved_app", "dual_live_child_reserved_schema", "pump_failure"),
     ],
 )
 def test_each_pump_boundary_failure_latches_and_surfaces_exact_cause(
     case: str,
     expected_cause: str,
+    expected_stop: str,
 ) -> None:
     class ShortWriter(MemorySink):
         def write(self, content: bytes) -> int:
@@ -1355,7 +1896,16 @@ def test_each_pump_boundary_failure_latches_and_surfaces_exact_cause(
     elif case == "status_callback":
         readers["app"] = io.BytesIO(
             encode_child_status_frame(
-                phase="A", event="logger_census", payload={"handler_count": 0}
+                phase="A",
+                event="logger_census",
+                process_boot_id=STATUS_PROCESS_BOOT_ID,
+                status_nonce_sha256=STATUS_NONCE_SHA256,
+                ordinal=1,
+                payload={
+                    "census_point": "pre_activity",
+                    "handler_count": 0,
+                    "topology_sha256": "e" * 64,
+                },
             )
         )
         status_result = False
@@ -1375,6 +1925,9 @@ def test_each_pump_boundary_failure_latches_and_surfaces_exact_cause(
         status_callback=status_callback,
         http_frame_validator=http_validator,
         stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
     )
 
     pumps.start()
@@ -1383,17 +1936,22 @@ def test_each_pump_boundary_failure_latches_and_surfaces_exact_cause(
 
     assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
     assert exc.value.__cause__.code == expected_cause
-    assert stop.reason_code == "pump_failure"
+    assert stop.reason_code == expected_stop
 
 
 def test_pump_start_is_one_use_and_join_timeout_latches_first_stop() -> None:
     class BlockingReader:
         def __init__(self) -> None:
             self.release = threading.Event()
+            self.closed = False
 
         def read(self, _size: int) -> bytes:
             self.release.wait()
             return b""
+
+        def close(self) -> None:
+            self.closed = True
+            self.release.set()
 
     blocker = BlockingReader()
     readers = {
@@ -1410,14 +1968,144 @@ def test_pump_start_is_one_use_and_join_timeout_latches_first_stop() -> None:
         status_callback=lambda _value: None,
         http_frame_validator=lambda _value: None,
         stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
     )
     pumps.start()
+    alive_names = set(pumps.threads_alive)
+    assert alive_names
+    assert all(
+        thread.daemon
+        for thread in threading.enumerate()
+        if thread.name in alive_names
+    )
 
     with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_already_started"):
         pumps.start()
     with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_join_timeout"):
         pumps.join(timeout=0.01)
     assert stop.reason_code == "timeout"
+    assert blocker.closed is True
+    assert pumps.threads_alive == ()
 
-    blocker.release.set()
     pumps.join(timeout=2)
+
+
+def test_pump_join_preserves_primary_error_while_cancelling_blocked_peer() -> None:
+    class CancellableBlockingReader:
+        def __init__(self) -> None:
+            self.release = threading.Event()
+            self.closed = False
+
+        def read(self, _size: int) -> bytes:
+            self.release.wait()
+            return b""
+
+        def close(self) -> None:
+            self.closed = True
+            self.release.set()
+
+    blocker = CancellableBlockingReader()
+    readers = {
+        "app": io.BytesIO(b"\x00\x00"),
+        "http": blocker,
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(),
+    }
+    writers = {stream: MemorySink() for stream in readers}
+    stop = FirstStopLatch()
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers=writers,
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    pumps.start()
+
+    try:
+        with pytest.raises(
+            DualLiveRuntimeError, match="dual_live_pump_failed"
+        ) as exc:
+            pumps.join(timeout=0.05)
+    finally:
+        blocker.close()
+        with suppress(DualLiveRuntimeError):
+            pumps.join(timeout=2)
+
+    assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+    assert exc.value.__cause__.code == "dual_live_frame_unexpected_eof"
+    assert blocker.closed is True
+    assert pumps.threads_alive == ()
+    assert stop.reason_code == "pump_failure"
+
+
+def test_four_stream_pump_concurrent_start_has_exactly_one_winner() -> None:
+    readers = {
+        stream: io.BytesIO() for stream in ("app", "http", "stdout", "stderr")
+    }
+    writers = {stream: MemorySink() for stream in readers}
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers=writers,
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    barrier = threading.Barrier(3)
+    results: list[str] = []
+
+    def start() -> None:
+        barrier.wait()
+        try:
+            pumps.start()
+        except DualLiveRuntimeError as exc:
+            results.append(exc.code)
+        else:
+            results.append("started")
+
+    callers = [threading.Thread(target=start) for _ in range(2)]
+    for caller in callers:
+        caller.start()
+    barrier.wait()
+    for caller in callers:
+        caller.join(2)
+
+    assert all(caller.is_alive() is False for caller in callers)
+    assert sorted(results) == ["dual_live_pump_already_started", "started"]
+    pumps.join(timeout=2)
+    assert pumps.threads_alive == ()
+
+
+def test_pump_primary_error_uses_deterministic_stream_priority() -> None:
+    readers = {
+        "app": io.BytesIO(b"\x00\x00"),
+        "http": io.BytesIO(encode_pipe_frame(b"counter")),
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(),
+    }
+    writers = {stream: MemorySink() for stream in readers}
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers=writers,
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: False,
+        stop_latch=FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    pumps.start()
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_failed") as exc:
+        pumps.join(timeout=2)
+
+    assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+    assert exc.value.__cause__.code == "dual_live_frame_unexpected_eof"

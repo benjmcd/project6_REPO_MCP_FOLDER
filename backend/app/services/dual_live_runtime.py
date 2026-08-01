@@ -30,10 +30,15 @@ RUNTIME_RECORD_KEYS = (
 RUNTIME_SCHEMA_ID = "project6.dual_live_runtime_record.v1"
 CHILD_CONTROL_SCHEMA_ID = "project6.dual_live_child_control.v1"
 CHILD_STATUS_SCHEMA_ID = "project6.dual_live_child_status.v1"
+_RESERVED_CAPTURE_SCHEMA_IDS = frozenset(
+    (CHILD_CONTROL_SCHEMA_ID, CHILD_STATUS_SCHEMA_ID, RUNTIME_SCHEMA_ID)
+)
 MAX_FRAME_BYTES = 64 * 1024
+MAX_CONTROL_FRAME_BYTES = 4 * 1024
 MAX_FRAMES_PER_STREAM = 10_000
 MAX_STREAM_BYTES = 16 * 1024 * 1024
 MAX_CAPTURE_BYTES = 32 * 1024 * 1024
+PUMP_CANCEL_JOIN_SECONDS = 1.0
 PIPE_STREAM_CLASSES = ("app", "http", "stdout", "stderr")
 LOGGER_TOPOLOGY_SCHEMA_ID = "project6.dual_live_logger_topology.v1"
 WINDOWS_MIB_TCP_STATES = (
@@ -242,15 +247,25 @@ class PhaseControlState:
         self._control_nonce_sha256 = control_nonce_sha256
         self._stop_latch = stop_latch
         self._state = "boot"
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
     @property
     def state(self) -> str:
         with self._lock:
             return self._state
 
-    def _protocol_failure(self, code: str) -> NoReturn:
+    def _protocol_failure(
+        self,
+        code: str,
+        *,
+        cause: BaseException | None = None,
+    ) -> NoReturn:
+        with self._lock:
+            if self._state not in {"complete", "stopped"}:
+                self._state = "failed"
         self._stop_latch.latch("protocol_failure")
+        if cause is not None:
+            raise DualLiveRuntimeError(code) from cause
         _fail(code)
 
     def mark_census_ready(self) -> None:
@@ -260,39 +275,42 @@ class PhaseControlState:
             self._state = "census_ready"
 
     def consume(self, payload: bytes) -> str:
-        if not isinstance(payload, bytes) or not payload:
-            self._protocol_failure("dual_live_phase_control_invalid")
-        try:
-            message = strict_json_loads(payload)
-        except (TypeError, ValueError):
-            self._protocol_failure("dual_live_phase_control_invalid")
-        if type(message) is not dict or canonical_json_bytes(message) != payload:
-            self._protocol_failure("dual_live_phase_control_invalid")
-        command = message.get("command")
-        if command == "GO":
-            expected_keys = (
-                "schema_id",
-                "phase",
-                "command",
-                "control_nonce",
-            )
-        elif command == "STOP":
-            expected_keys = (
-                "schema_id",
-                "phase",
-                "command",
-                "reason_code",
-            )
-        else:
-            self._protocol_failure("dual_live_phase_control_invalid")
-        if (
-            tuple(message) != tuple(sorted(expected_keys))
-            or message["schema_id"] != CHILD_CONTROL_SCHEMA_ID
-            or message["phase"] != self._phase
-        ):
-            self._protocol_failure("dual_live_phase_control_invalid")
-
         with self._lock:
+            if self._state in {"complete", "failed", "stopped"}:
+                self._stop_latch.latch("protocol_failure")
+                _fail("dual_live_phase_control_terminal")
+            if not isinstance(payload, bytes) or not payload:
+                self._protocol_failure("dual_live_phase_control_invalid")
+            try:
+                message = strict_json_loads(payload)
+            except (TypeError, ValueError):
+                self._protocol_failure("dual_live_phase_control_invalid")
+            if type(message) is not dict or canonical_json_bytes(message) != payload:
+                self._protocol_failure("dual_live_phase_control_invalid")
+            command = message.get("command")
+            if command == "GO":
+                expected_keys = (
+                    "schema_id",
+                    "phase",
+                    "command",
+                    "control_nonce",
+                )
+            elif command == "STOP":
+                expected_keys = (
+                    "schema_id",
+                    "phase",
+                    "command",
+                    "reason_code",
+                )
+            else:
+                self._protocol_failure("dual_live_phase_control_invalid")
+            if (
+                tuple(message) != tuple(sorted(expected_keys))
+                or message["schema_id"] != CHILD_CONTROL_SCHEMA_ID
+                or message["phase"] != self._phase
+            ):
+                self._protocol_failure("dual_live_phase_control_invalid")
+
             if command == "STOP":
                 reason_code = message["reason_code"]
                 if not isinstance(reason_code, str) or reason_code not in _STOP_REASONS:
@@ -320,10 +338,9 @@ class PhaseControlState:
 
     def consume_frame(self, reader: BinaryIO) -> str:
         try:
-            payload = read_pipe_frame(reader)
+            payload = _read_control_frame(reader)
         except DualLiveRuntimeError as exc:
-            self._stop_latch.latch("protocol_failure")
-            raise DualLiveRuntimeError("dual_live_phase_control_invalid") from exc
+            self._protocol_failure("dual_live_phase_control_invalid", cause=exc)
         if payload is None:
             self._protocol_failure("dual_live_phase_control_invalid")
         return self.consume(payload)
@@ -677,7 +694,11 @@ def read_runtime_records(app_log: bytes) -> tuple[dict[str, Any], ...]:
     return tuple(records)
 
 
-def _validate_frame_payload(payload: bytes) -> None:
+def _validate_frame_payload(
+    payload: bytes,
+    *,
+    allowed_reserved_schema_ids: frozenset[str] = frozenset(),
+) -> None:
     if not payload:
         _fail("dual_live_frame_empty")
     if len(payload) > MAX_FRAME_BYTES:
@@ -690,14 +711,29 @@ def _validate_frame_payload(payload: bytes) -> None:
         value = strict_json_loads(payload)
     except (TypeError, ValueError):
         return
-    if isinstance(value, dict) and value.get("schema_id") == RUNTIME_SCHEMA_ID:
+    if (
+        isinstance(value, dict)
+        and value.get("schema_id") in _RESERVED_CAPTURE_SCHEMA_IDS
+        and value.get("schema_id") not in allowed_reserved_schema_ids
+    ):
         _fail("dual_live_child_reserved_schema")
 
 
 def encode_pipe_frame(payload: bytes) -> bytes:
+    return _encode_pipe_frame(payload)
+
+
+def _encode_pipe_frame(
+    payload: bytes,
+    *,
+    allowed_reserved_schema_ids: frozenset[str] = frozenset(),
+) -> bytes:
     if not isinstance(payload, bytes):
         _fail("dual_live_frame_type_invalid")
-    _validate_frame_payload(payload)
+    _validate_frame_payload(
+        payload,
+        allowed_reserved_schema_ids=allowed_reserved_schema_ids,
+    )
     return len(payload).to_bytes(4, "big", signed=False) + payload
 
 
@@ -734,20 +770,32 @@ def encode_child_control_frame(
         }
     else:
         _fail("dual_live_phase_control_invalid")
-    return encode_pipe_frame(canonical_json_bytes(payload))
+    return _encode_pipe_frame(
+        canonical_json_bytes(payload),
+        allowed_reserved_schema_ids=frozenset((CHILD_CONTROL_SCHEMA_ID,)),
+    )
 
 
 def encode_child_status_frame(
     *,
     phase: str,
     event: str,
+    process_boot_id: str,
+    status_nonce_sha256: str,
+    ordinal: int,
     payload: Mapping[str, Any],
 ) -> bytes:
     if (
         phase not in {"A", "B"}
         or event != "logger_census"
+        or not isinstance(process_boot_id, str)
+        or _LOWERCASE_SHA256.fullmatch(process_boot_id) is None
+        or not isinstance(status_nonce_sha256, str)
+        or _LOWERCASE_SHA256.fullmatch(status_nonce_sha256) is None
+        or isinstance(ordinal, bool)
+        or not isinstance(ordinal, int)
+        or ordinal <= 0
         or not isinstance(payload, Mapping)
-        or _has_unsafe_field(payload)
     ):
         _fail("dual_live_child_status_invalid")
     encoded = canonical_json_bytes(
@@ -755,11 +803,23 @@ def encode_child_status_frame(
             "schema_id": CHILD_STATUS_SCHEMA_ID,
             "phase": phase,
             "event": event,
+            "process_boot_id": process_boot_id,
+            "status_nonce_sha256": status_nonce_sha256,
+            "ordinal": ordinal,
             "payload": payload,
         }
     )
-    decode_child_status_frame(encoded)
-    return encode_pipe_frame(encoded)
+    decode_child_status_frame(
+        encoded,
+        expected_phase=phase,
+        expected_process_boot_id=process_boot_id,
+        expected_status_nonce_sha256=status_nonce_sha256,
+        expected_ordinal=ordinal,
+    )
+    return _encode_pipe_frame(
+        encoded,
+        allowed_reserved_schema_ids=frozenset((CHILD_STATUS_SCHEMA_ID,)),
+    )
 
 
 def _read_exact(reader: BinaryIO, size: int, *, clean_eof: bool) -> bytes | None:
@@ -779,6 +839,14 @@ def _read_exact(reader: BinaryIO, size: int, *, clean_eof: bool) -> bytes | None
 
 
 def read_pipe_frame(reader: BinaryIO) -> bytes | None:
+    return _read_pipe_frame(reader)
+
+
+def _read_pipe_frame(
+    reader: BinaryIO,
+    *,
+    allowed_reserved_schema_ids: frozenset[str] = frozenset(),
+) -> bytes | None:
     prefix = _read_exact(reader, 4, clean_eof=True)
     if prefix is None:
         return None
@@ -790,7 +858,25 @@ def read_pipe_frame(reader: BinaryIO) -> bytes | None:
     payload = _read_exact(reader, length, clean_eof=False)
     if payload is None:  # pragma: no cover - clean_eof is false
         _fail("dual_live_frame_unexpected_eof")
-    _validate_frame_payload(payload)
+    _validate_frame_payload(
+        payload,
+        allowed_reserved_schema_ids=allowed_reserved_schema_ids,
+    )
+    return payload
+
+
+def _read_control_frame(reader: BinaryIO) -> bytes | None:
+    prefix = _read_exact(reader, 4, clean_eof=True)
+    if prefix is None:
+        return None
+    length = int.from_bytes(prefix, "big", signed=False)
+    if length == 0:
+        _fail("dual_live_frame_empty")
+    if length > MAX_CONTROL_FRAME_BYTES:
+        _fail("dual_live_phase_control_oversized")
+    payload = _read_exact(reader, length, clean_eof=False)
+    if payload is None:  # pragma: no cover - clean_eof is false
+        _fail("dual_live_frame_unexpected_eof")
     return payload
 
 
@@ -803,20 +889,25 @@ class PipeFrameBudget:
         self._total_bytes = 0
         self._lock = threading.Lock()
 
-    def consume(self, stream: str, payload_bytes: int) -> None:
+    def _reserve(
+        self,
+        stream: str,
+        emitted_bytes: int,
+        *,
+        count_frame: bool,
+    ) -> None:
         if stream not in self._stream_bytes:
             _fail("dual_live_pump_stream_invalid")
         if (
-            isinstance(payload_bytes, bool)
-            or not isinstance(payload_bytes, int)
-            or payload_bytes <= 0
-            or payload_bytes > MAX_FRAME_BYTES
+            isinstance(emitted_bytes, bool)
+            or not isinstance(emitted_bytes, int)
+            or emitted_bytes < 0
         ):
-            _fail("dual_live_pump_frame_bytes_invalid")
+            _fail("dual_live_pump_emitted_bytes_invalid")
         with self._lock:
-            next_frames = self._stream_frames[stream] + 1
-            next_stream_bytes = self._stream_bytes[stream] + payload_bytes
-            next_total_bytes = self._total_bytes + payload_bytes
+            next_frames = self._stream_frames[stream] + int(count_frame)
+            next_stream_bytes = self._stream_bytes[stream] + emitted_bytes
+            next_total_bytes = self._total_bytes + emitted_bytes
             if next_frames > MAX_FRAMES_PER_STREAM:
                 _fail("dual_live_pump_frame_count_exceeded")
             if next_stream_bytes > MAX_STREAM_BYTES:
@@ -827,9 +918,60 @@ class PipeFrameBudget:
             self._stream_bytes[stream] = next_stream_bytes
             self._total_bytes = next_total_bytes
 
+    def consume(
+        self,
+        stream: str,
+        payload_bytes: int,
+        *,
+        emitted_bytes: int | None = None,
+    ) -> None:
+        if (
+            isinstance(payload_bytes, bool)
+            or not isinstance(payload_bytes, int)
+            or payload_bytes <= 0
+            or payload_bytes > MAX_FRAME_BYTES
+        ):
+            _fail("dual_live_pump_frame_bytes_invalid")
+        actual_emitted = payload_bytes if emitted_bytes is None else emitted_bytes
+        if (
+            isinstance(actual_emitted, bool)
+            or not isinstance(actual_emitted, int)
+            or actual_emitted < 0
+            or actual_emitted > payload_bytes + 1
+        ):
+            _fail("dual_live_pump_emitted_bytes_invalid")
+        self._reserve(stream, actual_emitted, count_frame=True)
 
-def decode_child_status_frame(payload: bytes) -> dict[str, Any]:
-    if not isinstance(payload, bytes) or not payload:
+    def consume_wrapper(self, stream: str, emitted_bytes: int) -> None:
+        if (
+            isinstance(emitted_bytes, bool)
+            or not isinstance(emitted_bytes, int)
+            or emitted_bytes <= 0
+        ):
+            _fail("dual_live_pump_emitted_bytes_invalid")
+        self._reserve(stream, emitted_bytes, count_frame=False)
+
+
+def decode_child_status_frame(
+    payload: bytes,
+    *,
+    expected_phase: str,
+    expected_process_boot_id: str,
+    expected_status_nonce_sha256: str,
+    expected_ordinal: int,
+) -> dict[str, Any]:
+    if (
+        not isinstance(payload, bytes)
+        or not payload
+        or expected_phase not in {"A", "B"}
+        or not isinstance(expected_process_boot_id, str)
+        or _LOWERCASE_SHA256.fullmatch(expected_process_boot_id) is None
+        or not isinstance(expected_status_nonce_sha256, str)
+        or _LOWERCASE_SHA256.fullmatch(expected_status_nonce_sha256) is None
+        or isinstance(expected_ordinal, bool)
+        or not isinstance(expected_ordinal, int)
+        or expected_ordinal <= 0
+    ):
         _fail("dual_live_child_status_invalid")
     try:
         value = strict_json_loads(payload)
@@ -838,12 +980,32 @@ def decode_child_status_frame(payload: bytes) -> dict[str, Any]:
     if (
         type(value) is not dict
         or canonical_json_bytes(value) != payload
-        or tuple(value) != ("event", "payload", "phase", "schema_id")
+        or tuple(value)
+        != (
+            "event",
+            "ordinal",
+            "payload",
+            "phase",
+            "process_boot_id",
+            "schema_id",
+            "status_nonce_sha256",
+        )
         or value["schema_id"] != CHILD_STATUS_SCHEMA_ID
-        or value["phase"] not in {"A", "B"}
+        or value["phase"] != expected_phase
+        or value["process_boot_id"] != expected_process_boot_id
+        or value["status_nonce_sha256"] != expected_status_nonce_sha256
+        or value["ordinal"] != expected_ordinal
         or value["event"] != "logger_census"
         or type(value["payload"]) is not dict
-        or _has_unsafe_field(value["payload"])
+        or tuple(value["payload"])
+        != ("census_point", "handler_count", "topology_sha256")
+        or value["payload"]["census_point"] not in {"pre_activity", "exit"}
+        or isinstance(value["payload"]["handler_count"], bool)
+        or not isinstance(value["payload"]["handler_count"], int)
+        or value["payload"]["handler_count"] < 0
+        or not isinstance(value["payload"]["topology_sha256"], str)
+        or _LOWERCASE_SHA256.fullmatch(value["payload"]["topology_sha256"])
+        is None
     ):
         _fail("dual_live_child_status_invalid")
     return dict(value)
@@ -852,28 +1014,53 @@ def decode_child_status_frame(payload: bytes) -> dict[str, Any]:
 class LockedCampaignSink:
     """Serialize all wrapper writes to one capture writer."""
 
-    __slots__ = ("_lock", "_writer")
+    __slots__ = ("_failed", "_lock", "_stop_latch", "_writer")
 
-    def __init__(self, writer: BinaryIO) -> None:
-        if not callable(getattr(writer, "write", None)):
+    def __init__(self, writer: BinaryIO, *, stop_latch: FirstStopLatch) -> None:
+        if (
+            not callable(getattr(writer, "write", None))
+            or type(stop_latch) is not FirstStopLatch
+        ):
             _fail("dual_live_pump_writer_invalid")
         self._writer = writer
+        self._stop_latch = stop_latch
+        self._failed = False
         self._lock = threading.Lock()
 
-    def write(self, content: bytes) -> int:
-        if not isinstance(content, bytes) or not content:
-            _fail("dual_live_pump_write_invalid")
+    def write(
+        self,
+        content: bytes,
+        *,
+        before_write: Callable[[], None] | None = None,
+    ) -> int:
         with self._lock:
-            written = self._writer.write(content)
-        if written is None:
-            return len(content)
-        if (
-            isinstance(written, bool)
-            or not isinstance(written, int)
-            or written != len(content)
-        ):
-            _fail("dual_live_pump_write_failed")
-        return written
+            if self._failed:
+                _fail("dual_live_pump_writer_poisoned")
+            if (
+                not isinstance(content, bytes)
+                or not content
+                or (before_write is not None and not callable(before_write))
+            ):
+                _fail("dual_live_pump_write_invalid")
+            if before_write is not None:
+                before_write()
+            try:
+                written = self._writer.write(content)
+            except Exception as exc:
+                self._failed = True
+                self._stop_latch.latch("writer_failure")
+                raise DualLiveRuntimeError("dual_live_pump_write_failed") from exc
+            if written is None:
+                return len(content)
+            if (
+                isinstance(written, bool)
+                or not isinstance(written, int)
+                or written != len(content)
+            ):
+                self._failed = True
+                self._stop_latch.latch("writer_failure")
+                _fail("dual_live_pump_write_failed")
+            return written
 
 
 class FourStreamPumpGroup:
@@ -883,7 +1070,12 @@ class FourStreamPumpGroup:
         "_budget",
         "_errors",
         "_errors_lock",
+        "_expected_status_nonce_sha256",
+        "_expected_status_phase",
+        "_expected_status_process_boot_id",
         "_http_frame_validator",
+        "_lifecycle_lock",
+        "_next_status_ordinal",
         "_readers",
         "_sinks",
         "_started",
@@ -900,6 +1092,9 @@ class FourStreamPumpGroup:
         status_callback: Callable[[dict[str, Any]], None],
         http_frame_validator: Callable[[bytes], None],
         stop_latch: FirstStopLatch,
+        expected_status_phase: str,
+        expected_status_process_boot_id: str,
+        expected_status_nonce_sha256: str,
     ) -> None:
         if (
             set(readers) != set(PIPE_STREAM_CLASSES)
@@ -907,35 +1102,61 @@ class FourStreamPumpGroup:
             or not callable(status_callback)
             or not callable(http_frame_validator)
             or type(stop_latch) is not FirstStopLatch
+            or expected_status_phase not in {"A", "B"}
+            or not isinstance(expected_status_process_boot_id, str)
+            or _LOWERCASE_SHA256.fullmatch(expected_status_process_boot_id) is None
+            or not isinstance(expected_status_nonce_sha256, str)
+            or _LOWERCASE_SHA256.fullmatch(expected_status_nonce_sha256) is None
         ):
             _fail("dual_live_pump_arguments_invalid")
         copied_readers = dict(readers)
         if any(
             not callable(getattr(reader, "read", None))
+            or not callable(getattr(reader, "close", None))
             for reader in copied_readers.values()
         ):
             _fail("dual_live_pump_reader_invalid")
+        copied_writers = dict(writers)
+        if len({id(writer) for writer in copied_writers.values()}) != len(
+            PIPE_STREAM_CLASSES
+        ):
+            _fail("dual_live_pump_writer_alias_invalid")
         self._readers = copied_readers
         self._sinks = {
-            stream: LockedCampaignSink(writers[stream])
+            stream: LockedCampaignSink(
+                copied_writers[stream],
+                stop_latch=stop_latch,
+            )
             for stream in PIPE_STREAM_CLASSES
         }
         self._status_callback = status_callback
         self._http_frame_validator = http_frame_validator
         self._stop_latch = stop_latch
+        self._expected_status_phase = expected_status_phase
+        self._expected_status_process_boot_id = expected_status_process_boot_id
+        self._expected_status_nonce_sha256 = expected_status_nonce_sha256
+        self._next_status_ordinal = 1
         self._budget = PipeFrameBudget()
         self._errors: dict[str, BaseException] = {}
         self._errors_lock = threading.Lock()
+        self._lifecycle_lock = threading.Lock()
         self._started = False
         self._threads: tuple[threading.Thread, ...] = ()
+
+    @property
+    def threads_alive(self) -> tuple[str, ...]:
+        with self._lifecycle_lock:
+            return tuple(thread.name for thread in self._threads if thread.is_alive())
 
     def app_write(self, content: bytes) -> int:
         """Write one wrapper-owned runtime-record line under the app lock."""
 
-        return self._sinks["app"].write(content)
+        return self._sinks["app"].write(
+            content,
+            before_write=lambda: self._budget.consume_wrapper("app", len(content)),
+        )
 
     def _write_frame(self, stream: str, payload: bytes) -> None:
-        self._budget.consume(stream, len(payload))
         output = payload
         if stream == "app":
             try:
@@ -945,7 +1166,17 @@ class FourStreamPumpGroup:
             if type(value) is not dict or canonical_json_bytes(value) != payload:
                 _fail("dual_live_app_frame_invalid")
             if value.get("schema_id") == CHILD_STATUS_SCHEMA_ID:
-                status = decode_child_status_frame(payload)
+                status = decode_child_status_frame(
+                    payload,
+                    expected_phase=self._expected_status_phase,
+                    expected_process_boot_id=self._expected_status_process_boot_id,
+                    expected_status_nonce_sha256=(
+                        self._expected_status_nonce_sha256
+                    ),
+                    expected_ordinal=self._next_status_ordinal,
+                )
+                self._next_status_ordinal += 1
+                self._budget.consume(stream, len(payload), emitted_bytes=0)
                 result = self._status_callback(status)
                 if result is not None:
                     _fail("dual_live_child_status_callback_invalid")
@@ -958,13 +1189,28 @@ class FourStreamPumpGroup:
             if result is not None:
                 _fail("dual_live_http_frame_validator_invalid")
             output = payload + b"\n"
-        self._sinks[stream].write(output)
+        self._sinks[stream].write(
+            output,
+            before_write=lambda: self._budget.consume(
+                stream,
+                len(payload),
+                emitted_bytes=len(output),
+            ),
+        )
 
     def _pump(self, stream: str) -> None:
         try:
             reader = self._readers[stream]
             while True:
-                payload = read_pipe_frame(reader)
+                if stream == "app":
+                    payload = _read_pipe_frame(
+                        reader,
+                        allowed_reserved_schema_ids=frozenset(
+                            (CHILD_STATUS_SCHEMA_ID,)
+                        ),
+                    )
+                else:
+                    payload = read_pipe_frame(reader)
                 if payload is None:
                     return
                 self._write_frame(stream, payload)
@@ -973,41 +1219,82 @@ class FourStreamPumpGroup:
                 self._errors.setdefault(stream, exc)
             self._stop_latch.latch("pump_failure")
 
-    def start(self) -> None:
-        if self._started:
-            _fail("dual_live_pump_already_started")
-        self._started = True
-        self._threads = tuple(
-            threading.Thread(
-                target=self._pump,
-                args=(stream,),
-                name=f"dual-live-{stream}-pump",
-                daemon=False,
-            )
-            for stream in PIPE_STREAM_CLASSES
-        )
-        for thread in self._threads:
-            thread.start()
+    def _primary_error(self) -> BaseException | None:
+        with self._errors_lock:
+            for stream in PIPE_STREAM_CLASSES:
+                error = self._errors.get(stream)
+                if error is not None:
+                    return error
+        return None
 
-    def join(self, *, timeout: float) -> None:
-        if (
-            not self._started
-            or isinstance(timeout, bool)
-            or not isinstance(timeout, (int, float))
-            or not math.isfinite(timeout)
-            or timeout < 0
-        ):
-            _fail("dual_live_pump_join_invalid")
-        deadline = time.monotonic() + timeout
+    def _join_until(self, deadline: float) -> None:
         for thread in self._threads:
             thread.join(max(0.0, deadline - time.monotonic()))
-        if any(thread.is_alive() for thread in self._threads):
-            self._stop_latch.latch("timeout")
-            _fail("dual_live_pump_join_timeout")
-        with self._errors_lock:
-            errors = tuple(self._errors.values())
-        if errors:
-            raise DualLiveRuntimeError("dual_live_pump_failed") from errors[0]
+
+    def _cancel_readers(self) -> BaseException | None:
+        first_error: BaseException | None = None
+        closed_ids: set[int] = set()
+        for stream in PIPE_STREAM_CLASSES:
+            reader = self._readers[stream]
+            if id(reader) in closed_ids:
+                continue
+            closed_ids.add(id(reader))
+            try:
+                reader.close()
+            except Exception as exc:
+                if first_error is None:
+                    first_error = exc
+        return first_error
+
+    def start(self) -> None:
+        with self._lifecycle_lock:
+            if self._started:
+                _fail("dual_live_pump_already_started")
+            self._started = True
+            self._threads = tuple(
+                threading.Thread(
+                    target=self._pump,
+                    args=(stream,),
+                    name=f"dual-live-{stream}-pump",
+                    daemon=True,
+                )
+                for stream in PIPE_STREAM_CLASSES
+            )
+            for thread in self._threads:
+                thread.start()
+
+    def join(self, *, timeout: float) -> None:
+        with self._lifecycle_lock:
+            if (
+                not self._started
+                or isinstance(timeout, bool)
+                or not isinstance(timeout, (int, float))
+                or not math.isfinite(timeout)
+                or timeout < 0
+            ):
+                _fail("dual_live_pump_join_invalid")
+            self._join_until(time.monotonic() + timeout)
+            primary_error = self._primary_error()
+            alive = any(thread.is_alive() for thread in self._threads)
+            if alive:
+                if primary_error is None:
+                    self._stop_latch.latch("timeout")
+                cancel_error = self._cancel_readers()
+                self._join_until(time.monotonic() + PUMP_CANCEL_JOIN_SECONDS)
+                still_alive = any(thread.is_alive() for thread in self._threads)
+                if primary_error is not None:
+                    raise DualLiveRuntimeError("dual_live_pump_failed") from (
+                        primary_error
+                    )
+                if still_alive:
+                    raise DualLiveRuntimeError("dual_live_pump_cancel_failed") from (
+                        cancel_error
+                    )
+                raise DualLiveRuntimeError("dual_live_pump_join_timeout") from (
+                    cancel_error
+                )
+            if primary_error is not None:
+                raise DualLiveRuntimeError("dual_live_pump_failed") from primary_error
 
 
 class CampaignPipeSink:
