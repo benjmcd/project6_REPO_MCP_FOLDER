@@ -2130,6 +2130,194 @@ def test_proof_locks_are_root_then_campaign_and_busy_refuses(tmp_path: Path) -> 
             )
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_active_proof_lock_validator_binds_canonical_authority_and_thread(
+    tmp_path: Path,
+) -> None:
+    locks = acquire_proof_locks(
+        evidence_root=tmp_path,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        campaign_definition_sha256=DEFINITION_SHA,
+    )
+    try:
+        assert (
+            dual_live_windows._require_active_proof_locks(
+                locks,
+                evidence_root=tmp_path,
+                campaign_id=CAMPAIGN_ID,
+                campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+                campaign_definition_sha256=DEFINITION_SHA,
+                root_mutex_identity_sha256=locks.root_identity_sha256,
+                campaign_mutex_identity_sha256=locks.campaign_identity_sha256,
+            )
+            is locks
+        )
+
+        failures: list[BaseException] = []
+
+        def validate_from_wrong_thread() -> None:
+            try:
+                dual_live_windows._require_active_proof_locks(
+                    locks,
+                    evidence_root=tmp_path,
+                    campaign_id=CAMPAIGN_ID,
+                    campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+                    campaign_definition_sha256=DEFINITION_SHA,
+                    root_mutex_identity_sha256=locks.root_identity_sha256,
+                    campaign_mutex_identity_sha256=locks.campaign_identity_sha256,
+                )
+            except BaseException as exc:
+                failures.append(exc)
+
+        worker = threading.Thread(target=validate_from_wrong_thread)
+        worker.start()
+        worker.join(2)
+        assert not worker.is_alive()
+        assert len(failures) == 1
+        assert isinstance(failures[0], DualLiveWindowsError)
+        assert failures[0].code == "dual_live_proof_locks_inactive"
+
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_proof_locks_identity_mismatch",
+        ):
+            dual_live_windows._require_active_proof_locks(
+                locks,
+                evidence_root=tmp_path,
+                campaign_id=CAMPAIGN_ID,
+                campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+                campaign_definition_sha256=DEFINITION_SHA,
+                root_mutex_identity_sha256="0" * 64,
+                campaign_mutex_identity_sha256=locks.campaign_identity_sha256,
+            )
+
+        assert dual_live_windows._kernel32 is not None
+        replacement_mutex = dual_live_windows._kernel32.CreateMutexW(
+            None,
+            False,
+            None,
+        )
+        assert replacement_mutex
+        assert (
+            dual_live_windows._kernel32.WaitForSingleObject(
+                replacement_mutex,
+                0,
+            )
+            == dual_live_windows._WAIT_OBJECT_0
+        )
+        original_campaign_mutex = locks._campaign_mutex
+        locks._campaign_mutex = int(replacement_mutex)
+        try:
+            with pytest.raises(
+                DualLiveWindowsError,
+                match="dual_live_proof_locks_inactive",
+            ):
+                dual_live_windows._require_active_proof_locks(
+                    locks,
+                    evidence_root=tmp_path,
+                    campaign_id=CAMPAIGN_ID,
+                    campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+                    campaign_definition_sha256=DEFINITION_SHA,
+                    root_mutex_identity_sha256=(
+                        locks.root_identity_sha256
+                    ),
+                    campaign_mutex_identity_sha256=(
+                        locks.campaign_identity_sha256
+                    ),
+                )
+        finally:
+            locks._campaign_mutex = original_campaign_mutex
+            assert dual_live_windows._kernel32.ReleaseMutex(
+                replacement_mutex
+            )
+            assert dual_live_windows._kernel32.CloseHandle(
+                replacement_mutex
+            )
+
+        other_root = tmp_path / "other"
+        other_root.mkdir()
+        replacement_root, _ = dual_live_windows._open_evidence_root(
+            other_root
+        )
+        original_root_handle = locks._root_directory
+        locks._root_directory = replacement_root
+        try:
+            with pytest.raises(
+                DualLiveWindowsError,
+                match="dual_live_proof_locks_identity_mismatch",
+            ):
+                dual_live_windows._require_active_proof_locks(
+                    locks,
+                    evidence_root=tmp_path,
+                    campaign_id=CAMPAIGN_ID,
+                    campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+                    campaign_definition_sha256=DEFINITION_SHA,
+                    root_mutex_identity_sha256=(
+                        locks.root_identity_sha256
+                    ),
+                    campaign_mutex_identity_sha256=(
+                        locks.campaign_identity_sha256
+                    ),
+                )
+        finally:
+            locks._root_directory = original_root_handle
+            dual_live_windows._close_handle(replacement_root)
+
+        assert dual_live_windows._kernel32.ReleaseMutex(
+            locks._campaign_mutex
+        )
+        assert dual_live_windows._kernel32.ReleaseMutex(locks._root_mutex)
+        try:
+            with pytest.raises(
+                DualLiveWindowsError,
+                match="dual_live_proof_locks_inactive",
+            ):
+                dual_live_windows._require_active_proof_locks(
+                    locks,
+                    evidence_root=tmp_path,
+                    campaign_id=CAMPAIGN_ID,
+                    campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+                    campaign_definition_sha256=DEFINITION_SHA,
+                    root_mutex_identity_sha256=(
+                        locks.root_identity_sha256
+                    ),
+                    campaign_mutex_identity_sha256=(
+                        locks.campaign_identity_sha256
+                    ),
+                )
+        finally:
+            assert (
+                dual_live_windows._kernel32.WaitForSingleObject(
+                    locks._root_mutex,
+                    0,
+                )
+                == dual_live_windows._WAIT_OBJECT_0
+            )
+            assert (
+                dual_live_windows._kernel32.WaitForSingleObject(
+                    locks._campaign_mutex,
+                    0,
+                )
+                == dual_live_windows._WAIT_OBJECT_0
+            )
+    finally:
+        locks.close()
+
+    with pytest.raises(
+        DualLiveWindowsError,
+        match="dual_live_proof_locks_inactive",
+    ):
+        dual_live_windows._require_active_proof_locks(
+            locks,
+            evidence_root=tmp_path,
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+            campaign_definition_sha256=DEFINITION_SHA,
+            root_mutex_identity_sha256=locks.root_identity_sha256,
+            campaign_mutex_identity_sha256=locks.campaign_identity_sha256,
+        )
+
 def test_dual_live_windows_import_is_transitive_stdlib_only() -> None:
     probe = """
 import json

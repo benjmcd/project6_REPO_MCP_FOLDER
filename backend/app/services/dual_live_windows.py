@@ -199,6 +199,14 @@ class _UNICODE_STRING(ctypes.Structure):
     )
 
 
+class _MUTANT_BASIC_INFORMATION(ctypes.Structure):
+    _fields_ = (
+        ("CurrentCount", wintypes.LONG),
+        ("OwnedByCaller", ctypes.c_ubyte),
+        ("AbandonedState", ctypes.c_ubyte),
+    )
+
+
 class _FILETIME(ctypes.Structure):
     _fields_ = (("dwLowDateTime", wintypes.DWORD), ("dwHighDateTime", wintypes.DWORD))
 
@@ -513,6 +521,12 @@ if os.name == "nt":
         wintypes.LPCWSTR,
     )
     _kernel32.CreateMutexW.restype = wintypes.HANDLE
+    _kernel32.OpenMutexW.argtypes = (
+        wintypes.DWORD,
+        wintypes.BOOL,
+        wintypes.LPCWSTR,
+    )
+    _kernel32.OpenMutexW.restype = wintypes.HANDLE
     _kernel32.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
     _kernel32.WaitForSingleObject.restype = wintypes.DWORD
     _kernel32.ReleaseMutex.argtypes = (wintypes.HANDLE,)
@@ -664,6 +678,14 @@ if os.name == "nt":
         ctypes.POINTER(wintypes.ULONG),
     )
     _ntdll.NtQueryObject.restype = ctypes.c_long
+    _ntdll.NtQueryMutant.argtypes = (
+        wintypes.HANDLE,
+        wintypes.ULONG,
+        wintypes.LPVOID,
+        wintypes.ULONG,
+        ctypes.POINTER(wintypes.ULONG),
+    )
+    _ntdll.NtQueryMutant.restype = ctypes.c_long
 else:  # pragma: no cover - exercised by platform-refusal tests
     _kernel32 = None
     _kernelbase = None
@@ -821,6 +843,57 @@ def current_user_sid_sha256() -> str:
     return hashlib.sha256(sid_text.encode("utf-8")).hexdigest()
 
 
+def _evidence_root_identity_from_handle(handle: int) -> str:
+    assert _kernel32 is not None
+    attributes = _FILE_ATTRIBUTE_TAG_INFO()
+    if not _kernel32.GetFileInformationByHandleEx(
+        handle,
+        _FILE_ATTRIBUTE_TAG_INFO_CLASS,
+        ctypes.byref(attributes),
+        ctypes.sizeof(attributes),
+    ):
+        _fail("dual_live_evidence_root_invalid")
+    if not attributes.FileAttributes & _FILE_ATTRIBUTE_DIRECTORY:
+        _fail("dual_live_evidence_root_invalid")
+    if attributes.FileAttributes & _FILE_ATTRIBUTE_REPARSE_POINT:
+        _fail("dual_live_evidence_root_reparse")
+    file_id = _FILE_ID_INFO()
+    if not _kernel32.GetFileInformationByHandleEx(
+        handle,
+        _FILE_ID_INFO_CLASS,
+        ctypes.byref(file_id),
+        ctypes.sizeof(file_id),
+    ):
+        _fail("dual_live_evidence_root_invalid")
+    required = _kernel32.GetFinalPathNameByHandleW(handle, None, 0, 0)
+    if required == 0:
+        _fail("dual_live_evidence_root_invalid")
+    final_path = ctypes.create_unicode_buffer(required + 1)
+    written = _kernel32.GetFinalPathNameByHandleW(
+        handle, final_path, len(final_path), 0
+    )
+    if written == 0 or written >= len(final_path):
+        _fail("dual_live_evidence_root_invalid")
+    security_sha256 = hashlib.sha256(
+        _object_security_bytes(
+            handle,
+            _OWNER_SECURITY_INFORMATION
+            | _GROUP_SECURITY_INFORMATION
+            | _DACL_SECURITY_INFORMATION,
+        )
+    ).hexdigest()
+    return hashlib.sha256(
+        _canonical_json_bytes(
+            {
+                "file_id": bytes(file_id.FileId.Identifier).hex(),
+                "final_path": final_path.value.replace("\\", "/").casefold(),
+                "security_descriptor_sha256": security_sha256,
+                "volume_serial_number": file_id.VolumeSerialNumber,
+            }
+        )
+    ).hexdigest()
+
+
 def _open_evidence_root(path: Path) -> tuple[int, str]:
     assert _kernel32 is not None
     handle = _kernel32.CreateFileW(
@@ -835,54 +908,7 @@ def _open_evidence_root(path: Path) -> tuple[int, str]:
     if handle in (None, ctypes.c_void_p(-1).value):
         _fail("dual_live_evidence_root_invalid")
     try:
-        attributes = _FILE_ATTRIBUTE_TAG_INFO()
-        if not _kernel32.GetFileInformationByHandleEx(
-            handle,
-            _FILE_ATTRIBUTE_TAG_INFO_CLASS,
-            ctypes.byref(attributes),
-            ctypes.sizeof(attributes),
-        ):
-            _fail("dual_live_evidence_root_invalid")
-        if not attributes.FileAttributes & _FILE_ATTRIBUTE_DIRECTORY:
-            _fail("dual_live_evidence_root_invalid")
-        if attributes.FileAttributes & _FILE_ATTRIBUTE_REPARSE_POINT:
-            _fail("dual_live_evidence_root_reparse")
-        file_id = _FILE_ID_INFO()
-        if not _kernel32.GetFileInformationByHandleEx(
-            handle,
-            _FILE_ID_INFO_CLASS,
-            ctypes.byref(file_id),
-            ctypes.sizeof(file_id),
-        ):
-            _fail("dual_live_evidence_root_invalid")
-        required = _kernel32.GetFinalPathNameByHandleW(handle, None, 0, 0)
-        if required == 0:
-            _fail("dual_live_evidence_root_invalid")
-        final_path = ctypes.create_unicode_buffer(required + 1)
-        written = _kernel32.GetFinalPathNameByHandleW(
-            handle, final_path, len(final_path), 0
-        )
-        if written == 0 or written >= len(final_path):
-            _fail("dual_live_evidence_root_invalid")
-        security_sha256 = hashlib.sha256(
-            _object_security_bytes(
-                handle,
-                _OWNER_SECURITY_INFORMATION
-                | _GROUP_SECURITY_INFORMATION
-                | _DACL_SECURITY_INFORMATION,
-            )
-        ).hexdigest()
-        identity = hashlib.sha256(
-            _canonical_json_bytes(
-                {
-                    "file_id": bytes(file_id.FileId.Identifier).hex(),
-                    "final_path": final_path.value.replace("\\", "/").casefold(),
-                    "security_descriptor_sha256": security_sha256,
-                    "volume_serial_number": file_id.VolumeSerialNumber,
-                }
-            )
-        ).hexdigest()
-        return int(handle), identity
+        return int(handle), _evidence_root_identity_from_handle(int(handle))
     except BaseException:
         _close_handle(handle)
         raise
@@ -1163,6 +1189,171 @@ def _campaign_lock_identity_sha256(
             }
         )
     ).hexdigest()
+
+
+def _require_named_mutex_owned_by_current_thread(
+    handle: int,
+    expected_name: str,
+) -> None:
+    assert _kernel32 is not None and _ntdll is not None
+    if _compare_object_handles is None:
+        _fail("dual_live_proof_locks_inactive")
+    try:
+        if _handle_type_name(handle) != "Mutant":
+            _fail("dual_live_proof_locks_inactive")
+    except DualLiveWindowsError as exc:
+        if exc.code == "dual_live_proof_locks_inactive":
+            raise
+        raise DualLiveWindowsError(
+            "dual_live_proof_locks_inactive"
+        ) from exc
+
+    information = _MUTANT_BASIC_INFORMATION()
+    returned = wintypes.ULONG()
+    status = int(
+        _ntdll.NtQueryMutant(
+            handle,
+            0,
+            ctypes.byref(information),
+            ctypes.sizeof(information),
+            ctypes.byref(returned),
+        )
+    ) & 0xFFFFFFFF
+    if (
+        status != 0
+        or returned.value < ctypes.sizeof(information)
+        or information.OwnedByCaller != 1
+        or information.AbandonedState != 0
+    ):
+        _fail("dual_live_proof_locks_inactive")
+
+    comparison_handle = _kernel32.OpenMutexW(
+        _MUTEX_ALL_ACCESS,
+        False,
+        expected_name,
+    )
+    if not comparison_handle:
+        _fail("dual_live_proof_locks_inactive")
+    comparison_failed = False
+    try:
+        if not _kernel_objects_same(
+            handle,
+            int(comparison_handle),
+            indeterminate_code="dual_live_proof_locks_inactive",
+        ):
+            comparison_failed = True
+    finally:
+        if not _kernel32.CloseHandle(comparison_handle):
+            comparison_failed = True
+    if comparison_failed:
+        _fail("dual_live_proof_locks_inactive")
+
+
+def _require_active_proof_locks(
+    proof_locks: object,
+    *,
+    evidence_root: Path,
+    campaign_id: str,
+    campaign_fingerprint: str,
+    campaign_definition_sha256: str,
+    root_mutex_identity_sha256: str,
+    campaign_mutex_identity_sha256: str,
+) -> ProofLocks:
+    """Bind exact live locks to independently-derived canonical authority."""
+
+    _require_windows()
+    if (
+        type(proof_locks) is not ProofLocks
+        or not isinstance(evidence_root, Path)
+        or not evidence_root.is_absolute()
+    ):
+        _fail("dual_live_proof_locks_inactive")
+    canonical_campaign_id = _require_uuid4(campaign_id)
+    canonical_fingerprint = _require_sha256(campaign_fingerprint)
+    canonical_definition_sha256 = _require_sha256(campaign_definition_sha256)
+    expected_root_identity = _require_sha256(root_mutex_identity_sha256)
+    expected_campaign_identity = _require_sha256(
+        campaign_mutex_identity_sha256
+    )
+    root_handle: int | None = None
+    try:
+        root_handle, canonical_root_identity = _open_evidence_root(
+            evidence_root
+        )
+    finally:
+        if root_handle is not None:
+            _close_handle(root_handle)
+    canonical_campaign_identity = _campaign_lock_identity_sha256(
+        canonical_campaign_id,
+        canonical_fingerprint,
+        canonical_definition_sha256,
+    )
+    if (
+        expected_root_identity != canonical_root_identity
+        or expected_campaign_identity != canonical_campaign_identity
+        or proof_locks.root_identity_sha256 != canonical_root_identity
+        or proof_locks.campaign_identity_sha256 != canonical_campaign_identity
+    ):
+        _fail("dual_live_proof_locks_identity_mismatch")
+
+    resources = (
+        proof_locks._root_directory,
+        proof_locks._namespace_handle,
+        proof_locks._boundary_descriptor,
+        proof_locks._security_descriptor,
+        proof_locks._root_mutex,
+        proof_locks._campaign_mutex,
+    )
+    with _held_lock:
+        active = (
+            proof_locks._acquiring_thread_id == threading.get_ident()
+            and proof_locks._root_owned
+            and proof_locks._campaign_owned
+            and proof_locks._registered
+            and not proof_locks._closed
+            and all(
+                type(resource) is int and resource > 0
+                for resource in resources
+            )
+            and canonical_root_identity in _held_roots
+            and canonical_campaign_identity in _held_campaigns
+        )
+    if not active:
+        _fail("dual_live_proof_locks_inactive")
+
+    assert _kernel32 is not None
+    root_directory = cast(int, proof_locks._root_directory)
+    namespace_handle = cast(int, proof_locks._namespace_handle)
+    root_mutex = cast(int, proof_locks._root_mutex)
+    campaign_mutex = cast(int, proof_locks._campaign_mutex)
+    try:
+        stored_root_identity = _evidence_root_identity_from_handle(
+            root_directory
+        )
+    except DualLiveWindowsError as exc:
+        raise DualLiveWindowsError(
+            "dual_live_proof_locks_inactive"
+        ) from exc
+    if stored_root_identity != canonical_root_identity:
+        _fail("dual_live_proof_locks_identity_mismatch")
+    flags = wintypes.DWORD()
+    for handle in (
+        root_directory,
+        namespace_handle,
+        root_mutex,
+        campaign_mutex,
+    ):
+        if not _kernel32.GetHandleInformation(handle, ctypes.byref(flags)):
+            _fail("dual_live_proof_locks_inactive")
+    _require_named_mutex_owned_by_current_thread(
+        root_mutex,
+        f"{_NAMESPACE_ALIAS}\\root-{canonical_root_identity}",
+    )
+    _require_named_mutex_owned_by_current_thread(
+        campaign_mutex,
+        f"{_NAMESPACE_ALIAS}\\campaign-{canonical_campaign_identity}",
+    )
+    return proof_locks
 
 
 def _acquire_proof_locks(
