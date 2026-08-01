@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
+import builtins
 from dataclasses import FrozenInstanceError
 from datetime import datetime, timedelta, timezone
 import hashlib
 import http.client
+import importlib
 import io
 import json
 import os
@@ -31,7 +33,72 @@ from app.models import (  # noqa: E402
 )
 from app.schemas.api import expected_grant_rule_payloads  # noqa: E402
 from app.services import connector_egress_arming as arming  # noqa: E402
+from app.services import connector_egress_evidence as evidence  # noqa: E402
 from app.services import connector_egress_transport as transport  # noqa: E402
+
+
+def test_transport_reexports_dependency_pure_evidence_identities() -> None:
+    assert transport.ConnectorEgressTransportError is (
+        evidence.ConnectorEgressTransportError
+    )
+    assert transport.CounterEvidenceError is evidence.CounterEvidenceError
+    assert transport.FrozenPhysicalRequest is evidence.FrozenPhysicalRequest
+    assert transport.VerifiedTerminalRequestLedger is (
+        evidence.VerifiedTerminalRequestLedger
+    )
+    assert transport.parse_connector_counter_records is (
+        evidence.parse_connector_counter_records
+    )
+    assert transport.secret_free_request_fingerprint is (
+        evidence.secret_free_request_fingerprint
+    )
+    assert transport.derive_terminal_request_ledger is (
+        evidence.derive_terminal_request_ledger
+    )
+
+
+def test_evidence_module_import_does_not_load_network_or_authority_roots(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    forbidden = {
+        "http",
+        "requests",
+        "socket",
+        "subprocess",
+        "urllib",
+    }
+    forbidden_services = {
+        "app.services.connector_egress_arming",
+        "app.services.connector_egress_authorization",
+        "app.services.connector_egress_transport",
+        "app.services.connectors_nrc_adams",
+        "app.services.connectors_sciencebase",
+    }
+    real_import = builtins.__import__
+    observed: list[str] = []
+
+    def blocked_import(
+        name: str,
+        globals: dict[str, Any] | None = None,
+        locals: dict[str, Any] | None = None,
+        fromlist: tuple[str, ...] = (),
+        level: int = 0,
+    ) -> Any:
+        observed.append(name)
+        if name.split(".", 1)[0] in forbidden or name in forbidden_services:
+            raise AssertionError(f"forbidden evidence import: {name}")
+        return real_import(name, globals, locals, fromlist, level)
+
+    monkeypatch.delitem(
+        sys.modules,
+        "app.services.connector_egress_evidence",
+        raising=False,
+    )
+    monkeypatch.setattr(builtins, "__import__", blocked_import)
+    imported = importlib.import_module("app.services.connector_egress_evidence")
+
+    assert imported.__name__ == "app.services.connector_egress_evidence"
+    assert not forbidden_services.intersection(observed)
 
 
 @pytest.fixture()
@@ -393,9 +460,9 @@ def test_revalidation_delegates_coordinated_tamper_to_canonical_resolver(
         run.request_config_json = config
         db.commit()
 
-    monkeypatch.setattr(transport.settings, "connector_live_egress_enabled", True)
+    monkeypatch.setattr(arming.settings, "connector_live_egress_enabled", True)
     monkeypatch.setattr(
-        transport.settings,
+        arming.settings,
         "connector_live_egress_exclusive_proof_mode",
         True,
     )
@@ -480,14 +547,14 @@ def test_reservation_commits_before_send_and_terminal_ledger_is_stable(
     )
 
     assert seen == [1]
-    original_events_for_run = transport._events_for_run
+    original_events_for_run = evidence._events_for_run
     snapshot_calls: list[object] = []
 
     def counted_snapshot(*args, **kwargs):
         snapshot_calls.append(object())
         return original_events_for_run(*args, **kwargs)
 
-    monkeypatch.setattr(transport, "_events_for_run", counted_snapshot)
+    monkeypatch.setattr(evidence, "_events_for_run", counted_snapshot)
     with session_factory() as db:
         first = transport.derive_terminal_request_ledger(
             db,
