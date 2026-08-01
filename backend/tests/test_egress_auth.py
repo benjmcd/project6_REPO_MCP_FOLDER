@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import inspect
 import os
 import sys
 from dataclasses import dataclass, replace
@@ -575,6 +576,38 @@ def _request(
             "scheme": "http",
         }
     )
+
+
+def _enable_local_runner_posture(monkeypatch) -> None:
+    monkeypatch.setattr(settings, "deployment_mode", "local")
+    monkeypatch.setattr(settings, "auth_owner", "none")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", False)
+    monkeypatch.setattr(settings, "connector_live_egress_enabled", True)
+    monkeypatch.setattr(
+        settings,
+        "connector_live_egress_exclusive_proof_mode",
+        True,
+    )
+
+
+def _mock_current_user_sid_sha256(
+    monkeypatch,
+    value: str = "ab" * 32,
+) -> None:
+    from app.services import dual_live_windows
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "current_user_sid_sha256",
+        lambda: value,
+    )
+
+
+def _authority_json_digests(fixture: AuthorityFixture) -> dict[str, str]:
+    return {
+        str(path): _sha(path.read_bytes())
+        for path in sorted(fixture.evidence_root.parent.rglob("*.json"))
+    }
 
 
 def test_current_resolvers_bind_definition_grant_and_index(tmp_path, monkeypatch) -> None:
@@ -1160,3 +1193,219 @@ def test_proxy_identity_presence_is_denied_and_owner_role_is_required(
     )
     assert receipt.role == "owner"
     assert "operator@example.invalid" not in canonical_json_bytes(receipt).decode("utf-8")
+
+
+def test_local_runner_owner_receipt_is_os_bound_and_arming_valid(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    from app.services import connector_egress_arming
+
+    fixture = _build_authority(tmp_path, monkeypatch)
+    _, grant = _resolve(fixture)
+    _enable_local_runner_posture(monkeypatch)
+    sid_sha256 = "ab" * 32
+    _mock_current_user_sid_sha256(monkeypatch, sid_sha256)
+
+    authorize = egress_auth.authorize_connector_egress_local_runner
+    parameters = tuple(inspect.signature(authorize).parameters.values())
+    assert tuple(parameter.name for parameter in parameters) == (
+        "verified_grant",
+        "access",
+    )
+    assert all(
+        parameter.kind is inspect.Parameter.KEYWORD_ONLY
+        for parameter in parameters
+    )
+
+    receipt = authorize(verified_grant=grant, access="write")
+    campaign = grant.verified_campaign
+    assert receipt.model_dump(
+        include={
+            "connector_key",
+            "campaign_id",
+            "campaign_fingerprint",
+            "campaign_definition_sha256",
+            "grant_sha256",
+            "canonical_grant_fingerprint",
+            "introduction_index_revision",
+            "introduction_index_sha256",
+            "access",
+        },
+        mode="json",
+    ) == {
+        "connector_key": grant.model.connector_key,
+        "campaign_id": str(campaign.model.campaign_id),
+        "campaign_fingerprint": campaign.canonical_fingerprint,
+        "campaign_definition_sha256": campaign.raw_sha256,
+        "grant_sha256": grant.raw_sha256,
+        "canonical_grant_fingerprint": grant.canonical_fingerprint,
+        "introduction_index_revision": campaign.introduction_index_revision,
+        "introduction_index_sha256": campaign.introduction_index_sha256,
+        "access": "write",
+    }
+    assert receipt.auth_owner_mode == (
+        "AUTH_OWNER_none_single_operator_dev_profile"
+    )
+    assert receipt.authorization_mode == "identity_presence"
+    assert receipt.role is None
+    assert receipt.operator_ref_hash != sid_sha256
+    assert receipt.operator_ref_hash != receipt.workspace_ref_hash
+
+    encoded = canonical_json_bytes(receipt).decode("utf-8")
+    assert sid_sha256 not in encoded
+    assert str(egress_auth.BACKEND_ROOT.parent.resolve()) not in encoded
+    assert connector_egress_arming._validated_authorization_receipt(
+        receipt.model_dump(mode="json"),
+        verified_grant=grant,
+    ) == receipt
+
+    _mock_current_user_sid_sha256(monkeypatch, "cd" * 32)
+    rebound = authorize(verified_grant=grant, access="write")
+    assert rebound.operator_ref_hash != receipt.operator_ref_hash
+    assert rebound.workspace_ref_hash == receipt.workspace_ref_hash
+
+
+@pytest.mark.parametrize(
+    (
+        "access",
+        "setting_name",
+        "setting_value",
+        "expected_code",
+    ),
+    (
+        (
+            "read",
+            None,
+            None,
+            "connector_egress_access_class_not_admitted",
+        ),
+        (
+            "write",
+            "connector_live_egress_enabled",
+            False,
+            "sciencebase_mcs_egress_default_off",
+        ),
+        (
+            "write",
+            "connector_live_egress_exclusive_proof_mode",
+            False,
+            "sciencebase_mcs_egress_exclusive_mode_required",
+        ),
+        (
+            "write",
+            "deployment_mode",
+            "production",
+            "sciencebase_mcs_egress_local_runner_posture_denied",
+        ),
+        (
+            "write",
+            "auth_owner",
+            "proxy",
+            "sciencebase_mcs_egress_local_runner_posture_denied",
+        ),
+        (
+            "write",
+            "trusted_proxy_mode",
+            True,
+            "sciencebase_mcs_egress_local_runner_posture_denied",
+        ),
+    ),
+)
+def test_local_runner_owner_refuses_unadmitted_posture_without_mutation(
+    tmp_path,
+    monkeypatch,
+    access,
+    setting_name,
+    setting_value,
+    expected_code,
+) -> None:
+    from app.services import dual_live_windows
+
+    fixture = _build_authority(tmp_path, monkeypatch)
+    _, grant = _resolve(fixture)
+    _enable_local_runner_posture(monkeypatch)
+    sid_calls: list[bool] = []
+    monkeypatch.setattr(
+        dual_live_windows,
+        "current_user_sid_sha256",
+        lambda: sid_calls.append(True) or "ab" * 32,
+    )
+    if setting_name is not None:
+        monkeypatch.setattr(settings, setting_name, setting_value)
+    before = _authority_json_digests(fixture)
+
+    with pytest.raises(ConnectorEgressAuthorizationError) as exc:
+        egress_auth.authorize_connector_egress_local_runner(
+            verified_grant=grant,
+            access=access,
+        )
+
+    assert exc.value.code == expected_code
+    assert sid_calls == []
+    assert _authority_json_digests(fixture) == before
+
+
+def test_local_runner_owner_refuses_proxy_grant_and_changed_integrity(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    proxy_fixture = _build_authority(
+        tmp_path / "proxy",
+        monkeypatch,
+        operator_mode="proxy_owner",
+    )
+    _, proxy_grant = _resolve(proxy_fixture)
+    _enable_local_runner_posture(monkeypatch)
+    _mock_current_user_sid_sha256(monkeypatch)
+    before = _authority_json_digests(proxy_fixture)
+
+    with pytest.raises(ConnectorEgressAuthorizationError) as exc:
+        egress_auth.authorize_connector_egress_local_runner(
+            verified_grant=proxy_grant,
+            access="write",
+        )
+
+    assert exc.value.code == (
+        "sciencebase_mcs_egress_local_runner_posture_denied"
+    )
+    assert _authority_json_digests(proxy_fixture) == before
+
+    local_fixture = _build_authority(
+        tmp_path / "local",
+        monkeypatch,
+    )
+    _, local_grant = _resolve(local_fixture)
+    changed_grant = replace(local_grant, raw_sha256="0" * 64)
+    before = _authority_json_digests(local_fixture)
+
+    with pytest.raises(ConnectorEgressAuthorizationError) as exc:
+        egress_auth.authorize_connector_egress_local_runner(
+            verified_grant=changed_grant,
+            access="write",
+        )
+
+    assert exc.value.code == "sciencebase_mcs_egress_verified_grant_changed"
+    assert _authority_json_digests(local_fixture) == before
+
+
+def test_local_runner_owner_refuses_invalid_sid_digest(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    fixture = _build_authority(tmp_path, monkeypatch)
+    _, grant = _resolve(fixture)
+    _enable_local_runner_posture(monkeypatch)
+    _mock_current_user_sid_sha256(monkeypatch, "not-a-sha256")
+    before = _authority_json_digests(fixture)
+
+    with pytest.raises(ConnectorEgressAuthorizationError) as exc:
+        egress_auth.authorize_connector_egress_local_runner(
+            verified_grant=grant,
+            access="write",
+        )
+
+    assert exc.value.code == (
+        "sciencebase_mcs_egress_local_runner_identity_invalid"
+    )
+    assert _authority_json_digests(fixture) == before

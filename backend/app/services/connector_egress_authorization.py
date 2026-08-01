@@ -1772,6 +1772,93 @@ def _direct_loopback_peer(request: Request) -> bool:
         return False
 
 
+def _build_connector_egress_authorization_receipt(
+    *,
+    verified_grant: VerifiedConnectorGrant,
+    operator_ref_hash: str,
+    workspace_ref_hash: str,
+    auth_owner_mode: str,
+    authorization_mode: Literal["identity_presence", "role_enforcing"],
+    role: Literal["owner"] | None,
+) -> ConnectorEgressAuthorizationReceipt:
+    connector_key = verified_grant.model.connector_key
+    if (
+        len(operator_ref_hash) != 64
+        or len(workspace_ref_hash) != 64
+        or not auth_owner_mode
+    ):
+        _fail(
+            f"{connector_key}_egress_principal_hash_invalid",
+            "Connector caller posture did not return protected principal/workspace hashes.",
+        )
+    campaign = verified_grant.verified_campaign
+    return ConnectorEgressAuthorizationReceipt(
+        connector_key=connector_key,
+        campaign_id=str(campaign.model.campaign_id),
+        campaign_fingerprint=campaign.canonical_fingerprint,
+        campaign_definition_sha256=campaign.raw_sha256,
+        grant_sha256=verified_grant.raw_sha256,
+        canonical_grant_fingerprint=verified_grant.canonical_fingerprint,
+        introduction_index_revision=campaign.introduction_index_revision,
+        introduction_index_sha256=campaign.introduction_index_sha256,
+        operator_ref_hash=operator_ref_hash,
+        workspace_ref_hash=workspace_ref_hash,
+        auth_owner_mode=auth_owner_mode,
+        authorization_mode=authorization_mode,
+        role=role,
+        access="write",
+    )
+
+
+def _local_runner_principal_hashes(
+    *,
+    connector_key: str,
+) -> tuple[str, str]:
+    try:
+        from app.services.dual_live_windows import current_user_sid_sha256
+
+        sid_sha256 = current_user_sid_sha256()
+        repo_root = BACKEND_ROOT.parent.resolve(strict=True)
+    except Exception as exc:
+        raise ConnectorEgressAuthorizationError(
+            f"{connector_key}_egress_local_runner_identity_invalid",
+            "Local-runner OS or workspace identity is unavailable.",
+        ) from exc
+    if (
+        not isinstance(sid_sha256, str)
+        or len(sid_sha256) != 64
+        or any(char not in _HEX for char in sid_sha256)
+    ):
+        _fail(
+            f"{connector_key}_egress_local_runner_identity_invalid",
+            "Local-runner OS identity is not a lowercase SHA-256 digest.",
+        )
+    canonical_root = os.path.normcase(str(repo_root))
+    operator_ref_hash = _sha256(
+        canonical_json_bytes(
+            {
+                "auth_owner": "none",
+                "current_user_sid_sha256": sid_sha256,
+                "identity_schema_id": (
+                    "project6.connector_egress_local_runner_identity.v1"
+                ),
+            }
+        )
+    )
+    workspace_ref_hash = _sha256(
+        canonical_json_bytes(
+            {
+                "auth_owner": "none",
+                "canonical_repo_root": canonical_root,
+                "identity_schema_id": (
+                    "project6.connector_egress_local_runner_identity.v1"
+                ),
+            }
+        )
+    )
+    return operator_ref_hash, workspace_ref_hash
+
+
 def authorize_connector_egress_owner(
     request: Request,
     *,
@@ -1864,29 +1951,57 @@ def authorize_connector_egress_owner(
     operator_ref_hash = str(posture.get("operator_ref_hash") or "")
     workspace_ref_hash = str(posture.get("workspace_ref_hash") or "")
     auth_owner_mode = str(posture.get("auth_owner_mode") or "")
-    if (
-        len(operator_ref_hash) != 64
-        or len(workspace_ref_hash) != 64
-        or not auth_owner_mode
-    ):
-        _fail(
-            f"{connector_key}_egress_principal_hash_invalid",
-            "Connector caller posture did not return protected principal/workspace hashes.",
-        )
-    campaign = verified_grant.verified_campaign
-    return ConnectorEgressAuthorizationReceipt(
-        connector_key=connector_key,
-        campaign_id=str(campaign.model.campaign_id),
-        campaign_fingerprint=campaign.canonical_fingerprint,
-        campaign_definition_sha256=campaign.raw_sha256,
-        grant_sha256=verified_grant.raw_sha256,
-        canonical_grant_fingerprint=verified_grant.canonical_fingerprint,
-        introduction_index_revision=campaign.introduction_index_revision,
-        introduction_index_sha256=campaign.introduction_index_sha256,
+    return _build_connector_egress_authorization_receipt(
+        verified_grant=verified_grant,
         operator_ref_hash=operator_ref_hash,
         workspace_ref_hash=workspace_ref_hash,
         auth_owner_mode=auth_owner_mode,
         authorization_mode=authorization_mode,
         role=role,
-        access="write",
+    )
+
+
+def authorize_connector_egress_local_runner(
+    *,
+    verified_grant: VerifiedConnectorGrant,
+    access: Literal["write"],
+) -> ConnectorEgressAuthorizationReceipt:
+    if access != "write":
+        _fail(
+            "connector_egress_access_class_not_admitted",
+            "Connector egress owner authorization admits write access only.",
+            http_status=400,
+        )
+    _current_grant_integrity(verified_grant)
+    connector_key = verified_grant.model.connector_key
+    if not settings.connector_live_egress_enabled:
+        _fail(
+            f"{connector_key}_egress_default_off",
+            "Connector live egress is disabled.",
+        )
+    if not settings.connector_live_egress_exclusive_proof_mode:
+        _fail(
+            f"{connector_key}_egress_exclusive_mode_required",
+            "Connector live egress requires exclusive proof mode.",
+        )
+    if (
+        settings.deployment_mode != "local"
+        or settings.auth_owner != "none"
+        or settings.trusted_proxy_mode
+        or verified_grant.model.operator_mode != "local_loopback"
+    ):
+        _fail(
+            f"{connector_key}_egress_local_runner_posture_denied",
+            "Local-runner connector egress requires local AUTH_OWNER=none, non-proxy, local-loopback authority.",
+        )
+    operator_ref_hash, workspace_ref_hash = _local_runner_principal_hashes(
+        connector_key=connector_key,
+    )
+    return _build_connector_egress_authorization_receipt(
+        verified_grant=verified_grant,
+        operator_ref_hash=operator_ref_hash,
+        workspace_ref_hash=workspace_ref_hash,
+        auth_owner_mode="AUTH_OWNER_none_single_operator_dev_profile",
+        authorization_mode="identity_presence",
+        role=None,
     )
