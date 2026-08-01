@@ -32,6 +32,7 @@ from app.schemas.api import (
     DualLiveCampaignDefinitionV1,
 )
 from app.services import connector_egress_authorization as egress_auth
+from app.services import dual_live_windows
 from app.services.connector_egress_authorization import (
     SINGLE_SEND_DETECTION_ALLOWANCE_BYTES,
     ConnectorEgressAuthorizationError,
@@ -56,6 +57,38 @@ EXPIRES_AT = "2026-07-30T04:00:00Z"
 
 def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+def test_protected_read_rejects_mapped_drive_before_path_touch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    touched: list[str] = []
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetDriveTypeW",
+        lambda _root: 4,
+    )
+    monkeypatch.setattr(
+        egress_auth,
+        "_assert_no_reparse_components",
+        lambda _path: touched.append("lstat"),
+    )
+    monkeypatch.setattr(
+        egress_auth,
+        "_forbidden_path",
+        lambda *_args, **_kwargs: touched.append("resolve") or False,
+    )
+
+    with pytest.raises(ConnectorEgressAuthorizationError) as exc_info:
+        egress_auth._read_protected_bytes(
+            r"Z:\proof\definition.json",
+            expected_sha256="a" * 64,
+            label="definition",
+        )
+
+    assert exc_info.value.code == "connector_egress_protected_path_invalid"
+    assert touched == []
 
 
 def _campaign_payload() -> dict[str, object]:
@@ -213,12 +246,16 @@ def _explicit_read_only_settings(
     index_path: Path | None = None,
     index_sha256: str | None = None,
 ) -> Settings:
+    storage_dir = tmp_path / "explicit-storage"
+    storage_dir.mkdir()
+    database_path = tmp_path / "explicit.db"
+    database_path.touch()
     return Settings(
         DB_INIT_MODE="none",
         DATABASE_URL=(
-            f"sqlite:///{(tmp_path / 'explicit.db').resolve().as_posix()}"
+            f"sqlite:///{database_path.resolve().as_posix()}"
         ),
-        STORAGE_DIR=str(tmp_path / "explicit-storage"),
+        STORAGE_DIR=str(storage_dir),
         CONNECTOR_CAMPAIGN_EVIDENCE_ROOT=fixture.evidence_root,
         CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH=(
             fixture.index_path if index_path is None else index_path

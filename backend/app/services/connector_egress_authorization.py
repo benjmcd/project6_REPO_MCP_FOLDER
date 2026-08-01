@@ -276,6 +276,56 @@ def _is_relative_to(path: Path, root: Path) -> bool:
         return False
 
 
+def _assert_fixed_local_path_before_touch(path: Path | str, *, label: str) -> Path:
+    if os.name != "nt":
+        return Path(path)
+    from app.services.dual_live_windows import (
+        DualLiveWindowsError,
+        assert_fixed_local_no_reparse_path_before_open,
+    )
+
+    try:
+        return assert_fixed_local_no_reparse_path_before_open(
+            path,
+            code="connector_egress_protected_path_invalid",
+        )
+    except DualLiveWindowsError as exc:
+        _fail(
+            "connector_egress_protected_path_invalid",
+            f"{label} must be on a fixed local Windows volume.",
+        )
+        raise AssertionError("unreachable") from exc
+
+
+def _assert_opened_fixed_local(
+    handle: Any,
+    *,
+    expected_path: Path,
+    label: str,
+) -> None:
+    if os.name != "nt":
+        return
+    import msvcrt
+
+    from app.services.dual_live_windows import (
+        DualLiveWindowsError,
+        assert_open_handle_local_fixed,
+    )
+
+    try:
+        assert_open_handle_local_fixed(
+            int(msvcrt.get_osfhandle(handle.fileno())),
+            expected_path=expected_path,
+            code="connector_egress_protected_path_invalid",
+        )
+    except (DualLiveWindowsError, OSError) as exc:
+        raise ConnectorEgressAuthorizationError(
+            "connector_egress_protected_path_invalid",
+            f"{label} opened outside its fixed local Windows path.",
+            http_status=409,
+        ) from exc
+
+
 def _sqlite_database_path(
     settings_override: Settings | None = None,
 ) -> Path | None:
@@ -289,6 +339,7 @@ def _sqlite_database_path(
     candidate = Path(value)
     if not candidate.is_absolute():
         candidate = BACKEND_ROOT / candidate
+    _assert_fixed_local_path_before_touch(candidate, label="database path")
     return candidate.resolve(strict=False)
 
 
@@ -298,10 +349,15 @@ def _forbidden_path(
     settings_override: Settings | None = None,
 ) -> bool:
     configuration = settings if settings_override is None else settings_override
+    _assert_fixed_local_path_before_touch(path, label="protected path")
+    storage_path = _assert_fixed_local_path_before_touch(
+        configuration.storage_dir,
+        label="storage directory",
+    )
     resolved = path.resolve(strict=False)
     roots = {
         BACKEND_ROOT.parent.resolve(strict=False),
-        Path(configuration.storage_dir).resolve(strict=False),
+        storage_path.resolve(strict=False),
         (BACKEND_ROOT / "app" / "review_ui" / "static").resolve(strict=False),
     }
     if any(_is_relative_to(resolved, root) for root in roots):
@@ -353,7 +409,7 @@ def _protected_directory(
             "connector_egress_missing_configuration",
             f"{label} is required for live egress.",
         )
-    path = Path(path_value)
+    path = _assert_fixed_local_path_before_touch(path_value, label=label)
     if not path.is_absolute() or _has_alternate_data_stream(path):
         _fail(
             "connector_egress_protected_path_invalid",
@@ -385,7 +441,10 @@ def _read_protected_bytes(
             "connector_egress_missing_configuration",
             f"{label} path is required for live egress.",
         )
-    path = Path(path_value)
+    path = _assert_fixed_local_path_before_touch(
+        path_value,
+        label=f"{label} path",
+    )
     if not path.is_absolute() or _has_alternate_data_stream(path):
         _fail(
             "connector_egress_protected_path_invalid",
@@ -414,6 +473,11 @@ def _read_protected_bytes(
         )
     try:
         with resolved.open("rb") as handle:
+            _assert_opened_fixed_local(
+                handle,
+                expected_path=resolved,
+                label=label,
+            )
             opened = os.fstat(handle.fileno())
             data = handle.read(MAX_PROTECTED_JSON_BYTES + 1)
     except OSError as exc:
@@ -495,6 +559,10 @@ def _resolve_evidence_path(
 ) -> Path:
     normalized = _safe_relative_path(relative_path, label=label)
     candidate = root.joinpath(*PurePosixPath(normalized).parts)
+    _assert_fixed_local_path_before_touch(
+        candidate if must_exist else candidate.parent,
+        label=label,
+    )
     resolved = candidate.resolve(strict=must_exist)
     if not _is_relative_to(resolved, root):
         _fail(
