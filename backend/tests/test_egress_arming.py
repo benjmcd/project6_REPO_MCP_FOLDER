@@ -755,6 +755,98 @@ def _nrc_evaluation_fixture(db, tmp_path, monkeypatch):
     )
 
 
+def _sciencebase_suffix_fixture(db, state, tmp_path):
+    sciencebase_root = tmp_path / "sciencebase"
+    sciencebase_root.mkdir()
+    grant = _grant(sciencebase_root, connector_key="sciencebase_mcs")
+    grant.verified_campaign = state.grant.verified_campaign
+    run, _ = create_connector_egress_arming(
+        db,
+        payload=_arming_payload(connector_key="sciencebase_mcs"),
+        verified_grant=grant,
+        operator_receipt=_operator_receipt(grant),
+        code_revision=CODE_REVISION,
+    )
+    run.status = "running"
+    run.execution_lease_owner = "sciencebase-worker"
+    run.execution_lease_token = "sciencebase-lease"
+    run.execution_lease_expires_at = datetime.now(UTC) + timedelta(minutes=5)
+    db.commit()
+    record = _counter_record(
+        schema_id="project6.connector_http_counter.v2",
+        ordinal=1,
+        stage="item_hydration",
+        request_fingerprint="6" * 64,
+    )
+    timestamp = "2026-01-01T00:00:00.000000Z"
+    entry = {
+        "ordinal": 1,
+        "stage": "item_hydration",
+        "reservation_event_id": "sciencebase-reservation-1",
+        "completion_event_id": "sciencebase-completion-1",
+        "reserved_at": timestamp,
+        "send_started_at": timestamp,
+        "completed_at": timestamp,
+        "request_fingerprint": record["request_fingerprint"],
+        "method": "GET",
+        "host": "www.sciencebase.gov",
+        "path_class": "sciencebase_item_exact",
+        "query_class": "none",
+        "credential_audience": "none",
+        "outcome_class": "completed",
+        "response_status": record["response_status"],
+        "byte_count": record["decoded_body_bytes"],
+        "body_sha256": record["decoded_body_sha256"],
+    }
+    envelope = run.request_config_json["connector_egress_arming"]
+    projection = {
+        "schema_id": "project6.connector_egress_terminal_ledger.v1",
+        "connector_run_id": run.connector_run_id,
+        "connector_key": "sciencebase_mcs",
+        "campaign_fingerprint": envelope["campaign_fingerprint"],
+        "arming_fingerprint": envelope["arming_fingerprint"],
+        "grant_sha256": envelope["grant_sha256"],
+        "campaign_introduction_index_revision": envelope[
+            "campaign_introduction_index_revision"
+        ],
+        "campaign_introduction_index_sha256": envelope[
+            "campaign_introduction_index_sha256"
+        ],
+        "frozen_max_physical_requests": envelope["max_physical_requests"],
+        "entries": [entry],
+    }
+    ledger = SimpleNamespace(
+        connector_run_id=run.connector_run_id,
+        entries=(entry,),
+        ledger_terminal_hash=hashlib.sha256(
+            canonical_json_bytes(projection)
+        ).hexdigest(),
+        eligible=True,
+        validation_errors=(),
+        canonical_projection=projection,
+    )
+    return SimpleNamespace(run=run, grant=grant, ledger=ledger, record=record)
+
+
+def _bind_nrc_and_sciencebase_ledgers(monkeypatch, state, sciencebase):
+    calls: list[str] = []
+
+    def derive_ledger(_db, *, connector_run_id, **_kwargs):
+        calls.append(connector_run_id)
+        if connector_run_id == state.run.connector_run_id:
+            return state.ledger
+        if connector_run_id == sciencebase.run.connector_run_id:
+            return sciencebase.ledger
+        pytest.fail(f"unexpected ledger run: {connector_run_id}")
+
+    monkeypatch.setattr(
+        transport_module,
+        "derive_terminal_request_ledger",
+        derive_ledger,
+    )
+    return calls
+
+
 @pytest.mark.parametrize(
     "schema_id",
     [
@@ -841,7 +933,7 @@ def test_nrc_dual_live_success_refuses_historical_v1_pass(
     assert exc.value.code == "nrc_acquisition_success_counter_v2_required"
 
 
-def test_nrc_success_selects_ledger_bound_substream_from_shared_campaign_counter(
+def test_initial_sciencebase_arming_rejects_unledgered_foreign_suffix(
     tmp_path,
     monkeypatch,
 ) -> None:
@@ -871,18 +963,97 @@ def test_nrc_success_selects_ledger_bound_substream_from_shared_campaign_counter
         derive_ledger,
     )
 
+    with pytest.raises(ConnectorEgressArmingError) as exc:
+        evaluate_nrc_acquisition_success(
+            db,
+            verified_definition=state.grant.verified_campaign,
+        )
+
+    assert ledger_inputs == [shared_records]
+    assert exc.value.code == "nrc_acquisition_success_counter_invalid"
+
+
+def test_post_sciencebase_ordinal_one_revalidates_exact_ledger_suffix(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    db = _session()
+    state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    sciencebase = _sciencebase_suffix_fixture(db, state, tmp_path)
+    shared_records = (*state.records, sciencebase.record)
+    state.counter_path.write_bytes(
+        b"".join(
+            canonical_json_bytes(record) + b"\n" for record in shared_records
+        )
+    )
+    ledger_calls = _bind_nrc_and_sciencebase_ledgers(
+        monkeypatch,
+        state,
+        sciencebase,
+    )
+
     evidence = evaluate_nrc_acquisition_success(
         db,
         verified_definition=state.grant.verified_campaign,
     )
 
-    assert ledger_inputs == [shared_records]
+    assert ledger_calls == [
+        state.run.connector_run_id,
+        sciencebase.run.connector_run_id,
+    ]
     assert evidence.counter_reconciliation == {
         "record_count": 2,
         "artifact_ordinal": 2,
         "artifact_stage": "artifact",
         "artifact_decoded_body_sha256": state.artifact_hash,
     }
+
+
+@pytest.mark.parametrize("case", ["forged", "cross_campaign", "interleaved"])
+def test_sciencebase_counter_suffix_rejects_non_authoritative_composition(
+    tmp_path,
+    monkeypatch,
+    case: str,
+) -> None:
+    db = _session()
+    state = _nrc_evaluation_fixture(db, tmp_path, monkeypatch)
+    sciencebase = _sciencebase_suffix_fixture(db, state, tmp_path)
+    _bind_nrc_and_sciencebase_ledgers(monkeypatch, state, sciencebase)
+    if case == "cross_campaign":
+        config = dict(sciencebase.run.request_config_json)
+        envelope = dict(config["connector_egress_arming"])
+        envelope["campaign_id"] = "37693345-6a47-45bb-97a7-44c2932ef76b"
+        envelope["arming_fingerprint"] = compute_arming_fingerprint(envelope)
+        config["connector_egress_arming"] = envelope
+        sciencebase.run.request_config_json = config
+        sciencebase.run.request_fingerprint = envelope["arming_fingerprint"]
+        db.commit()
+        records = [*state.records, sciencebase.record]
+    elif case == "interleaved":
+        records = [
+            state.records[0],
+            sciencebase.record,
+            state.records[1],
+        ]
+    else:
+        forged = _counter_record(
+            schema_id="project6.connector_http_counter.v2",
+            ordinal=2,
+            stage="download",
+            request_fingerprint="7" * 64,
+        )
+        records = [*state.records, sciencebase.record, forged]
+    state.counter_path.write_bytes(
+        b"".join(canonical_json_bytes(record) + b"\n" for record in records)
+    )
+
+    with pytest.raises(ConnectorEgressArmingError) as exc:
+        evaluate_nrc_acquisition_success(
+            db,
+            verified_definition=state.grant.verified_campaign,
+        )
+
+    assert exc.value.code == "nrc_acquisition_success_counter_invalid"
 
 
 @pytest.mark.parametrize(

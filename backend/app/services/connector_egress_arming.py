@@ -662,15 +662,16 @@ def _validated_nrc_ledger_entries(
     return entries
 
 
-def _reconcile_nrc_counter_records(
+def _reconcile_counter_records(
     records: Sequence[Mapping[str, Any]],
     *,
     entries: Sequence[Mapping[str, Any]],
+    source_name: str,
 ) -> None:
     if len(records) != len(entries):
         raise ConnectorEgressArmingError(
             "nrc_acquisition_success_counter_invalid",
-            "NRC HTTP counter cardinality does not equal terminal ledger",
+            f"{source_name} HTTP counter cardinality does not equal terminal ledger",
         )
     for record, entry in zip(records, entries, strict=True):
         if (
@@ -693,8 +694,16 @@ def _reconcile_nrc_counter_records(
         ):
             raise ConnectorEgressArmingError(
                 "nrc_acquisition_success_counter_invalid",
-                "NRC HTTP counter disagrees with terminal ledger",
+                f"{source_name} HTTP counter disagrees with terminal ledger",
             )
+
+
+def _reconcile_nrc_counter_records(
+    records: Sequence[Mapping[str, Any]],
+    *,
+    entries: Sequence[Mapping[str, Any]],
+) -> None:
+    _reconcile_counter_records(records, entries=entries, source_name="NRC")
 
 
 def _select_nrc_counter_records(
@@ -760,6 +769,214 @@ def _select_nrc_counter_records(
             "NRC HTTP counter substream is missing or reordered",
         )
     return tuple(selected)
+
+
+def _same_campaign_sciencebase_run(
+    db: Session,
+    *,
+    verified_definition: VerifiedDualLiveCampaignDefinition,
+    predecessor_run_id: str,
+    predecessor_ledger_hash: str,
+    now: datetime,
+) -> ConnectorRun | None:
+    expected_campaign = {
+        "campaign_id": str(verified_definition.model.campaign_id),
+        "campaign_definition_sha256": verified_definition.raw_sha256,
+        "campaign_fingerprint": verified_definition.canonical_fingerprint,
+        "campaign_introduction_index_revision": (
+            verified_definition.introduction_index_revision
+        ),
+        "campaign_introduction_index_sha256": (
+            verified_definition.introduction_index_sha256
+        ),
+        "code_revision": verified_definition.model.code_revision,
+        "connector_key": "sciencebase_mcs",
+        "predecessor_nrc_connector_run_id": predecessor_run_id,
+        "predecessor_nrc_ledger_terminal_hash": predecessor_ledger_hash,
+    }
+    matches: list[ConnectorRun] = []
+    runs = db.scalars(
+        select(ConnectorRun)
+        .where(ConnectorRun.connector_key == "sciencebase_mcs")
+        .order_by(ConnectorRun.connector_run_id.asc())
+    ).all()
+    for run in runs:
+        config = run.request_config_json
+        envelope = (
+            config.get("connector_egress_arming")
+            if isinstance(config, Mapping)
+            else None
+        )
+        if not isinstance(envelope, Mapping) or any(
+            envelope.get(field) != value
+            for field, value in expected_campaign.items()
+        ):
+            continue
+        try:
+            strict_envelope = _strict_envelope(run)
+            fingerprint = _assert_envelope_fingerprint(run, strict_envelope)
+            grant_sha256 = strict_envelope.get("grant_sha256")
+            raw_arming_nonce = strict_envelope.get("arming_nonce")
+            if (
+                not isinstance(grant_sha256, str)
+                or not re.fullmatch(r"[0-9a-f]{64}", grant_sha256)
+                or not isinstance(raw_arming_nonce, str)
+            ):
+                raise ValueError("invalid ScienceBase authority identity")
+            arming_nonce = UUID(raw_arming_nonce)
+            if str(arming_nonce) != raw_arming_nonce:
+                raise ValueError("noncanonical ScienceBase arming nonce")
+            expected_run_id = compute_parent_arming_id(
+                connector_key="sciencebase_mcs",
+                campaign_id=expected_campaign["campaign_id"],
+                grant_sha256=grant_sha256,
+                arming_nonce=arming_nonce,
+            )
+            submission = db.scalar(
+                select(ConnectorRunSubmission).where(
+                    ConnectorRunSubmission.connector_key
+                    == "sciencebase_mcs",
+                    ConnectorRunSubmission.submission_idempotency_key
+                    == run.submission_idempotency_key,
+                    ConnectorRunSubmission.connector_run_id
+                    == run.connector_run_id,
+                )
+            )
+            if (
+                run.connector_run_id != expected_run_id
+                or run.source_system != "sciencebase"
+                or run.source_mode != "strict_live_egress"
+                or not isinstance(run.submission_idempotency_key, str)
+                or not run.submission_idempotency_key.startswith("egress-arm:")
+                or submission is None
+                or submission.connector_run_submission_id
+                != _deterministic_id(run.connector_run_id, "arming-submission")
+                or submission.request_fingerprint != fingerprint
+                or submission.expires_at is None
+                or _as_utc(now) >= _as_utc(submission.expires_at)
+            ):
+                raise ValueError("invalid ScienceBase run binding")
+        except (ConnectorEgressArmingError, TypeError, ValueError) as exc:
+            raise ConnectorEgressArmingError(
+                "nrc_acquisition_success_counter_invalid",
+                "same-campaign ScienceBase run authority is invalid",
+            ) from exc
+        matches.append(run)
+    if len(matches) > 1:
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_counter_invalid",
+            "same-campaign ScienceBase run is ambiguous",
+        )
+    return matches[0] if matches else None
+
+
+def _validated_sciencebase_ledger_entries(
+    ledger: Any,
+    *,
+    run: ConnectorRun,
+    now: datetime,
+) -> tuple[dict[str, Any], ...]:
+    envelope = _strict_envelope(run)
+    raw_entries = tuple(ledger.entries)
+    if any(not isinstance(entry, Mapping) for entry in raw_entries):
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_counter_invalid",
+            "ScienceBase terminal ledger entries are malformed",
+        )
+    entries = tuple(dict(entry) for entry in raw_entries)
+    ceiling = envelope.get("max_physical_requests")
+    expected_projection = {
+        "schema_id": "project6.connector_egress_terminal_ledger.v1",
+        "connector_run_id": run.connector_run_id,
+        "connector_key": "sciencebase_mcs",
+        "campaign_fingerprint": envelope["campaign_fingerprint"],
+        "arming_fingerprint": envelope["arming_fingerprint"],
+        "grant_sha256": envelope["grant_sha256"],
+        "campaign_introduction_index_revision": envelope[
+            "campaign_introduction_index_revision"
+        ],
+        "campaign_introduction_index_sha256": envelope[
+            "campaign_introduction_index_sha256"
+        ],
+        "frozen_max_physical_requests": ceiling,
+        "entries": list(entries),
+    }
+    expected_hash = hashlib.sha256(
+        authority_canonical_json_bytes(expected_projection)
+    ).hexdigest()
+    ordinals = [entry.get("ordinal") for entry in entries]
+    completed = tuple(
+        entry for entry in entries if entry.get("outcome_class") == "completed"
+    )
+    common_invalid = (
+        ledger.connector_run_id != run.connector_run_id
+        or not isinstance(ledger.canonical_projection, Mapping)
+        or dict(ledger.canonical_projection) != expected_projection
+        or ledger.ledger_terminal_hash != expected_hash
+        or isinstance(ceiling, bool)
+        or not isinstance(ceiling, int)
+        or ceiling <= 0
+        or len(entries) > ceiling
+        or ordinals != list(range(1, len(entries) + 1))
+        or any(
+            not isinstance(entry.get("stage"), str)
+            or not entry.get("stage")
+            for entry in entries
+        )
+        or any(
+            entry.get("completion_event_id") is None
+            or entry.get("send_started_at") is None
+            or entry.get("completed_at") is None
+            for entry in completed
+        )
+    )
+    if common_invalid:
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_counter_invalid",
+            "ScienceBase terminal ledger identity is invalid",
+        )
+    if len(completed) == len(entries):
+        if ledger.eligible is not True or ledger.validation_errors:
+            raise ConnectorEgressArmingError(
+                "nrc_acquisition_success_counter_invalid",
+                "ScienceBase terminal ledger is not eligible",
+            )
+        return completed
+
+    trailing = entries[-1] if entries else None
+    trailing_ordinal = len(entries)
+    expected_errors = {
+        f"missing_completion_{trailing_ordinal}",
+        "spent_unknown",
+        "non_successful_send",
+    }
+    if (
+        not entries
+        or completed != entries[:-1]
+        or trailing is None
+        or trailing.get("outcome_class") != "spent_unknown"
+        or trailing.get("completion_event_id") is not None
+        or trailing.get("send_started_at") is not None
+        or trailing.get("completed_at") is not None
+        or trailing.get("response_status") is not None
+        or trailing.get("byte_count") is not None
+        or trailing.get("body_sha256") is not None
+        or ledger.eligible is not False
+        or set(ledger.validation_errors) != expected_errors
+        or len(tuple(ledger.validation_errors)) != len(expected_errors)
+        or run.status != "running"
+        or not isinstance(run.execution_lease_owner, str)
+        or not run.execution_lease_owner
+        or not isinstance(run.execution_lease_token, str)
+        or not run.execution_lease_token
+        or run.execution_lease_expires_at is None
+        or _as_utc(now) >= _as_utc(run.execution_lease_expires_at)
+    ):
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_counter_invalid",
+            "ScienceBase terminal ledger is not an exact completed prefix",
+        )
+    return completed
 
 
 def _lexical_absolute(path: Path) -> Path:
@@ -997,6 +1214,52 @@ def evaluate_nrc_acquisition_success(
     )
     records = _select_nrc_counter_records(all_records, entries=entries)
     _reconcile_nrc_counter_records(records, entries=entries)
+    nrc_prefix = tuple(
+        dict(record) for record in all_records[: len(records)]
+    )
+    if nrc_prefix != records:
+        raise ConnectorEgressArmingError(
+            "nrc_acquisition_success_counter_invalid",
+            "NRC HTTP counter records are not the exact stream prefix",
+        )
+    sciencebase_records = tuple(all_records[len(records) :])
+    sciencebase_run = _same_campaign_sciencebase_run(
+        db,
+        verified_definition=verified_definition,
+        predecessor_run_id=run_id,
+        predecessor_ledger_hash=ledger.ledger_terminal_hash,
+        now=now,
+    )
+    if sciencebase_run is None:
+        if sciencebase_records:
+            raise ConnectorEgressArmingError(
+                "nrc_acquisition_success_counter_invalid",
+                "counter stream has records without a same-campaign ScienceBase run",
+            )
+    else:
+        try:
+            sciencebase_ledger = derive_terminal_request_ledger(
+                db,
+                connector_run_id=sciencebase_run.connector_run_id,
+                counter_records=all_records,
+            )
+            sciencebase_entries = _validated_sciencebase_ledger_entries(
+                sciencebase_ledger,
+                run=sciencebase_run,
+                now=now,
+            )
+            _reconcile_counter_records(
+                sciencebase_records,
+                entries=sciencebase_entries,
+                source_name="ScienceBase",
+            )
+        except ConnectorEgressArmingError:
+            raise
+        except Exception as exc:
+            raise ConnectorEgressArmingError(
+                "nrc_acquisition_success_counter_invalid",
+                "ScienceBase counter suffix could not be rederived",
+            ) from exc
 
     artifact = entries[-1]
     artifact_hash = artifact.get("body_sha256")
