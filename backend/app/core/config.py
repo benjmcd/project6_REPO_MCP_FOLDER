@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+import sys
 from typing import Literal
 import urllib.parse
 
@@ -499,7 +500,7 @@ class Settings(BaseSettings):
         return str(Path(self.storage_dir) / "layer3-outbox")
 
 
-settings = Settings()
+settings = Settings(_env_file=None) if sys.flags.isolated else Settings()
 
 
 def bootstrap_storage_tree(storage_dir: str | Path | None = None) -> None:

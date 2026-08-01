@@ -9,6 +9,7 @@ import subprocess
 import threading
 from collections.abc import Mapping, Sequence
 from ctypes import wintypes
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, BinaryIO
 from uuid import UUID
@@ -690,6 +691,12 @@ def _current_user_sid() -> tuple[ctypes.Array[ctypes.c_char], str]:
         return token_user, _sid_text(sid_pointer)
     finally:
         _close_handle(token.value)
+
+
+def current_user_sid_sha256() -> str:
+    _require_windows()
+    _, sid_text = _current_user_sid()
+    return hashlib.sha256(sid_text.encode("utf-8")).hexdigest()
 
 
 def _open_evidence_root(path: Path) -> tuple[int, str]:
@@ -1528,6 +1535,26 @@ def _filetime_value(value: _FILETIME) -> int:
     return (int(value.dwHighDateTime) << 32) | int(value.dwLowDateTime)
 
 
+@dataclass(frozen=True, slots=True)
+class JobStartEvidence:
+    pid: int
+    process_creation_identity_sha256: str
+    process_boot_id: str
+    executable_sha256: str
+    job_policy_sha256: str
+
+    def __post_init__(self) -> None:
+        if isinstance(self.pid, bool) or not isinstance(self.pid, int) or self.pid <= 0:
+            _fail("dual_live_windows_arguments_invalid")
+        for value in (
+            self.process_creation_identity_sha256,
+            self.process_boot_id,
+            self.executable_sha256,
+            self.job_policy_sha256,
+        ):
+            _require_sha256(value)
+
+
 class JobChild:
     __slots__ = (
         "pid",
@@ -1538,6 +1565,7 @@ class JobChild:
         "_creation_filetime",
         "_executable_sha256",
         "_job_policy_sha256",
+        "_start_evidence",
         "_retained_processes",
         "_closed",
         "_lock",
@@ -1561,6 +1589,7 @@ class JobChild:
         self._creation_filetime: int | None = None
         self._executable_sha256: str | None = None
         self._job_policy_sha256: str | None = None
+        self._start_evidence: JobStartEvidence | None = None
         self._retained_processes: dict[int, tuple[int, int, str, str]] = {}
         self._closed = False
         self._lock = threading.Lock()
@@ -1584,6 +1613,13 @@ class JobChild:
         instance._creation_filetime = creation_filetime
         instance._executable_sha256 = executable_sha256
         instance._job_policy_sha256 = job_policy_sha256
+        instance._start_evidence = JobStartEvidence(
+            pid=pid,
+            process_creation_identity_sha256=process_creation_identity_sha256,
+            process_boot_id=process_boot_id,
+            executable_sha256=executable_sha256,
+            job_policy_sha256=job_policy_sha256,
+        )
         instance._retained_processes[pid] = (
             process_handle,
             creation_filetime,
@@ -1591,6 +1627,12 @@ class JobChild:
             process_creation_identity_sha256,
         )
         return instance
+
+    @property
+    def start_evidence(self) -> JobStartEvidence:
+        if self._start_evidence is None:
+            _fail("dual_live_child_start_evidence_unavailable")
+        return self._start_evidence
 
     def __enter__(self) -> JobChild:
         if self._closed:

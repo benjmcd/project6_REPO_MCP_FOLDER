@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 import ctypes
+from dataclasses import FrozenInstanceError, fields
 import hashlib
 import inspect
 import json
@@ -66,6 +67,7 @@ FIRST_TRANCHE_REQUIRED_PRODUCTION_PATHS = (
 ALLOWED_CHANGED_PRODUCTION_PATHS = frozenset(
     (
         *ALLOWED_NEW_PRODUCTION_PATHS,
+        "backend/app/core/config.py",
         "backend/app/services/connector_egress_authorization.py",
         "backend/app/services/connector_egress_transport.py",
         "backend/app/services/connector_egress_arming.py",
@@ -983,6 +985,63 @@ def _job_environment() -> dict[str, str]:
     return environment
 
 
+def _run_shadow_config(tmp_path: Path, *, isolated: bool) -> dict[str, bool]:
+    shadow_backend = tmp_path / ("isolated" if isolated else "normal") / "backend"
+    shadow_core = shadow_backend / "app" / "core"
+    shadow_core.mkdir(parents=True)
+    (shadow_backend / "app" / "__init__.py").write_text("", encoding="utf-8")
+    (shadow_core / "__init__.py").write_text("", encoding="utf-8")
+    shutil.copyfile(BACKEND / "app" / "core" / "config.py", shadow_core / "config.py")
+
+    grant_path = shadow_backend / "grant.json"
+    (shadow_backend / ".env").write_text(
+        "\n".join(
+            (
+                "SENATE_LDA_API_KEY=dotenv-only-fake-key",
+                f"CONNECTOR_NRC_APS_GRANT_PATH={grant_path.as_posix()}",
+                f"CONNECTOR_NRC_APS_GRANT_SHA256={'d' * 64}",
+            )
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    probe = (
+        "import json,sys; "
+        "sys.path.insert(0, sys.argv[1]); "
+        "from app.core.config import settings; "
+        "print(json.dumps({"
+        "'api_key': bool(settings.senate_lda_api_key), "
+        "'grant_path': settings.connector_nrc_aps_grant_path is not None, "
+        "'grant_sha': bool(settings.connector_nrc_aps_grant_sha256)"
+        "}, sort_keys=True))"
+    )
+    command = [sys.executable]
+    if isolated:
+        command.append("-I")
+    command.extend(("-c", probe, str(shadow_backend)))
+    blocked_names = {
+        "senate_lda_api_key",
+        "connector_nrc_aps_grant_path",
+        "connector_nrc_aps_grant_sha256",
+    }
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if name.casefold() not in blocked_names
+    }
+    completed = subprocess.run(
+        command,
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return json.loads(completed.stdout)
+
+
 def _inheritable_pipe() -> tuple[int, int]:
     security = dual_live_windows._SECURITY_ATTRIBUTES(
         ctypes.sizeof(dual_live_windows._SECURITY_ATTRIBUTES), None, True
@@ -1148,6 +1207,118 @@ def _assert_quiescence_record(record: dict[str, object]) -> None:
             "port",
         )
     )
+
+
+def test_current_user_sid_sha256_is_os_derived_and_does_not_return_raw_sid(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_sid = "S-1-5-21-111111111-222222222-333333333-1001"
+    keepalive = ctypes.create_string_buffer(b"sid")
+    monkeypatch.setattr(dual_live_windows, "_kernel32", object())
+    monkeypatch.setattr(dual_live_windows, "_advapi32", object())
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_current_user_sid",
+        lambda: (keepalive, raw_sid),
+    )
+
+    sid_sha256 = dual_live_windows.current_user_sid_sha256()
+
+    assert sid_sha256 == hashlib.sha256(raw_sid.encode("utf-8")).hexdigest()
+    assert raw_sid not in sid_sha256
+
+
+def test_current_user_sid_sha256_fails_closed_without_windows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dual_live_windows, "_kernel32", None)
+    monkeypatch.setattr(dual_live_windows, "_advapi32", None)
+
+    with pytest.raises(DualLiveWindowsError, match="dual_live_windows_unsupported"):
+        dual_live_windows.current_user_sid_sha256()
+
+
+def test_job_start_evidence_has_exact_frozen_public_shape() -> None:
+    evidence_type = dual_live_windows.JobStartEvidence
+    assert tuple(field.name for field in fields(evidence_type)) == (
+        "pid",
+        "process_creation_identity_sha256",
+        "process_boot_id",
+        "executable_sha256",
+        "job_policy_sha256",
+    )
+    evidence = evidence_type(
+        pid=1,
+        process_creation_identity_sha256="a" * 64,
+        process_boot_id="b" * 64,
+        executable_sha256="c" * 64,
+        job_policy_sha256="d" * 64,
+    )
+
+    with pytest.raises(FrozenInstanceError):
+        evidence.pid = 2
+
+
+def test_job_start_evidence_is_unavailable_for_inert_public_child() -> None:
+    child = JobChild(1, "a" * 64, "b" * 64)
+
+    with pytest.raises(
+        DualLiveWindowsError,
+        match="dual_live_child_start_evidence_unavailable",
+    ):
+        _ = child.start_evidence
+    child.close()
+    with pytest.raises(
+        DualLiveWindowsError,
+        match="dual_live_child_start_evidence_unavailable",
+    ):
+        _ = child.start_evidence
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_job_start_evidence_projects_retained_creation_facts_after_close() -> None:
+    child = _create_test_child("raise SystemExit(0)")
+    evidence = child.start_evidence
+    expected_executable_sha256 = hashlib.sha256(
+        Path(sys.executable).read_bytes()
+    ).hexdigest()
+    expected_job_policy_sha256 = hashlib.sha256(
+        dual_live_windows.canonical_json_bytes(
+            {"limit_flags": dual_live_windows._JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE}
+        )
+    ).hexdigest()
+    assert evidence.pid == child.pid
+    assert (
+        evidence.process_creation_identity_sha256
+        == child.process_creation_identity_sha256
+    )
+    assert evidence.process_boot_id == child.process_boot_id
+    assert evidence.executable_sha256 == expected_executable_sha256
+    assert evidence.job_policy_sha256 == expected_job_policy_sha256
+    assert evidence.executable_sha256 == child._executable_sha256
+    assert evidence.job_policy_sha256 == child._job_policy_sha256
+
+    assert child.wait(5) == 0
+    child.close()
+    assert child.start_evidence is evidence
+
+
+def test_isolated_config_module_singleton_ignores_shadow_dotenv(tmp_path: Path) -> None:
+    assert _run_shadow_config(tmp_path, isolated=True) == {
+        "api_key": False,
+        "grant_path": False,
+        "grant_sha": False,
+    }
+
+
+def test_nonisolated_config_module_singleton_preserves_shadow_dotenv(
+    tmp_path: Path,
+) -> None:
+    assert _run_shadow_config(tmp_path, isolated=False) == {
+        "api_key": True,
+        "grant_path": True,
+        "grant_sha": True,
+    }
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
