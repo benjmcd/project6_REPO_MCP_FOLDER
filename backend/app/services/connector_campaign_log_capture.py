@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 import hashlib
+from itertools import islice
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import stat
 import threading
+from types import MappingProxyType
 from typing import Any, Literal, NoReturn
 from uuid import NAMESPACE_URL, UUID, uuid5
 import weakref
@@ -21,6 +23,8 @@ from app.schemas.api import (
     ConnectorCampaignLogFileV1,
     ConnectorCampaignLogManifestV1,
     ConnectorCampaignLogSealV1,
+    ConnectorEgressGrantV1,
+    DualLiveCampaignDefinitionV1,
 )
 from app.services.connector_egress_arming import (
     ConnectorEgressArmingError,
@@ -30,13 +34,22 @@ from app.services.connector_egress_arming import (
     is_strict_egress_run,
 )
 from app.services.connector_egress_authorization import (
+    MAX_EVIDENCE_INDEX_REVISIONS,
     ConnectorEgressAuthorizationError,
     ConnectorEgressAuthorizationReceipt,
+    VerifiedEvidenceIndexChain,
     _assert_no_reparse_components,
+    _canonical_campaign_id,
     _find_campaign_refs,
     _forbidden_path,
+    _introduction_revision,
     _load_evidence_index_chain,
+    _normalized_sha256,
+    _resolve_evidence_path,
+    _validate_grant_intersection,
+    _validate_index_slice_structure,
     _validate_log_capture_paths,
+    _validate_successor,
     canonical_json_bytes,
     resolve_current_connector_egress_grant,
     resolve_current_dual_live_campaign_definition,
@@ -380,6 +393,18 @@ class ConnectorCampaignLogCaptureResult:
     seal: ConnectorCampaignLogSealV1
     seal_sha256: str
     event_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedCampaignLogCapture:
+    manifest: ConnectorCampaignLogManifestV1
+    manifest_sha256: str
+    file_set_hash: str
+    seal: ConnectorCampaignLogSealV1
+    seal_sha256: str
+    stream_bytes: Mapping[str, bytes]
+    seal_event_ids: tuple[str, ...]
+    stable_snapshot: tuple[tuple[str, int, str], ...]
 
 
 def _expected_envelope_core(
@@ -1348,7 +1373,10 @@ def _exact_stream_membership(
     expected = [name for name, _ in _STREAMS]
     if manifest_present:
         expected.append("manifest.json")
-    actual = [child.name for child in campaign_dir.iterdir()]
+    actual = [
+        child.name
+        for child in islice(campaign_dir.iterdir(), len(expected) + 1)
+    ]
     if (
         len(actual) != len(expected)
         or sorted(actual) != sorted(expected)
@@ -1898,3 +1926,863 @@ def seal_connector_campaign_log_capture(
         seal_sha256=seal_snapshot.sha256,
     )
     return result
+
+
+@dataclass(frozen=True, slots=True)
+class _ReadOnlyFileSnapshot:
+    relative_path: str
+    data: bytes
+    size: int
+    sha256: str
+    identity: tuple[int, int, int, int, int]
+
+
+@dataclass(frozen=True, slots=True)
+class _ReadOnlyDatabaseSnapshot:
+    run_rows: tuple[bytes, ...]
+    event_rows: tuple[bytes, ...]
+    event_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _ReadOnlyCampaignProjection:
+    model: DualLiveCampaignDefinitionV1
+    raw_sha256: str
+    canonical_fingerprint: str
+
+
+def _read_stable_capture_bytes(
+    root: Path,
+    relative_path: str,
+    *,
+    max_bytes: int,
+) -> _ReadOnlyFileSnapshot:
+    try:
+        path = _resolve_evidence_path(
+            root,
+            relative_path,
+            label="campaign log capture object",
+            must_exist=True,
+        )
+        before = os.lstat(path)
+    except (OSError, ConnectorEgressAuthorizationError) as exc:
+        raise ConnectorCampaignLogCaptureError(
+            "connector_campaign_log_read_object_invalid",
+            "Campaign log capture object is missing or unsafe.",
+        ) from exc
+    attributes = int(getattr(before, "st_file_attributes", 0))
+    reparse = int(getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400))
+    if (
+        stat.S_ISLNK(before.st_mode)
+        or attributes & reparse
+        or not stat.S_ISREG(before.st_mode)
+        or int(before.st_nlink) != 1
+        or int(before.st_size) > max_bytes
+    ):
+        _fail(
+            "connector_campaign_log_read_object_invalid",
+            "Campaign log capture object is unsafe or exceeds its bound.",
+        )
+    try:
+        with path.open("rb") as handle:
+            opened = os.fstat(handle.fileno())
+            data = handle.read(max_bytes + 1)
+        after = os.lstat(path)
+    except OSError as exc:
+        raise ConnectorCampaignLogCaptureError(
+            "connector_campaign_log_read_object_invalid",
+            "Campaign log capture object could not be read.",
+        ) from exc
+    stable_fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_nlink")
+    if any(
+        getattr(before, field, None) != getattr(opened, field, None)
+        or getattr(opened, field, None) != getattr(after, field, None)
+        for field in stable_fields
+    ) or len(data) != int(before.st_size):
+        _fail(
+            "connector_campaign_log_read_object_changed",
+            "Campaign log capture object changed during verification.",
+        )
+    if len(data) > max_bytes:
+        _fail(
+            "connector_campaign_log_read_object_oversized",
+            "Campaign log capture object exceeds its verification bound.",
+        )
+    normalized = PurePosixPath(relative_path).as_posix()
+    if path.relative_to(root).as_posix() != normalized:
+        _fail(
+            "connector_campaign_log_read_object_path_mismatch",
+            "Campaign log capture object path changed during verification.",
+        )
+    return _ReadOnlyFileSnapshot(
+        relative_path=normalized,
+        data=data,
+        size=len(data),
+        sha256=hashlib.sha256(data).hexdigest(),
+        identity=(
+            int(opened.st_dev),
+            int(opened.st_ino),
+            int(opened.st_size),
+            int(opened.st_mtime_ns),
+            int(opened.st_nlink),
+        ),
+    )
+
+
+def _verify_index_chain_snapshot(
+    chain: VerifiedEvidenceIndexChain,
+) -> Path:
+    if not isinstance(chain, VerifiedEvidenceIndexChain) or not chain.revisions:
+        _fail(
+            "connector_campaign_log_index_chain_invalid",
+            "Capture verification requires a verified evidence-index chain.",
+        )
+    root = Path(chain.evidence_root)
+    raw_root = str(root)
+    if (
+        not root.is_absolute()
+        or raw_root.startswith(("\\\\", "//", "\\\\?\\", "\\\\.\\"))
+    ):
+        _fail(
+            "connector_campaign_log_index_chain_invalid",
+            "Evidence-index root must be an absolute local path.",
+        )
+    try:
+        _assert_no_reparse_components(root)
+        root = root.resolve(strict=True)
+        indexes = _exact_child(
+            root,
+            "indexes",
+            must_exist=True,
+            directory=True,
+        )
+    except (OSError, ConnectorEgressAuthorizationError) as exc:
+        raise ConnectorCampaignLogCaptureError(
+            "connector_campaign_log_index_chain_invalid",
+            "Evidence-index root is missing or unsafe.",
+        ) from exc
+    revisions = chain.revisions
+    if (
+        chain.evidence_root != root
+        or chain.head != revisions[-1].model
+        or chain.head_raw_sha256 != revisions[-1].raw_sha256
+        or chain.head_path != revisions[-1].path
+        or tuple(item.model.revision for item in revisions)
+        != tuple(range(1, len(revisions) + 1))
+        or len(revisions) > MAX_EVIDENCE_INDEX_REVISIONS
+        or (len(revisions[0].model.campaigns),
+            len(revisions[0].model.entries),
+            len(revisions[0].model.log_captures))
+        != (1, 2, 1)
+    ):
+        _fail(
+            "connector_campaign_log_index_chain_invalid",
+            "Evidence-index chain projection is internally inconsistent.",
+        )
+    expected_names = tuple(
+        sorted(f"{item.raw_sha256}.json" for item in revisions)
+    )
+    actual_children = tuple(
+        islice(indexes.iterdir(), MAX_EVIDENCE_INDEX_REVISIONS + 1)
+    )
+    if len(actual_children) > MAX_EVIDENCE_INDEX_REVISIONS:
+        _fail(
+            "connector_campaign_log_index_membership_invalid",
+            "Evidence-index revision count exceeds its frozen ceiling.",
+        )
+    actual_names = tuple(sorted(child.name for child in actual_children))
+    if (
+        actual_names != expected_names
+        or len({name.casefold() for name in actual_names}) != len(actual_names)
+    ):
+        _fail(
+            "connector_campaign_log_index_membership_invalid",
+            "Evidence-index directory contains undeclared objects.",
+        )
+    try:
+        for position, revision in enumerate(revisions):
+            _validate_index_slice_structure(revision.model)
+            if position:
+                _validate_successor(revisions[position - 1], revision)
+            snapshot = _read_stable_capture_bytes(
+                root,
+                f"indexes/{revision.raw_sha256}.json",
+                max_bytes=MAX_PROTECTED_JSON_BYTES,
+            )
+            if (
+                snapshot.data != revision.raw_bytes
+                or snapshot.sha256 != revision.raw_sha256
+                or snapshot.data != canonical_json_bytes(revision.model)
+                or revision.path != indexes / f"{revision.raw_sha256}.json"
+            ):
+                _fail(
+                    "connector_campaign_log_index_snapshot_changed",
+                    "Evidence-index bytes differ from the verified chain.",
+                )
+    except ConnectorEgressAuthorizationError as exc:
+        raise ConnectorCampaignLogCaptureError(
+            "connector_campaign_log_index_chain_invalid",
+            "Evidence-index chain structure is invalid.",
+        ) from exc
+    return root
+
+
+def _parse_canonical_capture_model(
+    snapshot: _ReadOnlyFileSnapshot,
+    model_type: Any,
+    *,
+    label: str,
+) -> Any:
+    try:
+        payload = strict_json_loads(snapshot.data)
+        if not isinstance(payload, dict):
+            raise ValueError("protected JSON root must be an object")
+        model = model_type.model_validate(payload)
+    except (ValueError, TypeError) as exc:
+        raise ConnectorCampaignLogCaptureError(
+            "connector_campaign_log_read_json_invalid",
+            f"{label} is invalid.",
+        ) from exc
+    if snapshot.data != canonical_json_bytes(model):
+        _fail(
+            "connector_campaign_log_read_json_not_canonical",
+            f"{label} is not canonical JSON.",
+        )
+    return model
+
+
+def _parse_protected_capture_model(
+    snapshot: _ReadOnlyFileSnapshot,
+    model_type: Any,
+    *,
+    label: str,
+) -> Any:
+    try:
+        payload = strict_json_loads(snapshot.data)
+        if not isinstance(payload, dict):
+            raise ValueError("protected JSON root must be an object")
+        return model_type.model_validate(payload)
+    except (ValueError, TypeError) as exc:
+        raise ConnectorCampaignLogCaptureError(
+            "connector_campaign_log_read_json_invalid",
+            f"{label} is invalid.",
+        ) from exc
+
+
+def _read_only_capture_paths(
+    root: Path,
+    *,
+    campaign_fingerprint: str,
+) -> tuple[Path, Path, Path]:
+    logs = _exact_child(root, "logs", must_exist=True, directory=True)
+    seals = _exact_child(root, "log-seals", must_exist=True, directory=True)
+    campaign_dir = _exact_child(
+        logs,
+        campaign_fingerprint,
+        must_exist=True,
+        directory=True,
+    )
+    _exact_stream_membership(campaign_dir, manifest_present=True)
+    manifest = campaign_dir / "manifest.json"
+    seal = _exact_child(
+        seals,
+        f"{campaign_fingerprint}.json",
+        must_exist=True,
+        directory=False,
+    )
+    _exact_child(
+        seals,
+        f".{campaign_fingerprint}.json.stage",
+        must_exist=False,
+        directory=False,
+    )
+    return campaign_dir, manifest, seal
+
+
+def _read_capture_file_set(
+    root: Path,
+    manifest: ConnectorCampaignLogManifestV1,
+    *,
+    manifest_relative_path: str,
+    seal_relative_path: str,
+) -> tuple[
+    tuple[_ReadOnlyFileSnapshot, ...],
+    Mapping[str, bytes],
+]:
+    snapshots: list[_ReadOnlyFileSnapshot] = []
+    stream_bytes: dict[str, bytes] = {}
+    aggregate = 0
+    for item in manifest.files:
+        snapshot = _read_stable_capture_bytes(
+            root,
+            item.relative_path,
+            max_bytes=MAX_STREAM_BYTES,
+        )
+        aggregate += snapshot.size
+        if aggregate > MAX_AGGREGATE_BYTES:
+            _fail(
+                "connector_campaign_log_read_aggregate_oversized",
+                "Campaign log streams exceed the aggregate bound.",
+            )
+        if snapshot.size != item.byte_count or snapshot.sha256 != item.sha256:
+            _fail(
+                "connector_campaign_log_stream_digest_mismatch",
+                "Campaign log stream differs from its manifest entry.",
+            )
+        snapshots.append(snapshot)
+        stream_bytes[item.relative_path] = snapshot.data
+    snapshots.append(
+        _read_stable_capture_bytes(
+            root,
+            manifest_relative_path,
+            max_bytes=MAX_PROTECTED_JSON_BYTES,
+        )
+    )
+    snapshots.append(
+        _read_stable_capture_bytes(
+            root,
+            seal_relative_path,
+            max_bytes=MAX_PROTECTED_JSON_BYTES,
+        )
+    )
+    return tuple(snapshots), MappingProxyType(stream_bytes)
+
+
+def _derive_expected_run_ids(
+    root: Path,
+    definition_ref: Any,
+    entries: tuple[Any, ...],
+    *,
+    authority: _CaptureAuthority,
+) -> tuple[
+    Mapping[str, _ExpectedRunBinding],
+    tuple[_ReadOnlyFileSnapshot, ...],
+]:
+    definition_snapshot = _read_stable_capture_bytes(
+        root,
+        definition_ref.definition_relative_path,
+        max_bytes=MAX_PROTECTED_JSON_BYTES,
+    )
+    definition = _parse_protected_capture_model(
+        definition_snapshot,
+        DualLiveCampaignDefinitionV1,
+        label="archived campaign definition",
+    )
+    campaign_fingerprint = hashlib.sha256(
+        canonical_json_bytes(definition)
+    ).hexdigest()
+    if (
+        definition_ref.definition_relative_path
+        != f"campaigns/{definition_ref.raw_definition_sha256}.json"
+        or definition_snapshot.sha256 != definition_ref.raw_definition_sha256
+        or str(definition.campaign_id) != authority.campaign_id
+        or definition.code_revision != authority.code_revision
+        or campaign_fingerprint != authority.campaign_fingerprint
+    ):
+        _fail(
+            "connector_campaign_log_read_definition_mismatch",
+            "Indexed campaign definition differs from capture authority.",
+        )
+    campaign = _ReadOnlyCampaignProjection(
+        model=definition,
+        raw_sha256=definition_snapshot.sha256,
+        canonical_fingerprint=campaign_fingerprint,
+    )
+    run_ids: dict[str, str] = {}
+    bindings: dict[str, _ExpectedRunBinding] = {}
+    snapshots = [definition_snapshot]
+    for entry in sorted(entries, key=lambda item: item.connector_key):
+        snapshot = _read_stable_capture_bytes(
+            root,
+            entry.grant_relative_path,
+            max_bytes=MAX_PROTECTED_JSON_BYTES,
+        )
+        grant = _parse_protected_capture_model(
+            snapshot,
+            ConnectorEgressGrantV1,
+            label="archived connector grant",
+        )
+        canonical_fingerprint = hashlib.sha256(
+            canonical_json_bytes(grant)
+        ).hexdigest()
+        if (
+            snapshot.sha256 != entry.raw_grant_sha256
+            or entry.grant_relative_path
+            != f"grants/{entry.raw_grant_sha256}.json"
+            or canonical_fingerprint != entry.canonical_grant_fingerprint
+            or grant.connector_key != entry.connector_key
+            or grant.campaign_id != authority.campaign_id
+            or grant.campaign_fingerprint != authority.campaign_fingerprint
+            or grant.campaign_definition_sha256
+            != authority.campaign_definition_sha256
+            or grant.code_revision != authority.code_revision
+        ):
+            _fail(
+                "connector_campaign_log_read_grant_mismatch",
+                "Indexed connector grant differs from campaign authority.",
+            )
+        try:
+            _validate_grant_intersection(
+                definition,
+                grant,
+                raw_definition_sha256=definition_snapshot.sha256,
+                canonical_campaign_fingerprint=campaign_fingerprint,
+            )
+        except ConnectorEgressAuthorizationError as exc:
+            raise ConnectorCampaignLogCaptureError(
+                "connector_campaign_log_read_grant_mismatch",
+                "Indexed connector grant does not intersect campaign authority.",
+            ) from exc
+        run_id = compute_parent_arming_id(
+            connector_key=entry.connector_key,
+            campaign_id=authority.campaign_id,
+            grant_sha256=entry.raw_grant_sha256,
+            arming_nonce=grant.arming_nonce,
+        )
+        run_ids[entry.connector_key] = run_id
+        bindings[entry.connector_key] = _ExpectedRunBinding(
+            connector_key=entry.connector_key,
+            connector_run_id=run_id,
+            source_system=(
+                "nrc_adams"
+                if entry.connector_key == "nrc_adams_aps"
+                else "sciencebase"
+            ),
+            grant_sha256=entry.raw_grant_sha256,
+            canonical_grant_fingerprint=canonical_fingerprint,
+            envelope_core_bytes=_expected_envelope_core(
+                campaign=campaign,
+                grant=grant,
+                raw_grant_sha256=entry.raw_grant_sha256,
+                canonical_grant_fingerprint=canonical_fingerprint,
+                introduction_index_revision=(
+                    authority.introduction_index_revision
+                ),
+                introduction_index_sha256=authority.introduction_index_sha256,
+            ),
+        )
+        snapshots.append(snapshot)
+    if tuple(sorted(run_ids)) != ("nrc_adams_aps", "sciencebase_mcs") or len(
+        set(run_ids.values())
+    ) != 2:
+        _fail(
+            "connector_campaign_log_read_grant_set_invalid",
+            "Campaign grants do not derive two distinct connector runs.",
+        )
+    return MappingProxyType(bindings), tuple(snapshots)
+
+
+def _read_seal_database_snapshot(
+    db: Session,
+    *,
+    authority: _CaptureAuthority,
+    seal: ConnectorCampaignLogSealV1,
+    seal_sha256: str,
+    expected_bindings: Mapping[str, _ExpectedRunBinding],
+) -> _ReadOnlyDatabaseSnapshot:
+    if db.new or db.dirty or db.deleted:
+        _fail(
+            "connector_campaign_log_read_session_dirty",
+            "Read-only capture verification requires a clean session.",
+        )
+    expected_ids = seal.connector_run_ids
+    deterministic_ids = tuple(
+        sorted(binding.connector_run_id for binding in expected_bindings.values())
+    )
+    with db.no_autoflush:
+        candidates = list(
+            db.scalars(
+                select(ConnectorRun)
+                .where(ConnectorRun.connector_run_id.in_(deterministic_ids))
+                .order_by(ConnectorRun.connector_run_id)
+                .execution_options(populate_existing=True)
+            ).all()
+        )
+    campaign_runs = candidates
+    actual_ids = tuple(
+        sorted(run.connector_run_id for run in campaign_runs)
+    )
+    connector_keys = tuple(
+        sorted(run.connector_key for run in campaign_runs)
+    )
+    if actual_ids != expected_ids or connector_keys not in {
+        ("nrc_adams_aps",),
+        ("nrc_adams_aps", "sciencebase_mcs"),
+    }:
+        _fail(
+            "connector_campaign_log_read_run_set_invalid",
+            "Extant campaign runs differ from the exact NRC-only or two-run set.",
+        )
+    runs_by_id = {run.connector_run_id: run for run in campaign_runs}
+    run_rows: list[bytes] = []
+    for run in campaign_runs:
+        envelope = run.request_config_json.get("connector_egress_arming")
+        binding = expected_bindings.get(run.connector_key)
+        if (
+            binding is None
+            or not isinstance(envelope, dict)
+            or run.connector_run_id != binding.connector_run_id
+            or run.source_mode != "strict_live_egress"
+            or run.source_system != binding.source_system
+            or run.status not in _TERMINAL_STATUSES
+            or run.execution_lease_owner is not None
+            or run.execution_lease_token is not None
+            or envelope.get("campaign_id") != authority.campaign_id
+            or envelope.get("campaign_fingerprint")
+            != authority.campaign_fingerprint
+            or envelope.get("campaign_definition_sha256")
+            != authority.campaign_definition_sha256
+            or envelope.get("code_revision") != authority.code_revision
+            or envelope.get("campaign_introduction_index_revision")
+            != authority.introduction_index_revision
+            or envelope.get("campaign_introduction_index_sha256")
+            != authority.introduction_index_sha256
+        ):
+            _fail(
+                "connector_campaign_log_read_run_identity_mismatch",
+                "Campaign run identity differs from the sealed authority.",
+            )
+        try:
+            _assert_run_envelope(run, binding, authority)
+        except (ConnectorEgressArmingError, ConnectorCampaignLogCaptureError) as exc:
+            raise ConnectorCampaignLogCaptureError(
+                "connector_campaign_log_read_run_identity_mismatch",
+                "Campaign run arming does not match indexed grant authority.",
+            ) from exc
+        run_rows.append(_run_row_snapshot(run))
+    expected_event_ids = tuple(
+        sorted(
+            _event_id(run_id, "campaign_log_capture_sealed")
+            for run_id in expected_ids
+        )
+    )
+    with db.no_autoflush:
+        candidates_events = list(
+            db.scalars(
+                select(ConnectorRunEvent)
+                .where(
+                    ConnectorRunEvent.event_type
+                    == "campaign_log_capture_sealed",
+                    ConnectorRunEvent.connector_run_id.in_(expected_ids),
+                )
+                .order_by(
+                    ConnectorRunEvent.connector_run_id,
+                    ConnectorRunEvent.created_at,
+                    ConnectorRunEvent.connector_run_event_id,
+                )
+                .limit(len(expected_ids) + 1)
+                .execution_options(populate_existing=True)
+            ).all()
+        )
+    events = candidates_events
+    metrics = _seal_event_metrics(
+        authority=authority,
+        seal=seal,
+        seal_relative_path=authority.seal_relative_path,
+        seal_sha256=seal_sha256,
+    )
+    event_rows: list[bytes] = []
+    for event in events:
+        event_run = runs_by_id.get(event.connector_run_id)
+        if (
+            event_run is None
+            or event.connector_run_event_id
+            != _event_id(
+                event_run.connector_run_id,
+                "campaign_log_capture_sealed",
+            )
+            or event.connector_run_target_id is not None
+            or event.phase != "evidence"
+            or event.stage != "campaign_log_capture"
+            or event.event_type != "campaign_log_capture_sealed"
+            or event.status_before != event_run.status
+            or event.status_after != event_run.status
+            or event.reason_code != "protected_log_capture_sealed"
+            or event.error_class is not None
+            or event.message is not None
+            or event.metrics_json != metrics
+            or _db_utc(event.created_at) != seal.sealed_at
+        ):
+            _fail(
+                "connector_campaign_log_read_seal_event_mismatch",
+                "Campaign seal event differs from the sealed filesystem evidence.",
+            )
+        event_rows.append(_event_snapshot(event))
+    actual_event_ids = tuple(
+        sorted(event.connector_run_event_id for event in events)
+    )
+    if actual_event_ids != expected_event_ids:
+        _fail(
+            "connector_campaign_log_read_seal_event_set_invalid",
+            "Campaign seal events are missing, duplicated, or unexpected.",
+        )
+    if db.new or db.dirty or db.deleted:
+        _fail(
+            "connector_campaign_log_read_session_dirty",
+            "Read-only capture verification changed the supplied session.",
+        )
+    return _ReadOnlyDatabaseSnapshot(
+        run_rows=tuple(run_rows),
+        event_rows=tuple(event_rows),
+        event_ids=actual_event_ids,
+    )
+
+
+def _verify_connector_campaign_log_capture_in_owned_transaction(
+    db: Session,
+    chain: VerifiedEvidenceIndexChain,
+    campaign_id: str,
+    expected_campaign_fingerprint: str,
+) -> VerifiedCampaignLogCapture:
+    root = _verify_index_chain_snapshot(chain)
+    try:
+        normalized_campaign_id = _canonical_campaign_id(campaign_id)
+        campaign_fingerprint = _normalized_sha256(
+            expected_campaign_fingerprint,
+            label="expected campaign fingerprint",
+        )
+        definition_ref, entries, capture_ref = _find_campaign_refs(
+            chain,
+            campaign_id=normalized_campaign_id,
+            campaign_fingerprint=campaign_fingerprint,
+        )
+        introduction = _introduction_revision(
+            chain,
+            campaign_id=normalized_campaign_id,
+            campaign_fingerprint=campaign_fingerprint,
+        )
+        log_dir_relative_path, manifest_relative_path, seal_relative_path = (
+            _validate_log_capture_paths(capture_ref)
+        )
+    except ConnectorEgressAuthorizationError as exc:
+        raise ConnectorCampaignLogCaptureError(
+            "connector_campaign_log_read_authority_invalid",
+            "Campaign log capture authority is invalid.",
+        ) from exc
+    if (
+        capture_ref.campaign_definition_sha256
+        != definition_ref.raw_definition_sha256
+        or capture_ref.code_revision != definition_ref.code_revision
+    ):
+        _fail(
+            "connector_campaign_log_read_authority_mismatch",
+            "Campaign log reference differs from its definition reference.",
+        )
+    campaign_dir, manifest_path, seal_path = _read_only_capture_paths(
+        root,
+        campaign_fingerprint=campaign_fingerprint,
+    )
+    if (
+        campaign_dir.relative_to(root).as_posix() != log_dir_relative_path
+        or manifest_path.relative_to(root).as_posix()
+        != manifest_relative_path
+        or seal_path.relative_to(root).as_posix() != seal_relative_path
+    ):
+        _fail(
+            "connector_campaign_log_read_path_mismatch",
+            "Campaign log paths differ from the evidence index.",
+        )
+    manifest_object = _read_stable_capture_bytes(
+        root,
+        manifest_relative_path,
+        max_bytes=MAX_PROTECTED_JSON_BYTES,
+    )
+    seal_object = _read_stable_capture_bytes(
+        root,
+        seal_relative_path,
+        max_bytes=MAX_PROTECTED_JSON_BYTES,
+    )
+    manifest = _parse_canonical_capture_model(
+        manifest_object,
+        ConnectorCampaignLogManifestV1,
+        label="campaign log manifest",
+    )
+    seal = _parse_canonical_capture_model(
+        seal_object,
+        ConnectorCampaignLogSealV1,
+        label="campaign log seal",
+    )
+    identity = (
+        normalized_campaign_id,
+        campaign_fingerprint,
+        definition_ref.raw_definition_sha256,
+        definition_ref.code_revision,
+    )
+    if (
+        (
+            manifest.campaign_id,
+            manifest.campaign_fingerprint,
+            manifest.campaign_definition_sha256,
+            manifest.code_revision,
+        )
+        != identity
+        or (
+            seal.campaign_id,
+            seal.campaign_fingerprint,
+            seal.campaign_definition_sha256,
+            seal.code_revision,
+        )
+        != identity
+        or seal.campaign_introduction_index_revision
+        != introduction.model.revision
+        or seal.campaign_introduction_index_sha256
+        != introduction.raw_sha256
+        or seal.manifest_relative_path != manifest_relative_path
+        or seal.sealed_at < manifest.runtime_stopped_at
+    ):
+        _fail(
+            "connector_campaign_log_read_identity_mismatch",
+            "Manifest, seal, and evidence-index identity do not match.",
+        )
+    manifest_sha256 = manifest_object.sha256
+    seal_sha256 = seal_object.sha256
+    file_set_hash = hashlib.sha256(
+        canonical_json_bytes(
+            {
+                "schema_id": "project6.connector_campaign_log_file_set.v1",
+                "files": [
+                    item.model_dump(mode="python")
+                    for item in manifest.files
+                ],
+            }
+        )
+    ).hexdigest()
+    if (
+        seal.manifest_sha256 != manifest_sha256
+        or seal.file_set_hash != file_set_hash
+    ):
+        _fail(
+            "connector_campaign_log_read_seal_mismatch",
+            "Campaign log seal does not bind the rederived manifest and file set.",
+        )
+    first_files, stream_bytes = _read_capture_file_set(
+        root,
+        manifest,
+        manifest_relative_path=manifest_relative_path,
+        seal_relative_path=seal_relative_path,
+    )
+    if first_files[-2] != manifest_object or first_files[-1] != seal_object:
+        _fail(
+            "connector_campaign_log_read_snapshot_changed",
+            "Manifest or seal changed during capture verification.",
+        )
+    authority = _CaptureAuthority(
+        campaign_id=normalized_campaign_id,
+        campaign_fingerprint=campaign_fingerprint,
+        campaign_definition_sha256=definition_ref.raw_definition_sha256,
+        code_revision=definition_ref.code_revision,
+        runtime_started_at=manifest.runtime_started_at,
+        introduction_index_revision=introduction.model.revision,
+        introduction_index_sha256=introduction.raw_sha256,
+        evidence_root=root,
+        log_dir_relative_path=log_dir_relative_path,
+        manifest_relative_path=manifest_relative_path,
+        seal_relative_path=seal_relative_path,
+        run_bindings=(),
+    )
+    expected_bindings, first_grants = _derive_expected_run_ids(
+        root,
+        definition_ref,
+        entries,
+        authority=authority,
+    )
+    authority = replace(
+        authority,
+        run_bindings=tuple(
+            expected_bindings[key] for key in sorted(expected_bindings)
+        ),
+    )
+    first_database = _read_seal_database_snapshot(
+        db,
+        authority=authority,
+        seal=seal,
+        seal_sha256=seal_sha256,
+        expected_bindings=expected_bindings,
+    )
+    _read_only_capture_paths(
+        root,
+        campaign_fingerprint=campaign_fingerprint,
+    )
+    second_files, _ = _read_capture_file_set(
+        root,
+        manifest,
+        manifest_relative_path=manifest_relative_path,
+        seal_relative_path=seal_relative_path,
+    )
+    second_bindings, second_grants = _derive_expected_run_ids(
+        root,
+        definition_ref,
+        entries,
+        authority=authority,
+    )
+    second_database = _read_seal_database_snapshot(
+        db,
+        authority=authority,
+        seal=seal,
+        seal_sha256=seal_sha256,
+        expected_bindings=second_bindings,
+    )
+    final_root = _verify_index_chain_snapshot(chain)
+    final_campaign_dir, final_manifest_path, final_seal_path = (
+        _read_only_capture_paths(
+            root,
+            campaign_fingerprint=campaign_fingerprint,
+        )
+    )
+    if (
+        second_files != first_files
+        or second_grants != first_grants
+        or dict(second_bindings) != dict(expected_bindings)
+        or second_database != first_database
+        or final_root != root
+        or final_campaign_dir != campaign_dir
+        or final_manifest_path != manifest_path
+        or final_seal_path != seal_path
+    ):
+        _fail(
+            "connector_campaign_log_read_snapshot_changed",
+            "Campaign log filesystem or database evidence changed during verification.",
+        )
+    stable_snapshot = tuple(
+        (item.relative_path, item.size, item.sha256)
+        for item in first_files
+    )
+    return VerifiedCampaignLogCapture(
+        manifest=manifest,
+        manifest_sha256=manifest_sha256,
+        file_set_hash=file_set_hash,
+        seal=seal,
+        seal_sha256=seal_sha256,
+        stream_bytes=stream_bytes,
+        seal_event_ids=first_database.event_ids,
+        stable_snapshot=stable_snapshot,
+    )
+
+
+def verify_connector_campaign_log_capture_read_only(
+    db: Session,
+    chain: VerifiedEvidenceIndexChain,
+    campaign_id: str,
+    expected_campaign_fingerprint: str,
+) -> VerifiedCampaignLogCapture:
+    if not isinstance(db, Session):
+        _fail(
+            "connector_campaign_log_read_session_invalid",
+            "Capture verification requires an explicit database session.",
+        )
+    if db.in_transaction():
+        _fail(
+            "connector_campaign_log_read_transaction_active",
+            "Capture verification refuses a caller-active transaction.",
+        )
+    transaction = db.begin()
+    try:
+        return _verify_connector_campaign_log_capture_in_owned_transaction(
+            db,
+            chain,
+            campaign_id,
+            expected_campaign_fingerprint,
+        )
+    finally:
+        if transaction.is_active:
+            transaction.rollback()

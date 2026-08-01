@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 import hashlib
+import inspect
 import os
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,13 +19,24 @@ from sqlalchemy.pool import StaticPool
 
 from app.db.session import Base
 from app.models import ConnectorRun, ConnectorRunEvent
-from app.schemas.api import ConnectorCampaignLogCaptureRefV1
+from app.schemas.api import (
+    CAMPAIGN_NON_AUTHORITIES,
+    COMMON_GRANT_NON_AUTHORITIES,
+    NRC_GRANT_NON_AUTHORITIES,
+    ConnectorCampaignEvidenceIndexV1,
+    ConnectorCampaignLogCaptureRefV1,
+    ConnectorEgressGrantV1,
+    DualLiveCampaignDefinitionV1,
+    expected_grant_rule_payloads,
+)
 from app.services import raw_storage_handles as raw_handles
 from app.services.connector_campaign_log_capture import (
     ConnectorCampaignLogCaptureCommitAmbiguous,
     ConnectorCampaignLogCaptureError,
+    VerifiedCampaignLogCapture,
     begin_connector_campaign_log_capture,
     seal_connector_campaign_log_capture,
+    verify_connector_campaign_log_capture_read_only,
 )
 from app.services.dual_live_runtime import (
     RuntimeIdentity,
@@ -36,29 +48,66 @@ from app.services.connector_egress_arming import (
     compute_arming_fingerprint,
     compute_parent_arming_id,
 )
-from app.services.connector_egress_authorization import canonical_json_bytes
+from app.services.connector_egress_authorization import (
+    SINGLE_SEND_DETECTION_ALLOWANCE_BYTES,
+    VerifiedEvidenceIndexChain,
+    VerifiedEvidenceIndexRevision,
+    canonical_json_bytes,
+)
 
 
 START = datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
-FINGERPRINT = "a" * 64
-DEFINITION_SHA256 = "b" * 64
 CODE_REVISION = "c" * 40
+CAMPAIGN_ID = UUID("123e4567-e89b-42d3-a456-426614174000")
+CAMPAIGN_MODEL = DualLiveCampaignDefinitionV1.model_validate(
+    {
+        "schema_id": "project6.dual_live_campaign_definition.v1",
+        "campaign_id": str(CAMPAIGN_ID),
+        "code_revision": CODE_REVISION,
+        "connector_keys": ["sciencebase_mcs", "nrc_adams_aps"],
+        "sciencebase_target": {
+            "connector_key": "sciencebase_mcs",
+            "item_id": "63d1a3c6d34e06fef15006be",
+            "exact_file_name": "mcs2023-germa_salient.csv",
+            "locator_key": "downloadUri",
+        },
+        "nrc_target": {
+            "connector_key": "nrc_adams_aps",
+            "accession_number": "ML17123A319",
+        },
+        "acceptance_profile": "dual_live_to_internal_handoff_v1",
+        "evidence_profile": "dual_live_evidence_v1",
+        "review_policy": "security_egress_and_layer3_integrity_v1",
+        "required_review_roles": ["security_egress", "layer3_integrity"],
+        "execution_order": "nrc_then_sciencebase",
+        "package_kinds": [
+            "canonical_internal",
+            "user_facing",
+            "review_facing",
+        ],
+        "not_before": START - timedelta(hours=2),
+        "expires_at": START + timedelta(hours=2),
+        "non_authorities": list(CAMPAIGN_NON_AUTHORITIES),
+    }
+)
+DEFINITION_BYTES = canonical_json_bytes(CAMPAIGN_MODEL)
+DEFINITION_SHA256 = hashlib.sha256(DEFINITION_BYTES).hexdigest()
+FINGERPRINT = hashlib.sha256(canonical_json_bytes(CAMPAIGN_MODEL)).hexdigest()
 INDEX_SHA256 = "d" * 64
 NRC_GRANT_SHA256 = "e" * 64
 SCIENCEBASE_GRANT_SHA256 = "f" * 64
-CAMPAIGN_ID = UUID("123e4567-e89b-42d3-a456-426614174000")
 ARMING_NONCES = {
     "nrc_adams_aps": UUID("123e4567-e89b-42d3-a456-426614174001"),
     "sciencebase_mcs": UUID("123e4567-e89b-42d3-a456-426614174002"),
 }
 GOLDEN_MANIFEST_SHA256 = (
-    "74c2d3ef0fb232cdf5d7f1eeaf91e842b4415c6a0feac84e1faaf0be438217ec"
+    "1a00c5e12f774ca62522b6d71f1cc8e6757981ba6d09f3980fa28d348db503b6"
 )
 GOLDEN_FILE_SET_HASH = (
-    "64a929d72bf738a2d3c0aa6ad1a287cbd0d5cc7f679139b1f94da1d5371a59bd"
+    "350f20bf9f7be30b7d7cce11089a3df88881dac133fcd66ef9e0a77cad7b1058"
 )
 GOLDEN_SEAL_SHA256 = (
-    "ce44dd9eff7c6a33fe0ec5419fd37b4ee9e9dc0679d000ea59e726c287428fbe"
+    "31fd99485117e068263357cd5897e59e47cca117f9fff3adea37cb6f45f27ebf"
 )
 
 
@@ -143,12 +192,7 @@ def _authority_fixture(tmp_path: Path) -> _AuthorityFixture:
             "stderr.log",
         ),
     )
-    definition_model = SimpleNamespace(
-        campaign_id=campaign_id,
-        code_revision=CODE_REVISION,
-        not_before=START - timedelta(hours=2),
-        expires_at=START + timedelta(hours=2),
-    )
+    definition_model = CAMPAIGN_MODEL.model_copy(deep=True)
     entries = (
         SimpleNamespace(
             connector_key="nrc_adams_aps",
@@ -244,6 +288,155 @@ def _authority_fixture(tmp_path: Path) -> _AuthorityFixture:
     )
 
 
+def _bind_real_evidence_index(
+    authority: _AuthorityFixture,
+) -> VerifiedEvidenceIndexChain:
+    capture_ref = authority.verified_campaign.index_chain.head.log_captures[0]
+    entries = []
+    campaigns_dir = authority.evidence_root / "campaigns"
+    campaigns_dir.mkdir()
+    (campaigns_dir / f"{DEFINITION_SHA256}.json").write_bytes(
+        DEFINITION_BYTES
+    )
+    grants_dir = authority.evidence_root / "grants"
+    grants_dir.mkdir()
+    for connector_key in ("nrc_adams_aps", "sciencebase_mcs"):
+        sciencebase = connector_key == "sciencebase_mcs"
+        grant_model = ConnectorEgressGrantV1.model_validate(
+            {
+                "schema_id": "project6.connector_egress_grant.v1",
+                "grant_id": f"{connector_key}-grant",
+                "connector_key": connector_key,
+                "campaign_id": str(authority.campaign_id),
+                "campaign_fingerprint": FINGERPRINT,
+                "campaign_definition_sha256": DEFINITION_SHA256,
+                "code_revision": CODE_REVISION,
+                "arming_nonce": ARMING_NONCES[connector_key],
+                "max_armings": 1,
+                "supersedes_grant_sha256": None,
+                "issued_at": START - timedelta(hours=1),
+                "expires_at": START + timedelta(hours=1),
+                "operator_mode": "local_loopback",
+                "target": (
+                    {
+                        "connector_key": "sciencebase_mcs",
+                        "item_id": "63d1a3c6d34e06fef15006be",
+                        "exact_file_name": "mcs2023-germa_salient.csv",
+                        "locator_key": "downloadUri",
+                    }
+                    if sciencebase
+                    else {
+                        "connector_key": "nrc_adams_aps",
+                        "accession_number": "ML17123A319",
+                    }
+                ),
+                "request_rules": expected_grant_rule_payloads(
+                    connector_key
+                ),
+                "max_physical_requests": 3 if sciencebase else 2,
+                "max_run_bytes": 140 * 1024 * 1024,
+                "max_single_send_detection_allowance_bytes": (
+                    SINGLE_SEND_DETECTION_ALLOWANCE_BYTES
+                ),
+                "request_timeout_seconds": 30,
+                "min_request_interval_ms": 250,
+                "non_authorities": (
+                    COMMON_GRANT_NON_AUTHORITIES
+                    if sciencebase
+                    else NRC_GRANT_NON_AUTHORITIES
+                ),
+            }
+        )
+        grant_bytes = canonical_json_bytes(grant_model)
+        grant_sha256 = hashlib.sha256(grant_bytes).hexdigest()
+        canonical_fingerprint = hashlib.sha256(
+            canonical_json_bytes(grant_model)
+        ).hexdigest()
+        (grants_dir / f"{grant_sha256}.json").write_bytes(grant_bytes)
+        run_id = compute_parent_arming_id(
+            connector_key=connector_key,
+            campaign_id=str(authority.campaign_id),
+            grant_sha256=grant_sha256,
+            arming_nonce=grant_model.arming_nonce,
+        )
+        authority.run_ids[connector_key] = run_id
+        current = authority.current_grants[connector_key]
+        current.model = grant_model
+        current.raw_sha256 = grant_sha256
+        current.canonical_fingerprint = canonical_fingerprint
+        history = authority.historical_grants[connector_key]
+        history.model = grant_model
+        history.raw_sha256 = grant_sha256
+        history.canonical_fingerprint = canonical_fingerprint
+        history.marker_model = SimpleNamespace(connector_run_id=run_id)
+        entries.append(
+            {
+                "campaign_id": str(authority.campaign_id),
+                "campaign_fingerprint": FINGERPRINT,
+                "campaign_definition_sha256": DEFINITION_SHA256,
+                "connector_key": connector_key,
+                "code_revision": CODE_REVISION,
+                "raw_grant_sha256": grant_sha256,
+                "canonical_grant_fingerprint": canonical_fingerprint,
+                "grant_relative_path": (
+                    f"grants/{grant_sha256}.json"
+                ),
+                "consumption_marker_sha256": hashlib.sha256(
+                    f"marker:{connector_key}".encode("ascii")
+                ).hexdigest(),
+                "consumption_marker_relative_path": (
+                    f"consumed/{grant_sha256}.json"
+                ),
+            }
+        )
+    index_model = ConnectorCampaignEvidenceIndexV1.model_validate(
+        {
+            "schema_id": "project6.connector_campaign_evidence_index.v1",
+            "revision": 1,
+            "predecessor_index_sha256": None,
+            "predecessor_index_relative_path": None,
+            "campaigns": (
+                {
+                    "campaign_id": str(authority.campaign_id),
+                    "campaign_fingerprint": FINGERPRINT,
+                    "code_revision": CODE_REVISION,
+                    "raw_definition_sha256": DEFINITION_SHA256,
+                    "definition_relative_path": (
+                        f"campaigns/{DEFINITION_SHA256}.json"
+                    ),
+                },
+            ),
+            "entries": tuple(entries),
+            "log_captures": (capture_ref.model_dump(mode="json"),),
+        }
+    )
+    raw_bytes = canonical_json_bytes(index_model)
+    digest = hashlib.sha256(raw_bytes).hexdigest()
+    index_dir = authority.evidence_root / "indexes"
+    index_dir.mkdir()
+    index_path = index_dir / f"{digest}.json"
+    index_path.write_bytes(raw_bytes)
+    revision = VerifiedEvidenceIndexRevision(
+        model=index_model,
+        raw_bytes=raw_bytes,
+        raw_sha256=digest,
+        path=index_path,
+    )
+    chain = VerifiedEvidenceIndexChain(
+        evidence_root=authority.evidence_root,
+        head=index_model,
+        head_raw_sha256=digest,
+        head_path=index_path,
+        revisions=(revision,),
+    )
+    authority.verified_campaign.index_chain = chain
+    authority.verified_campaign.introduction_index_sha256 = digest
+    for history in authority.historical_grants.values():
+        history.index_chain = chain
+        history.introduction_index_sha256 = digest
+    return chain
+
+
 def _install_authority(
     monkeypatch: pytest.MonkeyPatch,
     authority: _AuthorityFixture,
@@ -319,7 +512,9 @@ def _arming_envelope(
         "grant_sha256": grant.raw_sha256,
         "canonical_grant_fingerprint": grant.canonical_fingerprint,
         "introduction_index_revision": 1,
-        "introduction_index_sha256": INDEX_SHA256,
+        "introduction_index_sha256": (
+            authority.verified_campaign.introduction_index_sha256
+        ),
         "operator_ref_hash": "1" * 64,
         "workspace_ref_hash": "2" * 64,
         "auth_owner_mode": "none",
@@ -336,7 +531,9 @@ def _arming_envelope(
         "grant_sha256": grant.raw_sha256,
         "canonical_grant_fingerprint": grant.canonical_fingerprint,
         "campaign_introduction_index_revision": 1,
-        "campaign_introduction_index_sha256": INDEX_SHA256,
+        "campaign_introduction_index_sha256": (
+            authority.verified_campaign.introduction_index_sha256
+        ),
         "code_revision": CODE_REVISION,
         "grant_id": model.grant_id,
         "arming_nonce": model.arming_nonce,
@@ -433,7 +630,9 @@ def _insert_terminal_runs(
                 "outcome_class": "fixture_completed",
                 "arming_fingerprint": envelope["arming_fingerprint"],
                 "campaign_introduction_index_revision": 1,
-                "campaign_introduction_index_sha256": INDEX_SHA256,
+                "campaign_introduction_index_sha256": (
+                    authority.verified_campaign.introduction_index_sha256
+                ),
             },
             created_at=completed_at,
         )
@@ -509,6 +708,97 @@ def _connector_run_rows(db: Session) -> tuple[tuple[Any, ...], ...]:
         return tuple(
             tuple(row[column.key] for column in columns) for row in rows
         )
+
+
+def _connector_event_rows(db: Session) -> tuple[tuple[Any, ...], ...]:
+    columns = tuple(ConnectorRunEvent.__table__.columns)
+    with db.get_bind().connect() as connection:
+        rows = connection.execute(
+            select(ConnectorRunEvent.__table__).order_by(
+                ConnectorRunEvent.connector_run_event_id
+            )
+        ).mappings()
+        return tuple(
+            tuple(row[column.key] for column in columns) for row in rows
+        )
+
+
+def _evidence_bytes(root: Path) -> tuple[tuple[str, bytes], ...]:
+    return tuple(
+        (path.relative_to(root).as_posix(), path.read_bytes())
+        for path in sorted(item for item in root.rglob("*") if item.is_file())
+    )
+
+
+def _sealed_read_only_fixture(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    *,
+    connector_keys: tuple[str, ...] = (
+        "nrc_adams_aps",
+        "sciencebase_mcs",
+    ),
+) -> tuple[
+    _AuthorityFixture,
+    VerifiedEvidenceIndexChain,
+    Any,
+]:
+    authority = _authority_fixture(tmp_path)
+    chain = _bind_real_evidence_index(authority)
+    _install_authority(monkeypatch, authority)
+    capture = _begin_and_close(authority)
+    _insert_terminal_runs(db, authority, connector_keys=connector_keys)
+    sealed = seal_connector_campaign_log_capture(
+        db,
+        capture=capture,
+        runtime_stopped_at=START + timedelta(seconds=10),
+        now=START + timedelta(seconds=11),
+    )
+    return authority, chain, sealed
+
+
+def _close_read_transaction(db: Session) -> None:
+    if db.in_transaction():
+        db.rollback()
+    assert not db.in_transaction()
+
+
+def _rewrite_stream_and_manifest(
+    authority: _AuthorityFixture,
+    sealed: Any,
+) -> tuple[Any, str, str]:
+    manifest_path, _ = _artifact_paths(authority)
+    stream_path = manifest_path.parent / "app.jsonl"
+    stream_bytes = stream_path.read_bytes() + b"rewrite"
+    stream_path.write_bytes(stream_bytes)
+    first = type(sealed.manifest.files[0]).model_validate(
+        {
+            **sealed.manifest.files[0].model_dump(mode="python"),
+            "byte_count": len(stream_bytes),
+            "sha256": hashlib.sha256(stream_bytes).hexdigest(),
+        }
+    )
+    manifest = type(sealed.manifest).model_validate(
+        {
+            **sealed.manifest.model_dump(mode="python"),
+            "files": (first, *sealed.manifest.files[1:]),
+        }
+    )
+    manifest_bytes = canonical_json_bytes(manifest)
+    manifest_path.write_bytes(manifest_bytes)
+    file_set_hash = hashlib.sha256(
+        canonical_json_bytes(
+            {
+                "schema_id": "project6.connector_campaign_log_file_set.v1",
+                "files": [
+                    item.model_dump(mode="python")
+                    for item in manifest.files
+                ],
+            }
+        )
+    ).hexdigest()
+    return manifest, hashlib.sha256(manifest_bytes).hexdigest(), file_set_hash
 
 
 def test_dual_capture_seals_exact_bytes_and_two_events_once(
@@ -687,6 +977,518 @@ def test_dual_capture_seals_exact_bytes_and_two_events_once(
                 "metrics_json": expected_metrics,
                 "created_at": START + timedelta(seconds=11),
             }
+
+
+@pytest.mark.parametrize(
+    "connector_keys",
+    (
+        ("nrc_adams_aps",),
+        ("nrc_adams_aps", "sciencebase_mcs"),
+    ),
+    ids=("nrc-only", "two-run"),
+)
+def test_read_only_capture_verifier_rehashes_without_mutation(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    connector_keys: tuple[str, ...],
+) -> None:
+    from app.services import connector_campaign_log_capture as capture_service
+
+    authority, chain, sealed = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+        connector_keys=connector_keys,
+    )
+    evidence_before = _evidence_bytes(authority.evidence_root)
+    runs_before = _connector_run_rows(db)
+    events_before = _connector_event_rows(db)
+    _close_read_transaction(db)
+
+    def forbidden_write(*_args: Any, **_kwargs: Any) -> Any:
+        pytest.fail("read-only verifier reached a write/current path")
+
+    for name in (
+        "begin_connector_campaign_log_capture",
+        "seal_connector_campaign_log_capture",
+        "publish_atomic_strict_new_locked_raw_file",
+        "_current_authority",
+        "_historical_authority",
+        "_managed_paths",
+        "_forbidden_path",
+    ):
+        monkeypatch.setattr(capture_service, name, forbidden_write)
+
+    verified = verify_connector_campaign_log_capture_read_only(
+        db,
+        chain,
+        str(authority.campaign_id),
+        FINGERPRINT,
+    )
+
+    assert not db.in_transaction()
+    assert isinstance(verified, VerifiedCampaignLogCapture)
+    assert verified.manifest == sealed.manifest
+    assert verified.manifest_sha256 == sealed.manifest_sha256
+    assert verified.file_set_hash == sealed.file_set_hash
+    assert verified.seal == sealed.seal
+    assert verified.seal_sha256 == sealed.seal_sha256
+    assert verified.seal_event_ids == sealed.event_ids
+    expected_paths = tuple(
+        item.relative_path for item in sealed.manifest.files
+    ) + (
+        f"logs/{FINGERPRINT}/manifest.json",
+        f"log-seals/{FINGERPRINT}.json",
+    )
+    assert tuple(verified.stream_bytes) == expected_paths[:4]
+    assert tuple(item[0] for item in verified.stable_snapshot) == expected_paths
+    assert verified.stream_bytes[expected_paths[0]] == b'{"app":1}\n'
+    with pytest.raises(TypeError):
+        verified.stream_bytes[expected_paths[0]] = b"changed"  # type: ignore[index]
+    assert _evidence_bytes(authority.evidence_root) == evidence_before
+    assert _connector_run_rows(db) == runs_before
+    assert _connector_event_rows(db) == events_before
+    assert tuple(
+        inspect.signature(
+            verify_connector_campaign_log_capture_read_only
+        ).parameters
+    ) == (
+        "db",
+        "chain",
+        "campaign_id",
+        "expected_campaign_fingerprint",
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    ("deterministic-plus-one", "foreign-nondeterministic"),
+)
+def test_read_only_capture_verifier_queries_only_two_deterministic_run_ids(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    case: str,
+) -> None:
+    authority, chain, sealed = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+        connector_keys=("nrc_adams_aps",),
+    )
+    if case == "deterministic-plus-one":
+        _insert_terminal_runs(
+            db,
+            authority,
+            connector_keys=("sciencebase_mcs",),
+        )
+    else:
+        envelope = _arming_envelope(authority, "nrc_adams_aps")
+        db.add(
+            ConnectorRun(
+                connector_run_id="foreign-strict-run",
+                connector_key="nrc_adams_aps",
+                source_system="nrc_adams",
+                source_mode="strict_live_egress",
+                status="completed",
+                request_config_json={
+                    "connector_egress_arming": envelope,
+                },
+                query_plan_json={},
+                request_fingerprint=envelope["arming_fingerprint"],
+                submission_idempotency_key="egress-arm:foreign",
+                submitted_at=START + timedelta(seconds=1),
+                started_at=START + timedelta(seconds=2),
+                completed_at=START + timedelta(seconds=3),
+                execution_lease_owner=None,
+                execution_lease_token=None,
+            )
+        )
+        db.commit()
+    evidence_before = _evidence_bytes(authority.evidence_root)
+    runs_before = _connector_run_rows(db)
+    events_before = _connector_event_rows(db)
+    _close_read_transaction(db)
+
+    if case == "deterministic-plus-one":
+        with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+            verify_connector_campaign_log_capture_read_only(
+                db,
+                chain,
+                str(authority.campaign_id),
+                FINGERPRINT,
+            )
+        assert excinfo.value.code == "connector_campaign_log_read_run_set_invalid"
+    else:
+        verified = verify_connector_campaign_log_capture_read_only(
+            db,
+            chain,
+            str(authority.campaign_id),
+            FINGERPRINT,
+        )
+        assert verified.seal_event_ids == sealed.event_ids
+    assert not db.in_transaction()
+    assert _evidence_bytes(authority.evidence_root) == evidence_before
+    assert _connector_run_rows(db) == runs_before
+    assert _connector_event_rows(db) == events_before
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    (
+        ("grant_sha256", "1" * 64),
+        ("canonical_grant_fingerprint", "2" * 64),
+        ("grant_id", "changed-grant-id"),
+        ("arming_nonce", "123e4567-e89b-42d3-a456-426614174099"),
+    ),
+)
+def test_read_only_capture_verifier_binds_run_envelope_to_indexed_grant(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    field: str,
+    replacement: str,
+) -> None:
+    authority, chain, _ = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+        connector_keys=("nrc_adams_aps",),
+    )
+    run = db.get(ConnectorRun, authority.run_ids["nrc_adams_aps"])
+    assert run is not None
+    envelope = {
+        **run.request_config_json["connector_egress_arming"],
+        field: replacement,
+    }
+    envelope["arming_fingerprint"] = compute_arming_fingerprint(envelope)
+    run.request_config_json = {"connector_egress_arming": envelope}
+    run.request_fingerprint = envelope["arming_fingerprint"]
+    db.commit()
+
+    with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+        verify_connector_campaign_log_capture_read_only(
+            db,
+            chain,
+            str(authority.campaign_id),
+            FINGERPRINT,
+        )
+
+    assert excinfo.value.code == "connector_campaign_log_read_run_identity_mismatch"
+    assert not db.in_transaction()
+
+
+def test_read_only_capture_verifier_bounds_exact_seal_event_query(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    authority, chain, sealed = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+        connector_keys=("nrc_adams_aps",),
+    )
+    sealed_event = db.get(ConnectorRunEvent, sealed.event_ids[0])
+    assert sealed_event is not None
+    for ordinal in range(8):
+        db.add(
+            ConnectorRunEvent(
+                connector_run_event_id=str(uuid4()),
+                connector_run_id=sealed_event.connector_run_id,
+                connector_run_target_id=None,
+                phase="test",
+                stage="unrelated",
+                event_type=f"unrelated_{ordinal}",
+                status_before="completed",
+                status_after="completed",
+                reason_code="unrelated",
+                error_class=None,
+                message=None,
+                metrics_json={},
+                created_at=sealed_event.created_at,
+            )
+        )
+    db.commit()
+    statements: list[tuple[str, tuple[Any, ...]]] = []
+
+    def capture_statement(
+        _connection: Any,
+        _cursor: Any,
+        statement: str,
+        parameters: Any,
+        _context: Any,
+        _executemany: bool,
+    ) -> None:
+        if "connector_run_event" in statement.lower():
+            statements.append((statement.lower(), tuple(parameters)))
+
+    bind = db.get_bind()
+    sqlalchemy_event.listen(bind, "before_cursor_execute", capture_statement)
+    try:
+        verified = verify_connector_campaign_log_capture_read_only(
+            db,
+            chain,
+            str(authority.campaign_id),
+            FINGERPRINT,
+        )
+    finally:
+        sqlalchemy_event.remove(bind, "before_cursor_execute", capture_statement)
+
+    assert verified.seal_event_ids == sealed.event_ids
+    assert len(statements) == 2
+    expected_run_ids = sealed.seal.connector_run_ids
+    for statement, parameters in statements:
+        assert "connector_run_event.event_type =" in statement
+        assert "connector_run_event.connector_run_id in" in statement
+        assert " limit " in statement
+        assert parameters[0] == "campaign_log_capture_sealed"
+        assert parameters[1 : 1 + len(expected_run_ids)] == expected_run_ids
+        assert parameters[-2] == len(expected_run_ids) + 1
+    assert not db.in_transaction()
+
+
+def test_read_only_capture_verifier_refuses_caller_transaction(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    authority, chain, _ = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+        connector_keys=("nrc_adams_aps",),
+    )
+    run = db.get(ConnectorRun, authority.run_ids["nrc_adams_aps"])
+    assert run is not None
+    run.status = "failed"
+    assert db.in_transaction()
+    assert run in db.dirty
+
+    with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+        verify_connector_campaign_log_capture_read_only(
+            db,
+            chain,
+            str(authority.campaign_id),
+            FINGERPRINT,
+        )
+
+    assert excinfo.value.code == "connector_campaign_log_read_transaction_active"
+    assert db.in_transaction()
+    assert run in db.dirty
+    db.rollback()
+
+
+def test_read_only_capture_verifier_rechecks_final_campaign_membership(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.services import connector_campaign_log_capture as capture_service
+
+    authority, chain, _ = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+        connector_keys=("nrc_adams_aps",),
+    )
+    original = capture_service._verify_index_chain_snapshot
+    calls = 0
+
+    def inject_late_member(candidate: VerifiedEvidenceIndexChain) -> Path:
+        nonlocal calls
+        calls += 1
+        result = original(candidate)
+        if calls == 2:
+            late = authority.evidence_root / "logs" / FINGERPRINT / "late.log"
+            late.write_bytes(b"late")
+        return result
+
+    monkeypatch.setattr(
+        capture_service,
+        "_verify_index_chain_snapshot",
+        inject_late_member,
+    )
+    with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+        verify_connector_campaign_log_capture_read_only(
+            db,
+            chain,
+            str(authority.campaign_id),
+            FINGERPRINT,
+        )
+
+    assert excinfo.value.code == "connector_campaign_log_stream_membership_invalid"
+    assert not db.in_transaction()
+
+
+@pytest.mark.parametrize(
+    ("case", "expected_code"),
+    (
+        ("manifest_only", "connector_campaign_log_read_seal_mismatch"),
+        (
+            "manifest_and_seal",
+            "connector_campaign_log_read_seal_event_mismatch",
+        ),
+        (
+            "extra_manifest_member",
+            "connector_campaign_log_stream_membership_invalid",
+        ),
+        (
+            "extra_index_object",
+            "connector_campaign_log_index_membership_invalid",
+        ),
+        (
+            "manifest_code_identity",
+            "connector_campaign_log_read_identity_mismatch",
+        ),
+        (
+            "seal_introduction_identity",
+            "connector_campaign_log_read_identity_mismatch",
+        ),
+    ),
+)
+def test_read_only_capture_verifier_rejects_filesystem_rewrites_without_repair(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    case: str,
+    expected_code: str,
+) -> None:
+    authority, chain, sealed = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+    )
+    manifest_path, seal_path = _artifact_paths(authority)
+    if case in {"manifest_only", "manifest_and_seal"}:
+        _, manifest_sha256, file_set_hash = _rewrite_stream_and_manifest(
+            authority,
+            sealed,
+        )
+        if case == "manifest_and_seal":
+            rewritten_seal = type(sealed.seal).model_validate(
+                {
+                    **sealed.seal.model_dump(mode="python"),
+                    "manifest_sha256": manifest_sha256,
+                    "file_set_hash": file_set_hash,
+                }
+            )
+            seal_path.write_bytes(canonical_json_bytes(rewritten_seal))
+    elif case == "extra_manifest_member":
+        (manifest_path.parent / "undeclared.log").write_bytes(b"extra")
+    elif case == "extra_index_object":
+        (authority.evidence_root / "indexes" / "undeclared.json").write_bytes(
+            b"{}"
+        )
+    elif case == "manifest_code_identity":
+        rewritten_manifest = type(sealed.manifest).model_validate(
+            {
+                **sealed.manifest.model_dump(mode="python"),
+                "code_revision": "1" * 40,
+            }
+        )
+        manifest_path.write_bytes(canonical_json_bytes(rewritten_manifest))
+    else:
+        rewritten_seal = type(sealed.seal).model_validate(
+            {
+                **sealed.seal.model_dump(mode="python"),
+                "campaign_introduction_index_sha256": "1" * 64,
+            }
+        )
+        seal_path.write_bytes(canonical_json_bytes(rewritten_seal))
+    evidence_before = _evidence_bytes(authority.evidence_root)
+    runs_before = _connector_run_rows(db)
+    events_before = _connector_event_rows(db)
+    _close_read_transaction(db)
+
+    with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+        verify_connector_campaign_log_capture_read_only(
+            db,
+            chain,
+            str(authority.campaign_id),
+            FINGERPRINT,
+        )
+
+    assert excinfo.value.code == expected_code
+    assert not db.in_transaction()
+    assert _evidence_bytes(authority.evidence_root) == evidence_before
+    assert _connector_run_rows(db) == runs_before
+    assert _connector_event_rows(db) == events_before
+
+
+@pytest.mark.parametrize(
+    ("case", "expected_code"),
+    (
+        ("delete", "connector_campaign_log_read_seal_event_set_invalid"),
+        ("duplicate", "connector_campaign_log_read_seal_event_mismatch"),
+        ("rewrite", "connector_campaign_log_read_seal_event_mismatch"),
+    ),
+)
+def test_read_only_capture_verifier_rejects_seal_event_rewrites_without_repair(
+    db: Session,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    case: str,
+    expected_code: str,
+) -> None:
+    authority, chain, sealed = _sealed_read_only_fixture(
+        db,
+        monkeypatch,
+        tmp_path,
+    )
+    event = db.scalar(
+        select(ConnectorRunEvent)
+        .where(
+            ConnectorRunEvent.connector_run_event_id
+            == sealed.event_ids[0]
+        )
+    )
+    assert event is not None
+    if case == "delete":
+        db.delete(event)
+    elif case == "duplicate":
+        db.add(
+            ConnectorRunEvent(
+                connector_run_event_id=str(uuid4()),
+                connector_run_id=event.connector_run_id,
+                connector_run_target_id=event.connector_run_target_id,
+                phase=event.phase,
+                stage=event.stage,
+                event_type=event.event_type,
+                status_before=event.status_before,
+                status_after=event.status_after,
+                reason_code=event.reason_code,
+                error_class=event.error_class,
+                message=event.message,
+                metrics_json=dict(event.metrics_json),
+                created_at=event.created_at,
+            )
+        )
+    else:
+        event.metrics_json = {
+            **event.metrics_json,
+            "file_set_hash": "1" * 64,
+        }
+    db.commit()
+    evidence_before = _evidence_bytes(authority.evidence_root)
+    runs_before = _connector_run_rows(db)
+    events_before = _connector_event_rows(db)
+    _close_read_transaction(db)
+
+    with pytest.raises(ConnectorCampaignLogCaptureError) as excinfo:
+        verify_connector_campaign_log_capture_read_only(
+            db,
+            chain,
+            str(authority.campaign_id),
+            FINGERPRINT,
+        )
+
+    assert excinfo.value.code == expected_code
+    assert not db.in_transaction()
+    assert _evidence_bytes(authority.evidence_root) == evidence_before
+    assert _connector_run_rows(db) == runs_before
+    assert _connector_event_rows(db) == events_before
 
 
 @pytest.mark.parametrize(
