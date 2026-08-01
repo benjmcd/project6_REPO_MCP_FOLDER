@@ -1506,6 +1506,693 @@ def test_current_user_sid_sha256_fails_closed_without_windows(
         dual_live_windows.current_user_sid_sha256()
 
 
+def _handle_flags(handle: int) -> int:
+    flags = ctypes.wintypes.DWORD()
+    assert dual_live_windows._kernel32.GetHandleInformation(
+        handle,
+        ctypes.byref(flags),
+    )
+    return int(flags.value)
+
+
+def _phase_channel_constructor_args(
+    channels: object,
+) -> dict[str, object]:
+    names = (
+        "wrapper_control_write_handle",
+        "wrapper_app_read_handle",
+        "wrapper_http_read_handle",
+        "wrapper_stdout_read_handle",
+        "wrapper_stderr_read_handle",
+        "wrapper_revocation_event_handle",
+        "wrapper_send_idle_event_handle",
+        "child_control_read_handle",
+        "child_app_write_handle",
+        "child_http_write_handle",
+        "child_stdout_write_handle",
+        "child_stderr_write_handle",
+        "child_revocation_event_handle",
+        "child_send_idle_event_handle",
+    )
+    return {
+        "phase": getattr(channels, "phase"),
+        **{name: getattr(channels, name) for name in names},
+    }
+
+
+def _process_handle_count() -> int:
+    count = ctypes.wintypes.DWORD()
+    assert dual_live_windows._kernel32.GetProcessHandleCount(
+        dual_live_windows._kernel32.GetCurrentProcess(),
+        ctypes.byref(count),
+    )
+    return int(count.value)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+@pytest.mark.parametrize(("phase", "expected_child_count"), (("A", 7), ("B", 5)))
+def test_phase_channels_are_read_only_owned_and_phase_exact(
+    phase: str,
+    expected_child_count: int,
+) -> None:
+    channels = dual_live_windows.create_phase_channels(phase)
+    try:
+        assert isinstance(channels, dual_live_windows.PhaseChannels)
+        assert channels.phase == phase
+        assert len(channels.wrapper_handles) == (
+            7 if phase == "A" else 5
+        )
+        assert len(channels.child_handles) == expected_child_count
+        assert len(set(channels.wrapper_handles + channels.child_handles)) == (
+            len(channels.wrapper_handles) + len(channels.child_handles)
+        )
+        assert all(handle > 0 for handle in channels.wrapper_handles)
+        assert all(handle > 0 for handle in channels.child_handles)
+        assert channels.child_handles == tuple(
+            handle
+            for handle in (
+                channels.child_control_read_handle,
+                channels.child_app_write_handle,
+                channels.child_http_write_handle,
+                channels.child_stdout_write_handle,
+                channels.child_stderr_write_handle,
+                channels.child_revocation_event_handle,
+                channels.child_send_idle_event_handle,
+            )
+            if handle is not None
+        )
+        assert (channels.wrapper_revocation_event_handle is not None) is (
+            phase == "A"
+        )
+        assert (channels.wrapper_send_idle_event_handle is not None) is (
+            phase == "A"
+        )
+        assert (channels.child_revocation_event_handle is not None) is (
+            phase == "A"
+        )
+        assert (channels.child_send_idle_event_handle is not None) is (
+            phase == "A"
+        )
+        with pytest.raises(AttributeError):
+            channels.phase = "B"
+    finally:
+        channels.close()
+    assert channels.closed
+    assert channels.wrapper_handles == ()
+    assert channels.child_handles == ()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_a_channel_flags_events_and_child_admission_close_are_exact() -> None:
+    channels = dual_live_windows.create_phase_channels("A")
+    child_handles = channels.child_handles
+    try:
+        assert all(_handle_flags(handle) == 0 for handle in channels.wrapper_handles)
+        assert all(
+            _handle_flags(handle) == dual_live_windows._HANDLE_FLAG_INHERIT
+            for handle in child_handles
+        )
+        assert (
+            dual_live_windows._kernel32.WaitForSingleObject(
+                channels.wrapper_revocation_event_handle,
+                0,
+            )
+            == dual_live_windows._WAIT_TIMEOUT
+        )
+        assert (
+            dual_live_windows._kernel32.WaitForSingleObject(
+                channels.wrapper_send_idle_event_handle,
+                0,
+            )
+            == dual_live_windows._WAIT_OBJECT_0
+        )
+
+        channels.close_child_handles_after_admission()
+        channels.close_child_handles_after_admission()
+
+        assert channels.child_handles == ()
+        assert all(_handle_flags(handle) == 0 for handle in channels.wrapper_handles)
+        flags = ctypes.wintypes.DWORD()
+        assert all(
+            not dual_live_windows._kernel32.GetHandleInformation(
+                handle,
+                ctypes.byref(flags),
+            )
+            for handle in child_handles
+        )
+    finally:
+        channels.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_channel_constructor_rejects_duplicate_and_wrong_capabilities() -> None:
+    channels = dual_live_windows.create_phase_channels("A")
+    try:
+        duplicate = _phase_channel_constructor_args(channels)
+        duplicate["child_http_write_handle"] = duplicate["child_app_write_handle"]
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_phase_channels_invalid",
+        ):
+            dual_live_windows.PhaseChannels(**duplicate)
+
+        wrong = _phase_channel_constructor_args(channels)
+        wrong["child_control_read_handle"], wrong["child_revocation_event_handle"] = (
+            wrong["child_revocation_event_handle"],
+            wrong["child_control_read_handle"],
+        )
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_phase_channels_invalid",
+        ):
+            dual_live_windows.PhaseChannels(**wrong)
+    finally:
+        channels.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_stream_pipe_comparison_is_kernel_bound_and_boolean_only() -> None:
+    channels = dual_live_windows.create_phase_channels("B")
+    duplicate = ctypes.wintypes.HANDLE()
+    app_handle = channels.child_app_write_handle
+    assert app_handle is not None
+    try:
+        assert dual_live_windows._kernel32.DuplicateHandle(
+            dual_live_windows._kernel32.GetCurrentProcess(),
+            app_handle,
+            dual_live_windows._kernel32.GetCurrentProcess(),
+            ctypes.byref(duplicate),
+            0,
+            True,
+            dual_live_windows._DUPLICATE_SAME_ACCESS,
+        )
+        assert duplicate.value
+        same = dual_live_windows.pipe_capabilities_same(
+            app_handle,
+            int(duplicate.value),
+        )
+        assert same is True
+        assert isinstance(same, bool)
+
+        child_streams = channels.child_stream_pipe_handles
+        wrapper_streams = channels.wrapper_stream_pipe_handles
+        assert child_streams == (
+            channels.child_app_write_handle,
+            channels.child_http_write_handle,
+            channels.child_stdout_write_handle,
+            channels.child_stderr_write_handle,
+        )
+        assert wrapper_streams == (
+            channels.wrapper_app_read_handle,
+            channels.wrapper_http_read_handle,
+            channels.wrapper_stdout_read_handle,
+            channels.wrapper_stderr_read_handle,
+        )
+        assert all(
+            not dual_live_windows.pipe_capabilities_same(left, right)
+            for index, left in enumerate(child_streams)
+            for right in child_streams[index + 1 :]
+        )
+        assert channels.validate_stream_pipe_capabilities() is None
+    finally:
+        if duplicate.value:
+            dual_live_windows._kernel32.CloseHandle(duplicate)
+        channels.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_pipe_descriptor_comparison_delegates_to_kernel_object_identity() -> None:
+    first_read, first_write = os.pipe()
+    duplicate_write = os.dup(first_write)
+    second_read, second_write = os.pipe()
+    closed_write = os.dup(first_write)
+    file_fd = os.open(__file__, os.O_RDONLY)
+    os.close(closed_write)
+    try:
+        same = dual_live_windows.pipe_descriptors_same(
+            first_write,
+            duplicate_write,
+        )
+        assert same is True
+        assert isinstance(same, bool)
+        assert dual_live_windows.pipe_descriptors_same(first_write, second_write) is False
+        for invalid in (True, -1, closed_write, file_fd):
+            with pytest.raises(
+                DualLiveWindowsError,
+                match="dual_live_phase_channels_invalid",
+            ):
+                dual_live_windows.pipe_descriptors_same(first_write, invalid)
+    finally:
+        for fd in (
+            file_fd,
+            duplicate_write,
+            first_write,
+            first_read,
+            second_write,
+            second_read,
+        ):
+            os.close(fd)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_pipe_descriptor_comparison_propagates_indeterminate_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    read_fd, write_fd = os.pipe()
+    duplicate_fd = os.dup(write_fd)
+
+    def deny_comparison(*_: object) -> int:
+        ctypes.set_last_error(5)
+        return 0
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_compare_object_handles",
+        deny_comparison,
+    )
+    try:
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_phase_pipe_identity_indeterminate",
+        ):
+            dual_live_windows.pipe_descriptors_same(write_fd, duplicate_fd)
+    finally:
+        for fd in (duplicate_fd, write_fd, read_fd):
+            os.close(fd)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_channel_constructor_rejects_same_pipe_object_under_new_handle() -> None:
+    channels = dual_live_windows.create_phase_channels("B")
+    duplicate = ctypes.wintypes.HANDLE()
+    app_handle = channels.child_app_write_handle
+    assert app_handle is not None
+    try:
+        assert dual_live_windows._kernel32.DuplicateHandle(
+            dual_live_windows._kernel32.GetCurrentProcess(),
+            app_handle,
+            dual_live_windows._kernel32.GetCurrentProcess(),
+            ctypes.byref(duplicate),
+            0,
+            True,
+            dual_live_windows._DUPLICATE_SAME_ACCESS,
+        )
+        duplicate_args = _phase_channel_constructor_args(channels)
+        duplicate_args["child_http_write_handle"] = int(duplicate.value)
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_phase_channels_invalid",
+        ):
+            dual_live_windows.PhaseChannels(**duplicate_args)
+    finally:
+        if duplicate.value:
+            dual_live_windows._kernel32.CloseHandle(duplicate)
+        channels.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_pipe_comparison_api_absence_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    channels = dual_live_windows.create_phase_channels("B")
+    first, second = channels.child_stream_pipe_handles[:2]
+    monkeypatch.setattr(dual_live_windows, "_compare_object_handles", None)
+    try:
+        with pytest.raises(DualLiveWindowsError, match="dual_live_job_unsupported"):
+            dual_live_windows.pipe_capabilities_same(first, second)
+        with pytest.raises(DualLiveWindowsError, match="dual_live_job_unsupported"):
+            dual_live_windows.create_phase_channels("B")
+    finally:
+        channels.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_channel_partial_close_is_retryable_without_double_close(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    channels = dual_live_windows.create_phase_channels("B")
+    handles = channels.child_handles + channels.wrapper_handles
+    failed_handle = channels.wrapper_http_read_handle
+    assert failed_handle is not None
+    original_close = dual_live_windows._kernel32.CloseHandle
+    calls: list[int] = []
+    failed_once = False
+
+    def fail_once(handle: object) -> int:
+        nonlocal failed_once
+        value = int(handle)
+        calls.append(value)
+        if value == failed_handle and not failed_once:
+            failed_once = True
+            return 0
+        return int(original_close(handle))
+
+    monkeypatch.setattr(dual_live_windows._kernel32, "CloseHandle", fail_once)
+    with pytest.raises(
+        DualLiveWindowsError,
+        match="dual_live_phase_channels_cleanup_failed",
+    ):
+        channels.close()
+    assert channels.wrapper_handles == (failed_handle,)
+    assert channels.child_handles == ()
+    assert not channels.closed
+
+    channels.close()
+    channels.close()
+    assert channels.closed
+    assert calls.count(failed_handle) == 2
+    assert all(calls.count(handle) == 1 for handle in handles if handle != failed_handle)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_channel_concurrent_close_and_read_never_double_closes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    channels = dual_live_windows.create_phase_channels("A")
+    handles = channels.child_handles + channels.wrapper_handles
+    original_close = dual_live_windows._kernel32.CloseHandle
+    calls: list[int] = []
+    errors: list[BaseException] = []
+    barrier = threading.Barrier(4)
+
+    def recording_close(handle: object) -> int:
+        calls.append(int(handle))
+        return int(original_close(handle))
+
+    def close_repeatedly() -> None:
+        try:
+            barrier.wait(timeout=5)
+            for _ in range(20):
+                channels.close_child_handles_after_admission()
+                channels.close()
+        except BaseException as exc:
+            errors.append(exc)
+
+    def read_repeatedly() -> None:
+        try:
+            barrier.wait(timeout=5)
+            for _ in range(200):
+                assert set(channels.child_handles + channels.wrapper_handles) <= set(
+                    handles
+                )
+        except BaseException as exc:
+            errors.append(exc)
+
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "CloseHandle",
+        recording_close,
+    )
+    workers = (
+        threading.Thread(target=close_repeatedly),
+        threading.Thread(target=close_repeatedly),
+        threading.Thread(target=read_repeatedly),
+    )
+    for worker in workers:
+        worker.start()
+    barrier.wait(timeout=5)
+    for worker in workers:
+        worker.join(timeout=5)
+
+    assert all(not worker.is_alive() for worker in workers)
+    assert errors == []
+    assert channels.closed
+    assert all(calls.count(handle) == 1 for handle in handles)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_phase_channel_creation_failure_and_success_cleanup_do_not_leak_handles(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    warmup = dual_live_windows.create_phase_channels("A")
+    warmup.close()
+    baseline = _process_handle_count()
+    original_duplicate = dual_live_windows._kernel32.DuplicateHandle
+    duplicate_calls = 0
+
+    def fail_third_duplicate(*args: object) -> int:
+        nonlocal duplicate_calls
+        duplicate_calls += 1
+        if duplicate_calls == 3:
+            ctypes.set_last_error(5)
+            return 0
+        return int(original_duplicate(*args))
+
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "DuplicateHandle",
+        fail_third_duplicate,
+    )
+    with pytest.raises(
+        DualLiveWindowsError,
+        match="dual_live_phase_channels_create_failed",
+    ):
+        dual_live_windows.create_phase_channels("A")
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "DuplicateHandle",
+        original_duplicate,
+    )
+    assert _process_handle_count() == baseline
+
+    for phase in ("A", "B", "A", "B"):
+        channels = dual_live_windows.create_phase_channels(phase)
+        channels.close_child_handles_after_admission()
+        channels.close()
+    assert _process_handle_count() == baseline
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+@pytest.mark.parametrize("api_name", ("CreatePipe", "DuplicateHandle"))
+def test_phase_channel_partial_api_output_is_reclaimed(
+    api_name: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    warmup = dual_live_windows.create_phase_channels("A")
+    warmup.close()
+    baseline = _process_handle_count()
+    original = getattr(dual_live_windows._kernel32, api_name)
+
+    def create_then_fail(*args: object) -> int:
+        assert original(*args)
+        ctypes.set_last_error(5)
+        return 0
+
+    monkeypatch.setattr(dual_live_windows._kernel32, api_name, create_then_fail)
+    with pytest.raises(
+        DualLiveWindowsError,
+        match="dual_live_phase_channels_create_failed",
+    ):
+        dual_live_windows.create_phase_channels("A")
+    monkeypatch.setattr(dual_live_windows._kernel32, api_name, original)
+    assert _process_handle_count() == baseline
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_child_handle_bootstrap_clears_inheritance_and_rejects_bad_sets(
+    tmp_path: Path,
+) -> None:
+    channels = dual_live_windows.create_phase_channels("A")
+    disallowed, keepalive = _make_inheritable_disallowed_handle("file", tmp_path)
+    try:
+        before = channels.child_handles
+        assert all(_handle_flags(handle) == 1 for handle in before)
+        dual_live_windows.make_inherited_handles_non_inheritable(before)
+        assert all(_handle_flags(handle) == 0 for handle in before)
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_job_inherited_handles_invalid",
+        ):
+            dual_live_windows.make_inherited_handles_non_inheritable(
+                (before[0], before[0])
+            )
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_job_inherited_handles_invalid",
+        ):
+            dual_live_windows.make_inherited_handles_non_inheritable((disallowed,))
+    finally:
+        channels.close()
+        if isinstance(keepalive, socket.socket):
+            keepalive.close()
+        else:
+            dual_live_windows._kernel32.CloseHandle(disallowed)
+
+
+def test_phase_channels_and_current_boot_id_fail_closed_without_windows(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(dual_live_windows, "_kernel32", None)
+    monkeypatch.setattr(dual_live_windows, "_advapi32", None)
+
+    for operation in (
+        lambda: dual_live_windows.create_phase_channels("A"),
+        lambda: dual_live_windows.make_inherited_handles_non_inheritable((1,)),
+        lambda: dual_live_windows.pipe_descriptors_same(1, 2),
+        lambda: dual_live_windows.current_process_boot_id(
+            RUNTIME_INSTANCE_ID,
+            WRAPPER_NONCE_SHA,
+        ),
+    ):
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_windows_unsupported",
+        ):
+            operation()
+
+
+def test_boot_id_callers_share_one_canonical_derivation() -> None:
+    derivation_call = "_derive_process_boot_identity("
+    create_source = inspect.getsource(dual_live_windows.create_child_in_job)
+    current_source = inspect.getsource(dual_live_windows.current_process_boot_id)
+    assert create_source.count(derivation_call) == 1
+    assert current_source.count(derivation_call) == 1
+    assert "wrapper_nonce_sha256" in create_source
+    assert "wrapper_nonce_sha256" in current_source
+    assert "hashlib.sha256" not in create_source
+    assert "hashlib.sha256" not in current_source
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_current_process_boot_id_refuses_identity_probe_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetProcessTimes",
+        lambda *args: 0,
+    )
+
+    with pytest.raises(
+        DualLiveWindowsError,
+        match="dual_live_process_identity_indeterminate",
+    ):
+        dual_live_windows.current_process_boot_id(
+            RUNTIME_INSTANCE_ID,
+            WRAPPER_NONCE_SHA,
+        )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_child_current_boot_id_matches_parent_and_handles_do_not_reach_grandchild() -> None:
+    channels = dual_live_windows.create_phase_channels("A")
+    inherited_handles = channels.child_handles
+    app_write_handle = channels.child_app_write_handle
+    app_read_handle = channels.wrapper_app_read_handle
+    revocation_handle = channels.child_revocation_event_handle
+    assert app_write_handle is not None and app_read_handle is not None
+    assert revocation_handle is not None
+    child_code = r"""
+import sys
+sys.path.insert(0, sys.argv[1])
+from app.services.dual_live_windows import current_process_boot_id, make_inherited_handles_non_inheritable
+
+handles = tuple(int(value) for value in sys.argv[4].split(","))
+make_inherited_handles_non_inheritable(handles)
+
+import ctypes
+import json
+import subprocess
+
+probe = r'''import ctypes, sys
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+kernel32.SetEvent.argtypes = (ctypes.c_void_p,)
+kernel32.SetEvent.restype = ctypes.c_int
+kernel32.SetEvent(ctypes.c_void_p(int(sys.argv[1])))
+'''
+grandchild = subprocess.run(
+    [sys.executable, "-B", "-c", probe, sys.argv[6]],
+    close_fds=False,
+    check=False,
+)
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+kernel32.WriteFile.argtypes = (
+    ctypes.c_void_p,
+    ctypes.c_void_p,
+    ctypes.c_ulong,
+    ctypes.POINTER(ctypes.c_ulong),
+    ctypes.c_void_p,
+)
+kernel32.WriteFile.restype = ctypes.c_int
+flags = ctypes.c_ulong()
+own_flags_clear = all(
+    kernel32.GetHandleInformation(ctypes.c_void_p(handle), ctypes.byref(flags))
+    and flags.value == 0
+    for handle in handles
+)
+revocation_unsignaled = (
+    kernel32.WaitForSingleObject(ctypes.c_void_p(int(sys.argv[6])), 0) == 0x102
+)
+payload = json.dumps(
+    {
+        "boot_id": current_process_boot_id(sys.argv[2], sys.argv[3]),
+        "grandchild_probe_ran": grandchild.returncode == 0,
+        "own_flags_clear": own_flags_clear,
+        "revocation_unsignaled": revocation_unsignaled,
+    },
+    sort_keys=True,
+).encode("ascii")
+written = ctypes.c_ulong()
+ok = kernel32.WriteFile(
+    ctypes.c_void_p(int(sys.argv[5])),
+    payload,
+    len(payload),
+    ctypes.byref(written),
+    None,
+)
+raise SystemExit(0 if ok and written.value == len(payload) else 8)
+"""
+    child: JobChild | None = None
+    try:
+        child = create_child_in_job(
+            argv=(
+                sys.executable,
+                "-B",
+                "-c",
+                child_code,
+                str(BACKEND),
+                RUNTIME_INSTANCE_ID,
+                WRAPPER_NONCE_SHA,
+                ",".join(str(handle) for handle in inherited_handles),
+                str(app_write_handle),
+                str(revocation_handle),
+            ),
+            environment=_job_environment(),
+            inherited_handles=inherited_handles,
+            runtime_instance_id=RUNTIME_INSTANCE_ID,
+            wrapper_nonce_sha256=WRAPPER_NONCE_SHA,
+        )
+        channels.close_child_handles_after_admission()
+        assert child.wait(10) == 0
+        payload_buffer = ctypes.create_string_buffer(1024)
+        received = ctypes.wintypes.DWORD()
+        assert dual_live_windows._kernel32.ReadFile(
+            app_read_handle,
+            payload_buffer,
+            len(payload_buffer),
+            ctypes.byref(received),
+            None,
+        )
+        payload = json.loads(payload_buffer.raw[: received.value])
+        assert payload == {
+            "boot_id": child.process_boot_id,
+            "grandchild_probe_ran": True,
+            "own_flags_clear": True,
+            "revocation_unsignaled": True,
+        }
+        assert (
+            dual_live_windows._kernel32.WaitForSingleObject(
+                channels.wrapper_revocation_event_handle,
+                0,
+            )
+            == dual_live_windows._WAIT_TIMEOUT
+        )
+    finally:
+        if child is not None:
+            child.close()
+        channels.close()
+
+
 def test_job_start_evidence_has_exact_frozen_public_shape() -> None:
     evidence_type = dual_live_windows.JobStartEvidence
     assert tuple(field.name for field in fields(evidence_type)) == (
@@ -2911,11 +3598,28 @@ def test_job_child_close_kills_process_and_closes_owned_handles() -> None:
 def test_job_child_timeout_then_tree_termination_reaches_quiescence() -> None:
     child = _create_test_child("import time; time.sleep(30)")
     with child:
+        assert child.poll_exit(0.01) is None
         with pytest.raises(DualLiveWindowsError, match="dual_live_child_timeout"):
             child.wait(0.01)
         child.terminate_tree()
-        assert isinstance(child.wait(5), int)
+        exit_code = child.poll_exit(5)
+        assert isinstance(exit_code, int)
+        assert child.wait(0) == exit_code
         _assert_quiescence_record(prove_child_quiescence(child))
+
+
+@pytest.mark.parametrize(
+    "timeout",
+    (True, -1, float("inf"), float("nan"), "0"),
+)
+def test_job_child_poll_exit_preserves_wait_timeout_validation(timeout: object) -> None:
+    child = JobChild(1, "a" * 64, "b" * 64)
+
+    with pytest.raises(
+        DualLiveWindowsError,
+        match="dual_live_windows_arguments_invalid",
+    ):
+        child.poll_exit(timeout)  # type: ignore[arg-type]
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")

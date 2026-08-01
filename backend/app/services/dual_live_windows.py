@@ -15,6 +15,12 @@ from pathlib import Path
 from typing import Any, BinaryIO
 from uuid import UUID
 
+_msvcrt: Any
+try:
+    import msvcrt as _msvcrt
+except ImportError:  # pragma: no cover - non-Windows import path
+    _msvcrt = None
+
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 _WAIT_OBJECT_0 = 0
 _WAIT_ABANDONED_0 = 0x80
@@ -24,6 +30,7 @@ _ERROR_ALREADY_EXISTS = 183
 _ERROR_INSUFFICIENT_BUFFER = 122
 _ERROR_INVALID_PARAMETER = 87
 _ERROR_NOT_FOUND = 1168
+_ERROR_NOT_SAME_OBJECT = 1656
 _FILE_ATTRIBUTE_DIRECTORY = 0x10
 _FILE_ATTRIBUTE_REPARSE_POINT = 0x400
 _FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
@@ -52,6 +59,9 @@ _TOKEN_QUERY = 0x8
 _TOKEN_USER_CLASS = 1
 _SDDL_REVISION_1 = 1
 _HANDLE_FLAG_INHERIT = 0x1
+_DUPLICATE_SAME_ACCESS = 0x2
+_PIPE_CLIENT_END = 0
+_PIPE_SERVER_END = 1
 _BOUNDARY_NAME = "project6-dual-live-boundary-v1"
 _NAMESPACE_ALIAS = "project6-dual-live-v1"
 _PROC_THREAD_ATTRIBUTE_HANDLE_LIST = 0x00020002
@@ -309,6 +319,12 @@ class _MIB_UDP6ROW_OWNER_PID(ctypes.Structure):
 
 if os.name == "nt":
     _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    try:
+        _kernelbase = ctypes.WinDLL("kernelbase", use_last_error=True)
+        _compare_object_handles = _kernelbase.CompareObjectHandles
+    except (AttributeError, OSError):
+        _kernelbase = None
+        _compare_object_handles = None
     _advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
     _iphlpapi = ctypes.WinDLL("iphlpapi", use_last_error=False)
     _ntdll = ctypes.WinDLL("ntdll", use_last_error=False)
@@ -494,6 +510,31 @@ if os.name == "nt":
         wintypes.DWORD,
     )
     _kernel32.SetHandleInformation.restype = wintypes.BOOL
+    _kernel32.DuplicateHandle.argtypes = (
+        wintypes.HANDLE,
+        wintypes.HANDLE,
+        wintypes.HANDLE,
+        ctypes.POINTER(wintypes.HANDLE),
+        wintypes.DWORD,
+        wintypes.BOOL,
+        wintypes.DWORD,
+    )
+    _kernel32.DuplicateHandle.restype = wintypes.BOOL
+    _kernel32.CreateEventW.argtypes = (
+        ctypes.POINTER(_SECURITY_ATTRIBUTES),
+        wintypes.BOOL,
+        wintypes.BOOL,
+        wintypes.LPCWSTR,
+    )
+    _kernel32.CreateEventW.restype = wintypes.HANDLE
+    _kernel32.GetProcessHandleCount.argtypes = (
+        wintypes.HANDLE,
+        ctypes.POINTER(wintypes.DWORD),
+    )
+    _kernel32.GetProcessHandleCount.restype = wintypes.BOOL
+    if _compare_object_handles is not None:
+        _compare_object_handles.argtypes = (wintypes.HANDLE, wintypes.HANDLE)
+        _compare_object_handles.restype = wintypes.BOOL
     _kernel32.CreateJobObjectW.argtypes = (
         ctypes.POINTER(_SECURITY_ATTRIBUTES),
         wintypes.LPCWSTR,
@@ -595,12 +636,15 @@ if os.name == "nt":
     _ntdll.NtQueryObject.restype = ctypes.c_long
 else:  # pragma: no cover - exercised by platform-refusal tests
     _kernel32 = None
+    _kernelbase = None
+    _compare_object_handles = None
     _advapi32 = None
     _iphlpapi = None
     _ntdll = None
 
 
 _held_lock = threading.Lock()
+_phase_handles_lock = threading.Lock()
 _held_roots: set[str] = set()
 _held_campaigns: set[str] = set()
 
@@ -1362,6 +1406,555 @@ def _validate_inherited_capability(handle: int) -> None:
         _fail("dual_live_job_inherited_handles_invalid")
 
 
+_PHASE_WRAPPER_PIPE_ROLES = (
+    "wrapper_control_write_handle",
+    "wrapper_app_read_handle",
+    "wrapper_http_read_handle",
+    "wrapper_stdout_read_handle",
+    "wrapper_stderr_read_handle",
+)
+_PHASE_WRAPPER_EVENT_ROLES = (
+    "wrapper_revocation_event_handle",
+    "wrapper_send_idle_event_handle",
+)
+_PHASE_CHILD_PIPE_ROLES = (
+    "child_control_read_handle",
+    "child_app_write_handle",
+    "child_http_write_handle",
+    "child_stdout_write_handle",
+    "child_stderr_write_handle",
+)
+_PHASE_CHILD_EVENT_ROLES = (
+    "child_revocation_event_handle",
+    "child_send_idle_event_handle",
+)
+_PHASE_WRAPPER_STREAM_PIPE_ROLES = _PHASE_WRAPPER_PIPE_ROLES[1:]
+_PHASE_CHILD_STREAM_PIPE_ROLES = _PHASE_CHILD_PIPE_ROLES[1:]
+_PHASE_WRAPPER_ROLES = _PHASE_WRAPPER_PIPE_ROLES + _PHASE_WRAPPER_EVENT_ROLES
+_PHASE_CHILD_ROLES = _PHASE_CHILD_PIPE_ROLES + _PHASE_CHILD_EVENT_ROLES
+_PHASE_HANDLE_ROLES = _PHASE_CHILD_ROLES + _PHASE_WRAPPER_ROLES
+_PHASE_PIPE_ENDS = {
+    "wrapper_control_write_handle": _PIPE_CLIENT_END,
+    "wrapper_app_read_handle": _PIPE_SERVER_END,
+    "wrapper_http_read_handle": _PIPE_SERVER_END,
+    "wrapper_stdout_read_handle": _PIPE_SERVER_END,
+    "wrapper_stderr_read_handle": _PIPE_SERVER_END,
+    "child_control_read_handle": _PIPE_SERVER_END,
+    "child_app_write_handle": _PIPE_CLIENT_END,
+    "child_http_write_handle": _PIPE_CLIENT_END,
+    "child_stdout_write_handle": _PIPE_CLIENT_END,
+    "child_stderr_write_handle": _PIPE_CLIENT_END,
+}
+
+
+def _require_phase_channel_apis() -> None:
+    _require_windows()
+    if _ntdll is None or not callable(_compare_object_handles):
+        _fail("dual_live_job_unsupported")
+    assert _kernel32 is not None
+    required = (
+        "CloseHandle",
+        "CreateEventW",
+        "CreatePipe",
+        "DuplicateHandle",
+        "GetCurrentProcess",
+        "GetFileType",
+        "GetHandleInformation",
+        "GetNamedPipeInfo",
+        "SetHandleInformation",
+    )
+    if any(not callable(getattr(_kernel32, name, None)) for name in required):
+        _fail("dual_live_job_unsupported")
+    if not callable(getattr(_ntdll, "NtQueryObject", None)):
+        _fail("dual_live_job_unsupported")
+
+
+def _require_phase(value: object) -> str:
+    if not isinstance(value, str) or value not in {"A", "B"}:
+        _fail("dual_live_windows_arguments_invalid")
+    return value
+
+
+def _validate_pipe_capability_for_comparison(handle: object) -> int:
+    if isinstance(handle, bool) or not isinstance(handle, int) or handle <= 0:
+        _fail("dual_live_phase_channels_invalid")
+    assert _kernel32 is not None
+    flags = wintypes.DWORD()
+    if not _kernel32.GetHandleInformation(handle, ctypes.byref(flags)):
+        _fail("dual_live_phase_channels_invalid")
+    if flags.value not in (0, _HANDLE_FLAG_INHERIT):
+        _fail("dual_live_phase_channels_invalid")
+    if _handle_type_name(handle) != "File":
+        _fail("dual_live_phase_channels_invalid")
+    if _kernel32.GetFileType(handle) != _FILE_TYPE_PIPE:
+        _fail("dual_live_phase_channels_invalid")
+    pipe_flags = wintypes.DWORD()
+    if not _kernel32.GetNamedPipeInfo(handle, ctypes.byref(pipe_flags), None, None, None):
+        _fail("dual_live_phase_channels_invalid")
+    if pipe_flags.value not in (_PIPE_CLIENT_END, _PIPE_SERVER_END):
+        _fail("dual_live_phase_channels_invalid")
+    return handle
+
+
+def pipe_capabilities_same(first_handle: int, second_handle: int) -> bool:
+    """Return only whether two valid pipe handles name the same kernel object."""
+
+    _require_phase_channel_apis()
+    first = _validate_pipe_capability_for_comparison(first_handle)
+    second = _validate_pipe_capability_for_comparison(second_handle)
+    assert _compare_object_handles is not None
+    ctypes.set_last_error(0)
+    if _compare_object_handles(first, second):
+        return True
+    if ctypes.get_last_error() == _ERROR_NOT_SAME_OBJECT:
+        return False
+    _fail("dual_live_phase_pipe_identity_indeterminate")
+
+
+def _pipe_handle_from_descriptor(descriptor: object) -> int:
+    if (
+        isinstance(descriptor, bool)
+        or not isinstance(descriptor, int)
+        or descriptor < 0
+    ):
+        _fail("dual_live_phase_channels_invalid")
+    if _msvcrt is None:
+        _fail("dual_live_windows_unsupported")
+    try:
+        return int(_msvcrt.get_osfhandle(descriptor))
+    except (OSError, OverflowError, ValueError):
+        _fail("dual_live_phase_channels_invalid")
+
+
+def pipe_descriptors_same(first_descriptor: int, second_descriptor: int) -> bool:
+    """Return whether two valid Windows pipe descriptors name one kernel object."""
+
+    _require_phase_channel_apis()
+    first_handle = _pipe_handle_from_descriptor(first_descriptor)
+    second_handle = _pipe_handle_from_descriptor(second_descriptor)
+    return pipe_capabilities_same(first_handle, second_handle)
+
+
+def _validate_distinct_pipe_capabilities(handles: Sequence[int]) -> None:
+    for index, left in enumerate(handles):
+        for right in handles[index + 1 :]:
+            if pipe_capabilities_same(left, right):
+                _fail("dual_live_phase_channels_invalid")
+
+
+def _validate_phase_handle(
+    role: str,
+    handle: int,
+    *,
+    inheritable: bool,
+) -> None:
+    assert _kernel32 is not None
+    flags = wintypes.DWORD()
+    if not _kernel32.GetHandleInformation(handle, ctypes.byref(flags)):
+        _fail("dual_live_phase_channels_invalid")
+    expected_flags = _HANDLE_FLAG_INHERIT if inheritable else 0
+    if flags.value != expected_flags:
+        _fail("dual_live_phase_channels_invalid")
+    type_name = _handle_type_name(handle)
+    if role in _PHASE_WRAPPER_EVENT_ROLES + _PHASE_CHILD_EVENT_ROLES:
+        if type_name != "Event":
+            _fail("dual_live_phase_channels_invalid")
+        return
+    if type_name != "File" or _kernel32.GetFileType(handle) != _FILE_TYPE_PIPE:
+        _fail("dual_live_phase_channels_invalid")
+    pipe_flags = wintypes.DWORD()
+    if not _kernel32.GetNamedPipeInfo(handle, ctypes.byref(pipe_flags), None, None, None):
+        _fail("dual_live_phase_channels_invalid")
+    if pipe_flags.value != _PHASE_PIPE_ENDS[role]:
+        _fail("dual_live_phase_channels_invalid")
+
+
+def _validated_phase_handles(
+    phase: object,
+    handles: Mapping[str, int | None],
+) -> tuple[str, dict[str, int | None]]:
+    _require_phase_channel_apis()
+    validated_phase = _require_phase(phase)
+    if set(handles) != set(_PHASE_WRAPPER_ROLES + _PHASE_CHILD_ROLES):
+        _fail("dual_live_phase_channels_invalid")
+    event_roles = _PHASE_WRAPPER_EVENT_ROLES + _PHASE_CHILD_EVENT_ROLES
+    copied = dict(handles)
+    for role, handle in copied.items():
+        required = validated_phase == "A" or role not in event_roles
+        if required:
+            if isinstance(handle, bool) or not isinstance(handle, int) or handle <= 0:
+                _fail("dual_live_phase_channels_invalid")
+        elif handle is not None:
+            _fail("dual_live_phase_channels_invalid")
+    live_handles = tuple(handle for handle in copied.values() if handle is not None)
+    if len(set(live_handles)) != len(live_handles):
+        _fail("dual_live_phase_channels_invalid")
+    for role in _PHASE_WRAPPER_ROLES:
+        handle = copied[role]
+        if handle is not None:
+            _validate_phase_handle(role, handle, inheritable=False)
+    for role in _PHASE_CHILD_ROLES:
+        handle = copied[role]
+        if handle is not None:
+            _validate_phase_handle(role, handle, inheritable=True)
+    wrapper_pipe_handles = tuple(
+        handle
+        for role in _PHASE_WRAPPER_PIPE_ROLES
+        if (handle := copied[role]) is not None
+    )
+    child_pipe_handles = tuple(
+        handle
+        for role in _PHASE_CHILD_PIPE_ROLES
+        if (handle := copied[role]) is not None
+    )
+    _validate_distinct_pipe_capabilities(wrapper_pipe_handles)
+    _validate_distinct_pipe_capabilities(child_pipe_handles)
+    return validated_phase, copied
+
+
+class PhaseChannels:
+    __slots__ = ("_phase", "_handles")
+
+    def __init__(
+        self,
+        *,
+        phase: str,
+        wrapper_control_write_handle: int,
+        wrapper_app_read_handle: int,
+        wrapper_http_read_handle: int,
+        wrapper_stdout_read_handle: int,
+        wrapper_stderr_read_handle: int,
+        wrapper_revocation_event_handle: int | None,
+        wrapper_send_idle_event_handle: int | None,
+        child_control_read_handle: int,
+        child_app_write_handle: int,
+        child_http_write_handle: int,
+        child_stdout_write_handle: int,
+        child_stderr_write_handle: int,
+        child_revocation_event_handle: int | None,
+        child_send_idle_event_handle: int | None,
+    ) -> None:
+        validated_phase, handles = _validated_phase_handles(
+            phase,
+            {
+                "wrapper_control_write_handle": wrapper_control_write_handle,
+                "wrapper_app_read_handle": wrapper_app_read_handle,
+                "wrapper_http_read_handle": wrapper_http_read_handle,
+                "wrapper_stdout_read_handle": wrapper_stdout_read_handle,
+                "wrapper_stderr_read_handle": wrapper_stderr_read_handle,
+                "wrapper_revocation_event_handle": wrapper_revocation_event_handle,
+                "wrapper_send_idle_event_handle": wrapper_send_idle_event_handle,
+                "child_control_read_handle": child_control_read_handle,
+                "child_app_write_handle": child_app_write_handle,
+                "child_http_write_handle": child_http_write_handle,
+                "child_stdout_write_handle": child_stdout_write_handle,
+                "child_stderr_write_handle": child_stderr_write_handle,
+                "child_revocation_event_handle": child_revocation_event_handle,
+                "child_send_idle_event_handle": child_send_idle_event_handle,
+            },
+        )
+        self._phase = validated_phase
+        self._handles = handles
+
+    @property
+    def phase(self) -> str:
+        return self._phase
+
+    def _owned_handle(self, role: str) -> int | None:
+        with _phase_handles_lock:
+            return self._handles[role]
+
+    @property
+    def wrapper_control_write_handle(self) -> int | None:
+        return self._owned_handle("wrapper_control_write_handle")
+
+    @property
+    def wrapper_app_read_handle(self) -> int | None:
+        return self._owned_handle("wrapper_app_read_handle")
+
+    @property
+    def wrapper_http_read_handle(self) -> int | None:
+        return self._owned_handle("wrapper_http_read_handle")
+
+    @property
+    def wrapper_stdout_read_handle(self) -> int | None:
+        return self._owned_handle("wrapper_stdout_read_handle")
+
+    @property
+    def wrapper_stderr_read_handle(self) -> int | None:
+        return self._owned_handle("wrapper_stderr_read_handle")
+
+    @property
+    def wrapper_revocation_event_handle(self) -> int | None:
+        return self._owned_handle("wrapper_revocation_event_handle")
+
+    @property
+    def wrapper_send_idle_event_handle(self) -> int | None:
+        return self._owned_handle("wrapper_send_idle_event_handle")
+
+    @property
+    def child_control_read_handle(self) -> int | None:
+        return self._owned_handle("child_control_read_handle")
+
+    @property
+    def child_app_write_handle(self) -> int | None:
+        return self._owned_handle("child_app_write_handle")
+
+    @property
+    def child_http_write_handle(self) -> int | None:
+        return self._owned_handle("child_http_write_handle")
+
+    @property
+    def child_stdout_write_handle(self) -> int | None:
+        return self._owned_handle("child_stdout_write_handle")
+
+    @property
+    def child_stderr_write_handle(self) -> int | None:
+        return self._owned_handle("child_stderr_write_handle")
+
+    @property
+    def child_revocation_event_handle(self) -> int | None:
+        return self._owned_handle("child_revocation_event_handle")
+
+    @property
+    def child_send_idle_event_handle(self) -> int | None:
+        return self._owned_handle("child_send_idle_event_handle")
+
+    def _owned_handles(self, roles: Sequence[str]) -> tuple[int, ...]:
+        with _phase_handles_lock:
+            return tuple(
+                handle
+                for role in roles
+                if (handle := self._handles[role]) is not None
+            )
+
+    @property
+    def wrapper_handles(self) -> tuple[int, ...]:
+        return self._owned_handles(_PHASE_WRAPPER_ROLES)
+
+    @property
+    def child_handles(self) -> tuple[int, ...]:
+        return self._owned_handles(_PHASE_CHILD_ROLES)
+
+    @property
+    def wrapper_stream_pipe_handles(self) -> tuple[int, ...]:
+        return self._owned_handles(_PHASE_WRAPPER_STREAM_PIPE_ROLES)
+
+    @property
+    def child_stream_pipe_handles(self) -> tuple[int, ...]:
+        return self._owned_handles(_PHASE_CHILD_STREAM_PIPE_ROLES)
+
+    def validate_stream_pipe_capabilities(self) -> None:
+        wrapper_handles = self.wrapper_stream_pipe_handles
+        child_handles = self.child_stream_pipe_handles
+        if (
+            len(wrapper_handles) != len(_PHASE_WRAPPER_STREAM_PIPE_ROLES)
+            or len(child_handles) != len(_PHASE_CHILD_STREAM_PIPE_ROLES)
+        ):
+            _fail("dual_live_phase_channels_closed")
+        _validate_distinct_pipe_capabilities(wrapper_handles)
+        _validate_distinct_pipe_capabilities(child_handles)
+
+    @property
+    def closed(self) -> bool:
+        with _phase_handles_lock:
+            return all(handle is None for handle in self._handles.values())
+
+    def __enter__(self) -> PhaseChannels:
+        if self.closed:
+            _fail("dual_live_phase_channels_closed")
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.close()
+
+    def _close_roles(self, roles: Sequence[str]) -> None:
+        with _phase_handles_lock:
+            assert _kernel32 is not None or all(
+                self._handles[role] is None for role in roles
+            )
+            cleanup_failed = False
+            for role in roles:
+                handle = self._handles[role]
+                if handle is None:
+                    continue
+                if _kernel32 is not None and _kernel32.CloseHandle(handle):
+                    self._handles[role] = None
+                else:
+                    cleanup_failed = True
+            if cleanup_failed:
+                _fail("dual_live_phase_channels_cleanup_failed")
+
+    def close_child_handles_after_admission(self) -> None:
+        self._close_roles(_PHASE_CHILD_ROLES)
+
+    def close(self) -> None:
+        self._close_roles(_PHASE_HANDLE_ROLES)
+
+
+def _close_provisional_phase_handles(handles: dict[str, int | None]) -> bool:
+    assert _kernel32 is not None
+    cleanup_ok = True
+    for handle in tuple(dict.fromkeys(value for value in handles.values() if value)):
+        if _kernel32.CloseHandle(handle):
+            for role, value in handles.items():
+                if value == handle:
+                    handles[role] = None
+        else:
+            cleanup_ok = False
+    return cleanup_ok and all(handle is None for handle in handles.values())
+
+
+def create_phase_channels(phase: str) -> PhaseChannels:
+    _require_phase_channel_apis()
+    validated_phase = _require_phase(phase)
+    assert _kernel32 is not None
+    handles: dict[str, int | None] = {
+        role: None for role in _PHASE_WRAPPER_ROLES + _PHASE_CHILD_ROLES
+    }
+    current_process = _kernel32.GetCurrentProcess()
+    if not current_process:
+        _fail("dual_live_phase_channels_create_failed")
+
+    def duplicate_child(source_handle: int, child_role: str) -> None:
+        duplicate = wintypes.HANDLE()
+        created = _kernel32.DuplicateHandle(
+            current_process,
+            source_handle,
+            current_process,
+            ctypes.byref(duplicate),
+            0,
+            True,
+            _DUPLICATE_SAME_ACCESS,
+        )
+        if duplicate.value:
+            handles[child_role] = int(duplicate.value)
+        if not created or not duplicate.value:
+            _fail("dual_live_phase_channels_create_failed")
+
+    def create_pipe(
+        wrapper_role: str,
+        child_role: str,
+        *,
+        wrapper_reads: bool,
+    ) -> None:
+        read_handle = wintypes.HANDLE()
+        write_handle = wintypes.HANDLE()
+        security = _SECURITY_ATTRIBUTES(
+            ctypes.sizeof(_SECURITY_ATTRIBUTES),
+            None,
+            False,
+        )
+        source_role = f"source:{child_role}"
+        read_role = wrapper_role if wrapper_reads else source_role
+        write_role = source_role if wrapper_reads else wrapper_role
+        created = _kernel32.CreatePipe(
+            ctypes.byref(read_handle),
+            ctypes.byref(write_handle),
+            ctypes.byref(security),
+            0,
+        )
+        if read_handle.value:
+            handles[read_role] = int(read_handle.value)
+        if write_handle.value:
+            handles[write_role] = int(write_handle.value)
+        if not created or not read_handle.value or not write_handle.value:
+            _fail("dual_live_phase_channels_create_failed")
+        source_handle = handles[source_role]
+        assert source_handle is not None
+        duplicate_child(source_handle, child_role)
+        if not _kernel32.CloseHandle(source_handle):
+            _fail("dual_live_phase_channels_cleanup_failed")
+        del handles[source_role]
+
+    def create_event(
+        wrapper_role: str,
+        child_role: str,
+        *,
+        initially_signaled: bool,
+    ) -> None:
+        event_handle = _kernel32.CreateEventW(
+            None,
+            True,
+            initially_signaled,
+            None,
+        )
+        if not event_handle:
+            _fail("dual_live_phase_channels_create_failed")
+        handles[wrapper_role] = int(event_handle)
+        duplicate_child(handles[wrapper_role], child_role)
+
+    try:
+        create_pipe(
+            "wrapper_control_write_handle",
+            "child_control_read_handle",
+            wrapper_reads=False,
+        )
+        for stream in ("app", "http", "stdout", "stderr"):
+            create_pipe(
+                f"wrapper_{stream}_read_handle",
+                f"child_{stream}_write_handle",
+                wrapper_reads=True,
+            )
+        if validated_phase == "A":
+            create_event(
+                "wrapper_revocation_event_handle",
+                "child_revocation_event_handle",
+                initially_signaled=False,
+            )
+            create_event(
+                "wrapper_send_idle_event_handle",
+                "child_send_idle_event_handle",
+                initially_signaled=True,
+            )
+        channels = PhaseChannels(phase=validated_phase, **handles)
+        handles.clear()
+        return channels
+    except BaseException as error:
+        cleanup_ok = _close_provisional_phase_handles(handles)
+        if not cleanup_ok:
+            cleanup_ok = _close_provisional_phase_handles(handles)
+        if not cleanup_ok or (
+            isinstance(error, DualLiveWindowsError)
+            and error.code == "dual_live_phase_channels_cleanup_failed"
+        ):
+            _fail("dual_live_phase_channels_cleanup_failed")
+        raise
+
+
+def make_inherited_handles_non_inheritable(
+    inherited_handles: Sequence[int],
+) -> None:
+    _require_phase_channel_apis()
+    if isinstance(inherited_handles, (str, bytes)) or not isinstance(
+        inherited_handles,
+        Sequence,
+    ):
+        _fail("dual_live_windows_arguments_invalid")
+    handles = tuple(inherited_handles)
+    if not handles or any(
+        isinstance(handle, bool) or not isinstance(handle, int) or handle <= 0
+        for handle in handles
+    ) or len(set(handles)) != len(handles):
+        _fail("dual_live_job_inherited_handles_invalid")
+    assert _kernel32 is not None
+    for handle in handles:
+        flags = wintypes.DWORD()
+        if not _kernel32.GetHandleInformation(handle, ctypes.byref(flags)):
+            _fail("dual_live_job_inherited_handles_invalid")
+        if flags.value != _HANDLE_FLAG_INHERIT:
+            _fail("dual_live_job_inherited_handles_invalid")
+        _validate_inherited_capability(handle)
+    for handle in handles:
+        if not _kernel32.SetHandleInformation(handle, _HANDLE_FLAG_INHERIT, 0):
+            _fail("dual_live_job_inherited_handles_invalid")
+        flags = wintypes.DWORD()
+        if not _kernel32.GetHandleInformation(handle, ctypes.byref(flags)):
+            _fail("dual_live_job_inherited_handles_invalid")
+        if flags.value != 0:
+            _fail("dual_live_job_inherited_handles_invalid")
+
+
 def _environment_block(environment: Mapping[str, str]) -> ctypes.Array[Any]:
     if not isinstance(environment, Mapping):
         _fail("dual_live_windows_arguments_invalid")
@@ -1667,6 +2260,54 @@ def _filetime_value(value: _FILETIME) -> int:
     return (int(value.dwHighDateTime) << 32) | int(value.dwLowDateTime)
 
 
+def _process_creation_identity_sha256(pid: int, creation_filetime: int) -> str:
+    if (
+        isinstance(pid, bool)
+        or not isinstance(pid, int)
+        or pid <= 0
+        or isinstance(creation_filetime, bool)
+        or not isinstance(creation_filetime, int)
+        or creation_filetime <= 0
+    ):
+        _fail("dual_live_process_identity_indeterminate")
+    return hashlib.sha256(
+        _canonical_json_bytes(
+            {"creation_filetime": creation_filetime, "pid": pid}
+        )
+    ).hexdigest()
+
+
+def _derive_process_boot_identity(
+    *,
+    pid: int,
+    creation_filetime: int,
+    executable_sha256: str,
+    runtime_instance_id: str,
+    wrapper_nonce_sha256: str,
+) -> tuple[str, str]:
+    process_creation_identity_sha256 = _process_creation_identity_sha256(
+        pid,
+        creation_filetime,
+    )
+    executable_sha256 = _require_sha256(executable_sha256)
+    runtime_instance_id = _require_uuid4(runtime_instance_id)
+    wrapper_nonce_sha256 = _require_sha256(wrapper_nonce_sha256)
+    process_boot_id = hashlib.sha256(
+        _canonical_json_bytes(
+            {
+                "executable_sha256": executable_sha256,
+                "pid": pid,
+                "process_creation_identity_sha256": (
+                    process_creation_identity_sha256
+                ),
+                "runtime_instance_id": runtime_instance_id,
+                "wrapper_nonce_sha256": wrapper_nonce_sha256,
+            }
+        )
+    ).hexdigest()
+    return process_creation_identity_sha256, process_boot_id
+
+
 @dataclass(frozen=True, slots=True)
 class JobStartEvidence:
     pid: int
@@ -1774,7 +2415,7 @@ class JobChild:
     def __exit__(self, *exc_info: object) -> None:
         self.close()
 
-    def wait(self, timeout_seconds: float) -> int:
+    def _wait_for_exit(self, timeout_seconds: float) -> int | None:
         if (
             isinstance(timeout_seconds, bool)
             or not isinstance(timeout_seconds, (int, float))
@@ -1790,7 +2431,7 @@ class JobChild:
         assert _kernel32 is not None
         result = _kernel32.WaitForSingleObject(self._process_handle, milliseconds)
         if result == _WAIT_TIMEOUT:
-            _fail("dual_live_child_timeout")
+            return None
         if result != _WAIT_OBJECT_0:
             _fail("dual_live_child_wait_failed")
         exit_code = wintypes.DWORD()
@@ -1799,6 +2440,15 @@ class JobChild:
         ):
             _fail("dual_live_child_wait_failed")
         return int(exit_code.value)
+
+    def poll_exit(self, timeout_seconds: float) -> int | None:
+        return self._wait_for_exit(timeout_seconds)
+
+    def wait(self, timeout_seconds: float) -> int:
+        exit_code = self._wait_for_exit(timeout_seconds)
+        if exit_code is None:
+            _fail("dual_live_child_timeout")
+        return exit_code
 
     def terminate_tree(self) -> None:
         if self._closed or self._job_handle is None:
@@ -2018,19 +2668,10 @@ def create_child_in_job(
             ctypes.byref(membership),
         ) or not membership.value:
             _fail("dual_live_job_admission_refused")
-        creation = _FILETIME()
-        exit_time = _FILETIME()
-        kernel_time = _FILETIME()
-        user_time = _FILETIME()
-        if not _kernel32.GetProcessTimes(
+        creation_filetime = _process_creation_filetime(
             owned_process_handle,
-            ctypes.byref(creation),
-            ctypes.byref(exit_time),
-            ctypes.byref(kernel_time),
-            ctypes.byref(user_time),
-        ):
-            _fail("dual_live_process_identity_indeterminate")
-        creation_filetime = _filetime_value(creation)
+            refusal_code="dual_live_process_identity_indeterminate",
+        )
         if (
             _process_image_sha256(
                 owned_process_handle,
@@ -2040,24 +2681,15 @@ def create_child_in_job(
         ):
             _fail("dual_live_process_identity_indeterminate")
         pid = int(process_info.dwProcessId)
-        process_creation_identity_sha256 = hashlib.sha256(
-            _canonical_json_bytes(
-                {"creation_filetime": creation_filetime, "pid": pid}
+        process_creation_identity_sha256, process_boot_id = (
+            _derive_process_boot_identity(
+                pid=pid,
+                creation_filetime=creation_filetime,
+                executable_sha256=executable_sha256,
+                runtime_instance_id=runtime_instance_id,
+                wrapper_nonce_sha256=wrapper_nonce_sha256,
             )
-        ).hexdigest()
-        process_boot_id = hashlib.sha256(
-            _canonical_json_bytes(
-                {
-                    "executable_sha256": executable_sha256,
-                    "pid": pid,
-                    "process_creation_identity_sha256": (
-                        process_creation_identity_sha256
-                    ),
-                    "runtime_instance_id": runtime_instance_id,
-                    "wrapper_nonce_sha256": wrapper_nonce_sha256,
-                }
-            )
-        ).hexdigest()
+        )
         if not _kernel32.CloseHandle(executable_custody.handle):
             _fail("dual_live_child_cleanup_failed")
         executable_custody.handle = 0
@@ -2089,7 +2721,11 @@ def create_child_in_job(
         _close_handle(executable_custody.handle)
 
 
-def _process_creation_filetime(process_handle: int) -> int:
+def _process_creation_filetime(
+    process_handle: int,
+    *,
+    refusal_code: str = "dual_live_quiescence_indeterminate",
+) -> int:
     assert _kernel32 is not None
     creation = _FILETIME()
     exit_time = _FILETIME()
@@ -2102,7 +2738,7 @@ def _process_creation_filetime(process_handle: int) -> int:
         ctypes.byref(kernel_time),
         ctypes.byref(user_time),
     ):
-        _fail("dual_live_quiescence_indeterminate")
+        _fail(refusal_code)
     return _filetime_value(creation)
 
 
@@ -2140,6 +2776,46 @@ def _process_image_sha256(
     _fail(refusal_code)
 
 
+def current_process_boot_id(
+    runtime_instance_id: str,
+    wrapper_nonce_sha256: str,
+) -> str:
+    _require_windows()
+    assert _kernel32 is not None
+    required = (
+        "GetCurrentProcess",
+        "GetProcessId",
+        "GetProcessTimes",
+        "QueryFullProcessImageNameW",
+    )
+    if any(not callable(getattr(_kernel32, name, None)) for name in required):
+        _fail("dual_live_job_unsupported")
+    runtime_instance_id = _require_uuid4(runtime_instance_id)
+    wrapper_nonce_sha256 = _require_sha256(wrapper_nonce_sha256)
+    process_handle = _kernel32.GetCurrentProcess()
+    if not process_handle:
+        _fail("dual_live_process_identity_indeterminate")
+    pid = int(_kernel32.GetProcessId(process_handle))
+    if pid <= 0:
+        _fail("dual_live_process_identity_indeterminate")
+    creation_filetime = _process_creation_filetime(
+        process_handle,
+        refusal_code="dual_live_process_identity_indeterminate",
+    )
+    executable_sha256 = _process_image_sha256(
+        process_handle,
+        refusal_code="dual_live_process_identity_indeterminate",
+    )
+    _, process_boot_id = _derive_process_boot_identity(
+        pid=pid,
+        creation_filetime=creation_filetime,
+        executable_sha256=executable_sha256,
+        runtime_instance_id=runtime_instance_id,
+        wrapper_nonce_sha256=wrapper_nonce_sha256,
+    )
+    return process_boot_id
+
+
 def _validate_retained_processes(child: JobChild) -> None:
     primary = child._retained_processes.get(child.pid)
     if (
@@ -2155,11 +2831,10 @@ def _validate_retained_processes(child: JobChild) -> None:
         if int(_kernel32.GetProcessId(process_handle)) != pid:
             _fail("dual_live_quiescence_indeterminate")
         current_creation = _process_creation_filetime(process_handle)
-        expected_identity = hashlib.sha256(
-            _canonical_json_bytes(
-                {"creation_filetime": current_creation, "pid": pid}
-            )
-        ).hexdigest()
+        expected_identity = _process_creation_identity_sha256(
+            pid,
+            current_creation,
+        )
         if (
             current_creation != creation_filetime
             or expected_identity != identity
@@ -2226,11 +2901,7 @@ def _retain_active_job_processes(
             second_creation = _process_creation_filetime(owned_handle)
             if first_creation != second_creation:
                 _fail("dual_live_quiescence_indeterminate")
-            identity = hashlib.sha256(
-                _canonical_json_bytes(
-                    {"creation_filetime": first_creation, "pid": pid}
-                )
-            ).hexdigest()
+            identity = _process_creation_identity_sha256(pid, first_creation)
             child._retained_processes[pid] = (
                 owned_handle,
                 first_creation,
