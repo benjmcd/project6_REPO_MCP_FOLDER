@@ -2025,8 +2025,8 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
         timeout_seconds=2,
     )
     assert seal_calls == 1
-    assert events.index("quiesce-A") < events.index("authority-A")
-    assert events.index("authority-A") < events.index("create-B")
+    assert events.index("authority-A") < events.index("quiesce-A")
+    assert events.index("quiesce-A") < events.index("create-B")
     assert "authority-B" not in events
     assert events[-1] == "seal"
     assert all(writer.closed for writer in capture.writers)
