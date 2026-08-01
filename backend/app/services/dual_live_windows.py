@@ -8,10 +8,12 @@ import os
 import re
 import subprocess
 import threading
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import AbstractContextManager, contextmanager
 from ctypes import wintypes
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, BinaryIO
 from uuid import UUID
 
@@ -1433,6 +1435,7 @@ _PHASE_CHILD_STREAM_PIPE_ROLES = _PHASE_CHILD_PIPE_ROLES[1:]
 _PHASE_WRAPPER_ROLES = _PHASE_WRAPPER_PIPE_ROLES + _PHASE_WRAPPER_EVENT_ROLES
 _PHASE_CHILD_ROLES = _PHASE_CHILD_PIPE_ROLES + _PHASE_CHILD_EVENT_ROLES
 _PHASE_HANDLE_ROLES = _PHASE_CHILD_ROLES + _PHASE_WRAPPER_ROLES
+_PHASE_CHANNELS_FACTORY_TOKEN = object()
 _PHASE_PIPE_ENDS = {
     "wrapper_control_write_handle": _PIPE_CLIENT_END,
     "wrapper_app_read_handle": _PIPE_SERVER_END,
@@ -1502,13 +1505,26 @@ def pipe_capabilities_same(first_handle: int, second_handle: int) -> bool:
     _require_phase_channel_apis()
     first = _validate_pipe_capability_for_comparison(first_handle)
     second = _validate_pipe_capability_for_comparison(second_handle)
+    return _kernel_objects_same(
+        first,
+        second,
+        indeterminate_code="dual_live_phase_pipe_identity_indeterminate",
+    )
+
+
+def _kernel_objects_same(
+    first_handle: int,
+    second_handle: int,
+    *,
+    indeterminate_code: str,
+) -> bool:
     assert _compare_object_handles is not None
     ctypes.set_last_error(0)
-    if _compare_object_handles(first, second):
+    if _compare_object_handles(first_handle, second_handle):
         return True
     if ctypes.get_last_error() == _ERROR_NOT_SAME_OBJECT:
         return False
-    _fail("dual_live_phase_pipe_identity_indeterminate")
+    _fail(indeterminate_code)
 
 
 def _pipe_handle_from_descriptor(descriptor: object) -> int:
@@ -1597,163 +1613,177 @@ def _validated_phase_handles(
         handle = copied[role]
         if handle is not None:
             _validate_phase_handle(role, handle, inheritable=True)
-    wrapper_pipe_handles = tuple(
+    pipe_handles = tuple(
         handle
-        for role in _PHASE_WRAPPER_PIPE_ROLES
+        for role in _PHASE_WRAPPER_PIPE_ROLES + _PHASE_CHILD_PIPE_ROLES
         if (handle := copied[role]) is not None
     )
-    child_pipe_handles = tuple(
-        handle
-        for role in _PHASE_CHILD_PIPE_ROLES
-        if (handle := copied[role]) is not None
-    )
-    _validate_distinct_pipe_capabilities(wrapper_pipe_handles)
-    _validate_distinct_pipe_capabilities(child_pipe_handles)
+    _validate_distinct_pipe_capabilities(pipe_handles)
+    if validated_phase == "A":
+        revocation_handles = tuple(
+            copied[role]
+            for role in (
+                "wrapper_revocation_event_handle",
+                "child_revocation_event_handle",
+            )
+        )
+        send_idle_handles = tuple(
+            copied[role]
+            for role in (
+                "wrapper_send_idle_event_handle",
+                "child_send_idle_event_handle",
+            )
+        )
+        assert all(isinstance(handle, int) for handle in revocation_handles)
+        assert all(isinstance(handle, int) for handle in send_idle_handles)
+        revocation = tuple(int(handle) for handle in revocation_handles)
+        send_idle = tuple(int(handle) for handle in send_idle_handles)
+        if not _kernel_objects_same(
+            revocation[0],
+            revocation[1],
+            indeterminate_code="dual_live_phase_capability_identity_indeterminate",
+        ) or not _kernel_objects_same(
+            send_idle[0],
+            send_idle[1],
+            indeterminate_code="dual_live_phase_capability_identity_indeterminate",
+        ):
+            _fail("dual_live_phase_channels_invalid")
+        for revocation_handle in revocation:
+            for send_idle_handle in send_idle:
+                if _kernel_objects_same(
+                    revocation_handle,
+                    send_idle_handle,
+                    indeterminate_code=(
+                        "dual_live_phase_capability_identity_indeterminate"
+                    ),
+                ):
+                    _fail("dual_live_phase_channels_invalid")
     return validated_phase, copied
 
 
 class PhaseChannels:
     __slots__ = ("_phase", "_handles")
 
-    def __init__(
-        self,
+    def __new__(cls, *args: object, **kwargs: object) -> PhaseChannels:
+        _fail("dual_live_phase_channels_factory_only")
+
+    @classmethod
+    def _from_factory(
+        cls,
+        factory_token: object,
         *,
         phase: str,
-        wrapper_control_write_handle: int,
-        wrapper_app_read_handle: int,
-        wrapper_http_read_handle: int,
-        wrapper_stdout_read_handle: int,
-        wrapper_stderr_read_handle: int,
-        wrapper_revocation_event_handle: int | None,
-        wrapper_send_idle_event_handle: int | None,
-        child_control_read_handle: int,
-        child_app_write_handle: int,
-        child_http_write_handle: int,
-        child_stdout_write_handle: int,
-        child_stderr_write_handle: int,
-        child_revocation_event_handle: int | None,
-        child_send_idle_event_handle: int | None,
-    ) -> None:
-        validated_phase, handles = _validated_phase_handles(
-            phase,
-            {
-                "wrapper_control_write_handle": wrapper_control_write_handle,
-                "wrapper_app_read_handle": wrapper_app_read_handle,
-                "wrapper_http_read_handle": wrapper_http_read_handle,
-                "wrapper_stdout_read_handle": wrapper_stdout_read_handle,
-                "wrapper_stderr_read_handle": wrapper_stderr_read_handle,
-                "wrapper_revocation_event_handle": wrapper_revocation_event_handle,
-                "wrapper_send_idle_event_handle": wrapper_send_idle_event_handle,
-                "child_control_read_handle": child_control_read_handle,
-                "child_app_write_handle": child_app_write_handle,
-                "child_http_write_handle": child_http_write_handle,
-                "child_stdout_write_handle": child_stdout_write_handle,
-                "child_stderr_write_handle": child_stderr_write_handle,
-                "child_revocation_event_handle": child_revocation_event_handle,
-                "child_send_idle_event_handle": child_send_idle_event_handle,
-            },
-        )
-        self._phase = validated_phase
-        self._handles = handles
+        handles: Mapping[str, int | None],
+    ) -> PhaseChannels:
+        if factory_token is not _PHASE_CHANNELS_FACTORY_TOKEN:
+            _fail("dual_live_phase_channels_factory_only")
+        validated_phase, validated_handles = _validated_phase_handles(phase, handles)
+        instance = object.__new__(cls)
+        instance._phase = validated_phase
+        instance._handles = validated_handles
+        return instance
 
     @property
     def phase(self) -> str:
         return self._phase
 
-    def _owned_handle(self, role: str) -> int | None:
+    def _duplicate_roles(
+        self,
+        roles: Sequence[str],
+        *,
+        inheritable: bool,
+    ) -> dict[str, int]:
+        _require_phase_channel_apis()
+        assert _kernel32 is not None
+        duplicates: dict[str, int | None] = {role: None for role in roles}
         with _phase_handles_lock:
-            return self._handles[role]
+            originals = {role: self._handles[role] for role in roles}
+            if any(handle is None for handle in originals.values()):
+                _fail("dual_live_phase_channels_closed")
+            current_process = _kernel32.GetCurrentProcess()
+            if not current_process:
+                _fail("dual_live_phase_channels_lease_failed")
+            try:
+                for role, source_handle in originals.items():
+                    assert source_handle is not None
+                    duplicate = wintypes.HANDLE()
+                    created = _kernel32.DuplicateHandle(
+                        current_process,
+                        source_handle,
+                        current_process,
+                        ctypes.byref(duplicate),
+                        0,
+                        inheritable,
+                        _DUPLICATE_SAME_ACCESS,
+                    )
+                    if duplicate.value:
+                        duplicates[role] = int(duplicate.value)
+                    if not created or not duplicate.value:
+                        _fail("dual_live_phase_channels_lease_failed")
+                    _validate_phase_handle(
+                        role,
+                        int(duplicate.value),
+                        inheritable=inheritable,
+                    )
+            except BaseException:
+                cleanup_ok = _close_provisional_phase_handles(duplicates)
+                if not cleanup_ok:
+                    cleanup_ok = _close_provisional_phase_handles(duplicates)
+                if not cleanup_ok:
+                    _fail("dual_live_phase_channels_cleanup_failed")
+                raise
+        return {
+            role: int(handle)
+            for role, handle in duplicates.items()
+            if handle is not None
+        }
 
-    @property
-    def wrapper_control_write_handle(self) -> int | None:
-        return self._owned_handle("wrapper_control_write_handle")
+    @contextmanager
+    def _lease_roles(
+        self,
+        roles: Sequence[str],
+        *,
+        inheritable: bool,
+    ) -> Iterator[Mapping[str, int]]:
+        handles = self._duplicate_roles(roles, inheritable=inheritable)
+        try:
+            yield MappingProxyType(handles)
+        finally:
+            provisional = {role: handle for role, handle in handles.items()}
+            cleanup_ok = _close_provisional_phase_handles(provisional)
+            if not cleanup_ok:
+                cleanup_ok = _close_provisional_phase_handles(provisional)
+            if cleanup_ok:
+                handles.clear()
+            else:
+                _fail("dual_live_phase_channels_cleanup_failed")
 
-    @property
-    def wrapper_app_read_handle(self) -> int | None:
-        return self._owned_handle("wrapper_app_read_handle")
+    def lease_wrapper_handles(
+        self,
+    ) -> AbstractContextManager[Mapping[str, int]]:
+        roles = (
+            _PHASE_WRAPPER_ROLES
+            if self._phase == "A"
+            else _PHASE_WRAPPER_PIPE_ROLES
+        )
+        return self._lease_roles(roles, inheritable=False)
 
-    @property
-    def wrapper_http_read_handle(self) -> int | None:
-        return self._owned_handle("wrapper_http_read_handle")
-
-    @property
-    def wrapper_stdout_read_handle(self) -> int | None:
-        return self._owned_handle("wrapper_stdout_read_handle")
-
-    @property
-    def wrapper_stderr_read_handle(self) -> int | None:
-        return self._owned_handle("wrapper_stderr_read_handle")
-
-    @property
-    def wrapper_revocation_event_handle(self) -> int | None:
-        return self._owned_handle("wrapper_revocation_event_handle")
-
-    @property
-    def wrapper_send_idle_event_handle(self) -> int | None:
-        return self._owned_handle("wrapper_send_idle_event_handle")
-
-    @property
-    def child_control_read_handle(self) -> int | None:
-        return self._owned_handle("child_control_read_handle")
-
-    @property
-    def child_app_write_handle(self) -> int | None:
-        return self._owned_handle("child_app_write_handle")
-
-    @property
-    def child_http_write_handle(self) -> int | None:
-        return self._owned_handle("child_http_write_handle")
-
-    @property
-    def child_stdout_write_handle(self) -> int | None:
-        return self._owned_handle("child_stdout_write_handle")
-
-    @property
-    def child_stderr_write_handle(self) -> int | None:
-        return self._owned_handle("child_stderr_write_handle")
-
-    @property
-    def child_revocation_event_handle(self) -> int | None:
-        return self._owned_handle("child_revocation_event_handle")
-
-    @property
-    def child_send_idle_event_handle(self) -> int | None:
-        return self._owned_handle("child_send_idle_event_handle")
-
-    def _owned_handles(self, roles: Sequence[str]) -> tuple[int, ...]:
-        with _phase_handles_lock:
-            return tuple(
-                handle
-                for role in roles
-                if (handle := self._handles[role]) is not None
-            )
-
-    @property
-    def wrapper_handles(self) -> tuple[int, ...]:
-        return self._owned_handles(_PHASE_WRAPPER_ROLES)
-
-    @property
-    def child_handles(self) -> tuple[int, ...]:
-        return self._owned_handles(_PHASE_CHILD_ROLES)
-
-    @property
-    def wrapper_stream_pipe_handles(self) -> tuple[int, ...]:
-        return self._owned_handles(_PHASE_WRAPPER_STREAM_PIPE_ROLES)
-
-    @property
-    def child_stream_pipe_handles(self) -> tuple[int, ...]:
-        return self._owned_handles(_PHASE_CHILD_STREAM_PIPE_ROLES)
+    def lease_child_handles(
+        self,
+    ) -> AbstractContextManager[Mapping[str, int]]:
+        roles = _PHASE_CHILD_ROLES if self._phase == "A" else _PHASE_CHILD_PIPE_ROLES
+        return self._lease_roles(roles, inheritable=True)
 
     def validate_stream_pipe_capabilities(self) -> None:
-        wrapper_handles = self.wrapper_stream_pipe_handles
-        child_handles = self.child_stream_pipe_handles
-        if (
-            len(wrapper_handles) != len(_PHASE_WRAPPER_STREAM_PIPE_ROLES)
-            or len(child_handles) != len(_PHASE_CHILD_STREAM_PIPE_ROLES)
-        ):
-            _fail("dual_live_phase_channels_closed")
-        _validate_distinct_pipe_capabilities(wrapper_handles)
-        _validate_distinct_pipe_capabilities(child_handles)
+        with self.lease_wrapper_handles() as wrapper_handles:
+            with self.lease_child_handles() as child_handles:
+                stream_handles = tuple(
+                    wrapper_handles[role]
+                    for role in _PHASE_WRAPPER_STREAM_PIPE_ROLES
+                ) + tuple(
+                    child_handles[role] for role in _PHASE_CHILD_STREAM_PIPE_ROLES
+                )
+                _validate_distinct_pipe_capabilities(stream_handles)
 
     @property
     def closed(self) -> bool:
@@ -1907,7 +1937,11 @@ def create_phase_channels(phase: str) -> PhaseChannels:
                 "child_send_idle_event_handle",
                 initially_signaled=True,
             )
-        channels = PhaseChannels(phase=validated_phase, **handles)
+        channels = PhaseChannels._from_factory(
+            _PHASE_CHANNELS_FACTORY_TOKEN,
+            phase=validated_phase,
+            handles=handles,
+        )
         handles.clear()
         return channels
     except BaseException as error:
@@ -1938,21 +1972,28 @@ def make_inherited_handles_non_inheritable(
     ) or len(set(handles)) != len(handles):
         _fail("dual_live_job_inherited_handles_invalid")
     assert _kernel32 is not None
+    bootstrap_failed = False
     for handle in handles:
         flags = wintypes.DWORD()
         if not _kernel32.GetHandleInformation(handle, ctypes.byref(flags)):
-            _fail("dual_live_job_inherited_handles_invalid")
-        if flags.value != _HANDLE_FLAG_INHERIT:
-            _fail("dual_live_job_inherited_handles_invalid")
-        _validate_inherited_capability(handle)
+            bootstrap_failed = True
+        elif flags.value not in (0, _HANDLE_FLAG_INHERIT):
+            bootstrap_failed = True
+        try:
+            _validate_inherited_capability(handle)
+        except DualLiveWindowsError:
+            bootstrap_failed = True
     for handle in handles:
         if not _kernel32.SetHandleInformation(handle, _HANDLE_FLAG_INHERIT, 0):
-            _fail("dual_live_job_inherited_handles_invalid")
+            bootstrap_failed = True
+    for handle in handles:
         flags = wintypes.DWORD()
         if not _kernel32.GetHandleInformation(handle, ctypes.byref(flags)):
-            _fail("dual_live_job_inherited_handles_invalid")
-        if flags.value != 0:
-            _fail("dual_live_job_inherited_handles_invalid")
+            bootstrap_failed = True
+        elif flags.value != 0:
+            bootstrap_failed = True
+    if bootstrap_failed:
+        _fail("dual_live_job_inherited_handles_invalid")
 
 
 def _environment_block(environment: Mapping[str, str]) -> ctypes.Array[Any]:
