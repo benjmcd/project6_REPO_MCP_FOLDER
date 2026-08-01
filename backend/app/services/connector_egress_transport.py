@@ -31,6 +31,7 @@ from app.db.session import SessionLocal
 from app.models import ConnectorPolicySnapshot, ConnectorRun, ConnectorRunEvent
 from app.schemas.api import (
     SINGLE_SEND_DETECTION_ALLOWANCE_BYTES as GRANT_DETECTION_ALLOWANCE_BYTES,
+    expected_grant_rule_payloads,
 )
 from app.services.connector_egress_authorization import (
     canonical_json_bytes,
@@ -886,10 +887,41 @@ def _reservation_from_event(
         ) from exc
 
 
-def _events_for_run(db: Session, connector_run_id: str) -> list[ConnectorRunEvent]:
-    return (
+def _canonical_physical_request_ceiling(
+    run: ConnectorRun,
+    envelope: Mapping[str, Any],
+) -> int:
+    connector_key = run.connector_key
+    envelope_connector_key = envelope.get("connector_key")
+    stored_ceiling = envelope.get("max_physical_requests")
+    if (
+        not isinstance(connector_key, str)
+        or connector_key != envelope_connector_key
+        or isinstance(stored_ceiling, bool)
+        or not isinstance(stored_ceiling, int)
+    ):
+        _fail("connector_egress_ledger_bound_invalid")
+    try:
+        canonical_ceiling = len(expected_grant_rule_payloads(connector_key))
+    except (TypeError, ValueError) as exc:
+        raise ConnectorEgressTransportError(
+            "connector_egress_ledger_bound_invalid"
+        ) from exc
+    if stored_ceiling != canonical_ceiling:
+        _fail("connector_egress_ledger_bound_invalid")
+    return canonical_ceiling
+
+
+def _events_for_run(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    envelope: Mapping[str, Any],
+) -> tuple[ConnectorRunEvent, ...]:
+    max_events = _canonical_physical_request_ceiling(run, envelope) * 2
+    query = (
         db.query(ConnectorRunEvent)
-        .filter(ConnectorRunEvent.connector_run_id == connector_run_id)
+        .filter(ConnectorRunEvent.connector_run_id == run.connector_run_id)
         .filter(
             ConnectorRunEvent.event_type.in_(
                 [RESERVATION_EVENT_TYPE, COMPLETION_EVENT_TYPE]
@@ -899,8 +931,33 @@ def _events_for_run(db: Session, connector_run_id: str) -> list[ConnectorRunEven
             ConnectorRunEvent.created_at.asc(),
             ConnectorRunEvent.connector_run_event_id.asc(),
         )
-        .all()
     )
+    limit_query = getattr(query, "limit", None)
+    if not callable(limit_query):
+        _fail("connector_egress_ledger_query_unbounded")
+    events = tuple(limit_query(max_events + 1).all())
+    if len(events) > max_events:
+        _fail("connector_egress_ledger_event_limit_exceeded")
+    if any(
+        not isinstance(event, ConnectorRunEvent)
+        or event.connector_run_id != run.connector_run_id
+        or event.event_type not in {RESERVATION_EVENT_TYPE, COMPLETION_EVENT_TYPE}
+        or not isinstance(event.created_at, datetime)
+        or not isinstance(event.connector_run_event_id, str)
+        for event in events
+    ):
+        _fail("connector_egress_ledger_event_invalid")
+    if events != tuple(
+        sorted(
+            events,
+            key=lambda event: (
+                _as_utc(event.created_at),
+                event.connector_run_event_id,
+            ),
+        )
+    ):
+        _fail("connector_egress_ledger_event_invalid")
+    return events
 
 
 def _ordinal_from_event(event: ConnectorRunEvent) -> int | None:
@@ -910,7 +967,7 @@ def _ordinal_from_event(event: ConnectorRunEvent) -> int | None:
 
 
 def _derive_counted_prior_bytes(
-    events: list[ConnectorRunEvent],
+    events: Sequence[ConnectorRunEvent],
     *,
     before_ordinal: int,
 ) -> int:
@@ -999,7 +1056,7 @@ def _counter_value_is_nonnegative_int(value: Any) -> bool:
 
 
 def _reconcile_prior_counter_stream(
-    events: list[ConnectorRunEvent],
+    events: Sequence[ConnectorRunEvent],
     *,
     before_ordinal: int,
     counter_path: Path | None,
@@ -1302,7 +1359,7 @@ def reserve_physical_request(
             now=_as_utc(now),
         )
 
-        ceiling = int(envelope.get("max_physical_requests") or 0)
+        ceiling = _canonical_physical_request_ceiling(run, envelope)
         if ordinal > ceiling:
             _fail("connector_egress_ordinal_over_ceiling")
         rule = _rule_for(envelope, ordinal=ordinal, stage=stage)
@@ -1312,8 +1369,8 @@ def reserve_physical_request(
             ordinal,
             RESERVATION_EVENT_TYPE,
         )
+        events = _events_for_run(db, run=run, envelope=envelope)
         existing = db.get(ConnectorRunEvent, reservation_id)
-        events = _events_for_run(db, connector_run_id)
         prior_counted_bytes = 0
         if existing is None:
             for event in events:
@@ -1806,6 +1863,8 @@ def derive_terminal_request_ledger(
     if run is None:
         _fail("connector_egress_run_not_found")
     envelope = _strict_envelope(run)
+    ceiling = _canonical_physical_request_ceiling(run, envelope)
+    events = _events_for_run(db, run=run, envelope=envelope)
     arming_fingerprint = str(envelope.get("arming_fingerprint") or "")
     errors: list[str] = []
     if (
@@ -1817,7 +1876,7 @@ def derive_terminal_request_ledger(
     reservations: dict[int, ConnectorRunEvent] = {}
     completions: dict[int, ConnectorRunEvent] = {}
 
-    for event in _events_for_run(db, connector_run_id):
+    for event in events:
         ordinal = _ordinal_from_event(event)
         if ordinal is None or ordinal < 1:
             errors.append("invalid_event_ordinal")
@@ -1845,7 +1904,6 @@ def derive_terminal_request_ledger(
         range(1, reservation_ordinals[-1] + 1)
     ):
         errors.append("noncontiguous_ordinals")
-    ceiling = int(envelope.get("max_physical_requests") or 0)
     if reservation_ordinals and reservation_ordinals[-1] > ceiling:
         errors.append("ordinal_over_ceiling")
 
@@ -2074,7 +2132,7 @@ def derive_terminal_request_ledger(
         }
         try:
             reconciled_counted = _reconcile_prior_counter_stream(
-                _events_for_run(db, connector_run_id),
+                events,
                 before_ordinal=reservation_ordinals[-1] + 1,
                 counter_path=counter_path,
                 counter_records=counter_records,

@@ -25,7 +25,11 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
 from app.db.session import Base  # noqa: E402
-from app.models import ConnectorRun, ConnectorRunEvent  # noqa: E402
+from app.models import (  # noqa: E402
+    ConnectorRun,
+    ConnectorRunEvent,
+)
+from app.schemas.api import expected_grant_rule_payloads  # noqa: E402
 from app.services import connector_egress_arming as arming  # noqa: E402
 from app.services import connector_egress_transport as transport  # noqa: E402
 
@@ -123,6 +127,52 @@ def _seed_running_run(
         db.add(run)
         db.commit()
     return run
+
+
+def _set_connector_authority(
+    factory,
+    *,
+    connector_key: str,
+    max_physical_requests: int,
+) -> None:
+    with factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        config = dict(run.request_config_json)
+        envelope = dict(config["connector_egress_arming"])
+        envelope["connector_key"] = connector_key
+        envelope["max_physical_requests"] = max_physical_requests
+        envelope["request_rules"] = [
+            dict(rule) for rule in expected_grant_rule_payloads(connector_key)
+        ]
+        config["connector_egress_arming"] = envelope
+        run.connector_key = connector_key
+        run.source_system = connector_key
+        run.request_config_json = config
+        db.commit()
+
+
+def _seed_ledger_cardinality_rows(factory, *, count: int) -> None:
+    created_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    with factory() as db:
+        for index in range(count):
+            db.add(
+                ConnectorRunEvent(
+                    connector_run_event_id=(
+                        f"00000000-0000-0000-0000-{index + 1:012d}"
+                    ),
+                    connector_run_id="strict-nrc-run",
+                    phase="egress",
+                    stage="synthetic",
+                    event_type=(
+                        transport.RESERVATION_EVENT_TYPE
+                        if index % 2 == 0
+                        else transport.COMPLETION_EVENT_TYPE
+                    ),
+                    metrics_json={"ordinal": index // 2 + 1},
+                    created_at=created_at + timedelta(microseconds=index),
+                )
+            )
+        db.commit()
 
 
 def _set_first_request_limits(
@@ -430,6 +480,14 @@ def test_reservation_commits_before_send_and_terminal_ledger_is_stable(
     )
 
     assert seen == [1]
+    original_events_for_run = transport._events_for_run
+    snapshot_calls: list[object] = []
+
+    def counted_snapshot(*args, **kwargs):
+        snapshot_calls.append(object())
+        return original_events_for_run(*args, **kwargs)
+
+    monkeypatch.setattr(transport, "_events_for_run", counted_snapshot)
     with session_factory() as db:
         first = transport.derive_terminal_request_ledger(
             db,
@@ -444,6 +502,136 @@ def test_reservation_commits_before_send_and_terminal_ledger_is_stable(
     assert first.entries[0]["outcome_class"] == "completed"
     assert not first.eligible
     assert "counter_reconciliation_failed" in first.validation_errors
+    assert len(snapshot_calls) == 2
+
+
+@pytest.mark.parametrize(
+    ("connector_key", "physical_request_ceiling", "event_count", "error_code"),
+    [
+        ("nrc_adams_aps", 2, 4, None),
+        ("nrc_adams_aps", 2, 5, "connector_egress_ledger_event_limit_exceeded"),
+        ("sciencebase_mcs", 3, 6, None),
+        ("sciencebase_mcs", 3, 7, "connector_egress_ledger_event_limit_exceeded"),
+    ],
+)
+def test_ledger_event_loader_enforces_connector_specific_bound(
+    session_factory,
+    connector_key: str,
+    physical_request_ceiling: int,
+    event_count: int,
+    error_code: str | None,
+) -> None:
+    _seed_running_run(session_factory)
+    _set_connector_authority(
+        session_factory,
+        connector_key=connector_key,
+        max_physical_requests=physical_request_ceiling,
+    )
+    _seed_ledger_cardinality_rows(session_factory, count=event_count)
+
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        envelope = transport._strict_envelope(run)
+        if error_code is None:
+            events = transport._events_for_run(db, run=run, envelope=envelope)
+            assert isinstance(events, tuple)
+            assert len(events) == event_count
+        else:
+            with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+                transport._events_for_run(db, run=run, envelope=envelope)
+            assert exc.value.code == error_code
+
+
+def test_ledger_event_loader_rejects_no_limit_caller_before_materialization(
+    session_factory,
+) -> None:
+    _seed_running_run(session_factory)
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        envelope = transport._strict_envelope(run)
+
+    class UnboundedQuery:
+        rows: tuple[ConnectorRunEvent, ...] = ()
+        all_calls = 0
+
+        def filter(self, *criteria):
+            return self
+
+        def order_by(self, *criteria):
+            return self
+
+        def all(self):
+            self.all_calls += 1
+            return list(self.rows)
+
+    unbounded_query = UnboundedQuery()
+
+    class UnboundedAuthority:
+        def query(self, model):
+            assert model is ConnectorRunEvent
+            return unbounded_query
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._events_for_run(
+            UnboundedAuthority(),
+            run=run,
+            envelope=envelope,
+        )
+
+    assert exc.value.code == "connector_egress_ledger_query_unbounded"
+    assert unbounded_query.all_calls == 0
+
+
+def test_untrusted_envelope_ceiling_fails_before_event_query(
+    session_factory,
+) -> None:
+    _seed_running_run(session_factory)
+    _set_connector_authority(
+        session_factory,
+        connector_key="nrc_adams_aps",
+        max_physical_requests=99,
+    )
+    with session_factory() as db:
+        run = db.get(ConnectorRun, "strict-nrc-run")
+        envelope = transport._strict_envelope(run)
+
+    class QueryForbidden:
+        def query(self, _model):
+            raise AssertionError("event query must not run")
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport._events_for_run(QueryForbidden(), run=run, envelope=envelope)
+
+    assert exc.value.code == "connector_egress_ledger_bound_invalid"
+
+
+def test_reservation_rejects_over_cap_ledger_before_new_event(
+    session_factory,
+    monkeypatch,
+) -> None:
+    _seed_running_run(session_factory)
+    _seed_ledger_cardinality_rows(session_factory, count=5)
+    monkeypatch.setattr(
+        transport,
+        "_revalidate_run_authority",
+        lambda **kwargs: kwargs["envelope"],
+    )
+
+    with pytest.raises(transport.ConnectorEgressTransportError) as exc:
+        transport.reserve_physical_request(
+            connector_run_id="strict-nrc-run",
+            lease_token="lease-token",
+            arming_fingerprint="d" * 64,
+            ordinal=1,
+            stage="exact_accession_api",
+            request=_request(),
+            expected_derived_arming_hash=None,
+            now=datetime.now(timezone.utc),
+        )
+
+    assert exc.value.code == "connector_egress_ledger_event_limit_exceeded"
+    with session_factory() as db:
+        assert db.query(ConnectorRunEvent).count() == 5
 
 
 def test_reservation_commit_failure_calls_transport_zero_times(
