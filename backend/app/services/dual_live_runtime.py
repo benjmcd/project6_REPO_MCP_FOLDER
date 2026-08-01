@@ -1034,6 +1034,8 @@ def decode_child_status_frame(
 
 
 def _writer_destination_identity(writer: BinaryIO) -> tuple[object, ...]:
+    if type(writer) is LockedCampaignSink:
+        return _writer_destination_identity(writer._writer)
     if isinstance(writer, io.BytesIO):
         return ("object", id(writer))
     try:
@@ -1145,6 +1147,7 @@ class FourStreamPumpGroup:
         expected_status_phase: str,
         expected_status_process_boot_id: str,
         expected_status_nonce_sha256: str,
+        budget: PipeFrameBudget | None = None,
     ) -> None:
         if (
             set(readers) != set(PIPE_STREAM_CLASSES)
@@ -1157,6 +1160,7 @@ class FourStreamPumpGroup:
             or _LOWERCASE_SHA256.fullmatch(expected_status_process_boot_id) is None
             or not isinstance(expected_status_nonce_sha256, str)
             or _LOWERCASE_SHA256.fullmatch(expected_status_nonce_sha256) is None
+            or (budget is not None and type(budget) is not PipeFrameBudget)
         ):
             _fail("dual_live_pump_arguments_invalid")
         copied_readers = dict(readers)
@@ -1193,7 +1197,7 @@ class FourStreamPumpGroup:
         self._expected_status_process_boot_id = expected_status_process_boot_id
         self._expected_status_nonce_sha256 = expected_status_nonce_sha256
         self._next_status_ordinal = 1
-        self._budget = PipeFrameBudget()
+        self._budget = PipeFrameBudget() if budget is None else budget
         self._errors: dict[str, BaseException] = {}
         self._cancel_errors: dict[str, BaseException] = {}
         self._cancel_pump_errors: dict[str, BaseException] = {}
@@ -1455,6 +1459,547 @@ class FourStreamPumpGroup:
         finally:
             with self._lifecycle_lock:
                 self._join_active = False
+
+
+@dataclass(frozen=True, slots=True)
+class _ControllerChild:
+    """Explicit Job-child projection for the offline controller spine."""
+
+    process_boot_id: str
+    process_creation_identity_sha256: str
+    executable_sha256: str
+    job_policy_sha256: str
+    status_nonce_sha256: str
+    control_nonce: str
+    readers: Mapping[str, BinaryIO]
+    send_control: Callable[[bytes], None]
+    wait: Callable[[float], int]
+    stop: Callable[[], None]
+
+    def __post_init__(self) -> None:
+        code = "dual_live_controller_child_invalid"
+        for value in (
+            self.process_boot_id,
+            self.process_creation_identity_sha256,
+            self.executable_sha256,
+            self.job_policy_sha256,
+            self.status_nonce_sha256,
+            self.control_nonce,
+        ):
+            _require_sha256(value, code)
+        if not isinstance(self.readers, Mapping):
+            _fail(code)
+        readers = dict(self.readers)
+        if set(readers) != set(PIPE_STREAM_CLASSES) or any(
+            not callable(getattr(reader, "read", None))
+            or not callable(getattr(reader, "close", None))
+            for reader in readers.values()
+        ):
+            _fail(code)
+        if not all(
+            callable(callback)
+            for callback in (self.send_control, self.wait, self.stop)
+        ):
+            _fail(code)
+        object.__setattr__(self, "readers", readers)
+
+
+def _run_two_phase_controller(
+    *,
+    identity: RuntimeIdentity,
+    runtime_start_payload: Mapping[str, Any],
+    writers: Mapping[str, BinaryIO],
+    create_phase_a: Callable[[], _ControllerChild],
+    create_phase_b: Callable[[], _ControllerChild],
+    quiesce_phase: Callable[
+        [str, _ControllerChild],
+        tuple[Mapping[str, Any], Mapping[str, Any]],
+    ],
+    clear_authority: Callable[[str, _ControllerChild], Mapping[str, Any]],
+    http_frame_validator: Callable[[bytes], None],
+    seal: Callable[[], Any],
+    timeout_seconds: float,
+) -> Any:
+    """Run the bounded mechanical A/B spine; no production semantics live here."""
+
+    if (
+        type(identity) is not RuntimeIdentity
+        or not isinstance(runtime_start_payload, Mapping)
+        or not isinstance(writers, Mapping)
+        or not all(
+            callable(callback)
+            for callback in (
+                create_phase_a,
+                create_phase_b,
+                quiesce_phase,
+                clear_authority,
+                http_frame_validator,
+                seal,
+            )
+        )
+        or isinstance(timeout_seconds, bool)
+        or not isinstance(timeout_seconds, (int, float))
+        or not math.isfinite(timeout_seconds)
+        or timeout_seconds <= 0
+    ):
+        _fail("dual_live_controller_invalid")
+    capture_writers = dict(writers)
+    if set(capture_writers) != set(PIPE_STREAM_CLASSES) or any(
+        not callable(getattr(writer, method, None))
+        for writer in capture_writers.values()
+        for method in ("write", "flush", "close")
+    ):
+        _fail("dual_live_controller_invalid")
+    destinations = tuple(
+        _writer_destination_identity(capture_writers[stream])
+        for stream in PIPE_STREAM_CLASSES
+    )
+    if len(set(destinations)) != len(PIPE_STREAM_CLASSES):
+        _fail("dual_live_pump_writer_alias_invalid")
+
+    stop_latch = FirstStopLatch()
+    shared_sinks = {
+        stream: LockedCampaignSink(
+            capture_writers[stream],
+            stop_latch=stop_latch,
+        )
+        for stream in PIPE_STREAM_CLASSES
+    }
+    shared_budget = PipeFrameBudget()
+    runtime_writer = RuntimeRecordWriter(
+        lambda content: shared_sinks["app"].write(
+            content,
+            before_write=lambda: shared_budget.consume_wrapper(
+                "app", len(content)
+            ),
+        ),
+        identity=identity,
+    )
+    stop_recorded = False
+
+    def record_stop_once() -> None:
+        nonlocal stop_recorded
+        reason_code = stop_latch.reason_code
+        if stop_recorded or reason_code is None:
+            return
+        runtime_writer.append(
+            phase="wrapper",
+            event="stop_latched",
+            process_boot_id=None,
+            payload={
+                "reason_code": reason_code,
+                "monotonic_tick_ns": time.monotonic_ns(),
+            },
+        )
+        stop_recorded = True
+
+    def normalized_error(
+        code: str,
+        reason_code: str,
+        cause: BaseException,
+    ) -> DualLiveRuntimeError:
+        stop_latch.latch(reason_code)
+        error = DualLiveRuntimeError(code)
+        error.__cause__ = cause
+        return error
+
+    def close_readers(child: _ControllerChild) -> BaseException | None:
+        first_error: BaseException | None = None
+        seen: set[int] = set()
+        for stream in PIPE_STREAM_CLASSES:
+            reader = child.readers[stream]
+            if id(reader) in seen:
+                continue
+            seen.add(id(reader))
+            try:
+                reader.close()
+            except BaseException as exc:
+                if first_error is None:
+                    first_error = exc
+        return first_error
+
+    def run_phase(
+        phase: str,
+        factory: Callable[[], _ControllerChild],
+    ) -> str:
+        child: _ControllerChild | None = None
+        pumps: FourStreamPumpGroup | None = None
+        control: PhaseControlState | None = None
+        census_ready = threading.Event()
+        census_points: list[tuple[str, int, str]] = []
+        phase_error: BaseException | None = None
+        exit_code: int | None = None
+        stopped = False
+
+        def is_writer_failure(error: BaseException) -> bool:
+            current: BaseException | None = error
+            seen: set[int] = set()
+            writer_codes = {
+                "dual_live_pump_write_failed",
+                "dual_live_pump_writer_poisoned",
+                "dual_live_runtime_writer_failure",
+                "dual_live_runtime_writer_poisoned",
+            }
+            while current is not None and id(current) not in seen:
+                seen.add(id(current))
+                if (
+                    isinstance(current, DualLiveRuntimeError)
+                    and current.code in writer_codes
+                ):
+                    return True
+                current = current.__cause__
+            return False
+
+        def fail(code: str, reason_code: str, cause: BaseException) -> None:
+            nonlocal phase_error
+            replacement = normalized_error(code, reason_code, cause)
+            if phase_error is None:
+                phase_error = replacement
+            elif reason_code == "writer_failure":
+                replacement.__context__ = phase_error
+                phase_error = replacement
+
+        try:
+            candidate = factory()
+            if type(candidate) is not _ControllerChild:
+                _fail("dual_live_controller_child_invalid")
+            child = candidate
+            control = PhaseControlState(
+                phase=phase,
+                control_nonce_sha256=hashlib.sha256(
+                    child.control_nonce.encode("ascii")
+                ).hexdigest(),
+                stop_latch=stop_latch,
+            )
+            runtime_writer.append(
+                phase=phase,
+                event="phase_child_start",
+                process_boot_id=child.process_boot_id,
+                payload={
+                    "process_creation_identity_sha256": (
+                        child.process_creation_identity_sha256
+                    ),
+                    "executable_sha256": child.executable_sha256,
+                    "job_policy_sha256": child.job_policy_sha256,
+                },
+            )
+
+            def status_callback(status: dict[str, Any]) -> None:
+                point = status["payload"]["census_point"]
+                handler_count = status["payload"]["handler_count"]
+                topology_sha256 = status["payload"]["topology_sha256"]
+                if point == "pre_activity":
+                    if census_points or control is None:
+                        _fail("dual_live_logger_census_invalid")
+                    census_points.append((point, handler_count, topology_sha256))
+                    runtime_writer.append(
+                        phase=phase,
+                        event="logger_census",
+                        process_boot_id=child.process_boot_id,
+                        payload={
+                            "census_point": point,
+                            "topology_sha256": topology_sha256,
+                            "handler_count": handler_count,
+                            "guard_state": f"{phase}_CENSUS_OK",
+                            "topology_matches_initial": True,
+                        },
+                    )
+                    control.mark_census_ready()
+                    census_ready.set()
+                    return
+                if (
+                    point != "exit"
+                    or len(census_points) != 1
+                    or control is None
+                    or control.state != "go_consumed"
+                ):
+                    _fail("dual_live_logger_census_invalid")
+                initial = census_points[0]
+                matches = (handler_count, topology_sha256) == initial[1:]
+                census_points.append((point, handler_count, topology_sha256))
+                runtime_writer.append(
+                    phase=phase,
+                    event="logger_census",
+                    process_boot_id=child.process_boot_id,
+                    payload={
+                        "census_point": point,
+                        "topology_sha256": topology_sha256,
+                        "handler_count": handler_count,
+                        "guard_state": f"{phase}_STOPPED",
+                        "topology_matches_initial": matches,
+                    },
+                )
+                if not matches:
+                    _fail("dual_live_logger_topology_changed")
+
+            pumps = FourStreamPumpGroup(
+                readers=child.readers,
+                writers=shared_sinks,
+                status_callback=status_callback,
+                http_frame_validator=http_frame_validator,
+                stop_latch=stop_latch,
+                expected_status_phase=phase,
+                expected_status_process_boot_id=child.process_boot_id,
+                expected_status_nonce_sha256=child.status_nonce_sha256,
+                budget=shared_budget,
+            )
+            pumps.start()
+            deadline = time.monotonic() + timeout_seconds
+            while not census_ready.wait(min(0.05, max(0.0, deadline - time.monotonic()))):
+                if stop_latch.is_set or time.monotonic() >= deadline:
+                    _fail("dual_live_phase_census_failed")
+            if stop_latch.is_set:
+                _fail("dual_live_phase_census_failed")
+            control_frame = encode_child_control_frame(
+                phase=phase,
+                command="GO",
+                control_nonce=child.control_nonce,
+            )
+            control.consume_frame(io.BytesIO(control_frame))
+            runtime_writer.append(
+                phase=phase,
+                event="phase_go",
+                process_boot_id=child.process_boot_id,
+                payload={
+                    "prior_state": f"{phase}_CENSUS_OK",
+                    "next_state": f"{phase}_GO",
+                    "control_nonce_sha256": hashlib.sha256(
+                        child.control_nonce.encode("ascii")
+                    ).hexdigest(),
+                },
+            )
+            result = child.send_control(control_frame)
+            if result is not None:
+                _fail("dual_live_phase_control_invalid")
+            exit_code = child.wait(timeout_seconds)
+            if (
+                isinstance(exit_code, bool)
+                or not isinstance(exit_code, int)
+                or exit_code < 0
+            ):
+                _fail("dual_live_phase_exit_invalid")
+            if exit_code != 0:
+                stop_latch.latch("child_exit_nonzero")
+                _fail("dual_live_phase_failed")
+        except BaseException as exc:
+            reason = stop_latch.reason_code
+            if reason is None:
+                if (
+                    isinstance(exc, DualLiveRuntimeError)
+                    and exc.code == "dual_live_phase_census_failed"
+                ):
+                    reason = "logger_census_failure"
+                elif (
+                    isinstance(exc, DualLiveRuntimeError)
+                    and exc.code == "dual_live_phase_failed"
+                ):
+                    reason = "child_exit_nonzero"
+                else:
+                    reason = "protocol_failure"
+            fail(
+                (
+                    exc.code
+                    if isinstance(exc, DualLiveRuntimeError)
+                    else "dual_live_phase_failed"
+                ),
+                reason,
+                exc,
+            )
+
+        if child is not None:
+            try:
+                result = child.stop()
+                stopped = True
+                if result is not None:
+                    _fail("dual_live_child_stop_invalid")
+            except BaseException as exc:
+                fail("dual_live_child_stop_failed", "protocol_failure", exc)
+        if pumps is not None:
+            try:
+                pumps.join(timeout=timeout_seconds)
+            except BaseException as exc:
+                if is_writer_failure(exc):
+                    fail(
+                        "dual_live_runtime_writer_failure",
+                        "writer_failure",
+                        exc,
+                    )
+                else:
+                    fail("dual_live_pump_failed", "pump_failure", exc)
+        if child is not None:
+            reader_error = close_readers(child)
+            if reader_error is not None:
+                fail("dual_live_reader_close_failed", "protocol_failure", reader_error)
+        if (
+            phase_error is None
+            and control is not None
+            and len(census_points) == 2
+        ):
+            try:
+                control.complete()
+            except BaseException as exc:
+                fail("dual_live_phase_incomplete", "protocol_failure", exc)
+
+        if phase_error is not None:
+            try:
+                record_stop_once()
+            except BaseException as exc:
+                fail("dual_live_runtime_writer_failure", "writer_failure", exc)
+
+        if child is not None:
+            try:
+                quiescence = quiesce_phase(phase, child)
+                if (
+                    type(quiescence) is not tuple
+                    or len(quiescence) != 2
+                    or not all(isinstance(item, Mapping) for item in quiescence)
+                ):
+                    _fail("dual_live_quiescence_invalid")
+                socket_payload, job_payload = quiescence
+                socket_record = runtime_writer.append(
+                    phase=phase,
+                    event="socket_census",
+                    process_boot_id=child.process_boot_id,
+                    payload=socket_payload,
+                )
+                if socket_record["payload"]["stable"] is not True:
+                    _fail("dual_live_quiescence_invalid")
+                runtime_writer.append(
+                    phase=phase,
+                    event="job_zero",
+                    process_boot_id=child.process_boot_id,
+                    payload=job_payload,
+                )
+            except BaseException as exc:
+                if is_writer_failure(exc):
+                    fail(
+                        "dual_live_runtime_writer_failure",
+                        "writer_failure",
+                        exc,
+                    )
+                else:
+                    fail("dual_live_quiescence_failed", "protocol_failure", exc)
+                try:
+                    record_stop_once()
+                except BaseException:
+                    pass
+            if phase == "A":
+                try:
+                    authority_payload = clear_authority(phase, child)
+                    authority_record = runtime_writer.append(
+                        phase=phase,
+                        event="authority_cleared",
+                        process_boot_id=child.process_boot_id,
+                        payload=authority_payload,
+                    )
+                    if (
+                        authority_record["payload"]["all_required_absent"]
+                        is not True
+                    ):
+                        _fail("dual_live_authority_clear_invalid")
+                except BaseException as exc:
+                    if is_writer_failure(exc):
+                        fail(
+                            "dual_live_runtime_writer_failure",
+                            "writer_failure",
+                            exc,
+                        )
+                    else:
+                        fail(
+                            "dual_live_authority_clear_failed",
+                            "protocol_failure",
+                            exc,
+                        )
+                    try:
+                        record_stop_once()
+                    except BaseException:
+                        pass
+
+        if child is None:
+            if phase_error is None:
+                phase_error = normalized_error(
+                    "dual_live_controller_child_invalid",
+                    "protocol_failure",
+                    DualLiveRuntimeError("dual_live_controller_child_invalid"),
+                )
+            record_stop_once()
+
+        complete_record: dict[str, Any] | None = None
+        if child is not None and exit_code is not None:
+            terminal_state = "completed" if phase_error is None else "failed"
+            try:
+                complete_record = runtime_writer.append(
+                    phase=phase,
+                    event="phase_complete",
+                    process_boot_id=child.process_boot_id,
+                    payload={
+                        "terminal_state": terminal_state,
+                        "exit_code": exit_code,
+                    },
+                )
+            except BaseException as exc:
+                fail(
+                    "dual_live_runtime_writer_failure",
+                    "writer_failure",
+                    exc,
+                )
+        if phase_error is not None:
+            raise phase_error
+        if not stopped or len(census_points) != 2 or complete_record is None:
+            stop_latch.latch("protocol_failure")
+            record_stop_once()
+            _fail("dual_live_phase_incomplete")
+        return complete_record["record_sha256"]
+
+    run_error: BaseException | None = None
+    try:
+        runtime_writer.append(
+            phase="wrapper",
+            event="runtime_start",
+            process_boot_id=None,
+            payload=runtime_start_payload,
+        )
+        phase_a_sha256 = run_phase("A", create_phase_a)
+        if stop_latch.is_set:
+            _fail("dual_live_phase_failed")
+        phase_b_sha256 = run_phase("B", create_phase_b)
+        if stop_latch.is_set:
+            _fail("dual_live_phase_failed")
+        runtime_writer.append(
+            phase="wrapper",
+            event="runtime_complete",
+            process_boot_id=None,
+            payload={
+                "phase_a_result_sha256": phase_a_sha256,
+                "phase_b_result_sha256": phase_b_sha256,
+                "terminal_state": "completed",
+            },
+        )
+    except BaseException as exc:
+        run_error = exc
+
+    close_error: BaseException | None = None
+    for stream in PIPE_STREAM_CLASSES:
+        try:
+            capture_writers[stream].flush()
+        except BaseException as exc:
+            if close_error is None:
+                close_error = exc
+    for stream in PIPE_STREAM_CLASSES:
+        try:
+            capture_writers[stream].close()
+        except BaseException as exc:
+            if close_error is None:
+                close_error = exc
+
+    if close_error is not None:
+        failure = DualLiveRuntimeError("dual_live_capture_close_failed")
+        failure.__cause__ = close_error
+        failure.__context__ = run_error
+        raise failure
+    if run_error is not None:
+        raise run_error
+    return seal()
 
 
 class CampaignPipeSink:

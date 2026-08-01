@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 import hashlib
 import inspect
 import os
+import queue
 from pathlib import Path
 from types import MappingProxyType, SimpleNamespace
 from typing import Any
@@ -36,6 +37,7 @@ from app.schemas.api import (
     expected_grant_rule_payloads,
 )
 from app.services import raw_storage_handles as raw_handles
+from app.services import dual_live_runtime as dual_live_runtime_module
 from app.services.connector_campaign_log_capture import (
     ConnectorCampaignLogCaptureCommitAmbiguous,
     ConnectorCampaignLogCaptureError,
@@ -45,8 +47,12 @@ from app.services.connector_campaign_log_capture import (
     verify_connector_campaign_log_capture_read_only,
 )
 from app.services.dual_live_runtime import (
+    PIPE_STREAM_CLASSES,
+    WINDOWS_MIB_TCP_STATES,
     RuntimeIdentity,
-    RuntimeRecordWriter,
+    encode_child_control_frame,
+    encode_child_status_frame,
+    encode_pipe_frame,
     read_runtime_records,
 )
 from app.services.connector_egress_arming import (
@@ -1032,6 +1038,109 @@ def test_dual_capture_seals_exact_bytes_and_two_events_once(
             }
 
 
+class _CaptureControllerReader:
+    def __init__(self) -> None:
+        self._chunks: queue.Queue[bytes | None] = queue.Queue()
+        self._buffer = b""
+        self.closed = False
+
+    def feed(self, content: bytes) -> None:
+        self._chunks.put(content)
+
+    def finish(self) -> None:
+        self._chunks.put(None)
+
+    def read(self, size: int) -> bytes:
+        while not self._buffer:
+            chunk = self._chunks.get(timeout=2)
+            if chunk is None:
+                return b""
+            self._buffer = chunk
+        result, self._buffer = self._buffer[:size], self._buffer[size:]
+        return result
+
+    def close(self) -> None:
+        if not self.closed:
+            self.closed = True
+            self.finish()
+
+
+def _capture_controller_child(phase: str, events: list[str]) -> object:
+    process_boot_id = ("a" if phase == "A" else "b") * 64
+    status_nonce_sha256 = ("c" if phase == "A" else "d") * 64
+    control_nonce = ("e" if phase == "A" else "f") * 64
+    readers = {stream: _CaptureControllerReader() for stream in PIPE_STREAM_CLASSES}
+    readers["app"].feed(
+        encode_child_status_frame(
+            phase=phase,
+            event="logger_census",
+            process_boot_id=process_boot_id,
+            status_nonce_sha256=status_nonce_sha256,
+            ordinal=1,
+            payload={
+                "census_point": "pre_activity",
+                "handler_count": 1,
+                "topology_sha256": "1" * 64,
+            },
+        )
+    )
+
+    def send_control(frame: bytes) -> None:
+        assert frame == encode_child_control_frame(
+            phase=phase,
+            command="GO",
+            control_nonce=control_nonce,
+        )
+        events.append(f"go-{phase}")
+        readers["app"].feed(
+            encode_pipe_frame(
+                canonical_json_bytes(
+                    {
+                        "schema_id": "project6.test_capture_app.v1",
+                        "phase": phase,
+                    }
+                )
+            )
+        )
+        readers["app"].feed(
+            encode_child_status_frame(
+                phase=phase,
+                event="logger_census",
+                process_boot_id=process_boot_id,
+                status_nonce_sha256=status_nonce_sha256,
+                ordinal=2,
+                payload={
+                    "census_point": "exit",
+                    "handler_count": 1,
+                    "topology_sha256": "1" * 64,
+                },
+            )
+        )
+        readers["stdout"].feed(encode_pipe_frame(f"phase-{phase}\n".encode()))
+        for reader in readers.values():
+            reader.finish()
+
+    def wait(_timeout: float) -> int:
+        events.append(f"wait-{phase}")
+        return 0
+
+    def stop() -> None:
+        events.append(f"stop-{phase}")
+
+    return dual_live_runtime_module._ControllerChild(
+        process_boot_id=process_boot_id,
+        process_creation_identity_sha256="2" * 64,
+        executable_sha256="3" * 64,
+        job_policy_sha256="4" * 64,
+        status_nonce_sha256=status_nonce_sha256,
+        control_nonce=control_nonce,
+        readers=readers,
+        send_control=send_control,
+        wait=wait,
+        stop=stop,
+    )
+
+
 @pytest.mark.parametrize(
     "connector_keys",
     (
@@ -1849,65 +1958,78 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
         root_mutex_identity_sha256="4" * 64,
         campaign_mutex_identity_sha256="5" * 64,
     )
-    runtime_writer = RuntimeRecordWriter(
-        capture.writers[0].write,
-        identity=identity,
-    )
-    runtime_records = (
-        runtime_writer.append(
-            phase="wrapper",
-            event="runtime_start",
-            process_boot_id=None,
-            payload={
-                "code_revision": CODE_REVISION,
-                "wrapper_image_sha256": identity.wrapper_image_sha256,
-                "interpreter_image_sha256": (
-                    identity.interpreter_image_sha256
-                ),
-                "mutex_identity_sha256": "6" * 64,
-            },
-        ),
-        runtime_writer.append(
-            phase="wrapper",
-            event="runtime_complete",
-            process_boot_id=None,
-            payload={
-                "phase_a_result_sha256": "7" * 64,
-                "phase_b_result_sha256": "8" * 64,
-                "terminal_state": "completed",
-            },
-        ),
-    )
-    app_bytes = b"".join(
-        canonical_json_bytes(record) + b"\n" for record in runtime_records
-    )
-    payload_by_stream = {
-        "http": b"",
-        "stdout": b"phase output\n",
-        "stderr": b"",
-    }
-    for writer in capture.writers[1:]:
-        payload = payload_by_stream[writer.stream_class]
-        if payload:
-            assert writer.write(payload) == len(payload)
-    for writer in capture.writers:
-        writer.flush()
-    for writer in capture.writers:
-        writer.close()
-    assert all(writer.closed for writer in capture.writers)
-
     _insert_terminal_runs(
         db,
         authority,
         connector_keys=connector_keys,
     )
     run_rows_before = _connector_run_rows(db)
-    result = seal_connector_campaign_log_capture(
-        db,
-        capture=capture,
-        runtime_stopped_at=START + timedelta(seconds=10),
-        now=START + timedelta(seconds=11),
+    events: list[str] = []
+    seal_calls = 0
+
+    def create(phase: str) -> object:
+        events.append(f"create-{phase}")
+        return _capture_controller_child(phase, events)
+
+    def quiesce(
+        phase: str,
+        _child: object,
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        events.append(f"quiesce-{phase}")
+        zero_states = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
+        return (
+            {
+                "tcp4_state_counts": zero_states,
+                "tcp6_state_counts": dict(zero_states),
+                "udp4_count": 0,
+                "udp6_count": 0,
+                "process_identity_sha256": "7" * 64,
+                "stable": True,
+            },
+            {"active_process_count": 0, "process_list_sha256": "8" * 64},
+        )
+
+    def clear_authority(phase: str, _child: object) -> dict[str, object]:
+        events.append(f"authority-{phase}")
+        return {
+            "authority_posture_sha256": "9" * 64,
+            "all_required_absent": True,
+        }
+
+    def strict_seal() -> object:
+        nonlocal seal_calls
+        seal_calls += 1
+        events.append("seal")
+        return seal_connector_campaign_log_capture(
+            db,
+            capture=capture,
+            runtime_stopped_at=START + timedelta(seconds=10),
+            now=START + timedelta(seconds=11),
+        )
+
+    result = dual_live_runtime_module._run_two_phase_controller(
+        identity=identity,
+        runtime_start_payload={
+            "code_revision": CODE_REVISION,
+            "wrapper_image_sha256": identity.wrapper_image_sha256,
+            "interpreter_image_sha256": identity.interpreter_image_sha256,
+            "mutex_identity_sha256": "6" * 64,
+        },
+        writers={writer.stream_class: writer for writer in capture.writers},
+        create_phase_a=lambda: create("A"),
+        create_phase_b=lambda: create("B"),
+        quiesce_phase=quiesce,
+        clear_authority=clear_authority,
+        http_frame_validator=lambda _payload: None,
+        seal=strict_seal,
+        timeout_seconds=2,
     )
+    assert seal_calls == 1
+    assert events.index("quiesce-A") < events.index("authority-A")
+    assert events.index("authority-A") < events.index("create-B")
+    assert "authority-B" not in events
+    assert events[-1] == "seal"
+    assert all(writer.closed for writer in capture.writers)
 
     expected_run_ids = tuple(
         sorted(authority.run_ids[key] for key in connector_keys)
@@ -1920,8 +2042,27 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
     assert _connector_run_rows(db) == run_rows_before
     manifest_path, seal_path = _artifact_paths(authority)
     app_path = manifest_path.parent / "app.jsonl"
-    assert app_path.read_bytes() == app_bytes
-    assert read_runtime_records(app_path.read_bytes()) == runtime_records
+    app_bytes = app_path.read_bytes()
+    runtime_records = read_runtime_records(app_bytes)
+    assert [record["event"] for record in runtime_records] == [
+        "runtime_start",
+        "phase_child_start",
+        "logger_census",
+        "phase_go",
+        "logger_census",
+        "socket_census",
+        "job_zero",
+        "authority_cleared",
+        "phase_complete",
+        "phase_child_start",
+        "logger_census",
+        "phase_go",
+        "logger_census",
+        "socket_census",
+        "job_zero",
+        "phase_complete",
+        "runtime_complete",
+    ]
     app_manifest = next(
         item for item in result.manifest.files if item.stream_class == "app"
     )
