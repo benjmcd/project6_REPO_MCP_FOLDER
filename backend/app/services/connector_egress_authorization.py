@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass, is_dataclass
 from datetime import UTC, datetime
 import hashlib
 import ipaddress
+from itertools import islice
 import json
 import math
 import os
@@ -16,7 +17,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, ValidationError
 from starlette.requests import Request
 
-from app.core.config import BACKEND_ROOT, settings
+from app.core.config import BACKEND_ROOT, Settings, settings
 from app.schemas.api import (
     SINGLE_SEND_DETECTION_ALLOWANCE_BYTES as SINGLE_SEND_DETECTION_ALLOWANCE_BYTES,
     ConnectorCampaignDefinitionRefV1,
@@ -34,6 +35,10 @@ from app.services.layer3_sec_xbrl_in_app_auth_policy import (
 )
 
 MAX_PROTECTED_JSON_BYTES = 64 * 1024
+MAX_EVIDENCE_INDEX_REVISIONS = 128
+MAX_EVIDENCE_CAMPAIGN_ARCHIVES = 128
+MAX_EVIDENCE_GRANT_ARCHIVES = 256
+MAX_EVIDENCE_LOG_CAPTURE_REFS = 128
 AUTHORIZATION_RECEIPT_SCHEMA_ID: Literal[
     "project6.connector_egress_authorization_receipt.v1"
 ] = "project6.connector_egress_authorization_receipt.v1"
@@ -271,8 +276,11 @@ def _is_relative_to(path: Path, root: Path) -> bool:
         return False
 
 
-def _sqlite_database_path() -> Path | None:
-    raw = str(settings.database_url or "")
+def _sqlite_database_path(
+    settings_override: Settings | None = None,
+) -> Path | None:
+    configuration = settings if settings_override is None else settings_override
+    raw = str(configuration.database_url or "")
     if not raw.startswith("sqlite:///"):
         return None
     value = raw[len("sqlite:///") :]
@@ -284,16 +292,21 @@ def _sqlite_database_path() -> Path | None:
     return candidate.resolve(strict=False)
 
 
-def _forbidden_path(path: Path) -> bool:
+def _forbidden_path(
+    path: Path,
+    *,
+    settings_override: Settings | None = None,
+) -> bool:
+    configuration = settings if settings_override is None else settings_override
     resolved = path.resolve(strict=False)
     roots = {
         BACKEND_ROOT.parent.resolve(strict=False),
-        Path(settings.storage_dir).resolve(strict=False),
+        Path(configuration.storage_dir).resolve(strict=False),
         (BACKEND_ROOT / "app" / "review_ui" / "static").resolve(strict=False),
     }
     if any(_is_relative_to(resolved, root) for root in roots):
         return True
-    database_path = _sqlite_database_path()
+    database_path = _sqlite_database_path(configuration)
     return database_path is not None and resolved == database_path
 
 
@@ -329,7 +342,12 @@ def _assert_no_reparse_components(path: Path) -> None:
             )
 
 
-def _protected_directory(path_value: Path | str | None, *, label: str) -> Path:
+def _protected_directory(
+    path_value: Path | str | None,
+    *,
+    label: str,
+    settings_override: Settings | None = None,
+) -> Path:
     if path_value is None:
         _fail(
             "connector_egress_missing_configuration",
@@ -343,7 +361,10 @@ def _protected_directory(path_value: Path | str | None, *, label: str) -> Path:
         )
     _assert_no_reparse_components(path)
     resolved = path.resolve(strict=True)
-    if not resolved.is_dir() or _forbidden_path(resolved):
+    if not resolved.is_dir() or _forbidden_path(
+        resolved,
+        settings_override=settings_override,
+    ):
         _fail(
             "connector_egress_protected_path_invalid",
             f"{label} must be a protected directory outside application roots.",
@@ -356,6 +377,7 @@ def _read_protected_bytes(
     *,
     expected_sha256: object,
     label: str,
+    settings_override: Settings | None = None,
 ) -> tuple[Path, bytes, str]:
     expected = _normalized_sha256(expected_sha256, label=f"{label} digest")
     if path_value is None:
@@ -371,7 +393,10 @@ def _read_protected_bytes(
         )
     _assert_no_reparse_components(path)
     resolved = path.resolve(strict=True)
-    if _forbidden_path(resolved):
+    if _forbidden_path(
+        resolved,
+        settings_override=settings_override,
+    ):
         _fail(
             "connector_egress_protected_path_invalid",
             f"{label} path is inside a forbidden application root.",
@@ -740,16 +765,20 @@ def _validate_successor(
         )
 
 
-def _load_evidence_index_chain() -> VerifiedEvidenceIndexChain:
+def _load_evidence_index_chain(
+    settings_override: Settings | None = None,
+) -> VerifiedEvidenceIndexChain:
+    configuration = settings if settings_override is None else settings_override
     root = _protected_directory(
-        settings.connector_campaign_evidence_root,
+        configuration.connector_campaign_evidence_root,
         label="CONNECTOR_CAMPAIGN_EVIDENCE_ROOT",
+        settings_override=configuration,
     )
     expected_head = _normalized_sha256(
-        settings.connector_campaign_evidence_index_sha256,
+        configuration.connector_campaign_evidence_index_sha256,
         label="configured evidence-index head digest",
     )
-    configured_path_value = settings.connector_campaign_evidence_index_path
+    configured_path_value = configuration.connector_campaign_evidence_index_path
     if configured_path_value is None:
         _fail(
             "connector_egress_missing_configuration",
@@ -783,11 +812,18 @@ def _load_evidence_index_chain() -> VerifiedEvidenceIndexChain:
             "Protected evidence indexes path must be a directory.",
         )
 
-    children = tuple(indexes_dir.iterdir())
+    children = tuple(
+        islice(indexes_dir.iterdir(), MAX_EVIDENCE_INDEX_REVISIONS + 1)
+    )
     if not children:
         _fail(
             "connector_egress_index_directory_empty",
             "Protected evidence indexes directory is empty.",
+        )
+    if len(children) > MAX_EVIDENCE_INDEX_REVISIONS:
+        _fail(
+            "connector_egress_index_revision_limit_exceeded",
+            "Protected evidence-index revision count exceeds its frozen ceiling.",
         )
     if len({child.name.casefold() for child in children}) != len(children):
         _fail(
@@ -813,6 +849,7 @@ def _load_evidence_index_chain() -> VerifiedEvidenceIndexChain:
             child,
             expected_sha256=digest,
             label="campaign evidence-index object",
+            settings_override=configuration,
         )
         model = _parse_model(
             raw_bytes,
@@ -912,12 +949,28 @@ def _load_evidence_index_chain() -> VerifiedEvidenceIndexChain:
         head_path=head.path,
         revisions=ascending,
     )
-    _assert_evidence_index_chain_unchanged(chain)
+    _assert_evidence_index_chain_unchanged(
+        chain,
+        settings_override=configuration,
+    )
     return chain
+
+
+def load_evidence_index_chain_read_only(
+    settings: Settings,
+) -> VerifiedEvidenceIndexChain:
+    if not isinstance(settings, Settings):
+        _fail(
+            "connector_egress_settings_invalid",
+            "Read-only evidence resolution requires explicit Settings.",
+        )
+    return _load_evidence_index_chain(settings)
 
 
 def _assert_evidence_index_chain_unchanged(
     chain: VerifiedEvidenceIndexChain,
+    *,
+    settings_override: Settings | None = None,
 ) -> None:
     indexes_dir = _resolve_evidence_path(
         chain.evidence_root,
@@ -929,7 +982,14 @@ def _assert_evidence_index_chain_unchanged(
         f"{revision.raw_sha256}.json": revision
         for revision in chain.revisions
     }
-    children = tuple(indexes_dir.iterdir())
+    children = tuple(
+        islice(indexes_dir.iterdir(), MAX_EVIDENCE_INDEX_REVISIONS + 1)
+    )
+    if len(children) > MAX_EVIDENCE_INDEX_REVISIONS:
+        _fail(
+            "connector_egress_index_revision_limit_exceeded",
+            "Protected evidence-index revision count exceeds its frozen ceiling.",
+        )
     actual_names = tuple(sorted(child.name for child in children))
     expected_names = tuple(sorted(expected))
     if actual_names != expected_names or len(
@@ -945,6 +1005,7 @@ def _assert_evidence_index_chain_unchanged(
             indexes_dir / name,
             expected_sha256=revision.raw_sha256,
             label="campaign evidence-index snapshot object",
+            settings_override=settings_override,
         )
         if (
             path != revision.path
@@ -955,9 +1016,15 @@ def _assert_evidence_index_chain_unchanged(
                 "connector_egress_index_snapshot_changed",
                 "Protected evidence-index bytes changed during authority resolution.",
             )
-    final_names = tuple(
-        sorted(child.name for child in indexes_dir.iterdir())
+    final_children = tuple(
+        islice(indexes_dir.iterdir(), MAX_EVIDENCE_INDEX_REVISIONS + 1)
     )
+    if len(final_children) > MAX_EVIDENCE_INDEX_REVISIONS:
+        _fail(
+            "connector_egress_index_revision_limit_exceeded",
+            "Protected evidence-index revision count exceeds its frozen ceiling.",
+        )
+    final_names = tuple(sorted(child.name for child in final_children))
     if final_names != expected_names:
         _fail(
             "connector_egress_index_snapshot_changed",
@@ -1039,6 +1106,8 @@ def _introduction_revision(
 def _read_archived_definition(
     chain: VerifiedEvidenceIndexChain,
     ref: ConnectorCampaignDefinitionRefV1,
+    *,
+    settings_override: Settings | None = None,
 ) -> tuple[Path, bytes, DualLiveCampaignDefinitionV1, str]:
     relative_path = _validate_definition_reference_path(ref)
     archive_path = _resolve_evidence_path(
@@ -1051,6 +1120,7 @@ def _read_archived_definition(
         archive_path,
         expected_sha256=ref.raw_definition_sha256,
         label="archived campaign definition",
+        settings_override=settings_override,
     )
     model = _parse_model(
         raw_bytes,
@@ -1117,6 +1187,7 @@ def _read_archived_grant(
     definition: DualLiveCampaignDefinitionV1,
     raw_definition_sha256: str,
     canonical_campaign_fingerprint: str,
+    settings_override: Settings | None = None,
 ) -> tuple[Path, bytes, ConnectorEgressGrantV1, str]:
     grant_relative_path, _ = _validate_grant_reference_paths(ref)
     archive_path = _resolve_evidence_path(
@@ -1129,6 +1200,7 @@ def _read_archived_grant(
         archive_path,
         expected_sha256=ref.raw_grant_sha256,
         label=f"archived {ref.connector_key} connector grant",
+        settings_override=settings_override,
     )
     model = _parse_model(
         raw_bytes,
@@ -1188,6 +1260,7 @@ def _read_marker_if_present(
     grant: ConnectorEgressGrantV1,
     *,
     required: bool,
+    settings_override: Settings | None = None,
 ) -> tuple[Path, ConnectorGrantConsumptionMarkerV1 | None]:
     _, marker_relative_path = _validate_grant_reference_paths(ref)
     marker_path = _resolve_evidence_path(
@@ -1207,6 +1280,7 @@ def _read_marker_if_present(
         marker_path,
         expected_sha256=ref.consumption_marker_sha256,
         label=f"{grant.connector_key} connector grant consumption marker",
+        settings_override=settings_override,
     )
     marker = _parse_model(
         raw_bytes,
@@ -1222,32 +1296,69 @@ def _read_marker_if_present(
     return path, marker
 
 
-def _validate_chain_archives(chain: VerifiedEvidenceIndexChain) -> None:
-    for definition_ref in chain.head.campaigns:
+def _validate_chain_archives(
+    chain: VerifiedEvidenceIndexChain,
+    *,
+    settings_override: Settings | None = None,
+) -> None:
+    definition_refs = tuple(
+        islice(
+            iter(chain.head.campaigns),
+            MAX_EVIDENCE_CAMPAIGN_ARCHIVES + 1,
+        )
+    )
+    entries = tuple(
+        islice(
+            iter(chain.head.entries),
+            MAX_EVIDENCE_GRANT_ARCHIVES + 1,
+        )
+    )
+    capture_refs = tuple(
+        islice(
+            iter(chain.head.log_captures),
+            MAX_EVIDENCE_LOG_CAPTURE_REFS + 1,
+        )
+    )
+    if (
+        len(definition_refs) > MAX_EVIDENCE_CAMPAIGN_ARCHIVES
+        or len(entries) > MAX_EVIDENCE_GRANT_ARCHIVES
+        or len(capture_refs) > MAX_EVIDENCE_LOG_CAPTURE_REFS
+    ):
+        _fail(
+            "connector_egress_archive_limit_exceeded",
+            "Protected evidence archive references exceed frozen ceilings.",
+        )
+    entries_by_campaign: dict[
+        tuple[str, str], list[ConnectorGrantEvidenceRefV1]
+    ] = {}
+    for entry in entries:
+        entries_by_campaign.setdefault(_campaign_key(entry), []).append(entry)
+    for definition_ref in definition_refs:
         (
             _,
             _,
             definition,
             canonical_fingerprint,
-        ) = _read_archived_definition(chain, definition_ref)
-        entries = [
-            entry
-            for entry in chain.head.entries
-            if _campaign_key(entry) == _campaign_key(definition_ref)
-        ]
-        for entry in entries:
+        ) = _read_archived_definition(
+            chain,
+            definition_ref,
+            settings_override=settings_override,
+        )
+        for entry in entries_by_campaign.get(_campaign_key(definition_ref), []):
             _, _, grant, _ = _read_archived_grant(
                 chain,
                 entry,
                 definition=definition,
                 raw_definition_sha256=definition_ref.raw_definition_sha256,
                 canonical_campaign_fingerprint=canonical_fingerprint,
+                settings_override=settings_override,
             )
             _read_marker_if_present(
                 chain,
                 entry,
                 grant,
                 required=False,
+                settings_override=settings_override,
             )
 
 
@@ -1650,13 +1761,19 @@ def resolve_current_connector_egress_grant(
     )
 
 
-def resolve_historical_connector_grant_evidence(
+def resolve_historical_connector_grant_evidence_read_only(
+    settings: Settings,
     *,
     connector_key: str,
     campaign_id: str,
     expected_campaign_fingerprint: str,
     expected_grant_sha256: str,
 ) -> VerifiedHistoricalGrantEvidence:
+    if not isinstance(settings, Settings):
+        _fail(
+            "connector_egress_settings_invalid",
+            "Historical evidence resolution requires explicit Settings.",
+        )
     if connector_key not in _EXPECTED_CONNECTORS:
         _fail(
             "connector_egress_connector_not_admitted",
@@ -1672,8 +1789,8 @@ def resolve_historical_connector_grant_evidence(
         expected_grant_sha256,
         label=f"expected historical {connector_key} grant digest",
     )
-    chain = _load_evidence_index_chain()
-    _validate_chain_archives(chain)
+    chain = _load_evidence_index_chain(settings)
+    _validate_chain_archives(chain, settings_override=settings)
     definition_ref, entries, _ = _find_campaign_refs(
         chain,
         campaign_id=expected_campaign_id,
@@ -1693,13 +1810,17 @@ def resolve_historical_connector_grant_evidence(
     entry = matching_entries[0]
     (
         definition_archive_path,
-        _,
+        definition_bytes,
         definition,
         canonical_campaign_fingerprint,
-    ) = _read_archived_definition(chain, definition_ref)
+    ) = _read_archived_definition(
+        chain,
+        definition_ref,
+        settings_override=settings,
+    )
     (
         grant_archive_path,
-        _,
+        grant_bytes,
         grant,
         canonical_grant_fingerprint,
     ) = _read_archived_grant(
@@ -1708,12 +1829,14 @@ def resolve_historical_connector_grant_evidence(
         definition=definition,
         raw_definition_sha256=definition_ref.raw_definition_sha256,
         canonical_campaign_fingerprint=canonical_campaign_fingerprint,
+        settings_override=settings,
     )
     marker_path, marker = _read_marker_if_present(
         chain,
         entry,
         grant,
         required=True,
+        settings_override=settings,
     )
     if marker is None:
         _fail(
@@ -1725,7 +1848,52 @@ def resolve_historical_connector_grant_evidence(
         campaign_id=expected_campaign_id,
         campaign_fingerprint=expected_fingerprint,
     )
-    _assert_evidence_index_chain_unchanged(chain)
+    final_definition = _read_archived_definition(
+        chain,
+        definition_ref,
+        settings_override=settings,
+    )
+    final_grant = _read_archived_grant(
+        chain,
+        entry,
+        definition=final_definition[2],
+        raw_definition_sha256=definition_ref.raw_definition_sha256,
+        canonical_campaign_fingerprint=final_definition[3],
+        settings_override=settings,
+    )
+    final_marker_path, final_marker = _read_marker_if_present(
+        chain,
+        entry,
+        final_grant[2],
+        required=True,
+        settings_override=settings,
+    )
+    if (
+        final_definition
+        != (
+            definition_archive_path,
+            definition_bytes,
+            definition,
+            canonical_campaign_fingerprint,
+        )
+        or final_grant
+        != (
+            grant_archive_path,
+            grant_bytes,
+            grant,
+            canonical_grant_fingerprint,
+        )
+        or final_marker_path != marker_path
+        or final_marker != marker
+    ):
+        _fail(
+            "connector_egress_historical_snapshot_changed",
+            "Historical definition, grant, or marker changed during verification.",
+        )
+    _assert_evidence_index_chain_unchanged(
+        chain,
+        settings_override=settings,
+    )
     return VerifiedHistoricalGrantEvidence(
         definition_model=definition,
         model=grant,
@@ -1741,6 +1909,22 @@ def resolve_historical_connector_grant_evidence(
         consumption_marker_path=marker_path,
         consumption_marker_sha256=entry.consumption_marker_sha256,
         index_chain=chain,
+    )
+
+
+def resolve_historical_connector_grant_evidence(
+    *,
+    connector_key: str,
+    campaign_id: str,
+    expected_campaign_fingerprint: str,
+    expected_grant_sha256: str,
+) -> VerifiedHistoricalGrantEvidence:
+    return resolve_historical_connector_grant_evidence_read_only(
+        settings,
+        connector_key=connector_key,
+        campaign_id=campaign_id,
+        expected_campaign_fingerprint=expected_campaign_fingerprint,
+        expected_grant_sha256=expected_grant_sha256,
     )
 
 

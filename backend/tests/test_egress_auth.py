@@ -1,6 +1,7 @@
 # ruff: noqa: E402
 from __future__ import annotations
 
+from collections.abc import Callable
 import hashlib
 import inspect
 import os
@@ -20,7 +21,7 @@ BACKEND = Path(__file__).resolve().parents[1]
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-from app.core.config import settings
+from app.core.config import Settings, settings
 from app.schemas.api import (
     CAMPAIGN_NON_AUTHORITIES,
     COMMON_GRANT_NON_AUTHORITIES,
@@ -37,9 +38,11 @@ from app.services.connector_egress_authorization import (
     VerifiedHistoricalGrantEvidence,
     authorize_connector_egress_owner,
     canonical_json_bytes,
+    load_evidence_index_chain_read_only,
     resolve_current_connector_egress_grant,
     resolve_current_dual_live_campaign_definition,
     resolve_historical_connector_grant_evidence,
+    resolve_historical_connector_grant_evidence_read_only,
 )
 
 
@@ -201,6 +204,31 @@ class AuthorityFixture:
     evidence_root: Path
     index_path: Path
     index_sha256: str
+
+
+def _explicit_read_only_settings(
+    fixture: AuthorityFixture,
+    tmp_path: Path,
+    *,
+    index_path: Path | None = None,
+    index_sha256: str | None = None,
+) -> Settings:
+    return Settings(
+        DB_INIT_MODE="none",
+        DATABASE_URL=(
+            f"sqlite:///{(tmp_path / 'explicit.db').resolve().as_posix()}"
+        ),
+        STORAGE_DIR=str(tmp_path / "explicit-storage"),
+        CONNECTOR_CAMPAIGN_EVIDENCE_ROOT=fixture.evidence_root,
+        CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH=(
+            fixture.index_path if index_path is None else index_path
+        ),
+        CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_SHA256=(
+            fixture.index_sha256
+            if index_sha256 is None
+            else index_sha256
+        ),
+    )
 
 
 def _read_index(path: Path) -> ConnectorCampaignEvidenceIndexV1:
@@ -692,6 +720,210 @@ def test_historical_resolver_requires_and_rehashes_consumption_marker(
             expected_campaign_fingerprint=fixture.campaign_fingerprint,
             expected_grant_sha256=fixture.grant_sha256["sciencebase_mcs"],
         )
+
+
+def test_explicit_settings_read_only_adapters_ignore_global_current_authority(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _build_authority(tmp_path, monkeypatch)
+    fixture.marker_paths["sciencebase_mcs"].write_bytes(
+        canonical_json_bytes(fixture.marker_models["sciencebase_mcs"])
+    )
+    successor_path, successor_sha256 = _append_valid_second_slice(
+        fixture,
+        monkeypatch,
+    )
+    explicit = _explicit_read_only_settings(
+        fixture,
+        tmp_path,
+        index_path=successor_path,
+        index_sha256=successor_sha256,
+    )
+
+    with pytest.raises(ConnectorEgressAuthorizationError) as ancestor:
+        resolve_current_dual_live_campaign_definition(
+            expected_campaign_id=CAMPAIGN_ID,
+            expected_campaign_fingerprint=fixture.campaign_fingerprint,
+            code_revision=CODE_REVISION,
+            now=NOW,
+        )
+    assert ancestor.value.code == "connector_egress_campaign_historical_only"
+
+    monkeypatch.setattr(
+        settings,
+        "connector_campaign_evidence_root",
+        tmp_path / "wrong-global-root",
+    )
+    monkeypatch.setattr(
+        settings,
+        "connector_campaign_evidence_index_path",
+        tmp_path / "wrong-global-index.json",
+    )
+    monkeypatch.setattr(
+        settings,
+        "connector_campaign_evidence_index_sha256",
+        "0" * 64,
+    )
+    monkeypatch.setattr(settings, "storage_dir", str(fixture.evidence_root))
+    monkeypatch.setattr(
+        egress_auth,
+        "resolve_current_dual_live_campaign_definition",
+        lambda **_kwargs: pytest.fail("current authority fallback"),
+    )
+    monkeypatch.setattr(
+        egress_auth,
+        "resolve_current_connector_egress_grant",
+        lambda **_kwargs: pytest.fail("current grant fallback"),
+    )
+
+    chain = load_evidence_index_chain_read_only(explicit)
+    historical = resolve_historical_connector_grant_evidence_read_only(
+        explicit,
+        connector_key="sciencebase_mcs",
+        campaign_id=CAMPAIGN_ID,
+        expected_campaign_fingerprint=fixture.campaign_fingerprint,
+        expected_grant_sha256=fixture.grant_sha256["sciencebase_mcs"],
+    )
+
+    assert chain.head.revision == 2
+    assert historical.index_chain.head.revision == 2
+    assert historical.introduction_index_revision == 1
+    assert historical.introduction_index_sha256 == fixture.index_sha256
+    assert historical.marker_model == fixture.marker_models["sciencebase_mcs"]
+    assert tuple(
+        inspect.signature(load_evidence_index_chain_read_only).parameters
+    ) == ("settings",)
+    assert tuple(
+        inspect.signature(
+            resolve_historical_connector_grant_evidence_read_only
+        ).parameters
+    ) == (
+        "settings",
+        "connector_key",
+        "campaign_id",
+        "expected_campaign_fingerprint",
+        "expected_grant_sha256",
+    )
+
+    orphan = fixture.evidence_root / "indexes" / f"{'0' * 64}.json"
+    orphan.write_bytes(successor_path.read_bytes())
+    with pytest.raises(
+        ConnectorEgressAuthorizationError,
+        match="raw-byte|linear chain|digest filename",
+    ):
+        load_evidence_index_chain_read_only(explicit)
+
+
+@pytest.mark.parametrize("surface", ("index", "archive"))
+def test_read_only_traversal_frozen_ceilings_fail_at_max_plus_one(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    surface: str,
+) -> None:
+    fixture = _build_authority(tmp_path, monkeypatch)
+    fixture.marker_paths["sciencebase_mcs"].write_bytes(
+        canonical_json_bytes(fixture.marker_models["sciencebase_mcs"])
+    )
+    successor_path, successor_sha256 = _append_valid_second_slice(
+        fixture,
+        monkeypatch,
+    )
+    explicit = _explicit_read_only_settings(
+        fixture,
+        tmp_path,
+        index_path=successor_path,
+        index_sha256=successor_sha256,
+    )
+    assert egress_auth.MAX_EVIDENCE_INDEX_REVISIONS == 128
+    assert egress_auth.MAX_EVIDENCE_CAMPAIGN_ARCHIVES == 128
+    assert egress_auth.MAX_EVIDENCE_GRANT_ARCHIVES == 256
+    assert egress_auth.MAX_EVIDENCE_LOG_CAPTURE_REFS == 128
+
+    if surface == "index":
+        monkeypatch.setattr(egress_auth, "MAX_EVIDENCE_INDEX_REVISIONS", 2)
+        assert load_evidence_index_chain_read_only(explicit).head.revision == 2
+        monkeypatch.setattr(egress_auth, "MAX_EVIDENCE_INDEX_REVISIONS", 1)
+        expected_code = "connector_egress_index_revision_limit_exceeded"
+    else:
+        monkeypatch.setattr(egress_auth, "MAX_EVIDENCE_INDEX_REVISIONS", 2)
+        monkeypatch.setattr(egress_auth, "MAX_EVIDENCE_CAMPAIGN_ARCHIVES", 2)
+        monkeypatch.setattr(egress_auth, "MAX_EVIDENCE_GRANT_ARCHIVES", 4)
+        monkeypatch.setattr(egress_auth, "MAX_EVIDENCE_LOG_CAPTURE_REFS", 2)
+        verified = resolve_historical_connector_grant_evidence_read_only(
+            explicit,
+            connector_key="sciencebase_mcs",
+            campaign_id=CAMPAIGN_ID,
+            expected_campaign_fingerprint=fixture.campaign_fingerprint,
+            expected_grant_sha256=fixture.grant_sha256["sciencebase_mcs"],
+        )
+        assert verified.index_chain.head.revision == 2
+        monkeypatch.setattr(egress_auth, "MAX_EVIDENCE_CAMPAIGN_ARCHIVES", 1)
+        expected_code = "connector_egress_archive_limit_exceeded"
+
+    with pytest.raises(ConnectorEgressAuthorizationError) as excinfo:
+        if surface == "index":
+            load_evidence_index_chain_read_only(explicit)
+        else:
+            resolve_historical_connector_grant_evidence_read_only(
+                explicit,
+                connector_key="sciencebase_mcs",
+                campaign_id=CAMPAIGN_ID,
+                expected_campaign_fingerprint=fixture.campaign_fingerprint,
+                expected_grant_sha256=fixture.grant_sha256[
+                    "sciencebase_mcs"
+                ],
+            )
+    assert excinfo.value.code == expected_code
+
+
+def test_historical_read_only_adapter_finishes_with_targeted_rereads_then_index(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fixture = _build_authority(tmp_path, monkeypatch)
+    fixture.marker_paths["sciencebase_mcs"].write_bytes(
+        canonical_json_bytes(fixture.marker_models["sciencebase_mcs"])
+    )
+    explicit = _explicit_read_only_settings(fixture, tmp_path)
+    calls: list[str] = []
+    originals: dict[str, Callable[..., Any]] = {
+        "definition": egress_auth._read_archived_definition,
+        "grant": egress_auth._read_archived_grant,
+        "marker": egress_auth._read_marker_if_present,
+        "index": egress_auth._assert_evidence_index_chain_unchanged,
+    }
+
+    def wrap(name: str) -> Callable[..., Any]:
+        def tracked(*args: Any, **kwargs: Any) -> Any:
+            calls.append(name)
+            return originals[name](*args, **kwargs)
+
+        return tracked
+
+    monkeypatch.setattr(
+        egress_auth,
+        "_read_archived_definition",
+        wrap("definition"),
+    )
+    monkeypatch.setattr(egress_auth, "_read_archived_grant", wrap("grant"))
+    monkeypatch.setattr(egress_auth, "_read_marker_if_present", wrap("marker"))
+    monkeypatch.setattr(
+        egress_auth,
+        "_assert_evidence_index_chain_unchanged",
+        wrap("index"),
+    )
+
+    verified = resolve_historical_connector_grant_evidence_read_only(
+        explicit,
+        connector_key="sciencebase_mcs",
+        campaign_id=CAMPAIGN_ID,
+        expected_campaign_fingerprint=fixture.campaign_fingerprint,
+        expected_grant_sha256=fixture.grant_sha256["sciencebase_mcs"],
+    )
+
+    assert verified.marker_model == fixture.marker_models["sciencebase_mcs"]
+    assert calls[-4:] == ["definition", "grant", "marker", "index"]
 
 
 def test_changed_or_duplicate_campaign_bytes_fail_closed(tmp_path, monkeypatch) -> None:
