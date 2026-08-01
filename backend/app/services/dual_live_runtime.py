@@ -9,7 +9,7 @@ import re
 import threading
 import time
 from dataclasses import dataclass
-from typing import Any, BinaryIO, Callable, Mapping, NoReturn
+from typing import Any, BinaryIO, Callable, Mapping, NoReturn, Protocol, Sequence, cast
 from uuid import UUID
 
 from app.services.connector_egress_authorization import (
@@ -184,17 +184,33 @@ class FirstStopLatch:
     """Thread-safe first-reason-wins stop signal for one controller run."""
 
     __slots__ = (
+        "_before_publish",
         "_event",
         "_lock",
         "_monotonic_tick_ns",
+        "_publish_failure",
         "_reason_code",
     )
 
     def __init__(self) -> None:
         self._event = threading.Event()
         self._lock = threading.Lock()
+        self._before_publish: Callable[[str], None] | None = None
+        self._publish_failure: BaseException | None = None
         self._reason_code: str | None = None
         self._monotonic_tick_ns: int | None = None
+
+    def _bind_before_publish(self, callback: Callable[[str], None]) -> None:
+        if not callable(callback):
+            _fail("dual_live_stop_bridge_invalid")
+        with self._lock:
+            if (
+                self._before_publish is not None
+                or self._reason_code is not None
+                or self._publish_failure is not None
+            ):
+                _fail("dual_live_stop_bridge_invalid")
+            self._before_publish = callback
 
     @property
     def is_set(self) -> bool:
@@ -223,8 +239,23 @@ class FirstStopLatch:
         if reason_code not in _STOP_REASONS:
             _fail("dual_live_stop_reason_invalid")
         with self._lock:
+            if self._publish_failure is not None:
+                raise DualLiveRuntimeError(
+                    "dual_live_stop_publish_failed"
+                ) from self._publish_failure
             if self._reason_code is not None:
                 return False
+            if self._before_publish is not None:
+                try:
+                    result = self._before_publish(reason_code)
+                    if result is not None:
+                        _fail("dual_live_stop_bridge_invalid")
+                except BaseException as exc:
+                    self._publish_failure = exc
+                    self._event.set()
+                    raise DualLiveRuntimeError(
+                        "dual_live_stop_publish_failed"
+                    ) from exc
             self._monotonic_tick_ns = time.monotonic_ns()
             self._reason_code = reason_code
             self._event.set()
@@ -233,7 +264,7 @@ class FirstStopLatch:
     def commit_if_clear(self) -> bool:
         """Atomically classify a transition before any external I/O begins."""
         with self._lock:
-            return self._reason_code is None
+            return self._reason_code is None and self._publish_failure is None
 
     def wait(self, timeout: float | None = None) -> bool:
         if timeout is not None and (
@@ -1452,7 +1483,11 @@ class FourStreamPumpGroup:
                 return
             if force_pre_cancel or not self._cancel_started:
                 self._errors.setdefault(stream, error)
-                self._stop_latch.latch("pump_failure")
+                try:
+                    self._stop_latch.latch("pump_failure")
+                except DualLiveRuntimeError as stop_error:
+                    if stop_error.code != "dual_live_stop_publish_failed":
+                        raise
             else:
                 self._cancel_pump_errors.setdefault(stream, error)
 
@@ -1530,17 +1565,21 @@ class FourStreamPumpGroup:
             self._cancel_threads,
             strict=True,
         ):
+            launched = False
             try:
                 thread.start()
             except BaseException as exc:
+                launched = thread.ident is not None
                 with self._errors_lock:
                     self._cancel_start_errors.setdefault(stream, exc)
-                continue
-            started_threads.append(thread)
-            with self._errors_lock:
-                self._cancel_owned_reader_ids.add(id(reader))
-            with self._lifecycle_lock:
-                self._started_cancel_threads = tuple(started_threads)
+            else:
+                launched = True
+            if launched:
+                started_threads.append(thread)
+                with self._errors_lock:
+                    self._cancel_owned_reader_ids.add(id(reader))
+                with self._lifecycle_lock:
+                    self._started_cancel_threads = tuple(started_threads)
 
     @staticmethod
     def _cancel_failure_cause(
@@ -1574,10 +1613,72 @@ class FourStreamPumpGroup:
             started_threads: list[threading.Thread] = []
             try:
                 for thread in self._threads:
-                    thread.start()
-                    started_threads.append(thread)
+                    try:
+                        thread.start()
+                    except BaseException:
+                        if thread.ident is not None:
+                            started_threads.append(thread)
+                        raise
+                    else:
+                        started_threads.append(thread)
             finally:
                 self._started_threads = tuple(started_threads)
+
+    @staticmethod
+    def _writer_error(
+        errors: tuple[tuple[str, BaseException], ...],
+    ) -> BaseException | None:
+        writer_codes = {
+            "dual_live_pump_write_failed",
+            "dual_live_pump_writer_poisoned",
+        }
+        for _stream, error in errors:
+            current: BaseException | None = error
+            seen: set[int] = set()
+            while current is not None and id(current) not in seen:
+                seen.add(id(current))
+                if (
+                    isinstance(current, DualLiveRuntimeError)
+                    and current.code in writer_codes
+                ):
+                    return error
+                current = current.__cause__
+        return None
+
+    def _raise_join_failures(
+        self,
+        *,
+        pump_errors: tuple[tuple[str, BaseException], ...],
+        cancel_errors: tuple[tuple[str, BaseException], ...],
+        cancel_start_errors: tuple[tuple[str, BaseException], ...],
+        cancel_incomplete: bool,
+    ) -> None:
+        writer_error = self._writer_error(pump_errors)
+        cancel_failed = bool(
+            cancel_incomplete or cancel_errors or cancel_start_errors
+        )
+        if writer_error is not None:
+            failure = DualLiveRuntimeError("dual_live_pump_failed")
+            failure.__cause__ = writer_error
+            if cancel_failed:
+                secondary = DualLiveRuntimeError("dual_live_pump_cancel_failed")
+                secondary.__cause__ = self._cancel_failure_cause(
+                    cancel_errors,
+                    cancel_start_errors,
+                )
+                failure.__context__ = secondary
+            raise failure
+        if cancel_failed:
+            raise DualLiveRuntimeError("dual_live_pump_cancel_failed") from (
+                self._cancel_failure_cause(
+                    cancel_errors,
+                    cancel_start_errors,
+                )
+            )
+        if pump_errors:
+            raise DualLiveRuntimeError("dual_live_pump_failed") from (
+                pump_errors[0][1]
+            )
 
     @property
     def has_live_workers(self) -> bool:
@@ -1652,17 +1753,12 @@ class FourStreamPumpGroup:
                 cancel_alive = any(
                     thread.is_alive() for thread in self._started_cancel_threads
                 )
-                if cancel_alive or cancel_errors or cancel_start_errors:
-                    raise DualLiveRuntimeError(
-                        "dual_live_pump_cancel_failed"
-                    ) from self._cancel_failure_cause(
-                        cancel_errors,
-                        cancel_start_errors,
-                    )
-                if pump_errors:
-                    raise DualLiveRuntimeError("dual_live_pump_failed") from (
-                        pump_errors[0][1]
-                    )
+                self._raise_join_failures(
+                    pump_errors=pump_errors,
+                    cancel_errors=cancel_errors,
+                    cancel_start_errors=cancel_start_errors,
+                    cancel_incomplete=cancel_alive,
+                )
                 return
 
             self._begin_cancellation()
@@ -1679,22 +1775,12 @@ class FourStreamPumpGroup:
             cancel_alive = any(
                 thread.is_alive() for thread in self._started_cancel_threads
             )
-            if (
-                still_alive
-                or cancel_alive
-                or cancel_errors
-                or cancel_start_errors
-            ):
-                raise DualLiveRuntimeError("dual_live_pump_cancel_failed") from (
-                    self._cancel_failure_cause(
-                        cancel_errors,
-                        cancel_start_errors,
-                    )
-                )
-            if final_pump_errors:
-                raise DualLiveRuntimeError("dual_live_pump_failed") from (
-                    final_pump_errors[0][1]
-                )
+            self._raise_join_failures(
+                pump_errors=final_pump_errors,
+                cancel_errors=cancel_errors,
+                cancel_start_errors=cancel_start_errors,
+                cancel_incomplete=still_alive or cancel_alive,
+            )
             raise DualLiveRuntimeError("dual_live_pump_join_timeout")
         finally:
             with self._lifecycle_lock:
@@ -1781,6 +1867,7 @@ def _run_two_phase_controller(
     http_frame_validator: Callable[[bytes], None],
     seal: Callable[[], Any],
     timeout_seconds: float,
+    _before_stop_publish: Callable[[str], None] | None = None,
 ) -> Any:
     """Run the bounded mechanical A/B spine; no production semantics live here."""
 
@@ -1803,6 +1890,10 @@ def _run_two_phase_controller(
         or not isinstance(timeout_seconds, (int, float))
         or not math.isfinite(timeout_seconds)
         or timeout_seconds <= 0
+        or (
+            _before_stop_publish is not None
+            and not callable(_before_stop_publish)
+        )
     ):
         _fail("dual_live_controller_invalid")
     capture_writers = dict(writers)
@@ -1820,6 +1911,8 @@ def _run_two_phase_controller(
         _fail("dual_live_pump_writer_alias_invalid")
 
     stop_latch = FirstStopLatch()
+    if _before_stop_publish is not None:
+        stop_latch._bind_before_publish(_before_stop_publish)
     shared_sinks = {
         stream: LockedCampaignSink(
             capture_writers[stream],
@@ -1862,7 +1955,15 @@ def _run_two_phase_controller(
         reason_code: str,
         cause: BaseException,
     ) -> DualLiveRuntimeError:
-        stop_latch.latch(reason_code)
+        try:
+            stop_latch.latch(reason_code)
+        except DualLiveRuntimeError as stop_error:
+            if stop_error.code != "dual_live_stop_publish_failed":
+                raise
+            fatal = DualLiveRuntimeError("dual_live_stop_publish_failed")
+            fatal.__cause__ = stop_error.__cause__ or stop_error
+            fatal.__context__ = cause
+            return fatal
         error = DualLiveRuntimeError(code)
         error.__cause__ = cause
         return error
@@ -1871,20 +1972,70 @@ def _run_two_phase_controller(
         child: _ControllerChild,
         *,
         excluded_reader_ids: frozenset[int] = frozenset(),
-    ) -> BaseException | None:
-        first_error: BaseException | None = None
+    ) -> tuple[BaseException | None, bool]:
         seen: set[int] = set()
+        readers: list[tuple[str, BinaryIO]] = []
         for stream in PIPE_STREAM_CLASSES:
             reader = child.readers[stream]
             if id(reader) in seen or id(reader) in excluded_reader_ids:
                 continue
             seen.add(id(reader))
+            readers.append((stream, reader))
+
+        start_errors: list[BaseException | None] = [None] * len(readers)
+        close_errors: list[BaseException | None] = [None] * len(readers)
+
+        def close_reader(index: int, reader: BinaryIO) -> None:
             try:
                 reader.close()
             except BaseException as exc:
-                if first_error is None:
-                    first_error = exc
-        return first_error
+                close_errors[index] = exc
+
+        threads = [
+            threading.Thread(
+                target=close_reader,
+                args=(index, reader),
+                name=f"dual-live-{stream}-owner-close",
+                daemon=True,
+            )
+            for index, (stream, reader) in enumerate(readers)
+        ]
+        started: list[threading.Thread] = []
+        for index, thread in enumerate(threads):
+            try:
+                thread.start()
+            except BaseException as exc:
+                if thread.ident is not None:
+                    started.append(thread)
+                start_errors[index] = exc
+            else:
+                started.append(thread)
+        deadline = time.monotonic() + min(
+            timeout_seconds,
+            PUMP_CANCEL_JOIN_SECONDS,
+        )
+        for thread in started:
+            thread.join(max(0.0, deadline - time.monotonic()))
+        alive = [thread for thread in started if thread.is_alive()]
+        if alive:
+            first_error: BaseException | None = DualLiveRuntimeError(
+                "dual_live_reader_close_stuck"
+            )
+        else:
+            first_error = next(
+                (
+                    start_error or close_error
+                    for start_error, close_error in zip(
+                        start_errors,
+                        close_errors,
+                        strict=True,
+                    )
+                    if start_error is not None or close_error is not None
+                ),
+                None,
+            )
+        safe = len(started) == len(threads) and not alive
+        return first_error, safe
 
     def run_phase(
         phase: str,
@@ -1928,6 +2079,11 @@ def _run_two_phase_controller(
             replacement = normalized_error(code, reason_code, cause)
             if phase_error is None:
                 phase_error = replacement
+            elif (
+                isinstance(phase_error, DualLiveRuntimeError)
+                and phase_error.code == "dual_live_stop_publish_failed"
+            ):
+                return
             elif reason_code == "writer_failure":
                 replacement.__context__ = phase_error
                 phase_error = replacement
@@ -1965,10 +2121,12 @@ def _run_two_phase_controller(
                     capture_close_safe = False
                     return
                 cancellation_owned_reader_ids = owned
-            reader_error = close_readers(
+            reader_error, reader_close_safe = close_readers(
                 child,
                 excluded_reader_ids=cancellation_owned_reader_ids,
             )
+            if not reader_close_safe:
+                capture_close_safe = False
             if reader_error is not None:
                 fail(
                     "dual_live_reader_close_failed",
@@ -2457,6 +2615,455 @@ def _run_two_phase_controller(
     return seal()
 
 
+_OWNED_CONTEXT_TOKEN = object()
+
+
+class _OwnedProcessProjection(Protocol):
+    process_boot_id: str
+    process_creation_identity_sha256: str
+    executable_sha256: str
+    job_policy_sha256: str
+    status_nonce_sha256: str
+    control_nonce: str
+    readers: Mapping[str, BinaryIO]
+
+    def send_control(self, frame: bytes) -> None: ...
+
+    def poll_exit(self, timeout: float) -> int | None: ...
+
+    def stop(self) -> None: ...
+
+    def close(self) -> None: ...
+
+
+class _OwnedMechanicalCapture:
+    """Exact non-production capture owner used only by the offline binder proof."""
+
+    __slots__ = (
+        "_app_writer",
+        "_http_writer",
+        "_sealed",
+        "_stderr_writer",
+        "_stdout_writer",
+    )
+
+    def __init__(
+        self,
+        *,
+        _token: object,
+        app_writer: BinaryIO,
+        http_writer: BinaryIO,
+        stdout_writer: BinaryIO,
+        stderr_writer: BinaryIO,
+    ) -> None:
+        if _token is not _OWNED_CONTEXT_TOKEN:
+            raise TypeError("owned mechanical capture is factory-only")
+        candidates = (app_writer, http_writer, stdout_writer, stderr_writer)
+        if any(
+            not callable(getattr(writer, method, None))
+            for writer in candidates
+            for method in ("write", "flush", "close")
+        ):
+            _fail("dual_live_owned_capture_invalid")
+        destinations = tuple(
+            _writer_destination_identity(writer) for writer in candidates
+        )
+        if len(set(destinations)) != len(PIPE_STREAM_CLASSES):
+            _fail("dual_live_pump_writer_alias_invalid")
+        self._app_writer = app_writer
+        self._http_writer = http_writer
+        self._stdout_writer = stdout_writer
+        self._stderr_writer = stderr_writer
+        self._sealed = False
+
+    @property
+    def sealed(self) -> bool:
+        return self._sealed
+
+    def _writer_bindings(self) -> dict[str, BinaryIO]:
+        return {
+            "app": self._app_writer,
+            "http": self._http_writer,
+            "stdout": self._stdout_writer,
+            "stderr": self._stderr_writer,
+        }
+
+    def _seal(self) -> None:
+        if self._sealed:
+            _fail("dual_live_owned_capture_already_sealed")
+        self._sealed = True
+
+
+class _OwnedControllerContext:
+    """Factory-only, non-activating mechanical context for owned child proof."""
+
+    __slots__ = (
+        "_active_process",
+        "_capture",
+        "_closed_process_ids",
+        "_identity",
+        "_lock",
+        "_owned_processes",
+        "_quiescing_process",
+        "_quiesced_process_ids",
+        "_runtime_start_payload",
+        "_started",
+        "_timeout_seconds",
+    )
+
+    def __init__(
+        self,
+        *,
+        _token: object,
+        identity: RuntimeIdentity,
+        runtime_start_payload: Mapping[str, Any],
+        capture: _OwnedMechanicalCapture,
+        timeout_seconds: float,
+    ) -> None:
+        if _token is not _OWNED_CONTEXT_TOKEN:
+            raise TypeError("owned controller context is factory-only")
+        if (
+            type(identity) is not RuntimeIdentity
+            or type(capture) is not _OwnedMechanicalCapture
+            or isinstance(timeout_seconds, bool)
+            or not isinstance(timeout_seconds, (int, float))
+            or not math.isfinite(timeout_seconds)
+            or timeout_seconds <= 0
+        ):
+            _fail("dual_live_owned_context_invalid")
+        payload = _validate_payload("runtime_start", runtime_start_payload)
+        if any(
+            payload[field] != getattr(identity, field)
+            for field in (
+                "code_revision",
+                "wrapper_image_sha256",
+                "interpreter_image_sha256",
+            )
+        ):
+            _fail("dual_live_runtime_identity_mismatch")
+        self._identity = identity
+        self._runtime_start_payload = payload
+        self._capture = capture
+        self._timeout_seconds = float(timeout_seconds)
+        self._lock = threading.Lock()
+        self._owned_processes: list[tuple[str, object]] = []
+        self._active_process: object | None = None
+        self._quiescing_process: object | None = None
+        self._quiesced_process_ids: set[int] = set()
+        self._closed_process_ids: set[int] = set()
+        self._started = False
+
+    @property
+    def nonproduction_mechanical_only(self) -> bool:
+        return True
+
+    @property
+    def sealed(self) -> bool:
+        return self._capture.sealed
+
+    def _begin_run(self) -> None:
+        with self._lock:
+            if self._started or self._capture.sealed:
+                _fail("dual_live_owned_context_already_used")
+            self._started = True
+
+    def _bind_process(self, phase: str, process: object) -> None:
+        if phase not in {"A", "B"}:
+            _fail("dual_live_owned_process_invalid")
+        with self._lock:
+            if not self._started or self._capture.sealed:
+                _fail("dual_live_owned_context_invalid")
+            if self._active_process is not None:
+                overlap = True
+                self._owned_processes.append((phase, process))
+            else:
+                overlap = False
+                self._owned_processes.append((phase, process))
+                self._active_process = process
+        if overlap:
+            close = getattr(process, "close", None)
+            if not callable(close):
+                _fail("dual_live_owned_process_invalid")
+            try:
+                if close() is not None:
+                    _fail("dual_live_owned_close_invalid")
+            except BaseException as exc:
+                raise DualLiveRuntimeError(
+                    "dual_live_owned_close_failed"
+                ) from exc
+            with self._lock:
+                for index in range(len(self._owned_processes) - 1, -1, -1):
+                    owned_phase, owned_process = self._owned_processes[index]
+                    if owned_phase == phase and owned_process is process:
+                        del self._owned_processes[index]
+                        break
+            _fail("dual_live_owned_process_overlap")
+
+    def _find_process_locked(
+        self,
+        phase: str,
+        child: _ControllerChild,
+    ) -> object:
+        matches = [
+            process
+            for owned_phase, process in self._owned_processes
+            if owned_phase == phase
+            and getattr(process, "process_boot_id", None)
+            == child.process_boot_id
+        ]
+        if len(matches) != 1:
+            _fail("dual_live_owned_process_invalid")
+        return matches[0]
+
+    def _revoke_active(self, reason: str) -> None:
+        with self._lock:
+            process = self._active_process
+            if process is None:
+                return
+            revoke = getattr(process, "revoke_before_stop", None)
+            if not callable(revoke):
+                _fail("dual_live_owned_process_invalid")
+            if revoke(reason) is not None:
+                _fail("dual_live_owned_revocation_invalid")
+
+    def _authority_payload(
+        self,
+        phase: str,
+        child: _ControllerChild,
+    ) -> Mapping[str, Any]:
+        if phase != "A":
+            _fail("dual_live_owned_authority_invalid")
+        with self._lock:
+            process = self._find_process_locked(phase, child)
+            authority = getattr(process, "authority_cleared_payload", None)
+            if not callable(authority):
+                _fail("dual_live_owned_process_invalid")
+            result = authority()
+            if not isinstance(result, Mapping):
+                _fail("dual_live_owned_authority_invalid")
+            return result
+
+    def _quiesce_phase(
+        self,
+        phase: str,
+        child: _ControllerChild,
+    ) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
+        with self._lock:
+            process = self._find_process_locked(phase, child)
+            if (
+                self._active_process is not process
+                or self._quiescing_process is not None
+                or id(process) in self._quiesced_process_ids
+                or id(process) in self._closed_process_ids
+            ):
+                _fail("dual_live_owned_quiescence_unproven")
+            self._quiescing_process = process
+        try:
+            quiesce = getattr(process, "quiesce_and_close", None)
+            if not callable(quiesce):
+                _fail("dual_live_owned_process_invalid")
+            result = quiesce()
+            if (
+                type(result) is not tuple
+                or len(result) != 2
+                or not all(isinstance(item, Mapping) for item in result)
+            ):
+                _fail("dual_live_quiescence_invalid")
+            close = getattr(process, "close", None)
+            if not callable(close):
+                _fail("dual_live_owned_process_invalid")
+            if close() is not None:
+                _fail("dual_live_owned_close_invalid")
+        except BaseException:
+            with self._lock:
+                if self._quiescing_process is process:
+                    self._quiescing_process = None
+            raise
+        with self._lock:
+            identity_matches = sum(
+                owned_phase == phase and owned_process is process
+                for owned_phase, owned_process in self._owned_processes
+            )
+            if (
+                self._quiescing_process is not process
+                or self._active_process is not process
+                or identity_matches != 1
+                or id(process) in self._quiesced_process_ids
+                or id(process) in self._closed_process_ids
+            ):
+                if self._quiescing_process is process:
+                    self._quiescing_process = None
+                _fail("dual_live_owned_quiescence_unproven")
+            self._quiescing_process = None
+            self._closed_process_ids.add(id(process))
+            self._quiesced_process_ids.add(id(process))
+            if self._active_process is process:
+                self._active_process = None
+            return result
+
+    def _seal_after_quiescence(self) -> None:
+        with self._lock:
+            if (
+                not self._started
+                or self._active_process is not None
+                or self._quiescing_process is not None
+                or len(self._owned_processes) != 2
+                or {phase for phase, _process in self._owned_processes}
+                != {"A", "B"}
+                or self._quiesced_process_ids
+                != {id(process) for _phase, process in self._owned_processes}
+                or self._closed_process_ids != self._quiesced_process_ids
+            ):
+                _fail("dual_live_owned_quiescence_unproven")
+            self._capture._seal()
+
+    def _close_all_processes(self) -> BaseException | None:
+        first_error: BaseException | None = None
+        with self._lock:
+            processes = tuple(self._owned_processes)
+            already_closed_ids = frozenset(self._closed_process_ids)
+        closed_processes = [
+            process
+            for _phase, process in processes
+            if id(process) in already_closed_ids
+        ]
+        for _phase, process in reversed(processes):
+            if id(process) in already_closed_ids:
+                continue
+            close = getattr(process, "close", None)
+            if not callable(close):
+                if first_error is None:
+                    first_error = DualLiveRuntimeError(
+                        "dual_live_owned_process_invalid"
+                    )
+                continue
+            try:
+                result = close()
+                if result is not None:
+                    _fail("dual_live_owned_close_invalid")
+            except BaseException as exc:
+                if first_error is None:
+                    first_error = exc
+            else:
+                closed_processes.append(process)
+        with self._lock:
+            for process in closed_processes:
+                if any(
+                    candidate is process
+                    for _phase, candidate in self._owned_processes
+                ):
+                    self._closed_process_ids.add(id(process))
+            self._owned_processes[:] = [
+                (phase, process)
+                for phase, process in self._owned_processes
+                if not any(process is closed for closed in closed_processes)
+            ]
+            if any(
+                self._active_process is closed for closed in closed_processes
+            ):
+                self._active_process = None
+        return first_error
+
+
+def _make_nonproduction_owned_controller_context(
+    *,
+    identity: RuntimeIdentity,
+    runtime_start_payload: Mapping[str, Any],
+    app_writer: BinaryIO,
+    http_writer: BinaryIO,
+    stdout_writer: BinaryIO,
+    stderr_writer: BinaryIO,
+    timeout_seconds: float,
+) -> _OwnedControllerContext:
+    """Build the explicit offline test context without importing DB capture code."""
+
+    capture = _OwnedMechanicalCapture(
+        _token=_OWNED_CONTEXT_TOKEN,
+        app_writer=app_writer,
+        http_writer=http_writer,
+        stdout_writer=stdout_writer,
+        stderr_writer=stderr_writer,
+    )
+    return _OwnedControllerContext(
+        _token=_OWNED_CONTEXT_TOKEN,
+        identity=identity,
+        runtime_start_payload=runtime_start_payload,
+        capture=capture,
+        timeout_seconds=timeout_seconds,
+    )
+
+
+def _run_owned_two_phase_controller(context: _OwnedControllerContext) -> Any:
+    if type(context) is not _OwnedControllerContext:
+        _fail("dual_live_owned_context_invalid")
+    from app.services import dual_live_windows
+
+    context._begin_run()
+
+    def create(phase: str) -> _ControllerChild:
+        process = cast(
+            _OwnedProcessProjection,
+            dual_live_windows._create_owned_phase_process(
+                phase,
+                context._identity.runtime_instance_id,
+                context._identity.wrapper_nonce_sha256,
+            ),
+        )
+        context._bind_process(phase, process)
+        return _ControllerChild(
+            process_boot_id=process.process_boot_id,
+            process_creation_identity_sha256=(
+                process.process_creation_identity_sha256
+            ),
+            executable_sha256=process.executable_sha256,
+            job_policy_sha256=process.job_policy_sha256,
+            status_nonce_sha256=process.status_nonce_sha256,
+            control_nonce=process.control_nonce,
+            readers=process.readers,
+            send_control=process.send_control,
+            wait=process.poll_exit,
+            stop=process.stop,
+        )
+
+    def create_a() -> _ControllerChild:
+        return create("A")
+
+    def create_b() -> _ControllerChild:
+        return create("B")
+
+    def reject_http(_payload: bytes) -> None:
+        _fail("dual_live_owned_http_unexpected")
+
+    run_error: BaseException | None = None
+    result: Any = None
+    try:
+        result = _run_two_phase_controller(
+            identity=context._identity,
+            runtime_start_payload=context._runtime_start_payload,
+            writers=context._capture._writer_bindings(),
+            create_phase_a=create_a,
+            create_phase_b=create_b,
+            quiesce_phase=context._quiesce_phase,
+            clear_authority=context._authority_payload,
+            http_frame_validator=reject_http,
+            seal=context._seal_after_quiescence,
+            timeout_seconds=context._timeout_seconds,
+            _before_stop_publish=context._revoke_active,
+        )
+    except BaseException as exc:
+        run_error = exc
+
+    close_error = context._close_all_processes()
+    if close_error is not None:
+        failure = DualLiveRuntimeError("dual_live_owned_close_failed")
+        failure.__cause__ = close_error
+        failure.__context__ = run_error
+        raise failure
+    if run_error is not None:
+        raise run_error
+    return result
+
+
 class CampaignPipeSink:
     __slots__ = ("_bound_handler", "_failed", "_lock", "_pipe_token", "_writer")
 
@@ -2547,8 +3154,15 @@ def _type_id(value: object) -> str:
     return f"{value_type.__module__}.{value_type.__qualname__}"
 
 
-def _filter_ids(filters: list[logging.Filter]) -> list[str]:
+def _filter_ids(filters: Sequence[object]) -> list[str]:
     return [_type_id(filter_) for filter_ in filters]
+
+
+def _call_logging_lock(name: str) -> None:
+    operation = getattr(logging, name, None)
+    if not callable(operation):
+        _fail("dual_live_logger_manager_invalid")
+    operation()
 
 
 def _require_allowed_pipe_tokens(allowed_pipe_tokens: frozenset[str]) -> None:
@@ -2713,11 +3327,11 @@ def _census_loggers_locked(
 
 def census_loggers(allowed_pipe_tokens: frozenset[str]) -> dict[str, Any]:
     _require_allowed_pipe_tokens(allowed_pipe_tokens)
-    logging._acquireLock()
+    _call_logging_lock("_acquireLock")
     try:
         return _census_loggers_locked(allowed_pipe_tokens)
     finally:
-        logging._releaseLock()
+        _call_logging_lock("_releaseLock")
 
 
 def _deny_logger_topology_mutation(*args: object, **kwargs: object) -> None:
@@ -2752,7 +3366,7 @@ def freeze_logger_topology(
 ) -> Callable[[], dict[str, Any]]:
     _require_allowed_pipe_tokens(allowed_pipe_tokens)
     patched: list[tuple[object, str, object]] = []
-    logging._acquireLock()
+    _call_logging_lock("_acquireLock")
     try:
         initial = _census_loggers_locked(allowed_pipe_tokens)
         root = logging.root
@@ -2821,13 +3435,13 @@ def freeze_logger_topology(
         _restore_logging_attributes(patched)
         raise
     finally:
-        logging._releaseLock()
+        _call_logging_lock("_releaseLock")
 
     finished = False
 
     def _recheck() -> dict[str, Any]:
         nonlocal finished
-        logging._acquireLock()
+        _call_logging_lock("_acquireLock")
         try:
             if finished:
                 _fail("dual_live_logger_recheck_already_completed")
@@ -2840,6 +3454,6 @@ def freeze_logger_topology(
             finally:
                 _restore_logging_attributes(patched)
         finally:
-            logging._releaseLock()
+            _call_logging_lock("_releaseLock")
 
     return _recheck

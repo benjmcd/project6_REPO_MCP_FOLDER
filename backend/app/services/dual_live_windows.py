@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import ctypes
 import hashlib
 import json
@@ -7,6 +8,7 @@ import math
 import os
 import re
 import subprocess
+import sys
 import threading
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import AbstractContextManager, contextmanager
@@ -14,7 +16,7 @@ from ctypes import wintypes
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, NoReturn, cast
 from uuid import UUID
 
 _msvcrt: Any
@@ -34,6 +36,8 @@ _ERROR_INSUFFICIENT_BUFFER = 122
 _ERROR_INVALID_PARAMETER = 87
 _ERROR_NOT_FOUND = 1168
 _ERROR_NOT_SAME_OBJECT = 1656
+_ERROR_BROKEN_PIPE = 109
+_ERROR_OPERATION_ABORTED = 995
 _FILE_ATTRIBUTE_DIRECTORY = 0x10
 _FILE_ATTRIBUTE_REPARSE_POINT = 0x400
 _FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
@@ -75,6 +79,7 @@ _JOB_OBJECT_LIMIT_SILENT_BREAKAWAY_OK = 0x00001000
 _JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 _EXTENDED_STARTUPINFO_PRESENT = 0x00080000
 _CREATE_UNICODE_ENVIRONMENT = 0x00000400
+_STARTF_USESTDHANDLES = 0x00000100
 _TERMINATE_EXIT_CODE = 0xE0000001
 _POST_CREATE_CLEANUP_WAIT_MS = 5_000
 _ERROR_MORE_DATA = 234
@@ -89,6 +94,10 @@ _UDP_TABLE_OWNER_PID = 1
 _OBJECT_TYPE_INFORMATION_CLASS = 2
 _STATUS_INFO_LENGTH_MISMATCH = 0xC0000004
 _PERMITTED_INHERITED_HANDLE_TYPES = frozenset(("Event", "File"))
+_OWNED_CHILD_SCHEMA_ID = "project6.dual_live_owned_child.v1"
+_OWNED_BOOT_SCHEMA_ID = "project6.dual_live_owned_boot.v1"
+_OWNED_IO_TIMEOUT_SECONDS = 5.0
+_STANDARD_POPEN = subprocess.Popen
 WINDOWS_MIB_TCP_STATES = (
     "MIB_TCP_STATE_CLOSED",
     "MIB_TCP_STATE_LISTEN",
@@ -140,7 +149,7 @@ class DualLiveWindowsError(ValueError):
         self.code = code
 
 
-def _fail(code: str) -> None:
+def _fail(code: str) -> NoReturn:
     raise DualLiveWindowsError(code)
 
 
@@ -380,6 +389,14 @@ if os.name == "nt":
         wintypes.LPVOID,
     )
     _kernel32.ReadFile.restype = wintypes.BOOL
+    _kernel32.WriteFile.argtypes = (
+        wintypes.HANDLE,
+        wintypes.LPCVOID,
+        wintypes.DWORD,
+        ctypes.POINTER(wintypes.DWORD),
+        wintypes.LPVOID,
+    )
+    _kernel32.WriteFile.restype = wintypes.BOOL
     _kernel32.GetNamedPipeInfo.argtypes = (
         wintypes.HANDLE,
         ctypes.POINTER(wintypes.DWORD),
@@ -530,6 +547,16 @@ if os.name == "nt":
         wintypes.LPCWSTR,
     )
     _kernel32.CreateEventW.restype = wintypes.HANDLE
+    _kernel32.SetEvent.argtypes = (wintypes.HANDLE,)
+    _kernel32.SetEvent.restype = wintypes.BOOL
+    _kernel32.ResetEvent.argtypes = (wintypes.HANDLE,)
+    _kernel32.ResetEvent.restype = wintypes.BOOL
+    _kernel32.GetCurrentThread.argtypes = ()
+    _kernel32.GetCurrentThread.restype = wintypes.HANDLE
+    _cancel_synchronous_io = getattr(_kernel32, "CancelSynchronousIo", None)
+    if callable(_cancel_synchronous_io):
+        _cancel_synchronous_io.argtypes = (wintypes.HANDLE,)
+        _cancel_synchronous_io.restype = wintypes.BOOL
     _kernel32.GetProcessHandleCount.argtypes = (
         wintypes.HANDLE,
         ctypes.POINTER(wintypes.DWORD),
@@ -644,10 +671,16 @@ else:  # pragma: no cover - exercised by platform-refusal tests
     _advapi32 = None
     _iphlpapi = None
     _ntdll = None
+    _cancel_synchronous_io = None
 
 
 _held_lock = threading.Lock()
 _phase_handles_lock = threading.Lock()
+_child_creation_gate = threading.Lock()
+_native_custody_gate = threading.RLock()
+_owned_factory_window_active = threading.Event()
+_retained_owned_handles_lock = threading.Lock()
+_retained_owned_handles: set[int] = set()
 _held_roots: set[str] = set()
 _held_campaigns: set[str] = set()
 
@@ -677,7 +710,9 @@ def _require_uuid4(value: object) -> str:
 
 def _close_handle(handle: int | None) -> None:
     if handle and _kernel32 is not None:
-        _kernel32.CloseHandle(handle)
+        if not _kernel32.CloseHandle(handle):
+            _retain_owned_handle_for_retry(handle)
+            _fail("dual_live_owned_handle_cleanup_failed")
 
 
 def _object_security_bytes(handle: int, information: int) -> bytes:
@@ -1411,6 +1446,7 @@ def _validate_inherited_capability(handle: int) -> None:
 
 _PHASE_WRAPPER_PIPE_ROLES = (
     "wrapper_control_write_handle",
+    "wrapper_stdin_write_handle",
     "wrapper_app_read_handle",
     "wrapper_http_read_handle",
     "wrapper_stdout_read_handle",
@@ -1422,10 +1458,13 @@ _PHASE_WRAPPER_EVENT_ROLES = (
 )
 _PHASE_CHILD_PIPE_ROLES = (
     "child_control_read_handle",
+    "child_stdio_stdin_read_handle",
     "child_app_write_handle",
     "child_http_write_handle",
     "child_stdout_write_handle",
+    "child_stdio_stdout_write_handle",
     "child_stderr_write_handle",
+    "child_stdio_stderr_write_handle",
 )
 _PHASE_CHILD_EVENT_ROLES = (
     "child_revocation_event_handle",
@@ -1436,19 +1475,130 @@ _PHASE_CHILD_STREAM_PIPE_ROLES = _PHASE_CHILD_PIPE_ROLES[1:]
 _PHASE_WRAPPER_ROLES = _PHASE_WRAPPER_PIPE_ROLES + _PHASE_WRAPPER_EVENT_ROLES
 _PHASE_CHILD_ROLES = _PHASE_CHILD_PIPE_ROLES + _PHASE_CHILD_EVENT_ROLES
 _PHASE_HANDLE_ROLES = _PHASE_CHILD_ROLES + _PHASE_WRAPPER_ROLES
+_PHASE_SHARED_PIPE_ROLE_PAIRS = frozenset(
+    (
+        frozenset(
+            (
+                "child_stdout_write_handle",
+                "child_stdio_stdout_write_handle",
+            )
+        ),
+        frozenset(
+            (
+                "child_stderr_write_handle",
+                "child_stdio_stderr_write_handle",
+            )
+        ),
+    )
+)
 _PHASE_CHANNELS_FACTORY_TOKEN = object()
 _PHASE_PIPE_ENDS = {
     "wrapper_control_write_handle": _PIPE_CLIENT_END,
+    "wrapper_stdin_write_handle": _PIPE_CLIENT_END,
     "wrapper_app_read_handle": _PIPE_SERVER_END,
     "wrapper_http_read_handle": _PIPE_SERVER_END,
     "wrapper_stdout_read_handle": _PIPE_SERVER_END,
     "wrapper_stderr_read_handle": _PIPE_SERVER_END,
     "child_control_read_handle": _PIPE_SERVER_END,
+    "child_stdio_stdin_read_handle": _PIPE_SERVER_END,
     "child_app_write_handle": _PIPE_CLIENT_END,
     "child_http_write_handle": _PIPE_CLIENT_END,
     "child_stdout_write_handle": _PIPE_CLIENT_END,
+    "child_stdio_stdout_write_handle": _PIPE_CLIENT_END,
     "child_stderr_write_handle": _PIPE_CLIENT_END,
+    "child_stdio_stderr_write_handle": _PIPE_CLIENT_END,
 }
+
+
+def _require_phase_channels_factory_token(factory_token: object) -> None:
+    if factory_token is not _PHASE_CHANNELS_FACTORY_TOKEN:
+        _fail("dual_live_phase_channels_factory_only")
+
+
+def _refuse_unrelated_subprocess(*args: object, **kwargs: object) -> NoReturn:
+    del args, kwargs
+    _fail("dual_live_subprocess_refused")
+
+
+def _live_non_system_python_threads() -> tuple[threading.Thread, ...]:
+    current = threading.current_thread()
+    return tuple(
+        thread
+        for thread in threading.enumerate()
+        if thread is not current
+        and thread.is_alive()
+        and type(thread).__name__ != "_DummyThread"
+    )
+
+
+@contextmanager
+def _owned_child_creation_window() -> Iterator[None]:
+    """Guard the complete inheritable-handle window for one owned child.
+
+    This blocks ordinary Python ``subprocess`` creation. It does not claim to
+    contain malicious same-process code that cached a prior Popen/native entry
+    point or invokes CreateProcess through a native extension.
+    """
+
+    with _child_creation_gate:
+        if subprocess.Popen is not _STANDARD_POPEN:
+            _fail("dual_live_subprocess_gate_compromised")
+        setattr(subprocess, "Popen", _refuse_unrelated_subprocess)
+        try:
+            if _live_non_system_python_threads():
+                _fail("dual_live_subprocess_gate_busy")
+            yield
+        finally:
+            gate_compromised = (
+                subprocess.Popen is not _refuse_unrelated_subprocess
+            )
+            setattr(subprocess, "Popen", _STANDARD_POPEN)
+            if gate_compromised:
+                _fail("dual_live_subprocess_gate_compromised")
+
+
+def _owned_child_capsule(
+    *,
+    phase: str,
+    child_handles: Mapping[str, int],
+    runtime_instance_id: str,
+    wrapper_nonce_sha256: str,
+) -> str:
+    roles = _PHASE_CHILD_ROLES if phase == "A" else _PHASE_CHILD_PIPE_ROLES
+    payload = {
+        "handles": {role: child_handles[role] for role in roles},
+        "phase": phase,
+        "runtime_instance_id": runtime_instance_id,
+        "schema_id": _OWNED_CHILD_SCHEMA_ID,
+        "wrapper_nonce_sha256": wrapper_nonce_sha256,
+    }
+    encoded = base64.urlsafe_b64encode(_canonical_json_bytes(payload))
+    return encoded.rstrip(b"=").decode("ascii")
+
+
+def _owned_child_argv(capsule: str) -> tuple[str, ...]:
+    root = Path(__file__).resolve().parents[3]
+    tool = root / "tools" / "dual_live_run.py"
+    return (
+        str(Path(sys.executable).resolve()),
+        "-I",
+        "-B",
+        str(tool),
+        "--owned-child",
+        capsule,
+    )
+
+
+def _owned_child_environment() -> Mapping[str, str]:
+    environment = {
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+    }
+    for name in ("SYSTEMROOT", "WINDIR"):
+        value = os.environ.get(name)
+        if value:
+            environment[name] = value
+    return MappingProxyType(environment)
 
 
 def _require_phase_channel_apis() -> None:
@@ -1458,16 +1608,25 @@ def _require_phase_channel_apis() -> None:
     assert _kernel32 is not None
     required = (
         "CloseHandle",
+        "CancelSynchronousIo",
         "CreateEventW",
         "CreatePipe",
         "DuplicateHandle",
         "GetCurrentProcess",
+        "GetCurrentThread",
         "GetFileType",
         "GetHandleInformation",
         "GetNamedPipeInfo",
+        "ReadFile",
+        "ResetEvent",
+        "SetEvent",
         "SetHandleInformation",
+        "WaitForSingleObject",
+        "WriteFile",
     )
-    if any(not callable(getattr(_kernel32, name, None)) for name in required):
+    if any(not callable(getattr(_kernel32, name, None)) for name in required) or not callable(
+        _cancel_synchronous_io
+    ):
         _fail("dual_live_job_unsupported")
     if not callable(getattr(_ntdll, "NtQueryObject", None)):
         _fail("dual_live_job_unsupported")
@@ -1559,6 +1718,18 @@ def _validate_distinct_pipe_capabilities(handles: Sequence[int]) -> None:
                 _fail("dual_live_phase_channels_invalid")
 
 
+def _validate_phase_pipe_relationships(handles: Mapping[str, int]) -> None:
+    items = tuple(handles.items())
+    for index, (left_role, left_handle) in enumerate(items):
+        for right_role, right_handle in items[index + 1 :]:
+            expected_same = (
+                frozenset((left_role, right_role))
+                in _PHASE_SHARED_PIPE_ROLE_PAIRS
+            )
+            if pipe_capabilities_same(left_handle, right_handle) != expected_same:
+                _fail("dual_live_phase_channels_invalid")
+
+
 def _validate_phase_handle(
     role: str,
     handle: int,
@@ -1610,31 +1781,29 @@ def _validated_phase_handles(
         handle = copied[role]
         if handle is not None:
             _validate_phase_handle(role, handle, inheritable=False)
-    pipe_handles = tuple(
-        handle
+    pipe_handles = {
+        role: handle
         for role in _PHASE_WRAPPER_PIPE_ROLES + _PHASE_CHILD_PIPE_ROLES
         if (handle := copied[role]) is not None
-    )
-    _validate_distinct_pipe_capabilities(pipe_handles)
+    }
+    _validate_phase_pipe_relationships(pipe_handles)
     if validated_phase == "A":
-        revocation_handles = tuple(
-            copied[role]
-            for role in (
-                "wrapper_revocation_event_handle",
-                "child_revocation_event_handle",
-            )
+        wrapper_revocation = copied["wrapper_revocation_event_handle"]
+        child_revocation = copied["child_revocation_event_handle"]
+        wrapper_send_idle = copied["wrapper_send_idle_event_handle"]
+        child_send_idle = copied["child_send_idle_event_handle"]
+        assert isinstance(wrapper_revocation, int)
+        assert isinstance(child_revocation, int)
+        assert isinstance(wrapper_send_idle, int)
+        assert isinstance(child_send_idle, int)
+        revocation = (
+            wrapper_revocation,
+            child_revocation,
         )
-        send_idle_handles = tuple(
-            copied[role]
-            for role in (
-                "wrapper_send_idle_event_handle",
-                "child_send_idle_event_handle",
-            )
+        send_idle = (
+            wrapper_send_idle,
+            child_send_idle,
         )
-        assert all(isinstance(handle, int) for handle in revocation_handles)
-        assert all(isinstance(handle, int) for handle in send_idle_handles)
-        revocation = tuple(int(handle) for handle in revocation_handles)
-        send_idle = tuple(int(handle) for handle in send_idle_handles)
         if not _kernel_objects_same(
             revocation[0],
             revocation[1],
@@ -1661,6 +1830,9 @@ def _validated_phase_handles(
 class PhaseChannels:
     __slots__ = ("_phase", "_handles")
 
+    _phase: str
+    _handles: dict[str, int | None]
+
     def __new__(cls, *args: object, **kwargs: object) -> PhaseChannels:
         _fail("dual_live_phase_channels_factory_only")
 
@@ -1672,8 +1844,7 @@ class PhaseChannels:
         phase: str,
         handles: Mapping[str, int | None],
     ) -> PhaseChannels:
-        if factory_token is not _PHASE_CHANNELS_FACTORY_TOKEN:
-            _fail("dual_live_phase_channels_factory_only")
+        _require_phase_channels_factory_token(factory_token)
         validated_phase, validated_handles = _validated_phase_handles(phase, handles)
         instance = object.__new__(cls)
         instance._phase = validated_phase
@@ -1759,6 +1930,11 @@ class PhaseChannels:
                         guards,
                     )
                 if not cleanup_ok:
+                    _retain_failed_phase_handle_custody(
+                        duplicates,
+                        guards,
+                        mode="pre_yield",
+                    )
                     _fail("dual_live_phase_channels_cleanup_failed")
                 raise
         return (
@@ -1781,33 +1957,51 @@ class PhaseChannels:
         *,
         inheritable: bool,
     ) -> Iterator[Mapping[str, int]]:
-        handles, guards = self._duplicate_roles(roles, inheritable=inheritable)
-        try:
-            yield MappingProxyType(handles)
-        finally:
-            cleanup_ok, lease_compromised = _close_guarded_phase_lease_handles(
-                handles,
-                guards,
+        with _native_custody_gate:
+            _drain_native_custody()
+            handles, guards = self._duplicate_roles(
+                roles,
+                inheritable=inheritable,
             )
-            if not cleanup_ok:
-                cleanup_ok, retry_compromised = _close_guarded_phase_lease_handles(
-                    handles,
-                    guards,
+            try:
+                yield MappingProxyType(handles)
+            finally:
+                cleanup_ok, lease_compromised = (
+                    _close_guarded_phase_lease_handles(
+                        handles,
+                        guards,
+                    )
                 )
-                lease_compromised = lease_compromised or retry_compromised
-            if cleanup_ok:
-                handles.clear()
-                guards.clear()
-            else:
-                _fail("dual_live_phase_channels_cleanup_failed")
-            if lease_compromised:
-                _fail("dual_live_phase_channels_lease_compromised")
+                if not cleanup_ok:
+                    cleanup_ok, retry_compromised = (
+                        _close_guarded_phase_lease_handles(
+                            handles,
+                            guards,
+                        )
+                    )
+                    lease_compromised = (
+                        lease_compromised or retry_compromised
+                    )
+                if cleanup_ok:
+                    handles.clear()
+                    guards.clear()
+                else:
+                    _retain_failed_phase_handle_custody(
+                        cast(dict[str, int | None], handles),
+                        cast(dict[str, int | None], guards),
+                        mode="guarded_yield",
+                    )
+                    _fail("dual_live_phase_channels_cleanup_failed")
+                if lease_compromised:
+                    _fail("dual_live_phase_channels_lease_compromised")
 
-    def lease_wrapper_handles(
+    def _lease_wrapper_handles(
         self,
+        factory_token: object,
     ) -> AbstractContextManager[Mapping[str, int]]:
-        """Yield borrowed noninheritable handles; caller must not close or retain."""
+        """Private test seam for borrowed noninheritable wrapper handles."""
 
+        _require_phase_channels_factory_token(factory_token)
         roles = (
             _PHASE_WRAPPER_ROLES
             if self._phase == "A"
@@ -1815,29 +2009,82 @@ class PhaseChannels:
         )
         return self._lease_roles(roles, inheritable=False)
 
-    def lease_child_handles(
+    def _lease_child_handles(
         self,
+        factory_token: object,
     ) -> AbstractContextManager[Mapping[str, int]]:
-        """Yield borrowed inheritable handles for one serialized child creation.
+        """Private test seam; production admission owns the complete window."""
 
-        Production binders must keep this lease as short as possible and deny or
-        serialize every unrelated subprocess creation until admission completes.
-        Caller must not close, retain, or use handles outside the context.
-        """
-
+        _require_phase_channels_factory_token(factory_token)
         roles = _PHASE_CHILD_ROLES if self._phase == "A" else _PHASE_CHILD_PIPE_ROLES
         return self._lease_roles(roles, inheritable=True)
 
     def validate_stream_pipe_capabilities(self) -> None:
-        with self.lease_wrapper_handles() as wrapper_handles:
-            with self.lease_child_handles() as child_handles:
-                stream_handles = tuple(
-                    wrapper_handles[role]
-                    for role in _PHASE_WRAPPER_STREAM_PIPE_ROLES
-                ) + tuple(
-                    child_handles[role] for role in _PHASE_CHILD_STREAM_PIPE_ROLES
+        wrapper_roles = _PHASE_WRAPPER_STREAM_PIPE_ROLES
+        child_roles = _PHASE_CHILD_STREAM_PIPE_ROLES
+        with self._lease_roles(wrapper_roles, inheritable=False) as wrapper_handles:
+            with self._lease_roles(child_roles, inheritable=False) as child_handles:
+                _validate_phase_pipe_relationships(
+                    {**wrapper_handles, **child_handles}
                 )
-                _validate_distinct_pipe_capabilities(stream_handles)
+
+    def _admit_owned_child(
+        self,
+        factory_token: object,
+        *,
+        runtime_instance_id: str,
+        wrapper_nonce_sha256: str,
+    ) -> JobChild:
+        """Create the exact inert owned child inside one atomic inherit window."""
+
+        _require_phase_channels_factory_token(factory_token)
+        runtime_instance_id = _require_uuid4(runtime_instance_id)
+        wrapper_nonce_sha256 = _require_sha256(wrapper_nonce_sha256)
+        child: JobChild | None = None
+        try:
+            with _owned_child_creation_window():
+                with self._lease_child_handles(
+                    _PHASE_CHANNELS_FACTORY_TOKEN
+                ) as child_handles:
+                    capsule = _owned_child_capsule(
+                        phase=self._phase,
+                        child_handles=child_handles,
+                        runtime_instance_id=runtime_instance_id,
+                        wrapper_nonce_sha256=wrapper_nonce_sha256,
+                    )
+                    child = create_child_in_job(
+                        argv=_owned_child_argv(capsule),
+                        environment=_owned_child_environment(),
+                        inherited_handles=tuple(child_handles.values()),
+                        runtime_instance_id=runtime_instance_id,
+                        wrapper_nonce_sha256=wrapper_nonce_sha256,
+                        standard_handles=(
+                            child_handles["child_stdio_stdin_read_handle"],
+                            child_handles["child_stdio_stdout_write_handle"],
+                            child_handles["child_stdio_stderr_write_handle"],
+                        ),
+                    )
+            self.close_child_handles_after_admission()
+            return child
+        except BaseException as admission_failure:
+            if not isinstance(child, JobChild):
+                raise
+            custody = _OwnedCleanupCustody(child=child)
+            cleanup_failure: BaseException | None = None
+            for _ in range(2):
+                try:
+                    custody.retry()
+                except BaseException as exc:
+                    cleanup_failure = exc
+                else:
+                    raise
+            _retain_failed_owned_custody(custody)
+            cleanup = DualLiveWindowsError(
+                "dual_live_owned_child_cleanup_failed"
+            )
+            cleanup.__context__ = admission_failure
+            assert cleanup_failure is not None
+            raise cleanup from cleanup_failure
 
     @property
     def closed(self) -> bool:
@@ -1945,7 +2192,111 @@ def _close_guarded_phase_lease_handles(
     return cleanup_ok and not handles and not guards, lease_compromised
 
 
-def create_phase_channels(phase: str) -> PhaseChannels:
+class _PhaseHandleCustody:
+    __slots__ = (
+        "guards",
+        "handles",
+        "lease_compromised",
+        "mode",
+    )
+
+    def __init__(
+        self,
+        *,
+        handles: dict[str, int | None],
+        guards: dict[str, int | None] | None,
+        mode: str,
+    ) -> None:
+        if mode not in {"build", "pre_yield", "guarded_yield"}:
+            _fail("dual_live_phase_channels_cleanup_failed")
+        self.handles = handles
+        self.guards = guards if guards is not None else {}
+        self.mode = mode
+        self.lease_compromised = False
+
+    @property
+    def released(self) -> bool:
+        return not any(
+            handle is not None
+            for handle in (*self.handles.values(), *self.guards.values())
+        )
+
+    def retry(self) -> None:
+        if self.released:
+            self.handles.clear()
+            self.guards.clear()
+            return
+        if self.mode == "build":
+            cleanup_ok = _close_provisional_phase_handles(self.handles)
+        elif self.mode == "pre_yield":
+            cleanup_ok = _close_provisional_phase_lease_handles(
+                self.handles,
+                self.guards,
+            )
+        else:
+            cleanup_ok, compromised = _close_guarded_phase_lease_handles(
+                cast(dict[str, int], self.handles),
+                cast(dict[str, int], self.guards),
+            )
+            self.lease_compromised = self.lease_compromised or compromised
+        if not cleanup_ok:
+            _fail("dual_live_phase_channels_cleanup_failed")
+        self.handles.clear()
+        self.guards.clear()
+
+
+_failed_phase_handle_custody_lock = threading.Lock()
+_failed_phase_handle_custodies: list[_PhaseHandleCustody] = []
+
+
+def _retain_failed_phase_handle_custody(
+    handles: dict[str, int | None],
+    guards: dict[str, int | None] | None = None,
+    *,
+    mode: str,
+) -> None:
+    custody = _PhaseHandleCustody(
+        handles=handles,
+        guards=guards,
+        mode=mode,
+    )
+    if custody.released:
+        return
+    with _failed_phase_handle_custody_lock:
+        _failed_phase_handle_custodies.append(custody)
+
+
+def _retry_failed_phase_handle_custodies() -> None:
+    failures: list[BaseException] = []
+    lease_compromised = False
+    with _native_custody_gate:
+        with _failed_phase_handle_custody_lock:
+            for custody in tuple(_failed_phase_handle_custodies):
+                try:
+                    custody.retry()
+                except BaseException as exc:
+                    failures.append(exc)
+                else:
+                    if custody.released:
+                        _failed_phase_handle_custodies.remove(custody)
+                    else:
+                        failures.append(
+                            DualLiveWindowsError(
+                                "dual_live_phase_channels_cleanup_failed"
+                            )
+                        )
+                    lease_compromised = (
+                        lease_compromised or custody.lease_compromised
+                    )
+    if failures:
+        raise DualLiveWindowsError(
+            "dual_live_phase_channels_cleanup_failed"
+        ) from failures[0]
+    if lease_compromised:
+        _fail("dual_live_phase_channels_lease_compromised")
+
+
+def _create_phase_channels_locked(phase: str) -> PhaseChannels:
     _require_phase_channel_apis()
     validated_phase = _require_phase(phase)
     assert _kernel32 is not None
@@ -1977,6 +2328,7 @@ def create_phase_channels(phase: str) -> PhaseChannels:
         child_role: str,
         *,
         wrapper_reads: bool,
+        shared_child_role: str | None = None,
     ) -> None:
         read_handle = wintypes.HANDLE()
         write_handle = wintypes.HANDLE()
@@ -2003,6 +2355,8 @@ def create_phase_channels(phase: str) -> PhaseChannels:
         source_handle = handles[source_role]
         assert source_handle is not None
         duplicate_child(source_handle, child_role)
+        if shared_child_role is not None:
+            duplicate_child(source_handle, shared_child_role)
         if not _kernel32.CloseHandle(source_handle):
             _fail("dual_live_phase_channels_cleanup_failed")
         del handles[source_role]
@@ -2022,7 +2376,9 @@ def create_phase_channels(phase: str) -> PhaseChannels:
         if not event_handle:
             _fail("dual_live_phase_channels_create_failed")
         handles[wrapper_role] = int(event_handle)
-        duplicate_child(handles[wrapper_role], child_role)
+        wrapper_handle = handles[wrapper_role]
+        assert wrapper_handle is not None
+        duplicate_child(wrapper_handle, child_role)
 
     try:
         create_pipe(
@@ -2030,11 +2386,23 @@ def create_phase_channels(phase: str) -> PhaseChannels:
             "child_control_read_handle",
             wrapper_reads=False,
         )
-        for stream in ("app", "http", "stdout", "stderr"):
+        create_pipe(
+            "wrapper_stdin_write_handle",
+            "child_stdio_stdin_read_handle",
+            wrapper_reads=False,
+        )
+        for stream in ("app", "http"):
             create_pipe(
                 f"wrapper_{stream}_read_handle",
                 f"child_{stream}_write_handle",
                 wrapper_reads=True,
+            )
+        for stream in ("stdout", "stderr"):
+            create_pipe(
+                f"wrapper_{stream}_read_handle",
+                f"child_{stream}_write_handle",
+                wrapper_reads=True,
+                shared_child_role=f"child_stdio_{stream}_write_handle",
             )
         if validated_phase == "A":
             create_event(
@@ -2062,8 +2430,20 @@ def create_phase_channels(phase: str) -> PhaseChannels:
             isinstance(error, DualLiveWindowsError)
             and error.code == "dual_live_phase_channels_cleanup_failed"
         ):
+            if not cleanup_ok:
+                _retain_failed_phase_handle_custody(
+                    handles,
+                    mode="build",
+                )
             _fail("dual_live_phase_channels_cleanup_failed")
         raise
+
+
+def create_phase_channels(phase: str) -> PhaseChannels:
+    _require_phase_channel_apis()
+    with _native_custody_gate:
+        _drain_native_custody()
+        return _create_phase_channels_locked(phase)
 
 
 def make_inherited_handles_non_inheritable(
@@ -2342,6 +2722,31 @@ def _validated_job_inputs(
     )
 
 
+def _validated_standard_handles(
+    standard_handles: Sequence[int] | None,
+    inherited_handles: tuple[int, ...],
+) -> tuple[int, int, int] | None:
+    if standard_handles is None:
+        return None
+    if isinstance(standard_handles, (str, bytes)) or not isinstance(
+        standard_handles,
+        Sequence,
+    ):
+        _fail("dual_live_windows_arguments_invalid")
+    handles = tuple(standard_handles)
+    if (
+        len(handles) != 3
+        or any(
+            isinstance(handle, bool) or not isinstance(handle, int) or handle <= 0
+            for handle in handles
+        )
+        or len(set(handles)) != 3
+        or not set(handles) <= set(inherited_handles)
+    ):
+        _fail("dual_live_job_standard_handles_invalid")
+    return handles
+
+
 def _hash_open_image(path: Path) -> tuple[BinaryIO, str]:
     try:
         stream = path.open("rb")
@@ -2491,6 +2896,7 @@ class JobChild:
         "_job_policy_sha256",
         "_start_evidence",
         "_retained_processes",
+        "_pretermination_retention_failure",
         "_closed",
         "_lock",
     )
@@ -2515,6 +2921,7 @@ class JobChild:
         self._job_policy_sha256: str | None = None
         self._start_evidence: JobStartEvidence | None = None
         self._retained_processes: dict[int, tuple[int, int, str, str]] = {}
+        self._pretermination_retention_failure: BaseException | None = None
         self._closed = False
         self._lock = threading.Lock()
 
@@ -2601,12 +3008,41 @@ class JobChild:
             _fail("dual_live_child_timeout")
         return exit_code
 
-    def terminate_tree(self) -> None:
+    def _terminate_tree_unlocked(self) -> None:
         if self._closed or self._job_handle is None:
             _fail("dual_live_child_closed")
         assert _kernel32 is not None
         if not _kernel32.TerminateJobObject(self._job_handle, _TERMINATE_EXIT_CODE):
             _fail("dual_live_child_terminate_failed")
+
+    def terminate_tree(self) -> None:
+        with self._lock:
+            self._terminate_tree_unlocked()
+
+    def retain_then_terminate_tree(self) -> None:
+        """Retain a stable pre-kill process set, then always terminate the Job."""
+
+        with self._lock:
+            if self._closed or self._job_handle is None:
+                _fail("dual_live_child_closed")
+            retention_failure: BaseException | None = None
+            try:
+                process_ids = _stable_job_process_ids(self._job_handle)
+                _retain_active_job_processes(self, process_ids)
+                _validate_retained_processes(self)
+                if _stable_job_process_ids(self._job_handle) != process_ids:
+                    _fail("dual_live_quiescence_indeterminate")
+            except BaseException as exc:
+                retention_failure = exc
+                if self._pretermination_retention_failure is None:
+                    self._pretermination_retention_failure = exc
+
+            try:
+                self._terminate_tree_unlocked()
+            except BaseException as termination_failure:
+                if retention_failure is not None:
+                    termination_failure.__context__ = retention_failure
+                raise
 
     def close(self) -> None:
         with self._lock:
@@ -2646,18 +3082,34 @@ class JobChild:
 
 
 class _ProvisionalJobOwner:
-    __slots__ = ("job_handle", "process_handle", "thread_handle")
+    __slots__ = ("job_handle", "process_info")
 
     def __init__(
         self,
         *,
         job_handle: int,
-        process_handle: int,
-        thread_handle: int,
+        process_info: _PROCESS_INFORMATION,
     ) -> None:
         self.job_handle: int | None = job_handle
-        self.process_handle: int | None = process_handle
-        self.thread_handle: int | None = thread_handle
+        self.process_info = process_info
+
+    @property
+    def process_handle(self) -> int | None:
+        value = self.process_info.hProcess
+        return int(value) if value else None
+
+    @process_handle.setter
+    def process_handle(self, value: int | None) -> None:
+        self.process_info.hProcess = value
+
+    @property
+    def thread_handle(self) -> int | None:
+        value = self.process_info.hThread
+        return int(value) if value else None
+
+    @thread_handle.setter
+    def thread_handle(self, value: int | None) -> None:
+        self.process_info.hThread = value
 
     def close_thread_checked(self) -> None:
         if self.thread_handle is None:
@@ -2680,9 +3132,13 @@ class _ProvisionalJobOwner:
     def cleanup_after_failure(self) -> bool:
         assert _kernel32 is not None
         cleanup_ok = True
-        if self.job_handle is not None and not _kernel32.TerminateJobObject(
-            self.job_handle,
-            _TERMINATE_EXIT_CODE,
+        if (
+            self.job_handle is not None
+            and self.process_handle is not None
+            and not _kernel32.TerminateJobObject(
+                self.job_handle,
+                _TERMINATE_EXIT_CODE,
+            )
         ):
             cleanup_ok = False
             if not self._close_owned_handle("job_handle"):
@@ -2706,6 +3162,13 @@ class _ProvisionalJobOwner:
             for name in ("thread_handle", "process_handle", "job_handle")
         )
 
+    @property
+    def released(self) -> bool:
+        return all(
+            getattr(self, name) is None
+            for name in ("thread_handle", "process_handle", "job_handle")
+        )
+
     def disown(self) -> None:
         if self.thread_handle is not None:
             _fail("dual_live_child_cleanup_failed")
@@ -2713,12 +3176,38 @@ class _ProvisionalJobOwner:
         self.job_handle = None
 
 
-def create_child_in_job(
+_failed_provisional_owner_lock = threading.Lock()
+_failed_provisional_owners: list[_ProvisionalJobOwner] = []
+
+
+def _retain_failed_provisional_owner(owner: _ProvisionalJobOwner) -> None:
+    if owner.released:
+        return
+    with _failed_provisional_owner_lock:
+        if owner not in _failed_provisional_owners:
+            _failed_provisional_owners.append(owner)
+
+
+def _retry_failed_provisional_owners() -> None:
+    failures: list[_ProvisionalJobOwner] = []
+    with _native_custody_gate:
+        with _failed_provisional_owner_lock:
+            for owner in tuple(_failed_provisional_owners):
+                if owner.cleanup_after_failure() and owner.released:
+                    _failed_provisional_owners.remove(owner)
+                else:
+                    failures.append(owner)
+    if failures:
+        _fail("dual_live_child_cleanup_failed")
+
+
+def _create_child_in_job_locked(
     argv: Sequence[str],
     environment: Mapping[str, str],
     inherited_handles: Sequence[int],
     runtime_instance_id: str,
     wrapper_nonce_sha256: str,
+    standard_handles: Sequence[int] | None = None,
 ) -> JobChild:
     (
         copied_argv,
@@ -2733,12 +3222,14 @@ def create_child_in_job(
         runtime_instance_id=runtime_instance_id,
         wrapper_nonce_sha256=wrapper_nonce_sha256,
     )
+    std_handles = _validated_standard_handles(standard_handles, handles)
     executable_custody = _open_executable_custody(copied_argv[0])
     executable_sha256 = executable_custody.sha256
     job_handle: int | None = None
     provisional_owner: _ProvisionalJobOwner | None = None
     attribute_list: ctypes.Array[ctypes.c_char] | None = None
     attributes_initialized = False
+    primary_failure: BaseException | None = None
     try:
         assert _kernel32 is not None
         job_handle = _kernel32.CreateJobObjectW(None, None)
@@ -2784,7 +3275,19 @@ def create_child_in_job(
         startup = _STARTUPINFOEXW()
         startup.StartupInfo.cb = ctypes.sizeof(_STARTUPINFOEXW)
         startup.lpAttributeList = ctypes.cast(attribute_list, wintypes.LPVOID)
+        if std_handles is not None:
+            startup.StartupInfo.dwFlags |= _STARTF_USESTDHANDLES
+            (
+                startup.StartupInfo.hStdInput,
+                startup.StartupInfo.hStdOutput,
+                startup.StartupInfo.hStdError,
+            ) = std_handles
         process_info = _PROCESS_INFORMATION()
+        provisional_owner = _ProvisionalJobOwner(
+            job_handle=int(job_handle),
+            process_info=process_info,
+        )
+        job_handle = None
         command_line = ctypes.create_unicode_buffer(subprocess.list2cmdline(copied_argv))
         if not _kernel32.CreateProcessW(
             executable_custody.final_path,
@@ -2799,12 +3302,6 @@ def create_child_in_job(
             ctypes.byref(process_info),
         ):
             _fail("dual_live_job_admission_refused")
-        provisional_owner = _ProvisionalJobOwner(
-            job_handle=int(job_handle),
-            process_handle=int(process_info.hProcess),
-            thread_handle=int(process_info.hThread),
-        )
-        job_handle = None
         provisional_owner.close_thread_checked()
         assert provisional_owner.process_handle is not None
         assert provisional_owner.job_handle is not None
@@ -2857,19 +3354,55 @@ def create_child_in_job(
         provisional_owner.disown()
         return child
     except BaseException as error:
+        primary_failure = error
         if provisional_owner is not None:
             cleanup_ok = provisional_owner.cleanup_after_failure()
+            _retain_failed_provisional_owner(provisional_owner)
             if not cleanup_ok or (
                 isinstance(error, DualLiveWindowsError)
                 and error.code == "dual_live_child_cleanup_failed"
             ):
-                _fail("dual_live_child_cleanup_failed")
+                cleanup = DualLiveWindowsError("dual_live_child_cleanup_failed")
+                cleanup.__context__ = error
+                primary_failure = cleanup
+                raise cleanup
         raise
     finally:
         if attributes_initialized and attribute_list is not None:
             _kernel32.DeleteProcThreadAttributeList(attribute_list)
-        _close_handle(job_handle)
-        _close_handle(executable_custody.handle)
+        raw_cleanup_failures: list[BaseException] = []
+        for raw_handle in (job_handle, executable_custody.handle):
+            try:
+                _close_handle(raw_handle)
+            except BaseException as exc:
+                raw_cleanup_failures.append(exc)
+        job_handle = None
+        executable_custody.handle = 0
+        if raw_cleanup_failures:
+            cleanup = DualLiveWindowsError("dual_live_child_cleanup_failed")
+            cleanup.__context__ = primary_failure
+            raise cleanup from raw_cleanup_failures[0]
+
+
+def create_child_in_job(
+    argv: Sequence[str],
+    environment: Mapping[str, str],
+    inherited_handles: Sequence[int],
+    runtime_instance_id: str,
+    wrapper_nonce_sha256: str,
+    standard_handles: Sequence[int] | None = None,
+) -> JobChild:
+    _require_windows()
+    with _native_custody_gate:
+        _drain_native_custody()
+        return _create_child_in_job_locked(
+            argv=argv,
+            environment=environment,
+            inherited_handles=inherited_handles,
+            runtime_instance_id=runtime_instance_id,
+            wrapper_nonce_sha256=wrapper_nonce_sha256,
+            standard_handles=standard_handles,
+        )
 
 
 def _process_creation_filetime(
@@ -3256,7 +3789,7 @@ def _classify_socket_sample(
     return tcp4_counts, tcp6_counts, udp4_count, udp6_count
 
 
-def prove_child_quiescence(child: JobChild) -> dict[str, Any]:
+def _prove_child_quiescence_unlocked(child: JobChild) -> dict[str, Any]:
     if not isinstance(child, JobChild):
         _fail("dual_live_windows_arguments_invalid")
     if (
@@ -3266,6 +3799,8 @@ def prove_child_quiescence(child: JobChild) -> dict[str, Any]:
         or child._creation_filetime is None
     ):
         _fail("dual_live_child_closed")
+    if child._pretermination_retention_failure is not None:
+        _fail("dual_live_quiescence_indeterminate")
     _validate_retained_processes(child)
     process_ids = _stable_job_process_ids(child._job_handle)
     _retain_active_job_processes(child, process_ids)
@@ -3332,3 +3867,1137 @@ def prove_child_quiescence(child: JobChild) -> dict[str, Any]:
         "process_identity_sha256": process_identity_sha256,
         "stable": True,
     }
+
+
+def prove_child_quiescence(child: JobChild) -> dict[str, Any]:
+    if not isinstance(child, JobChild):
+        _fail("dual_live_windows_arguments_invalid")
+    with child._lock:
+        return _prove_child_quiescence_unlocked(child)
+
+
+def _retain_owned_handle_for_retry(handle: int) -> None:
+    with _retained_owned_handles_lock:
+        _retained_owned_handles.add(handle)
+
+
+def _retry_retained_owned_handles() -> None:
+    assert _kernel32 is not None
+    with _native_custody_gate:
+        with _retained_owned_handles_lock:
+            failed = False
+            for handle in tuple(_retained_owned_handles):
+                if _kernel32.CloseHandle(handle):
+                    _retained_owned_handles.remove(handle)
+                else:
+                    failed = True
+            if failed:
+                _fail("dual_live_owned_handle_cleanup_failed")
+
+
+def _duplicate_owned_handle_locked(source_handle: int) -> int:
+    assert _kernel32 is not None
+    current_process = _kernel32.GetCurrentProcess()
+    duplicate = wintypes.HANDLE()
+    created = bool(current_process) and bool(
+        _kernel32.DuplicateHandle(
+            current_process,
+            source_handle,
+            current_process,
+            ctypes.byref(duplicate),
+            0,
+            False,
+            _DUPLICATE_SAME_ACCESS,
+        )
+    )
+    copied = int(duplicate.value) if duplicate.value else None
+    if not created or copied is None:
+        if copied is not None and not _kernel32.CloseHandle(copied):
+            _retain_owned_handle_for_retry(copied)
+            _fail("dual_live_owned_handle_cleanup_failed")
+        _fail("dual_live_owned_handle_duplicate_failed")
+    flags = wintypes.DWORD()
+    if (
+        not _kernel32.GetHandleInformation(copied, ctypes.byref(flags))
+        or flags.value != 0
+    ):
+        if not _kernel32.CloseHandle(copied):
+            _retain_owned_handle_for_retry(copied)
+            _fail("dual_live_owned_handle_cleanup_failed")
+        _fail("dual_live_owned_handle_duplicate_failed")
+    return copied
+
+
+def _duplicate_owned_handle(source_handle: int) -> int:
+    with _native_custody_gate:
+        _drain_native_custody()
+        return _duplicate_owned_handle_locked(source_handle)
+
+
+def _duplicate_current_thread_handle() -> int:
+    assert _kernel32 is not None
+    return _duplicate_owned_handle(int(_kernel32.GetCurrentThread()))
+
+
+class _OwnedPipeReader:
+    __slots__ = (
+        "_active_thread",
+        "_active_thread_handle",
+        "_closed",
+        "_lock",
+        "_pipe_handle",
+    )
+
+    def __init__(self, pipe_handle: int) -> None:
+        self._pipe_handle: int | None = pipe_handle
+        self._active_thread: threading.Thread | None = None
+        self._active_thread_handle: int | None = None
+        self._closed = False
+        self._lock = threading.Lock()
+
+    def read(self, size: int = -1) -> bytes:
+        return self._read_with_duplicate(size, _duplicate_owned_handle)
+
+    def _read_in_native_custody_window(
+        self,
+        size: int,
+        factory_token: object,
+    ) -> bytes:
+        if (
+            factory_token is not _OWNED_PROCESS_FACTORY_TOKEN
+            or not _owned_factory_window_active.is_set()
+        ):
+            _fail("dual_live_owned_process_factory_only")
+        return self._read_with_duplicate(size, _duplicate_owned_handle_locked)
+
+    def _read_with_duplicate(
+        self,
+        size: int,
+        duplicate_handle: Callable[[int], int],
+    ) -> bytes:
+        if isinstance(size, bool) or not isinstance(size, int) or size <= 0:
+            _fail("dual_live_owned_reader_size_invalid")
+        with self._lock:
+            if self._closed or self._pipe_handle is None:
+                return b""
+            if self._active_thread_handle is not None:
+                _fail("dual_live_owned_reader_concurrent")
+            assert _kernel32 is not None
+            active_handle = duplicate_handle(int(_kernel32.GetCurrentThread()))
+            self._active_thread_handle = active_handle
+            self._active_thread = threading.current_thread()
+            pipe_handle = self._pipe_handle
+        try:
+            buffer = ctypes.create_string_buffer(size)
+            received = wintypes.DWORD()
+            assert _kernel32 is not None
+            ctypes.set_last_error(0)
+            if not _kernel32.ReadFile(
+                pipe_handle,
+                buffer,
+                size,
+                ctypes.byref(received),
+                None,
+            ):
+                error = ctypes.get_last_error()
+                with self._lock:
+                    closed = self._closed
+                if error == _ERROR_BROKEN_PIPE or (
+                    closed and error == _ERROR_OPERATION_ABORTED
+                ):
+                    return b""
+                _fail("dual_live_owned_reader_failed")
+            return bytes(buffer.raw[: received.value])
+        finally:
+            close_failed = False
+            with self._lock:
+                if self._active_thread_handle == active_handle:
+                    self._active_thread = None
+                    if _kernel32.CloseHandle(active_handle):
+                        self._active_thread_handle = None
+                    else:
+                        close_failed = True
+            if close_failed:
+                _fail("dual_live_owned_reader_close_failed")
+
+    def close(self) -> None:
+        active_thread: threading.Thread | None
+        cancel_failure: BaseException | None = None
+        with self._lock:
+            if (
+                self._closed
+                and self._pipe_handle is None
+                and self._active_thread_handle is None
+            ):
+                return
+            self._closed = True
+            active_thread = self._active_thread
+            active_handle = self._active_thread_handle
+            if active_thread is not None and active_handle is not None:
+                ctypes.set_last_error(0)
+                assert _cancel_synchronous_io is not None
+                cancelled = _cancel_synchronous_io(active_handle)
+                error = ctypes.get_last_error()
+                if not cancelled and error not in (_ERROR_NOT_FOUND,):
+                    cancel_failure = DualLiveWindowsError(
+                        "dual_live_owned_reader_cancel_failed"
+                    )
+        if active_thread is not None and active_thread is not threading.current_thread():
+            active_thread.join(_OWNED_IO_TIMEOUT_SECONDS)
+            if active_thread.is_alive():
+                stuck = DualLiveWindowsError("dual_live_owned_reader_cancel_stuck")
+                if cancel_failure is not None:
+                    stuck.__context__ = cancel_failure
+                raise stuck
+        close_failure: BaseException | None = None
+        with self._lock:
+            if self._active_thread is None and self._active_thread_handle is not None:
+                if _kernel32.CloseHandle(self._active_thread_handle):
+                    self._active_thread_handle = None
+                else:
+                    close_failure = DualLiveWindowsError(
+                        "dual_live_owned_reader_close_failed"
+                    )
+            if self._pipe_handle is not None:
+                if not _kernel32.CloseHandle(self._pipe_handle):
+                    pipe_failure = DualLiveWindowsError(
+                        "dual_live_owned_reader_close_failed"
+                    )
+                    if close_failure is None:
+                        close_failure = pipe_failure
+                    else:
+                        close_failure.__context__ = pipe_failure
+                else:
+                    self._pipe_handle = None
+        if cancel_failure is not None:
+            if close_failure is not None:
+                cancel_failure.__context__ = close_failure
+            raise cancel_failure
+        if close_failure is not None:
+            raise close_failure
+
+
+class _OwnedControlWriter:
+    __slots__ = (
+        "_cancel_requested",
+        "_cleanup_lock",
+        "_done",
+        "_frame",
+        "_io_started",
+        "_joined",
+        "_lock",
+        "_pipe_handle",
+        "_ready",
+        "_result",
+        "_start_complete",
+        "_start_failure",
+        "_start_state",
+        "_thread",
+        "_thread_handle",
+    )
+
+    _cancel_requested: bool
+    _cleanup_lock: threading.Lock
+    _done: threading.Event
+    _frame: bytes
+    _io_started: bool
+    _joined: bool
+    _lock: threading.Lock
+    _pipe_handle: int | None
+    _ready: threading.Event
+    _result: BaseException | int | None
+    _start_complete: threading.Event
+    _start_failure: BaseException | None
+    _start_state: str
+    _thread: threading.Thread
+    _thread_handle: int | None
+
+    def __init__(self, source_handle: int, frame: bytes) -> None:
+        self._cancel_requested = False
+        self._cleanup_lock = threading.Lock()
+        self._done = threading.Event()
+        self._frame = frame
+        self._io_started = False
+        self._joined = False
+        self._lock = threading.Lock()
+        self._pipe_handle: int | None = None
+        self._ready = threading.Event()
+        self._result = None
+        self._start_complete = threading.Event()
+        self._start_failure = None
+        self._start_state = "new"
+        self._thread_handle = None
+        with _native_custody_gate:
+            _drain_native_custody()
+            self._pipe_handle = _duplicate_owned_handle_locked(source_handle)
+            try:
+                self._thread = threading.Thread(
+                    target=self._write,
+                    name="dual-live-owned-control",
+                    daemon=False,
+                )
+            except BaseException as exc:
+                failure = DualLiveWindowsError(
+                    "dual_live_owned_control_start_failed"
+                )
+                try:
+                    _close_handle(self._pipe_handle)
+                except BaseException as cleanup_failure:
+                    self._pipe_handle = None
+                    cleanup = DualLiveWindowsError(
+                        "dual_live_owned_control_cleanup_failed"
+                    )
+                    cleanup.__context__ = exc
+                    raise cleanup from cleanup_failure
+                self._pipe_handle = None
+                raise failure from exc
+
+    @property
+    def custody_released(self) -> bool:
+        with self._lock:
+            return (
+                self._joined
+                and self._pipe_handle is None
+                and self._thread_handle is None
+            )
+
+    def start(self) -> None:
+        with self._lock:
+            if self._start_state == "cancelled":
+                _fail("dual_live_owned_control_start_failed")
+            if self._start_state != "new":
+                _fail("dual_live_owned_control_start_invalid")
+            self._start_state = "starting"
+        try:
+            self._thread.start()
+        except BaseException as exc:
+            with self._lock:
+                self._start_failure = exc
+                self._start_state = "start_failed"
+            self._start_complete.set()
+            raise DualLiveWindowsError(
+                "dual_live_owned_control_start_failed"
+            ) from exc
+        with self._lock:
+            self._start_state = "started"
+        self._start_complete.set()
+
+    def _write(self) -> None:
+        try:
+            thread_handle = _duplicate_current_thread_handle()
+        except BaseException as exc:
+            with self._lock:
+                self._result = exc
+            self._ready.set()
+            self._done.set()
+            return
+
+        with self._lock:
+            self._thread_handle = thread_handle
+        self._ready.set()
+        with self._lock:
+            if self._cancel_requested:
+                self._result = DualLiveWindowsError(
+                    "dual_live_owned_control_cancelled"
+                )
+                self._done.set()
+                return
+            pipe_handle = self._pipe_handle
+            if pipe_handle is None:
+                self._result = DualLiveWindowsError(
+                    "dual_live_owned_control_custody_unproven"
+                )
+                self._done.set()
+                return
+            self._io_started = True
+
+        try:
+            written = wintypes.DWORD()
+            buffer = ctypes.create_string_buffer(self._frame)
+            assert _kernel32 is not None
+            if not _kernel32.WriteFile(
+                pipe_handle,
+                buffer,
+                len(self._frame),
+                ctypes.byref(written),
+                None,
+            ):
+                _fail("dual_live_owned_control_write_failed")
+            result: BaseException | int = int(written.value)
+        except BaseException as exc:
+            result = exc
+        with self._lock:
+            self._io_started = False
+            self._result = result
+        self._done.set()
+
+    def _close_capabilities(self) -> None:
+        failures: list[BaseException] = []
+        with self._cleanup_lock:
+            with self._lock:
+                thread_handle = self._thread_handle
+                pipe_handle = self._pipe_handle
+            if thread_handle is not None:
+                try:
+                    closed = bool(_kernel32.CloseHandle(thread_handle))
+                except BaseException as exc:
+                    failures.append(exc)
+                else:
+                    if closed:
+                        with self._lock:
+                            if self._thread_handle == thread_handle:
+                                self._thread_handle = None
+                    else:
+                        failures.append(
+                            DualLiveWindowsError(
+                                "dual_live_owned_control_cleanup_failed"
+                            )
+                        )
+            if pipe_handle is not None:
+                try:
+                    closed = bool(_kernel32.CloseHandle(pipe_handle))
+                except BaseException as exc:
+                    failures.append(exc)
+                else:
+                    if closed:
+                        with self._lock:
+                            if self._pipe_handle == pipe_handle:
+                                self._pipe_handle = None
+                    else:
+                        failures.append(
+                            DualLiveWindowsError(
+                                "dual_live_owned_control_cleanup_failed"
+                            )
+                        )
+        if failures:
+            raise DualLiveWindowsError(
+                "dual_live_owned_control_cleanup_failed"
+            ) from failures[0]
+
+    def _cancel_io(self) -> BaseException | None:
+        with self._lock:
+            self._cancel_requested = True
+            if self._start_state == "new":
+                self._start_state = "cancelled"
+                self._start_complete.set()
+            thread_handle = self._thread_handle if self._io_started else None
+        if thread_handle is None:
+            return None
+        try:
+            ctypes.set_last_error(0)
+            assert _cancel_synchronous_io is not None
+            cancelled = _cancel_synchronous_io(thread_handle)
+            error = ctypes.get_last_error()
+        except BaseException as exc:
+            return exc
+        if not cancelled and error != _ERROR_NOT_FOUND:
+            return DualLiveWindowsError(
+                "dual_live_owned_control_cancel_failed"
+            )
+        return None
+
+    def _join_and_release(self, *, cancel: bool) -> None:
+        cancel_failure = self._cancel_io() if cancel else None
+        with self._lock:
+            start_state = self._start_state
+        if start_state == "starting":
+            if not self._start_complete.wait(_OWNED_IO_TIMEOUT_SECONDS):
+                stuck = DualLiveWindowsError(
+                    "dual_live_owned_control_custody_unproven"
+                )
+                if cancel_failure is not None:
+                    stuck.__context__ = cancel_failure
+                raise stuck
+            with self._lock:
+                start_state = self._start_state
+        if start_state == "cancelled":
+            pass
+        elif self._thread.ident is None:
+            if start_state != "start_failed":
+                stuck = DualLiveWindowsError(
+                    "dual_live_owned_control_custody_unproven"
+                )
+                if cancel_failure is not None:
+                    stuck.__context__ = cancel_failure
+                raise stuck
+        else:
+            try:
+                self._thread.join(_OWNED_IO_TIMEOUT_SECONDS)
+            except BaseException as exc:
+                stuck = DualLiveWindowsError(
+                    "dual_live_owned_control_write_stuck"
+                )
+                stuck.__cause__ = exc
+                stuck.__context__ = cancel_failure
+                raise stuck
+            if self._thread.is_alive():
+                stuck = DualLiveWindowsError(
+                    "dual_live_owned_control_write_stuck"
+                )
+                stuck.__context__ = cancel_failure
+                raise stuck
+        with self._lock:
+            self._joined = True
+        try:
+            self._close_capabilities()
+        except BaseException as cleanup_failure:
+            if cancel_failure is not None:
+                cleanup_failure.__context__ = cancel_failure
+            raise
+        if cancel_failure is not None:
+            raise DualLiveWindowsError(
+                "dual_live_owned_control_cancel_failed"
+            ) from cancel_failure
+
+    def cancel_and_join(self) -> None:
+        self._join_and_release(cancel=True)
+
+    def wait(self) -> None:
+        if not self._ready.wait(_OWNED_IO_TIMEOUT_SECONDS):
+            stuck = DualLiveWindowsError("dual_live_owned_control_write_stuck")
+            try:
+                self.cancel_and_join()
+            except BaseException as cleanup_failure:
+                stuck.__context__ = cleanup_failure
+            raise stuck
+        if not self._done.wait(_OWNED_IO_TIMEOUT_SECONDS):
+            stuck = DualLiveWindowsError("dual_live_owned_control_write_stuck")
+            try:
+                self.cancel_and_join()
+            except BaseException as cleanup_failure:
+                stuck.__context__ = cleanup_failure
+            raise stuck
+        self._join_and_release(cancel=False)
+        with self._lock:
+            result = self._result
+        if isinstance(result, BaseException):
+            raise DualLiveWindowsError(
+                "dual_live_owned_control_write_failed"
+            ) from result
+        if result is None:
+            _fail("dual_live_owned_control_write_failed")
+        if result != len(self._frame):
+            _fail("dual_live_owned_control_short_write")
+
+
+def _write_owned_control_once(writer: _OwnedControlWriter) -> None:
+    writer.wait()
+
+
+def _read_owned_boot(reader: _OwnedPipeReader) -> dict[str, str]:
+    result: list[bytes | None | BaseException] = []
+
+    def read_boot() -> None:
+        try:
+            header = reader._read_in_native_custody_window(
+                4,
+                _OWNED_PROCESS_FACTORY_TOKEN,
+            )
+            if len(header) != 4:
+                _fail("dual_live_owned_boot_invalid")
+            size = int.from_bytes(header, "big")
+            if size <= 0 or size > 4096:
+                _fail("dual_live_owned_boot_invalid")
+            chunks = bytearray()
+            while len(chunks) < size:
+                chunk = reader._read_in_native_custody_window(
+                    size - len(chunks),
+                    _OWNED_PROCESS_FACTORY_TOKEN,
+                )
+                if not chunk:
+                    _fail("dual_live_owned_boot_invalid")
+                chunks.extend(chunk)
+            result.append(bytes(chunks))
+        except BaseException as exc:
+            result.append(exc)
+
+    worker = threading.Thread(target=read_boot, name="dual-live-owned-boot", daemon=True)
+    worker.start()
+    worker.join(_OWNED_IO_TIMEOUT_SECONDS)
+    if worker.is_alive():
+        reader.close()
+        worker.join(_OWNED_IO_TIMEOUT_SECONDS)
+        _fail("dual_live_owned_boot_timeout")
+    if len(result) != 1 or isinstance(result[0], BaseException):
+        cause = result[0] if result and isinstance(result[0], BaseException) else None
+        raise DualLiveWindowsError("dual_live_owned_boot_invalid") from cause
+    assert isinstance(result[0], bytes)
+    try:
+        value = json.loads(result[0].decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise DualLiveWindowsError("dual_live_owned_boot_invalid") from exc
+    expected_keys = (
+        "control_nonce",
+        "phase",
+        "process_boot_id",
+        "schema_id",
+        "status_nonce_sha256",
+    )
+    if (
+        type(value) is not dict
+        or tuple(value) != expected_keys
+        or _canonical_json_bytes(value) != result[0]
+        or value["schema_id"] != _OWNED_BOOT_SCHEMA_ID
+        or value["phase"] not in {"A", "B"}
+    ):
+        _fail("dual_live_owned_boot_invalid")
+    for field in ("control_nonce", "process_boot_id", "status_nonce_sha256"):
+        _require_sha256(value[field])
+    return {key: value[key] for key in expected_keys}
+
+
+def _owned_domain_nonce(
+    domain: str,
+    *,
+    process_boot_id: str,
+    wrapper_nonce_sha256: str,
+) -> str:
+    if domain not in {"control", "status"}:
+        _fail("dual_live_owned_boot_invalid")
+    return hashlib.sha256(
+        _canonical_json_bytes(
+            {
+                "domain": f"project6.dual_live_owned.{domain}.v1",
+                "process_boot_id": _require_sha256(process_boot_id),
+                "wrapper_nonce_sha256": _require_sha256(wrapper_nonce_sha256),
+            }
+        )
+    ).hexdigest()
+
+
+_OWNED_PROCESS_FACTORY_TOKEN = object()
+
+
+class OwnedPhaseProcess:
+    __slots__ = (
+        "_authority_revoked",
+        "_child",
+        "_control_consumed",
+        "_control_writer",
+        "_control_write_handle",
+        "_job_payloads",
+        "_lock",
+        "_phase",
+        "_readers",
+        "_revocation_event_handle",
+        "_send_idle_event_handle",
+        "_stopped",
+        "control_nonce",
+        "executable_sha256",
+        "job_policy_sha256",
+        "process_boot_id",
+        "process_creation_identity_sha256",
+        "status_nonce_sha256",
+    )
+
+    _authority_revoked: bool
+    _child: JobChild | None
+    _control_consumed: bool
+    _control_writer: _OwnedControlWriter | None
+    _control_write_handle: int | None
+    _job_payloads: tuple[Mapping[str, Any], Mapping[str, Any]] | None
+    _lock: threading.RLock
+    _phase: str
+    _readers: Mapping[str, _OwnedPipeReader]
+    _revocation_event_handle: int | None
+    _send_idle_event_handle: int | None
+    _stopped: bool
+    control_nonce: str
+    executable_sha256: str
+    job_policy_sha256: str
+    process_boot_id: str
+    process_creation_identity_sha256: str
+    status_nonce_sha256: str
+
+    def __new__(cls, *args: object, **kwargs: object) -> OwnedPhaseProcess:
+        del args, kwargs
+        _fail("dual_live_owned_process_factory_only")
+
+    @classmethod
+    def _from_factory(
+        cls,
+        factory_token: object,
+        *,
+        phase: str,
+        child: JobChild,
+        handles: Mapping[str, int],
+        boot: Mapping[str, str],
+        readers: Mapping[str, _OwnedPipeReader],
+    ) -> OwnedPhaseProcess:
+        if factory_token is not _OWNED_PROCESS_FACTORY_TOKEN:
+            _fail("dual_live_owned_process_factory_only")
+        evidence = child.start_evidence
+        instance: OwnedPhaseProcess = object.__new__(cls)
+        instance._phase = phase
+        instance._child = child
+        instance._control_write_handle = handles[
+            "wrapper_control_write_handle"
+        ]
+        instance._control_writer = None
+        instance._revocation_event_handle = handles.get(
+            "wrapper_revocation_event_handle"
+        )
+        instance._send_idle_event_handle = handles.get(
+            "wrapper_send_idle_event_handle"
+        )
+        instance._readers = MappingProxyType(dict(readers))
+        instance._control_consumed = False
+        instance._authority_revoked = False
+        instance._stopped = False
+        instance._job_payloads = None
+        instance._lock = threading.RLock()
+        instance.process_boot_id = _require_sha256(boot["process_boot_id"])
+        instance.process_creation_identity_sha256 = (
+            evidence.process_creation_identity_sha256
+        )
+        instance.executable_sha256 = evidence.executable_sha256
+        instance.job_policy_sha256 = evidence.job_policy_sha256
+        instance.status_nonce_sha256 = _require_sha256(
+            boot["status_nonce_sha256"]
+        )
+        instance.control_nonce = _require_sha256(boot["control_nonce"])
+        return instance
+
+    @property
+    def readers(self) -> Mapping[str, _OwnedPipeReader]:
+        return self._readers
+
+    def _finalize_control_writer(self, writer: _OwnedControlWriter) -> None:
+        with self._lock:
+            if self._control_writer is not writer or not writer.custody_released:
+                return
+            handle = self._control_write_handle
+            if handle is not None:
+                if not _kernel32.CloseHandle(handle):
+                    _fail("dual_live_owned_control_cleanup_failed")
+                self._control_write_handle = None
+            self._control_writer = None
+
+    def send_control(self, frame: bytes) -> None:
+        if not isinstance(frame, bytes) or not frame or len(frame) > 4096:
+            _fail("dual_live_owned_control_invalid")
+        writer: _OwnedControlWriter | None = None
+        primary_failure: BaseException | None = None
+        with self._lock:
+            if self._control_consumed:
+                _fail("dual_live_owned_control_consumed")
+            if self._control_write_handle is None:
+                _fail("dual_live_owned_process_closed")
+            self._control_consumed = True
+            handle = self._control_write_handle
+            try:
+                writer = _OwnedControlWriter(handle, frame)
+                self._control_writer = writer
+            except BaseException as exc:
+                primary_failure = exc
+        if writer is None:
+            assert primary_failure is not None
+            raise primary_failure
+        try:
+            writer.start()
+        except BaseException as exc:
+            primary_failure = exc
+        if primary_failure is None:
+            try:
+                _write_owned_control_once(writer)
+            except BaseException as exc:
+                primary_failure = exc
+        else:
+            try:
+                writer.cancel_and_join()
+            except BaseException as cleanup_failure:
+                primary_failure.__context__ = cleanup_failure
+        try:
+            self._finalize_control_writer(writer)
+        except BaseException as cleanup_failure:
+            if primary_failure is None:
+                primary_failure = cleanup_failure
+            else:
+                primary_failure.__context__ = cleanup_failure
+        if primary_failure is not None:
+            raise primary_failure
+
+    def poll_exit(self, timeout: float) -> int | None:
+        with self._lock:
+            child = self._child
+        if child is None:
+            _fail("dual_live_owned_process_closed")
+        return child.poll_exit(timeout)
+
+    def revoke_before_stop(self, reason: str) -> None:
+        if not isinstance(reason, str) or not reason or len(reason) > 64:
+            _fail("dual_live_owned_revocation_invalid")
+        with self._lock:
+            if self._phase == "B":
+                return
+            if self._revocation_event_handle is None:
+                _fail("dual_live_owned_process_closed")
+            if self._authority_revoked:
+                return
+            if not _kernel32.SetEvent(self._revocation_event_handle):
+                _fail("dual_live_owned_revocation_failed")
+            self._authority_revoked = True
+
+    def stop(self) -> None:
+        with self._lock:
+            if self._stopped:
+                return
+            child = self._child
+            if child is None:
+                self._stopped = True
+                return
+            phase = self._phase
+        primary_failure: BaseException | None = None
+        if phase == "A":
+            try:
+                self.revoke_before_stop("owned_stop")
+            except BaseException as exc:
+                primary_failure = exc
+            try:
+                with self._lock:
+                    send_idle = self._send_idle_event_handle
+                if send_idle is None:
+                    _fail("dual_live_owned_process_closed")
+                wait_ms = int(_OWNED_IO_TIMEOUT_SECONDS * 1000)
+                if (
+                    _kernel32.WaitForSingleObject(send_idle, wait_ms)
+                    != _WAIT_OBJECT_0
+                ):
+                    _fail("dual_live_owned_send_idle_unproven")
+            except BaseException as exc:
+                if primary_failure is None:
+                    primary_failure = exc
+                else:
+                    primary_failure.__context__ = exc
+        try:
+            child.retain_then_terminate_tree()
+        except BaseException as termination_failure:
+            if primary_failure is not None:
+                termination_failure.__context__ = primary_failure
+            raise
+        with self._lock:
+            self._stopped = True
+        if primary_failure is not None:
+            raise primary_failure
+
+    def authority_cleared_payload(self) -> Mapping[str, Any]:
+        with self._lock:
+            if self._phase != "A" or not self._authority_revoked:
+                _fail("dual_live_owned_authority_not_cleared")
+        posture = {
+            "phase": "A",
+            "revocation_set": True,
+            "runtime_surface": "inert",
+        }
+        return MappingProxyType(
+            {
+                "authority_posture_sha256": hashlib.sha256(
+                    _canonical_json_bytes(posture)
+                ).hexdigest(),
+                "all_required_absent": True,
+            }
+        )
+
+    def quiesce_and_close(
+        self,
+    ) -> tuple[Mapping[str, Any], Mapping[str, Any]]:
+        with self._lock:
+            if self._job_payloads is not None:
+                return self._job_payloads
+            if self._control_writer is not None:
+                _fail("dual_live_owned_control_custody_unproven")
+            child = self._child
+            if child is None:
+                _fail("dual_live_owned_process_closed")
+            proof = prove_child_quiescence(child)
+            socket_payload = MappingProxyType(
+                {
+                    key: proof[key]
+                    for key in (
+                        "tcp4_state_counts",
+                        "tcp6_state_counts",
+                        "udp4_count",
+                        "udp6_count",
+                        "process_identity_sha256",
+                        "stable",
+                    )
+                }
+            )
+            job_payload = MappingProxyType(
+                {
+                    "active_process_count": proof["active_process_count"],
+                    "process_list_sha256": proof["process_list_sha256"],
+                }
+            )
+            child.close()
+            self._child = None
+            self._job_payloads = (socket_payload, job_payload)
+            return self._job_payloads
+
+    def close(self) -> None:
+        failures: list[BaseException] = []
+        with self._lock:
+            writer = self._control_writer
+            child = self._child
+        if writer is not None:
+            try:
+                writer.cancel_and_join()
+            except BaseException as exc:
+                failures.append(exc)
+            try:
+                self._finalize_control_writer(writer)
+            except BaseException as exc:
+                failures.append(exc)
+        if child is not None:
+            try:
+                self.stop()
+            except BaseException as exc:
+                failures.append(exc)
+        for reader in self._readers.values():
+            try:
+                reader.close()
+            except BaseException as exc:
+                failures.append(exc)
+        with self._lock:
+            handles = (
+                "_control_write_handle",
+                "_revocation_event_handle",
+                "_send_idle_event_handle",
+            )
+            for name in handles:
+                handle = getattr(self, name)
+                if handle is not None:
+                    if name == "_control_write_handle" and self._control_writer is not None:
+                        continue
+                    if _kernel32.CloseHandle(handle):
+                        setattr(self, name, None)
+                    else:
+                        failures.append(
+                            DualLiveWindowsError("dual_live_owned_cleanup_failed")
+                        )
+            child = self._child
+        if child is not None:
+            try:
+                child.close()
+            except BaseException as exc:
+                failures.append(exc)
+            else:
+                with self._lock:
+                    self._child = None
+        if failures:
+            raise DualLiveWindowsError("dual_live_owned_cleanup_failed") from failures[0]
+
+
+def _close_owned_handles(handles: dict[str, int]) -> None:
+    cleanup_failed = False
+    for role, handle in tuple(handles.items()):
+        if _kernel32.CloseHandle(handle):
+            handles.pop(role, None)
+        else:
+            cleanup_failed = True
+    if cleanup_failed:
+        _fail("dual_live_owned_cleanup_failed")
+
+
+class _OwnedCleanupCustody:
+    __slots__ = ("child", "channels", "handles", "readers", "terminated")
+
+    def __init__(
+        self,
+        *,
+        child: JobChild | None = None,
+        channels: PhaseChannels | None = None,
+        handles: dict[str, int] | None = None,
+        readers: dict[str, _OwnedPipeReader] | None = None,
+    ) -> None:
+        self.child = child
+        self.channels = channels
+        self.handles = handles if handles is not None else {}
+        self.readers = readers if readers is not None else {}
+        self.terminated = False
+
+    @property
+    def released(self) -> bool:
+        return (
+            self.child is None
+            and self.channels is None
+            and not self.handles
+            and not self.readers
+        )
+
+    def retry(self) -> None:
+        failures: list[BaseException] = []
+        if self.child is not None and not self.terminated:
+            try:
+                self.child.retain_then_terminate_tree()
+            except BaseException as exc:
+                failures.append(exc)
+            else:
+                self.terminated = True
+        if self.child is not None and self.terminated:
+            try:
+                self.child.close()
+            except BaseException as exc:
+                failures.append(exc)
+            else:
+                self.child = None
+        for role, reader in tuple(self.readers.items()):
+            try:
+                reader.close()
+            except BaseException as exc:
+                failures.append(exc)
+            else:
+                self.readers.pop(role, None)
+        try:
+            _close_owned_handles(self.handles)
+        except BaseException as exc:
+            failures.append(exc)
+        if self.channels is not None:
+            try:
+                self.channels.close()
+            except BaseException as exc:
+                failures.append(exc)
+            else:
+                self.channels = None
+        if failures or not self.released:
+            failure = DualLiveWindowsError("dual_live_owned_cleanup_failed")
+            if failures:
+                failure.__cause__ = failures[0]
+                for current, following in zip(failures, failures[1:]):
+                    current.__context__ = following
+            raise failure
+
+
+_failed_owned_custody_lock = threading.Lock()
+_failed_owned_custodies: list[_OwnedCleanupCustody] = []
+
+
+def _retain_failed_owned_custody(custody: _OwnedCleanupCustody) -> None:
+    with _failed_owned_custody_lock:
+        if custody not in _failed_owned_custodies:
+            _failed_owned_custodies.append(custody)
+
+
+def _retry_failed_owned_custodies() -> None:
+    failures: list[BaseException] = []
+    with _native_custody_gate:
+        with _failed_owned_custody_lock:
+            for custody in tuple(_failed_owned_custodies):
+                try:
+                    custody.retry()
+                except BaseException as exc:
+                    failures.append(exc)
+                else:
+                    _failed_owned_custodies.remove(custody)
+    if failures:
+        raise DualLiveWindowsError("dual_live_owned_cleanup_failed") from failures[0]
+
+
+def _drain_native_custody() -> None:
+    _retry_failed_phase_handle_custodies()
+    _retry_retained_owned_handles()
+    _retry_failed_provisional_owners()
+    _retry_failed_owned_custodies()
+
+
+def _create_owned_phase_process_locked(
+    phase: str,
+    runtime_instance_id: str,
+    wrapper_nonce_sha256: str,
+) -> OwnedPhaseProcess:
+    validated_phase = _require_phase(phase)
+    runtime_instance_id = _require_uuid4(runtime_instance_id)
+    wrapper_nonce_sha256 = _require_sha256(wrapper_nonce_sha256)
+    _require_phase_channel_apis()
+    channels: PhaseChannels | None = None
+    child: JobChild | None = None
+    owned_handles: dict[str, int] = {}
+    readers: dict[str, _OwnedPipeReader] = {}
+    try:
+        channels = create_phase_channels(validated_phase)
+        child = channels._admit_owned_child(
+            _PHASE_CHANNELS_FACTORY_TOKEN,
+            runtime_instance_id=runtime_instance_id,
+            wrapper_nonce_sha256=wrapper_nonce_sha256,
+        )
+        with channels._lease_wrapper_handles(
+            _PHASE_CHANNELS_FACTORY_TOKEN
+        ) as wrapper_handles:
+            for role, handle in wrapper_handles.items():
+                if role == "wrapper_stdin_write_handle":
+                    continue
+                owned_handles[role] = _duplicate_owned_handle(handle)
+        channels.close()
+        for stream in ("app", "http", "stdout", "stderr"):
+            role = f"wrapper_{stream}_read_handle"
+            handle = owned_handles[role]
+            reader = _OwnedPipeReader(handle)
+            readers[stream] = reader
+            owned_handles.pop(role)
+        boot = _read_owned_boot(readers["app"])
+        evidence = child.start_evidence
+        expected_status_nonce = _owned_domain_nonce(
+            "status",
+            process_boot_id=evidence.process_boot_id,
+            wrapper_nonce_sha256=wrapper_nonce_sha256,
+        )
+        expected_control_nonce = _owned_domain_nonce(
+            "control",
+            process_boot_id=evidence.process_boot_id,
+            wrapper_nonce_sha256=wrapper_nonce_sha256,
+        )
+        if (
+            boot["phase"] != validated_phase
+            or boot["process_boot_id"] != evidence.process_boot_id
+            or boot["status_nonce_sha256"] != expected_status_nonce
+            or boot["control_nonce"] != expected_control_nonce
+        ):
+            _fail("dual_live_owned_boot_invalid")
+        return OwnedPhaseProcess._from_factory(
+            _OWNED_PROCESS_FACTORY_TOKEN,
+            phase=validated_phase,
+            child=child,
+            handles=owned_handles,
+            boot=boot,
+            readers=readers,
+        )
+    except BaseException as primary_failure:
+        custody = _OwnedCleanupCustody(
+            child=child,
+            channels=channels,
+            handles=owned_handles,
+            readers=readers,
+        )
+        cleanup_failure: BaseException | None = None
+        for _ in range(2):
+            try:
+                custody.retry()
+            except BaseException as exc:
+                cleanup_failure = exc
+            else:
+                raise
+        _retain_failed_owned_custody(custody)
+        cleanup = DualLiveWindowsError("dual_live_owned_cleanup_failed")
+        cleanup.__context__ = primary_failure
+        assert cleanup_failure is not None
+        raise cleanup from cleanup_failure
+
+
+def _create_owned_phase_process(
+    phase: str,
+    runtime_instance_id: str,
+    wrapper_nonce_sha256: str,
+) -> OwnedPhaseProcess:
+    with _native_custody_gate:
+        _drain_native_custody()
+        if _owned_factory_window_active.is_set():
+            _fail("dual_live_owned_process_factory_only")
+        _owned_factory_window_active.set()
+        try:
+            return _create_owned_phase_process_locked(
+                phase,
+                runtime_instance_id,
+                wrapper_nonce_sha256,
+            )
+        finally:
+            _owned_factory_window_active.clear()

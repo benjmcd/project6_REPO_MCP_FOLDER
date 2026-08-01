@@ -3688,6 +3688,60 @@ def test_controller_latch_between_control_parse_and_go_prevents_send(
     assert "seal" not in events
 
 
+def test_swallowed_stop_bridge_failure_before_go_is_terminal_without_record(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+    original_consume = PhaseControlState.consume_frame
+
+    def fail_bridge_before_go(
+        control: PhaseControlState,
+        reader: object,
+    ) -> str:
+        result = original_consume(control, reader)
+        assert result == "GO"
+        try:
+            control._stop_latch.latch("pump_failure")
+        except DualLiveRuntimeError as exc:
+            assert exc.code == "dual_live_stop_publish_failed"
+        else:  # pragma: no cover - bridge is deliberately fatal
+            raise AssertionError("bridge failure was not raised")
+        assert control._stop_latch.reason_code is None
+        assert control._stop_latch.snapshot is None
+        return result
+
+    def fail_bridge(_reason: str) -> None:
+        events.append("revoke-failed-A")
+        raise RuntimeError("revocation bridge failed")
+
+    monkeypatch.setattr(PhaseControlState, "consume_frame", fail_bridge_before_go)
+
+    with pytest.raises(DualLiveRuntimeError):
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=lambda: _controller_child("A", events),
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda _phase, _child: (),
+            clear_authority=lambda _phase, _child: {},
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=0.1,
+            _before_stop_publish=fail_bridge,
+        )
+
+    assert events.count("revoke-failed-A") == 1
+    assert "go-A" not in events
+    records = read_runtime_records(writers["app"].getvalue())
+    assert all(record["event"] not in {"phase_go", "stop_latched"} for record in records)
+    assert "create-B" not in events
+    assert "seal" not in events
+
+
 def test_controller_publishes_stop_during_one_in_flight_go_dispatch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -4381,6 +4435,62 @@ def test_exit_unproven_closes_each_dead_pump_reader_once() -> None:
                 reader.close()
 
 
+def test_owner_close_failure_uses_stream_order_not_completion_order() -> None:
+    http_failed = threading.Event()
+    reader_names = iter(PIPE_STREAM_CLASSES)
+
+    class OrderedFailReader(_ControllerReader):
+        def __init__(self) -> None:
+            super().__init__()
+            self.stream = next(reader_names)
+
+        def close(self) -> None:
+            if self.stream == "app":
+                assert http_failed.wait(timeout=1)
+                raise RuntimeError("app-close-failed")
+            if self.stream == "http":
+                http_failed.set()
+                raise RuntimeError("http-close-failed-first")
+            super().close()
+
+    events: list[str] = []
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_reader_close_failed",
+    ) as exc:
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=lambda: _controller_child(
+                "A",
+                events,
+                reader_factory=OrderedFailReader,
+            ),
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda _phase, _child: (
+                _controller_socket_census(),
+                {"active_process_count": 0, "process_list_sha256": "5" * 64},
+            ),
+            clear_authority=lambda _phase, _child: {
+                "authority_posture_sha256": "6" * 64,
+                "all_required_absent": True,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=1,
+        )
+
+    assert isinstance(exc.value.__cause__, RuntimeError)
+    assert str(exc.value.__cause__) == "app-close-failed"
+    assert "create-B" not in events
+    assert "seal" not in events
+
+
 def test_controller_stop_record_uses_immutable_first_latch_tick(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -5071,3 +5181,1009 @@ def test_r13_phase_b_survivor_prevents_seal_after_bounded_close() -> None:
 
     assert "seal" not in events
     assert all(writer.closed_clean for writer in writers.values())
+
+
+def test_bind_01_owned_nonproduction_binder_is_private_and_exact() -> None:
+    binder = getattr(dual_live_runtime_module, "_run_owned_two_phase_controller")
+    owned_type = getattr(dual_live_runtime_module, "_OwnedControllerContext")
+
+    assert tuple(inspect.signature(binder).parameters) == ("context",)
+    assert inspect.isclass(owned_type)
+    with pytest.raises(TypeError):
+        owned_type()  # type: ignore[call-arg]
+    source = inspect.getsource(binder)
+    assert "Callable" not in source
+    assert "writers" not in inspect.signature(binder).parameters
+    assert "environment" not in inspect.signature(binder).parameters
+    assert "path" not in inspect.signature(binder).parameters
+    assert "handle" not in inspect.signature(binder).parameters
+
+
+def test_bind_02_owned_context_is_factory_only_and_nonproduction() -> None:
+    factory = getattr(
+        dual_live_runtime_module,
+        "_make_nonproduction_owned_controller_context",
+    )
+    context_type = getattr(dual_live_runtime_module, "_OwnedControllerContext")
+    events: list[str] = []
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+
+    context = factory(
+        identity=RUNTIME_IDENTITY,
+        runtime_start_payload=RUNTIME_START_PAYLOAD,
+        app_writer=writers["app"],
+        http_writer=writers["http"],
+        stdout_writer=writers["stdout"],
+        stderr_writer=writers["stderr"],
+        timeout_seconds=2,
+    )
+
+    assert type(context) is context_type
+    assert context.nonproduction_mechanical_only is True
+    assert context.sealed is False
+    with pytest.raises(TypeError):
+        context_type(  # type: ignore[call-arg]
+            RUNTIME_IDENTITY,
+            RUNTIME_START_PAYLOAD,
+            writers,
+            2,
+        )
+
+
+class _FakeOwnedPhaseProcess:
+    def __init__(
+        self,
+        phase: str,
+        events: list[str],
+        *,
+        exit_code: int = 0,
+        revoke_failure: BaseException | None = None,
+        close_failure: BaseException | None = None,
+        leave_readers_open: bool = False,
+    ) -> None:
+        self.phase = phase
+        self.events = events
+        self.process_boot_id = ("a" if phase == "A" else "b") * 64
+        self.process_creation_identity_sha256 = ("2" if phase == "A" else "7") * 64
+        self.executable_sha256 = "3" * 64
+        self.job_policy_sha256 = "4" * 64
+        self.status_nonce_sha256 = ("c" if phase == "A" else "d") * 64
+        self.control_nonce = ("e" if phase == "A" else "f") * 64
+        self.readers: dict[str, _ControllerReader] = {
+            str(stream): _ControllerReader() for stream in PIPE_STREAM_CLASSES
+        }
+        self._exit_code = exit_code
+        self._revoke_failure = revoke_failure
+        self._close_failure = close_failure
+        self._leave_readers_open = leave_readers_open
+        self._go_sent = False
+        self._closed = False
+        self.close_calls = 0
+        self.readers["app"].feed(
+            encode_child_status_frame(
+                phase=phase,
+                event="logger_census",
+                process_boot_id=self.process_boot_id,
+                status_nonce_sha256=self.status_nonce_sha256,
+                ordinal=1,
+                payload={
+                    "census_point": "pre_activity",
+                    "handler_count": 1,
+                    "topology_sha256": "1" * 64,
+                },
+            )
+        )
+
+    def send_control(self, frame: bytes) -> None:
+        assert frame == encode_child_control_frame(
+            phase=self.phase,
+            command="GO",
+            control_nonce=self.control_nonce,
+        )
+        self.events.append(f"go-{self.phase}")
+        self._go_sent = True
+        self.readers["app"].feed(
+            encode_child_status_frame(
+                phase=self.phase,
+                event="logger_census",
+                process_boot_id=self.process_boot_id,
+                status_nonce_sha256=self.status_nonce_sha256,
+                ordinal=2,
+                payload={
+                    "census_point": "exit",
+                    "handler_count": 1,
+                    "topology_sha256": "1" * 64,
+                },
+            )
+        )
+        if not self._leave_readers_open:
+            for reader in self.readers.values():
+                reader.finish()
+
+    def poll_exit(self, _timeout: float) -> int | None:
+        return self._exit_code if self._go_sent else None
+
+    def revoke_before_stop(self, reason: str) -> None:
+        self.events.append(f"revoke-{self.phase}-{reason}")
+        if self._revoke_failure is not None:
+            raise self._revoke_failure
+
+    def stop(self) -> None:
+        self.events.append(f"stop-{self.phase}")
+
+    def quiesce_and_close(
+        self,
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        self.events.append(f"quiesce-{self.phase}")
+        return (
+            _controller_socket_census(),
+            {"active_process_count": 0, "process_list_sha256": "5" * 64},
+        )
+
+    def authority_cleared_payload(self) -> dict[str, object]:
+        self.events.append(f"authority-{self.phase}")
+        return {
+            "authority_posture_sha256": "6" * 64,
+            "all_required_absent": True,
+        }
+
+    def close(self) -> None:
+        self.close_calls += 1
+        if self._close_failure is not None:
+            self.events.append(f"close-failed-{self.phase}")
+            raise self._close_failure
+        if not self._closed:
+            self.events.append(f"close-{self.phase}")
+            self._closed = True
+        for reader in self.readers.values():
+            reader.close()
+
+
+def _owned_test_context(
+    events: list[str],
+    *,
+    timeout_seconds: float = 1,
+    app_writer: _ControllerWriter | None = None,
+) -> tuple[
+    dual_live_runtime_module._OwnedControllerContext,
+    dict[str, _ControllerWriter],
+]:
+    writers = {
+        stream: (
+            app_writer
+            if stream == "app" and app_writer is not None
+            else _ControllerWriter(stream, events)
+        )
+        for stream in PIPE_STREAM_CLASSES
+    }
+    context = dual_live_runtime_module._make_nonproduction_owned_controller_context(
+        identity=RUNTIME_IDENTITY,
+        runtime_start_payload=RUNTIME_START_PAYLOAD,
+        app_writer=writers["app"],
+        http_writer=writers["http"],
+        stdout_writer=writers["stdout"],
+        stderr_writer=writers["stderr"],
+        timeout_seconds=timeout_seconds,
+    )
+    return context, writers
+
+
+def test_seq_owned_binder_records_exact_two_phase_order_and_seals(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_windows
+
+    events: list[str] = []
+    created: list[_FakeOwnedPhaseProcess] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        process = _FakeOwnedPhaseProcess(phase, events)
+        created.append(process)
+        return process
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+        raising=False,
+    )
+    context, writers = _owned_test_context(events)
+
+    result = dual_live_runtime_module._run_owned_two_phase_controller(context)
+
+    records = read_runtime_records(writers["app"].getvalue())
+    assert result is None
+    assert context.sealed is True
+    assert [record["event"] for record in records] == [
+        "runtime_start",
+        "phase_child_start",
+        "logger_census",
+        "phase_go",
+        "logger_census",
+        "socket_census",
+        "job_zero",
+        "authority_cleared",
+        "phase_complete",
+        "phase_child_start",
+        "logger_census",
+        "phase_go",
+        "logger_census",
+        "socket_census",
+        "job_zero",
+        "phase_complete",
+        "runtime_complete",
+    ]
+    assert [record["phase"] for record in records] == [
+        "wrapper",
+        *("A" for _ in range(8)),
+        *("B" for _ in range(7)),
+        "wrapper",
+    ]
+    assert [process.process_boot_id for process in created] == ["a" * 64, "b" * 64]
+    assert [process.close_calls for process in created] == [1, 1]
+    assert context._owned_processes == []
+    assert context._active_process is None
+    assert events.index("quiesce-A") < events.index("go-B")
+    assert events.index("quiesce-A") < events.index("close-A")
+    assert events.index("close-A") < events.index("go-B")
+    assert events.index("quiesce-B") < events.index("close-app")
+
+
+def test_owned_binder_failed_close_retains_active_process_for_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_windows
+
+    events: list[str] = []
+    created: list[_FakeOwnedPhaseProcess] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        process = _FakeOwnedPhaseProcess(
+            phase,
+            events,
+            close_failure=RuntimeError("close failed"),
+        )
+        created.append(process)
+        return process
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+        raising=False,
+    )
+    context, _writers = _owned_test_context(events)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_owned_close_failed"):
+        dual_live_runtime_module._run_owned_two_phase_controller(context)
+
+    assert len(created) == 1
+    assert context._owned_processes == [("A", created[0])]
+    assert context._active_process is created[0]
+    assert context._quiescing_process is None
+    assert context._closed_process_ids == set()
+
+
+def test_owned_context_overlap_retains_new_process_until_cleanup_retry() -> None:
+    events: list[str] = []
+    context, _writers = _owned_test_context(events)
+    active = _FakeOwnedPhaseProcess("A", events)
+    overlap = _FakeOwnedPhaseProcess(
+        "B",
+        events,
+        close_failure=RuntimeError("persistent overlap close failure"),
+    )
+    context._begin_run()
+    context._bind_process("A", active)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_owned_close_failed"):
+        context._bind_process("B", overlap)
+
+    assert context._owned_processes == [("A", active), ("B", overlap)]
+    assert context._active_process is active
+    assert overlap.close_calls == 1
+    assert context.sealed is False
+    assert "go-B" not in events
+
+    overlap._close_failure = None
+    assert context._close_all_processes() is None
+    assert overlap.close_calls == 2
+    assert active.close_calls == 1
+    assert context._owned_processes == []
+    assert context._active_process is None
+    assert context.sealed is False
+
+
+def test_owned_context_quiesce_does_not_hold_lock_while_close_waits_on_revoke(
+) -> None:
+    events: list[str] = []
+    context, _writers = _owned_test_context(events)
+    process = _FakeOwnedPhaseProcess("A", events)
+    projection_readers: dict[str, object] = {
+        stream: reader for stream, reader in process.readers.items()
+    }
+    child = _controller_projection(projection_readers, events)
+    workers: list[threading.Thread] = []
+    revoked = threading.Event()
+
+    def revoke_and_signal() -> None:
+        context._revoke_active("quiesce_race")
+        revoked.set()
+
+    def close_during_revoke() -> None:
+        worker = threading.Thread(
+            target=revoke_and_signal,
+            name="owned-quiesce-race",
+        )
+        workers.append(worker)
+        worker.start()
+        worker.join(0.25)
+        if worker.is_alive():
+            raise RuntimeError("context lock held across close")
+
+    setattr(process, "close", close_during_revoke)
+    context._begin_run()
+    context._bind_process("A", process)
+
+    try:
+        result = context._quiesce_phase("A", child)
+    finally:
+        for worker in workers:
+            worker.join(1)
+
+    assert revoked.is_set()
+    assert result[1]["active_process_count"] == 0
+    assert context._active_process is None
+    assert context._quiescing_process is None
+    assert context._quiesced_process_ids == {id(process)}
+    assert context._closed_process_ids == {id(process)}
+
+
+def test_owned_context_invalid_quiescence_clears_marker_but_retains_custody(
+) -> None:
+    events: list[str] = []
+    context, _writers = _owned_test_context(events)
+    process = _FakeOwnedPhaseProcess("A", events)
+    projection_readers: dict[str, object] = {
+        stream: reader for stream, reader in process.readers.items()
+    }
+    child = _controller_projection(projection_readers, events)
+    setattr(process, "quiesce_and_close", lambda: ({},))
+    context._begin_run()
+    context._bind_process("A", process)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_quiescence_invalid"):
+        context._quiesce_phase("A", child)
+
+    assert context._owned_processes == [("A", process)]
+    assert context._active_process is process
+    assert context._quiescing_process is None
+    assert context._quiesced_process_ids == set()
+    assert context._closed_process_ids == set()
+
+
+def test_stop_owned_binder_revokes_kills_and_never_seals_or_starts_b(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_windows
+
+    events: list[str] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        events.append(f"create-{phase}")
+        return _FakeOwnedPhaseProcess(phase, events, exit_code=9)
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+        raising=False,
+    )
+    context, _writers = _owned_test_context(events)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_phase_failed"):
+        dual_live_runtime_module._run_owned_two_phase_controller(context)
+
+    assert events.index("revoke-A-child_exit_nonzero") < events.index("stop-A")
+    assert events.count("stop-A") == 1
+    assert "create-B" not in events
+    assert context.sealed is False
+
+
+def test_owned_binder_revocation_failure_is_fatal_and_cannot_seal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_windows
+
+    events: list[str] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        events.append(f"create-{phase}")
+        return _FakeOwnedPhaseProcess(
+            phase,
+            events,
+            exit_code=9,
+            revoke_failure=RuntimeError("fail-stop revocation failed"),
+        )
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+        raising=False,
+    )
+    context, _writers = _owned_test_context(events)
+
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_stop_publish_failed",
+    ) as exc:
+        dual_live_runtime_module._run_owned_two_phase_controller(context)
+
+    assert isinstance(exc.value.__cause__, RuntimeError)
+    assert events.count("revoke-A-child_exit_nonzero") == 1
+    assert events.count("stop-A") == 1
+    assert "create-B" not in events
+    assert context.sealed is False
+
+
+def test_owned_binder_writer_failure_closes_capture_without_children_or_seal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_windows
+
+    events: list[str] = []
+    factory_calls: list[str] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        factory_calls.append(phase)
+        return _FakeOwnedPhaseProcess(phase, events)
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+        raising=False,
+    )
+    app_writer = _FailingControllerWriter("app", events)
+    context, writers = _owned_test_context(events, app_writer=app_writer)
+
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_runtime_writer_failure",
+    ):
+        dual_live_runtime_module._run_owned_two_phase_controller(context)
+
+    assert factory_calls == []
+    assert context.sealed is False
+    assert all(writer.closed_clean for writer in writers.values())
+
+
+def test_owned_binder_cancel_path_closes_child_and_cannot_seal_or_start_b(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_windows
+
+    events: list[str] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        events.append(f"create-{phase}")
+        return _FakeOwnedPhaseProcess(
+            phase,
+            events,
+            leave_readers_open=True,
+        )
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+        raising=False,
+    )
+    context, _writers = _owned_test_context(events, timeout_seconds=0.05)
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_failed") as exc:
+        dual_live_runtime_module._run_owned_two_phase_controller(context)
+
+    assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+    assert exc.value.__cause__.code == "dual_live_pump_join_timeout"
+    assert any(event.startswith("revoke-A-") for event in events)
+    assert events.count("stop-A") == 1
+    assert "create-B" not in events
+    assert context.sealed is False
+
+
+def test_owned_binder_projection_failure_closes_factory_created_process(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_windows
+
+    events: list[str] = []
+    created: list[_FakeOwnedPhaseProcess] = []
+
+    def create(phase: str, _runtime_id: str, _wrapper_nonce: str) -> object:
+        events.append(f"create-{phase}")
+        process = _FakeOwnedPhaseProcess(phase, events)
+        process.readers["http"] = process.readers["app"]
+        created.append(process)
+        return process
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create,
+        raising=False,
+    )
+    context, _writers = _owned_test_context(events)
+
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_pump_reader_alias_invalid",
+    ):
+        dual_live_runtime_module._run_owned_two_phase_controller(context)
+
+    assert len(created) == 1
+    assert created[0].close_calls == 1
+    assert "create-B" not in events
+    assert context.sealed is False
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows owned child proof")
+def test_seq_owned_binder_runs_real_inert_children_and_seals_exactly_once() -> None:
+    script = f"""
+import ctypes
+import gc
+import io
+import json
+import sys
+import threading
+from ctypes import wintypes
+sys.path.insert(0, {str(BACKEND)!r})
+from app.services import dual_live_runtime as runtime
+from app.services import dual_live_windows as windows
+assert windows.OwnedPhaseProcess is not None
+
+class Writer(io.BytesIO):
+    def __init__(self):
+        super().__init__()
+        self.closed_clean = False
+    def close(self):
+        self.closed_clean = True
+
+kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+kernel32.GetCurrentProcess.argtypes = ()
+kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+kernel32.GetProcessHandleCount.argtypes = (
+    wintypes.HANDLE,
+    ctypes.POINTER(wintypes.DWORD),
+)
+kernel32.GetProcessHandleCount.restype = wintypes.BOOL
+
+def handle_count():
+    count = wintypes.DWORD()
+    if not kernel32.GetProcessHandleCount(
+        kernel32.GetCurrentProcess(), ctypes.byref(count)
+    ):
+        raise OSError(ctypes.get_last_error())
+    return int(count.value)
+
+payload = {RUNTIME_START_PAYLOAD!r}
+
+def run_once(runtime_instance_id):
+    identity = runtime.RuntimeIdentity(
+        runtime_instance_id=runtime_instance_id,
+        wrapper_nonce_sha256={'1' * 64!r},
+        code_revision={'2' * 40!r},
+        wrapper_image_sha256={'3' * 64!r},
+        interpreter_image_sha256={'4' * 64!r},
+        root_mutex_identity_sha256={'5' * 64!r},
+        campaign_mutex_identity_sha256={'6' * 64!r},
+    )
+    writers = {{name: Writer() for name in runtime.PIPE_STREAM_CLASSES}}
+    context = runtime._make_nonproduction_owned_controller_context(
+        identity=identity,
+        runtime_start_payload=payload,
+        app_writer=writers["app"],
+        http_writer=writers["http"],
+        stdout_writer=writers["stdout"],
+        stderr_writer=writers["stderr"],
+        timeout_seconds=10,
+    )
+    before_handles = handle_count()
+    result = runtime._run_owned_two_phase_controller(context)
+    after_handles = handle_count()
+    records = runtime.read_runtime_records(writers["app"].getvalue())
+    starts = [record for record in records if record["event"] == "phase_child_start"]
+    return {{
+        "active_released": context._active_process is None,
+        "after_handles": after_handles,
+        "before_handles": before_handles,
+        "closed_process_count": len(context._closed_process_ids),
+        "result_is_none": result is None,
+        "owned_process_count": len(context._owned_processes),
+        "quiesced_process_count": len(context._quiesced_process_ids),
+        "quiescing_released": context._quiescing_process is None,
+        "sealed": context.sealed,
+        "events": [record["event"] for record in records],
+        "phases": [record["phase"] for record in records],
+        "boots": [record["process_boot_id"] for record in starts],
+        "creation_ids": [
+            record["payload"]["process_creation_identity_sha256"]
+            for record in starts
+        ],
+        "job_policies": [
+            record["payload"]["job_policy_sha256"] for record in starts
+        ],
+        "writers_closed": [
+            writers[name].closed_clean for name in runtime.PIPE_STREAM_CLASSES
+        ],
+    }}, context
+
+cold_handles = handle_count()
+first, first_context = run_once({RUNTIME_INSTANCE_ID!r})
+first_live_handles = handle_count()
+del first_context
+gc.collect()
+warmed_handles = handle_count()
+first_threads = [
+    thread.name
+    for thread in threading.enumerate()
+    if thread is not threading.current_thread() and thread.is_alive()
+]
+second, second_context = run_once("323e4567-e89b-42d3-a456-426614174000")
+second_live_handles = handle_count()
+final_threads = [
+    thread.name
+    for thread in threading.enumerate()
+    if thread is not threading.current_thread() and thread.is_alive()
+]
+del second_context
+gc.collect()
+final_handles = handle_count()
+print(json.dumps({{
+    "cold_handles": cold_handles,
+    "final_handles": final_handles,
+    "final_threads": final_threads,
+    "first": first,
+    "first_live_handles": first_live_handles,
+    "first_threads": first_threads,
+    "second": second,
+    "second_live_handles": second_live_handles,
+    "warmed_handles": warmed_handles,
+}}, sort_keys=True, separators=(",", ":")))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-I", "-B", "-c", script],
+        cwd=BACKEND.parent,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stderr == ""
+    summary = json.loads(completed.stdout)
+    expected_events = [
+        "runtime_start",
+        "phase_child_start",
+        "logger_census",
+        "phase_go",
+        "logger_census",
+        "socket_census",
+        "job_zero",
+        "authority_cleared",
+        "phase_complete",
+        "phase_child_start",
+        "logger_census",
+        "phase_go",
+        "logger_census",
+        "socket_census",
+        "job_zero",
+        "phase_complete",
+        "runtime_complete",
+    ]
+    expected_phases = [
+        "wrapper",
+        *("A" for _ in range(8)),
+        *("B" for _ in range(7)),
+        "wrapper",
+    ]
+    for run in (summary["first"], summary["second"]):
+        assert run["active_released"] is True
+        assert run["closed_process_count"] == 2
+        assert run["owned_process_count"] == 0
+        assert run["quiesced_process_count"] == 2
+        assert run["quiescing_released"] is True
+        assert run["result_is_none"] is True
+        assert run["sealed"] is True
+        assert run["events"] == expected_events
+        assert run["phases"] == expected_phases
+        assert len(run["boots"]) == 2
+        assert run["boots"][0] != run["boots"][1]
+        assert run["creation_ids"][0] != run["creation_ids"][1]
+        assert run["job_policies"][0] == run["job_policies"][1]
+        assert run["writers_closed"] == [True, True, True, True]
+    assert set(summary["first"]["boots"]).isdisjoint(summary["second"]["boots"])
+    assert set(summary["first"]["creation_ids"]).isdisjoint(
+        summary["second"]["creation_ids"]
+    )
+    assert summary["first_threads"] == []
+    assert summary["final_threads"] == []
+    assert summary["first"]["before_handles"] == summary["cold_handles"] + 1
+    assert summary["first"]["after_handles"] == summary["first_live_handles"]
+    assert summary["first_live_handles"] == summary["warmed_handles"] + 1
+    assert summary["second"]["before_handles"] == summary["warmed_handles"] + 1
+    assert summary["second"]["after_handles"] == summary["second_live_handles"]
+    assert summary["second_live_handles"] == summary["warmed_handles"] + 1
+    assert summary["final_handles"] == summary["warmed_handles"]
+
+
+def test_stop_bridge_revokes_before_python_stop_publication() -> None:
+    events: list[str] = []
+    writers = {
+        stream: (
+            _StopRecordControllerWriter(stream, events)
+            if stream == "app"
+            else _ControllerWriter(stream, events)
+        )
+        for stream in PIPE_STREAM_CLASSES
+    }
+
+    with pytest.raises(DualLiveRuntimeError, match="dual_live_phase_failed"):
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=lambda: _controller_child("A", events, exit_code=9),
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda _phase, _child: (
+                _controller_socket_census(),
+                {"active_process_count": 0, "process_list_sha256": "5" * 64},
+            ),
+            clear_authority=lambda _phase, _child: {
+                "authority_posture_sha256": "6" * 64,
+                "all_required_absent": True,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=2,
+            _before_stop_publish=lambda _reason: events.append("revoke-A"),
+        )
+
+    assert events.index("revoke-A") < events.index("record-stop")
+    assert events.index("record-stop") < events.index("stop-A")
+    assert events.count("revoke-A") == 1
+    assert "create-B" not in events
+    assert "seal" not in events
+
+
+def test_fatal_stop_bridge_failure_cannot_publish_or_seal() -> None:
+    events: list[str] = []
+    writers = {
+        stream: (
+            _StopRecordControllerWriter(stream, events)
+            if stream == "app"
+            else _ControllerWriter(stream, events)
+        )
+        for stream in PIPE_STREAM_CLASSES
+    }
+
+    def fail_stop(_reason: str) -> None:
+        events.append("terminate-A")
+        raise RuntimeError("revocation failed after fail-stop")
+
+    with pytest.raises(
+        DualLiveRuntimeError,
+        match="dual_live_stop_publish_failed",
+    ) as exc:
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=RUNTIME_IDENTITY,
+            runtime_start_payload=RUNTIME_START_PAYLOAD,
+            writers=writers,
+            create_phase_a=lambda: _controller_child("A", events, exit_code=9),
+            create_phase_b=lambda: events.append("create-B"),
+            quiesce_phase=lambda _phase, _child: (
+                _controller_socket_census(),
+                {"active_process_count": 0, "process_list_sha256": "5" * 64},
+            ),
+            clear_authority=lambda _phase, _child: {
+                "authority_posture_sha256": "6" * 64,
+                "all_required_absent": True,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: events.append("seal"),
+            timeout_seconds=2,
+            _before_stop_publish=fail_stop,
+        )
+
+    assert isinstance(exc.value.__cause__, RuntimeError)
+    assert events.count("terminate-A") == 1
+    assert "record-stop" not in events
+    assert "create-B" not in events
+    assert "seal" not in events
+
+
+def test_cancel_start_then_raise_retains_launched_reader_custody(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BlockingReader:
+        def __init__(self) -> None:
+            self.read_release = threading.Event()
+            self.close_entered = threading.Event()
+            self.close_release = threading.Event()
+
+        def read(self, _size: int) -> bytes:
+            self.read_release.wait()
+            return b""
+
+        def close(self) -> None:
+            self.close_entered.set()
+            self.close_release.wait()
+            self.read_release.set()
+
+    blocker = BlockingReader()
+    readers = {
+        "app": blocker,
+        "http": io.BytesIO(),
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(),
+    }
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers={stream: MemorySink() for stream in readers},
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    original_start = threading.Thread.start
+    launched: list[threading.Thread] = []
+
+    def start_then_raise(thread: threading.Thread) -> None:
+        original_start(thread)
+        if thread.name == "dual-live-app-cancel":
+            launched.append(thread)
+            assert blocker.close_entered.wait(timeout=1)
+            raise RuntimeError("start returned failure after launch")
+
+    pumps.start()
+    monkeypatch.setattr(threading.Thread, "start", start_then_raise)
+    try:
+        with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_cancel_failed"):
+            pumps.join(timeout=0)
+
+        owned, completed = pumps.cancellation_reader_custody
+        assert id(blocker) in owned
+        assert id(blocker) not in completed
+        assert launched and launched[0].is_alive()
+    finally:
+        blocker.close_release.set()
+        blocker.read_release.set()
+        for thread in launched:
+            thread.join(timeout=1)
+
+
+def test_exit_unproven_dead_reader_close_is_bounded_and_never_seals() -> None:
+    class DeadBlockingCloseReader(_ControllerReader):
+        def __init__(self) -> None:
+            super().__init__()
+            self.close_entered = threading.Event()
+            self.close_release = threading.Event()
+
+        def close(self) -> None:
+            self.close_entered.set()
+            self.close_release.wait()
+            super().close()
+
+    events: list[str] = []
+    blocker = DeadBlockingCloseReader()
+    writers = {
+        stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
+    }
+    results: list[BaseException] = []
+
+    def run() -> None:
+        try:
+            dual_live_runtime_module._run_two_phase_controller(
+                identity=RUNTIME_IDENTITY,
+                runtime_start_payload=RUNTIME_START_PAYLOAD,
+                writers=writers,
+                create_phase_a=lambda: _controller_child(
+                    "A",
+                    events,
+                    app_reader=blocker,
+                    wait_error=RuntimeError("exit unproven"),
+                ),
+                create_phase_b=lambda: events.append("create-B"),
+                quiesce_phase=lambda _phase, _child: (),
+                clear_authority=lambda _phase, _child: {},
+                http_frame_validator=lambda _payload: None,
+                seal=lambda: events.append("seal"),
+                timeout_seconds=0.05,
+            )
+        except BaseException as exc:
+            results.append(exc)
+
+    caller = threading.Thread(target=run, daemon=True)
+    caller.start()
+    assert blocker.close_entered.wait(timeout=1)
+    caller.join(timeout=0.3)
+    try:
+        assert caller.is_alive() is False
+        assert results
+        assert isinstance(results[0], DualLiveRuntimeError)
+        assert "seal" not in events
+        assert all(not writer.closed_clean for writer in writers.values())
+    finally:
+        blocker.close_release.set()
+        caller.join(timeout=1)
+
+
+def test_writer_failure_precedes_secondary_cancel_start_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BlockingReader:
+        def __init__(self) -> None:
+            self.release = threading.Event()
+
+        def read(self, _size: int) -> bytes:
+            self.release.wait()
+            return b""
+
+        def close(self) -> None:
+            self.release.set()
+
+    class ShortWriter(MemorySink):
+        def write(self, content: bytes) -> int:
+            super().write(content[:-1])
+            return len(content) - 1
+
+    blocker = BlockingReader()
+    readers = {
+        "app": blocker,
+        "http": io.BytesIO(),
+        "stdout": io.BytesIO(),
+        "stderr": io.BytesIO(encode_pipe_frame(b"writer-failure")),
+    }
+    writers = {stream: MemorySink() for stream in readers}
+    writers["stderr"] = ShortWriter()
+    stop = FirstStopLatch()
+    pumps = FourStreamPumpGroup(
+        readers=readers,
+        writers=writers,
+        status_callback=lambda _value: None,
+        http_frame_validator=lambda _value: None,
+        stop_latch=stop,
+        expected_status_phase="A",
+        expected_status_process_boot_id=STATUS_PROCESS_BOOT_ID,
+        expected_status_nonce_sha256=STATUS_NONCE_SHA256,
+    )
+    original_start = threading.Thread.start
+
+    def fail_app_cancel_start(thread: threading.Thread) -> None:
+        if thread.name == "dual-live-app-cancel":
+            raise RuntimeError("secondary cancel start failed")
+        original_start(thread)
+
+    pumps.start()
+    deadline = time.monotonic() + 1
+    while stop.reason_code != "writer_failure" and time.monotonic() < deadline:
+        time.sleep(0.001)
+    assert stop.reason_code == "writer_failure"
+    monkeypatch.setattr(threading.Thread, "start", fail_app_cancel_start)
+    try:
+        with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_failed") as exc:
+            pumps.join(timeout=0)
+
+        assert isinstance(exc.value.__cause__, DualLiveRuntimeError)
+        assert exc.value.__cause__.code == "dual_live_pump_write_failed"
+        assert isinstance(exc.value.__context__, DualLiveRuntimeError)
+        assert exc.value.__context__.code == "dual_live_pump_cancel_failed"
+        assert stop.reason_code == "writer_failure"
+    finally:
+        blocker.release.set()
