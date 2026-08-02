@@ -5,12 +5,19 @@ from copy import deepcopy
 from dataclasses import FrozenInstanceError, dataclass, fields, replace
 from datetime import UTC, datetime, timedelta
 import hashlib
+import io
+import importlib.util
 import inspect
 import os
+import py_compile
 import queue
+import sqlite3
+import subprocess
+import sys
+import time
 from pathlib import Path
 from types import MappingProxyType, SimpleNamespace
-from typing import Any, BinaryIO, Mapping, cast
+from typing import Any, BinaryIO, Callable, Mapping, NoReturn, cast
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import pytest
@@ -70,6 +77,7 @@ from app.services.connector_egress_authorization import (
 
 START = datetime(2026, 7, 30, 12, 0, tzinfo=UTC)
 CODE_REVISION = "c" * 40
+DEPENDENCY_SET_SHA256 = "d" * 64
 CAMPAIGN_ID = UUID("123e4567-e89b-42d3-a456-426614174000")
 CAMPAIGN_MODEL = DualLiveCampaignDefinitionV1.model_validate(
     {
@@ -1068,25 +1076,79 @@ class _CaptureControllerReader:
 def _capture_controller_child(
     phase: str,
     events: list[str],
+    *,
+    proof_scope: str = "mechanical",
 ) -> dual_live_runtime_module._ControllerChild:
     process_boot_id = ("a" if phase == "A" else "b") * 64
     status_nonce_sha256 = ("c" if phase == "A" else "d") * 64
     control_nonce = ("e" if phase == "A" else "f") * 64
     readers = {stream: _CaptureControllerReader() for stream in PIPE_STREAM_CLASSES}
-    readers["app"].feed(
-        encode_child_status_frame(
-            phase=phase,
-            event="logger_census",
+    boot_frame = encode_pipe_frame(
+        canonical_json_bytes(
+            {
+                "control_nonce": control_nonce,
+                "phase": phase,
+                "process_boot_id": process_boot_id,
+                "schema_id": dual_live_runtime_module.CHILD_BOOT_SCHEMA_ID,
+                "status_nonce_sha256": status_nonce_sha256,
+            }
+        )
+    )
+    pre_status_frame = encode_child_status_frame(
+        phase=phase,
+        event="logger_census",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce_sha256,
+        ordinal=1,
+        payload={
+            "census_point": "pre_activity",
+            "handler_count": 1,
+            "topology_sha256": "1" * 64,
+        },
+    )
+    boot_sha256 = hashlib.sha256(boot_frame).hexdigest()
+    pre_status_sha256 = hashlib.sha256(pre_status_frame).hexdigest()
+    control_nonce_sha256 = hashlib.sha256(control_nonce.encode("ascii")).hexdigest()
+    readers["app"].feed(boot_frame)
+    readers["app"].feed(pre_status_frame)
+    previous_proof_sha256: str | None = None
+    if phase == "B":
+        preproof = dual_live_runtime_module.encode_child_proof_frame(
+            phase="B",
+            event="guard",
             process_boot_id=process_boot_id,
             status_nonce_sha256=status_nonce_sha256,
             ordinal=1,
+            previous_record_sha256=None,
             payload={
-                "census_point": "pre_activity",
-                "handler_count": 1,
-                "topology_sha256": "1" * 64,
+                "boot_frame_sha256": boot_sha256,
+                "control_nonce_sha256": control_nonce_sha256,
+                "denied_routes": [
+                    "dns",
+                    "http",
+                    "socket",
+                    "subprocess",
+                    "connector_transport",
+                ],
+                "network_enable_attempt_count": 0,
+                "original_implementation_call_count": 0,
+                "pre_activity_status_frame_sha256": pre_status_sha256,
+                "proof_point": "pre_go",
+                "proof_scope": proof_scope,
             },
         )
-    )
+        raw_preproof = dual_live_runtime_module._read_pipe_frame(
+            io.BytesIO(preproof),
+            allowed_reserved_schema_ids=frozenset(
+                (dual_live_runtime_module.CHILD_PROOF_SCHEMA_ID,)
+            ),
+        )
+        assert raw_preproof is not None
+        previous_proof_sha256 = cast(
+            dict[str, Any],
+            dual_live_runtime_module.strict_json_loads(raw_preproof),
+        )["record_sha256"]
+        readers["stdout"].feed(preproof)
 
     def send_control(frame: bytes) -> None:
         assert frame == encode_child_control_frame(
@@ -1105,21 +1167,154 @@ def _capture_controller_child(
                 )
             )
         )
-        readers["app"].feed(
-            encode_child_status_frame(
-                phase=phase,
-                event="logger_census",
+        exit_status_frame = encode_child_status_frame(
+            phase=phase,
+            event="logger_census",
+            process_boot_id=process_boot_id,
+            status_nonce_sha256=status_nonce_sha256,
+            ordinal=2,
+            payload={
+                "census_point": "exit",
+                "handler_count": 1,
+                "topology_sha256": "1" * 64,
+            },
+        )
+        readers["app"].feed(exit_status_frame)
+        common = {
+            "boot_frame_sha256": boot_sha256,
+            "control_frame_sha256": hashlib.sha256(frame).hexdigest(),
+            "control_nonce_sha256": control_nonce_sha256,
+            "exit_status_frame_sha256": hashlib.sha256(
+                exit_status_frame
+            ).hexdigest(),
+            "pre_activity_status_frame_sha256": pre_status_sha256,
+            "proof_scope": proof_scope,
+        }
+        if phase == "A":
+            acquisitions = (
+                []
+                if proof_scope == "mechanical"
+                else [
+                    {
+                        "action_codes": [
+                            "derived_arming",
+                            "raw_acquisition",
+                            "terminal_transition",
+                        ],
+                        "connector_key": connector_key,
+                        "connector_run_id": f"run-{connector_key}",
+                        "connector_run_target_id": f"target-{connector_key}",
+                        "ledger_terminal_hash": "6" * 64,
+                        "raw_content_sha256": "7" * 64,
+                        "terminal_transition_count": 1,
+                    }
+                    for connector_key in (
+                        "nrc_adams_aps",
+                        "sciencebase_mcs",
+                    )
+                ]
+            )
+            readers["stdout"].feed(
+                dual_live_runtime_module.encode_child_proof_frame(
+                    phase="A",
+                    event="acquisition_boundary",
+                    process_boot_id=process_boot_id,
+                    status_nonce_sha256=status_nonce_sha256,
+                    ordinal=1,
+                    previous_record_sha256=None,
+                    payload={
+                        **common,
+                        "connector_acquisitions": acquisitions,
+                        "downstream_action_count": 0,
+                    },
+                )
+            )
+        else:
+            assert previous_proof_sha256 is not None
+            downstream_actions = (
+                []
+                if proof_scope == "mechanical"
+                else [
+                    "nrc_strict_parse",
+                    "nrc_origin_receipt",
+                    "sciencebase_origin_receipt",
+                    "nrc_preflight",
+                    "nrc_source_preview",
+                    "nrc_material_preview",
+                    "sciencebase_material_preview",
+                    "owner_decision_required",
+                ]
+            )
+            source_bindings = (
+                []
+                if proof_scope == "mechanical"
+                else [
+                    {
+                        "candidate_id": f"candidate-{connector_key}",
+                        "connector_key": connector_key,
+                        "connector_origin_receipt_hash": "8" * 64,
+                        "connector_run_target_id": f"target-{connector_key}",
+                        "source_record_id": f"source-{connector_key}",
+                    }
+                    for connector_key in (
+                        "nrc_adams_aps",
+                        "sciencebase_mcs",
+                    )
+                ]
+            )
+            downstream = dual_live_runtime_module.encode_child_proof_frame(
+                phase="B",
+                event="downstream_chain",
                 process_boot_id=process_boot_id,
                 status_nonce_sha256=status_nonce_sha256,
                 ordinal=2,
+                previous_record_sha256=previous_proof_sha256,
                 payload={
-                    "census_point": "exit",
-                    "handler_count": 1,
-                    "topology_sha256": "1" * 64,
+                    **common,
+                    "downstream_actions": downstream_actions,
+                    "source_bindings": source_bindings,
+                    "terminal_boundary": (
+                        "mechanical_complete"
+                        if proof_scope == "mechanical"
+                        else "owner_decision_required"
+                    ),
                 },
             )
-        )
-        readers["stdout"].feed(encode_pipe_frame(f"phase-{phase}\n".encode()))
+            raw_downstream = dual_live_runtime_module._read_pipe_frame(
+                io.BytesIO(downstream),
+                allowed_reserved_schema_ids=frozenset(
+                    (dual_live_runtime_module.CHILD_PROOF_SCHEMA_ID,)
+                ),
+            )
+            assert raw_downstream is not None
+            downstream_sha256 = cast(
+                dict[str, Any],
+                dual_live_runtime_module.strict_json_loads(raw_downstream),
+            )["record_sha256"]
+            readers["stdout"].feed(downstream)
+            readers["stdout"].feed(
+                dual_live_runtime_module.encode_child_proof_frame(
+                    phase="B",
+                    event="guard",
+                    process_boot_id=process_boot_id,
+                    status_nonce_sha256=status_nonce_sha256,
+                    ordinal=3,
+                    previous_record_sha256=downstream_sha256,
+                    payload={
+                        **common,
+                        "denied_routes": [
+                            "dns",
+                            "http",
+                            "socket",
+                            "subprocess",
+                            "connector_transport",
+                        ],
+                        "network_enable_attempt_count": 0,
+                        "original_implementation_call_count": 0,
+                        "proof_point": "exit",
+                    },
+                )
+            )
         for reader in readers.values():
             reader.finish()
 
@@ -1144,12 +1339,505 @@ def _capture_controller_child(
     )
 
 
+def test_child_status_decoder_rejects_bool_ordinal() -> None:
+    process_boot_id = "a" * 64
+    status_nonce = "b" * 64
+    frame = encode_child_status_frame(
+        phase="A",
+        event="logger_census",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce,
+        ordinal=1,
+        payload={
+            "census_point": "pre_activity",
+            "handler_count": 1,
+            "topology_sha256": "c" * 64,
+        },
+    )
+    payload = dual_live_runtime_module._read_pipe_frame(
+        io.BytesIO(frame),
+        allowed_reserved_schema_ids=frozenset(
+            (dual_live_runtime_module.CHILD_STATUS_SCHEMA_ID,)
+        ),
+    )
+    assert payload is not None
+    value = cast(
+        dict[str, Any],
+        dual_live_runtime_module.strict_json_loads(payload),
+    )
+    value["ordinal"] = True
+
+    with pytest.raises(
+        dual_live_runtime_module.DualLiveRuntimeError,
+        match="dual_live_child_status_invalid",
+    ):
+        dual_live_runtime_module.decode_child_status_frame(
+            canonical_json_bytes(value),
+            expected_phase="A",
+            expected_process_boot_id=process_boot_id,
+            expected_status_nonce_sha256=status_nonce,
+            expected_ordinal=1,
+        )
+
+
+def test_child_proof_codec_binds_exact_chain_and_owned_identities() -> None:
+    process_boot_id = "a" * 64
+    status_nonce = "b" * 64
+    control_nonce_sha256 = "c" * 64
+    first_payload = {
+        "boot_frame_sha256": "d" * 64,
+        "control_nonce_sha256": control_nonce_sha256,
+        "denied_routes": [
+            "dns",
+            "http",
+            "socket",
+            "subprocess",
+            "connector_transport",
+        ],
+        "network_enable_attempt_count": 0,
+        "original_implementation_call_count": 0,
+        "pre_activity_status_frame_sha256": "e" * 64,
+        "proof_point": "pre_go",
+        "proof_scope": "mechanical",
+    }
+    first_frame = dual_live_runtime_module.encode_child_proof_frame(
+        phase="B",
+        event="guard",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce,
+        ordinal=1,
+        previous_record_sha256=None,
+        payload=first_payload,
+    )
+    first_raw = dual_live_runtime_module._read_pipe_frame(
+        io.BytesIO(first_frame),
+        allowed_reserved_schema_ids=frozenset(
+            (dual_live_runtime_module.CHILD_PROOF_SCHEMA_ID,)
+        ),
+    )
+    assert first_raw is not None
+    first = dual_live_runtime_module.decode_child_proof_frame(
+        first_raw,
+        expected_phase="B",
+        expected_process_boot_id=process_boot_id,
+        expected_status_nonce_sha256=status_nonce,
+        expected_ordinal=1,
+        expected_previous_record_sha256=None,
+        expected_proof_scope="mechanical",
+    )
+    for count_field in (
+        "network_enable_attempt_count",
+        "original_implementation_call_count",
+    ):
+        with pytest.raises(
+            dual_live_runtime_module.DualLiveRuntimeError,
+            match="dual_live_child_proof_invalid",
+        ):
+            dual_live_runtime_module.encode_child_proof_frame(
+                phase="B",
+                event="guard",
+                process_boot_id=process_boot_id,
+                status_nonce_sha256=status_nonce,
+                ordinal=1,
+                previous_record_sha256=None,
+                payload={**first_payload, count_field: False},
+            )
+    with pytest.raises(
+        dual_live_runtime_module.DualLiveRuntimeError,
+        match="dual_live_child_proof_invalid",
+    ):
+        dual_live_runtime_module.encode_child_proof_frame(
+            phase="B",
+            event="guard",
+            process_boot_id=process_boot_id,
+            status_nonce_sha256=status_nonce,
+            ordinal=1,
+            previous_record_sha256=None,
+            payload={
+                **first_payload,
+                "boot_frame_sha256": int("1" * 64),
+            },
+        )
+    bool_ordinal = {**first, "ordinal": True}
+    bool_ordinal["record_sha256"] = dual_live_runtime_module._record_hash(
+        bool_ordinal
+    )
+    with pytest.raises(
+        dual_live_runtime_module.DualLiveRuntimeError,
+        match="dual_live_child_proof_invalid",
+    ):
+        dual_live_runtime_module.decode_child_proof_frame(
+            canonical_json_bytes(bool_ordinal),
+            expected_phase="B",
+            expected_process_boot_id=process_boot_id,
+            expected_status_nonce_sha256=status_nonce,
+            expected_ordinal=1,
+            expected_previous_record_sha256=None,
+            expected_proof_scope="mechanical",
+        )
+    second_frame = dual_live_runtime_module.encode_child_proof_frame(
+        phase="B",
+        event="downstream_chain",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce,
+        ordinal=2,
+        previous_record_sha256=first["record_sha256"],
+        payload={
+            "boot_frame_sha256": "d" * 64,
+            "control_frame_sha256": "f" * 64,
+            "control_nonce_sha256": control_nonce_sha256,
+            "downstream_actions": [],
+            "exit_status_frame_sha256": "1" * 64,
+            "pre_activity_status_frame_sha256": "e" * 64,
+            "proof_scope": "mechanical",
+            "source_bindings": [],
+            "terminal_boundary": "mechanical_complete",
+        },
+    )
+    second_raw = dual_live_runtime_module._read_pipe_frame(
+        io.BytesIO(second_frame),
+        allowed_reserved_schema_ids=frozenset(
+            (dual_live_runtime_module.CHILD_PROOF_SCHEMA_ID,)
+        ),
+    )
+    assert second_raw is not None
+    second = dual_live_runtime_module.decode_child_proof_frame(
+        second_raw,
+        expected_phase="B",
+        expected_process_boot_id=process_boot_id,
+        expected_status_nonce_sha256=status_nonce,
+        expected_ordinal=2,
+        expected_previous_record_sha256=first["record_sha256"],
+        expected_proof_scope="mechanical",
+    )
+    assert second["previous_record_sha256"] == first["record_sha256"]
+
+    tampered = {**second, "process_boot_id": "2" * 64}
+    with pytest.raises(
+        dual_live_runtime_module.DualLiveRuntimeError,
+        match="dual_live_child_proof_invalid",
+    ):
+        dual_live_runtime_module.decode_child_proof_frame(
+            canonical_json_bytes(tampered),
+            expected_phase="B",
+            expected_process_boot_id=process_boot_id,
+            expected_status_nonce_sha256=status_nonce,
+            expected_ordinal=2,
+            expected_previous_record_sha256=first["record_sha256"],
+            expected_proof_scope="mechanical",
+        )
+
+
+@pytest.mark.parametrize("at_or_after_bound", (False, True))
+def test_controller_accepts_before_bound_and_rejects_at_or_after_bound(
+    at_or_after_bound: bool,
+) -> None:
+    events: list[str] = []
+    writers = {stream: io.BytesIO() for stream in PIPE_STREAM_CLASSES}
+    identity = RuntimeIdentity(
+        runtime_instance_id=str(uuid4()),
+        wrapper_nonce_sha256="1" * 64,
+        code_revision=CODE_REVISION,
+        wrapper_image_sha256="2" * 64,
+        interpreter_image_sha256="3" * 64,
+        dependency_set_sha256=DEPENDENCY_SET_SHA256,
+        root_mutex_identity_sha256="4" * 64,
+        campaign_mutex_identity_sha256="5" * 64,
+    )
+
+    def create(phase: str) -> dual_live_runtime_module._ControllerChild:
+        child = _capture_controller_child(phase, events)
+        calls = 0
+
+        def wait(timeout: float) -> int:
+            nonlocal calls
+            calls += 1
+            events.append(f"wait-{phase}-{calls}")
+            if phase == "A" and calls == 1:
+                if at_or_after_bound:
+                    time.sleep(0.202)
+                else:
+                    time.sleep(0.005)
+            return 0
+
+        return replace(child, wait=wait)
+
+    zero_states = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
+
+    def quiesce(
+        _phase: str,
+        _child: object,
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        return (
+            {
+                "tcp4_state_counts": zero_states,
+                "tcp6_state_counts": dict(zero_states),
+                "udp4_count": 0,
+                "udp6_count": 0,
+                "process_identity_sha256": "7" * 64,
+                "stable": True,
+            },
+            {"active_process_count": 0, "process_list_sha256": "8" * 64},
+        )
+
+    def run() -> object:
+        return dual_live_runtime_module._run_two_phase_controller(
+            identity=identity,
+            runtime_start_payload={
+                "code_revision": identity.code_revision,
+                "wrapper_image_sha256": identity.wrapper_image_sha256,
+                "interpreter_image_sha256": identity.interpreter_image_sha256,
+                "dependency_set_sha256": identity.dependency_set_sha256,
+                "phase_timeout_contract": _phase_timeout_contract(),
+                "mutex_identity_sha256": "6" * 64,
+            },
+            writers=writers,
+            create_phase_a=lambda: create("A"),
+            create_phase_b=lambda: create("B"),
+            quiesce_phase=quiesce,
+            clear_authority=lambda _phase, _child: {
+                "authority_posture_sha256": "9" * 64,
+                "all_required_absent": True,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: "sealed",
+            timeout_seconds={"A": 0.2, "B": 0.2},
+        )
+
+    if at_or_after_bound:
+        with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+            run()
+        assert exc.value.code == "dual_live_phase_exit_timeout"
+        assert "go-A" in events
+        assert "go-B" not in events
+    else:
+        assert run() == "sealed"
+        assert "go-A" in events
+        assert "go-B" in events
+
+
+@pytest.mark.parametrize(
+    ("exit_phase", "exit_code", "expected_code"),
+    (
+        ("A", 24, "dual_live_phase_failed"),
+        ("B", 25, "dual_live_phase_failed"),
+        ("B", 24, "dual_live_phase_b_owner_decision_required"),
+    ),
+)
+def test_controller_projects_only_reserved_phase_b_owner_exit_after_cleanup(
+    exit_phase: str,
+    exit_code: int,
+    expected_code: str,
+) -> None:
+    events: list[str] = []
+    writers = {stream: io.BytesIO() for stream in PIPE_STREAM_CLASSES}
+    identity = RuntimeIdentity(
+        runtime_instance_id=str(uuid4()),
+        wrapper_nonce_sha256="1" * 64,
+        code_revision=CODE_REVISION,
+        wrapper_image_sha256="2" * 64,
+        interpreter_image_sha256="3" * 64,
+        dependency_set_sha256=DEPENDENCY_SET_SHA256,
+        root_mutex_identity_sha256="4" * 64,
+        campaign_mutex_identity_sha256="5" * 64,
+    )
+
+    def create(phase: str) -> dual_live_runtime_module._ControllerChild:
+        child = _capture_controller_child(phase, events)
+        return replace(
+            child,
+            wait=lambda _timeout: exit_code if phase == exit_phase else 0,
+        )
+
+    zero_states = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
+
+    def quiesce(
+        phase: str,
+        _child: object,
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        events.append(f"quiesce-{phase}")
+        return (
+            {
+                "tcp4_state_counts": zero_states,
+                "tcp6_state_counts": dict(zero_states),
+                "udp4_count": 0,
+                "udp6_count": 0,
+                "process_identity_sha256": "7" * 64,
+                "stable": True,
+            },
+            {"active_process_count": 0, "process_list_sha256": "8" * 64},
+        )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=identity,
+            runtime_start_payload={
+                "code_revision": identity.code_revision,
+                "wrapper_image_sha256": identity.wrapper_image_sha256,
+                "interpreter_image_sha256": identity.interpreter_image_sha256,
+                "dependency_set_sha256": identity.dependency_set_sha256,
+                "phase_timeout_contract": _phase_timeout_contract(),
+                "mutex_identity_sha256": "6" * 64,
+            },
+            writers=writers,
+            create_phase_a=lambda: create("A"),
+            create_phase_b=lambda: create("B"),
+            quiesce_phase=quiesce,
+            clear_authority=lambda _phase, _child: {
+                "authority_posture_sha256": "9" * 64,
+                "all_required_absent": True,
+            },
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: pytest.fail("owner boundary must not seal"),
+            timeout_seconds={"A": 0.2, "B": 0.2},
+        )
+
+    assert exc.value.code == expected_code
+    assert f"stop-{exit_phase}" in events
+    assert f"quiesce-{exit_phase}" in events
+    if exit_phase == "A":
+        assert "go-B" not in events
+    else:
+        assert "go-B" in events
+
+
+def test_controller_never_clears_or_creates_b_before_quiescence_proof() -> None:
+    events: list[str] = []
+    writers = {stream: io.BytesIO() for stream in PIPE_STREAM_CLASSES}
+    identity = RuntimeIdentity(
+        runtime_instance_id=str(uuid4()),
+        wrapper_nonce_sha256="1" * 64,
+        code_revision=CODE_REVISION,
+        wrapper_image_sha256="2" * 64,
+        interpreter_image_sha256="3" * 64,
+        dependency_set_sha256=DEPENDENCY_SET_SHA256,
+        root_mutex_identity_sha256="4" * 64,
+        campaign_mutex_identity_sha256="5" * 64,
+    )
+
+    def create(phase: str) -> dual_live_runtime_module._ControllerChild:
+        events.append(f"create-{phase}")
+        return _capture_controller_child(phase, events)
+
+    def quiesce(phase: str, _child: object) -> NoReturn:
+        events.append(f"quiesce-{phase}")
+        raise RuntimeError("fixture quiescence failure")
+
+    def clear_authority(
+        phase: str,
+        _child: object,
+    ) -> dict[str, object]:
+        events.append(f"authority-{phase}")
+        return {
+            "authority_posture_sha256": "9" * 64,
+            "all_required_absent": True,
+        }
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=identity,
+            runtime_start_payload={
+                "code_revision": identity.code_revision,
+                "wrapper_image_sha256": identity.wrapper_image_sha256,
+                "interpreter_image_sha256": identity.interpreter_image_sha256,
+                "dependency_set_sha256": identity.dependency_set_sha256,
+                "phase_timeout_contract": _phase_timeout_contract(),
+                "mutex_identity_sha256": "6" * 64,
+            },
+            writers=writers,
+            create_phase_a=lambda: create("A"),
+            create_phase_b=lambda: create("B"),
+            quiesce_phase=quiesce,
+            clear_authority=clear_authority,
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: pytest.fail("failed quiescence must not seal"),
+            timeout_seconds=2,
+        )
+
+    assert exc.value.code == "dual_live_quiescence_failed"
+    assert "quiesce-A" in events
+    assert "authority-A" not in events
+    assert "create-B" not in events
+
+
+def test_controller_blocks_b_when_measured_authority_is_retained() -> None:
+    events: list[str] = []
+    writers = {stream: io.BytesIO() for stream in PIPE_STREAM_CLASSES}
+    identity = RuntimeIdentity(
+        runtime_instance_id=str(uuid4()),
+        wrapper_nonce_sha256="1" * 64,
+        code_revision=CODE_REVISION,
+        wrapper_image_sha256="2" * 64,
+        interpreter_image_sha256="3" * 64,
+        dependency_set_sha256=DEPENDENCY_SET_SHA256,
+        root_mutex_identity_sha256="4" * 64,
+        campaign_mutex_identity_sha256="5" * 64,
+    )
+    zero_states = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
+
+    def create(phase: str) -> dual_live_runtime_module._ControllerChild:
+        events.append(f"create-{phase}")
+        return _capture_controller_child(phase, events)
+
+    def quiesce(
+        phase: str,
+        _child: object,
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        events.append(f"quiesce-{phase}")
+        return (
+            {
+                "tcp4_state_counts": zero_states,
+                "tcp6_state_counts": dict(zero_states),
+                "udp4_count": 0,
+                "udp6_count": 0,
+                "process_identity_sha256": "7" * 64,
+                "stable": True,
+            },
+            {"active_process_count": 0, "process_list_sha256": "8" * 64},
+        )
+
+    def retained_authority(
+        phase: str,
+        _child: object,
+    ) -> dict[str, object]:
+        events.append(f"authority-{phase}")
+        return {
+            "authority_posture_sha256": "9" * 64,
+            "all_required_absent": False,
+        }
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._run_two_phase_controller(
+            identity=identity,
+            runtime_start_payload={
+                "code_revision": identity.code_revision,
+                "wrapper_image_sha256": identity.wrapper_image_sha256,
+                "interpreter_image_sha256": identity.interpreter_image_sha256,
+                "dependency_set_sha256": identity.dependency_set_sha256,
+                "phase_timeout_contract": _phase_timeout_contract(),
+                "mutex_identity_sha256": "6" * 64,
+            },
+            writers=writers,
+            create_phase_a=lambda: create("A"),
+            create_phase_b=lambda: create("B"),
+            quiesce_phase=quiesce,
+            clear_authority=retained_authority,
+            http_frame_validator=lambda _payload: None,
+            seal=lambda: pytest.fail("retained authority must not seal"),
+            timeout_seconds=2,
+        )
+
+    assert exc.value.code == "dual_live_authority_clear_failed"
+    assert events.index("quiesce-A") < events.index("authority-A")
+    assert "create-B" not in events
+
+
 class _CaptureOwnedPhaseProcess:
     def __init__(self, phase: str, events: list[str]) -> None:
         self.phase = phase
         self.events = events
         self._child: dual_live_runtime_module._ControllerChild = (
-            _capture_controller_child(phase, events)
+            _capture_controller_child(phase, events, proof_scope="production")
         )
         self.process_boot_id = self._child.process_boot_id
         self.process_creation_identity_sha256 = (
@@ -1161,6 +1849,17 @@ class _CaptureOwnedPhaseProcess:
         self.control_nonce = self._child.control_nonce
         self.readers = self._child.readers
         self._closed = False
+        self._authority_environment_names = (
+            frozenset(
+                dual_live_runtime_module.PHASE_A_AUTHORITY_ENVIRONMENT_NAMES
+            )
+            if phase == "A"
+            else frozenset()
+        )
+        self._authority_revoked = False
+        self._stopped = False
+        self._quiesced = False
+        self._retain_authority_coordinates = False
 
     def send_control(self, frame: bytes) -> None:
         self._child.send_control(frame)
@@ -1170,14 +1869,20 @@ class _CaptureOwnedPhaseProcess:
 
     def revoke_before_stop(self, reason: str) -> None:
         self.events.append(f"revoke-{self.phase}-{reason}")
+        if self.phase == "A":
+            self._authority_revoked = True
 
     def stop(self) -> None:
+        if self.phase == "A" and not self._authority_revoked:
+            self.revoke_before_stop("owned_stop")
         self._child.stop()
+        self._stopped = True
 
     def quiesce_and_close(
         self,
     ) -> tuple[dict[str, object], dict[str, object]]:
         self.events.append(f"quiesce-{self.phase}")
+        self._quiesced = True
         zero_states = {state: 0 for state in WINDOWS_MIB_TCP_STATES}
         return (
             {
@@ -1198,6 +1903,30 @@ class _CaptureOwnedPhaseProcess:
             "all_required_absent": True,
         }
 
+    def clear_authority_coordinates(self) -> None:
+        if (
+            self.phase != "A"
+            or not self._authority_revoked
+            or not self._stopped
+            or not self._quiesced
+        ):
+            raise AssertionError("authority cleared before fake quiescence")
+        self.events.append(f"authority-{self.phase}")
+        if not self._retain_authority_coordinates:
+            self._authority_environment_names = frozenset()
+
+    def discard_authority_coordinates(self) -> None:
+        self._authority_environment_names = frozenset()
+
+    def authority_coordinate_posture(self) -> dict[str, object]:
+        return {
+            "retained_environment_names": tuple(
+                sorted(self._authority_environment_names)
+            ),
+            "revoked": self._authority_revoked,
+            "stopped": self._stopped and self._quiesced,
+        }
+
     def close(self) -> None:
         if self._closed:
             return
@@ -1205,6 +1934,249 @@ class _CaptureOwnedPhaseProcess:
         self.events.append(f"close-{self.phase}")
         for reader in self.readers.values():
             reader.close()
+
+
+def _measured_authority_context(
+    process: _CaptureOwnedPhaseProcess,
+) -> dual_live_runtime_module._ProductionOwnedControllerContext:
+    context = object.__new__(
+        dual_live_runtime_module._ProductionOwnedControllerContext
+    )
+    context._lock = dual_live_runtime_module.threading.Lock()
+    context._active_process = None
+    context._quiescing_process = None
+    context._owned_processes = [("A", process)]
+    context._quiesced_process_ids = {id(process)}
+    context._closed_process_ids = {id(process)}
+    context._phase_environments = {
+        "A": MappingProxyType(
+            {
+                name: "retained-fixture"
+                for name in (
+                    dual_live_runtime_module.PHASE_A_AUTHORITY_ENVIRONMENT_NAMES
+                )
+            }
+        ),
+        "B": MappingProxyType(
+            {
+                "CONNECTOR_LIVE_EGRESS_ENABLED": "false",
+                "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE": "false",
+            }
+        ),
+    }
+    context._retired_quiesced_phases = set()
+    return context
+
+
+def _quiesced_authority_process(
+    events: list[str],
+) -> _CaptureOwnedPhaseProcess:
+    process = _CaptureOwnedPhaseProcess("A", events)
+    process._authority_revoked = True
+    process._stopped = True
+    process._quiesced = True
+    return process
+
+
+def test_measured_authority_clearance_releases_all_parent_context_process_refs(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+    from app.services import dual_live_windows
+
+    assert (
+        dual_live_runtime_module.PHASE_A_AUTHORITY_ENVIRONMENT_NAMES
+        == dual_live_windows.OWNED_PHASE_A_AUTHORITY_ENVIRONMENT_NAMES
+    )
+    for name in dual_live_runtime_module.PHASE_A_AUTHORITY_ENVIRONMENT_NAMES:
+        monkeypatch.setenv(name, "retained-fixture")
+    settings = cast(Any, _producer_fake_settings(tmp_path))
+    monkeypatch.setattr(config, "settings", settings)
+    process = _quiesced_authority_process([])
+    context = _measured_authority_context(process)
+
+    payload = context._authority_payload("A", process._child)
+
+    assert payload == {
+        "authority_posture_sha256": (
+            dual_live_runtime_module.AUTHORITY_CLEARED_POSTURE_SHA256
+        ),
+        "all_required_absent": True,
+    }
+    assert all(
+        name.upper()
+        not in dual_live_runtime_module._PHASE_A_AUTHORITY_ENVIRONMENT
+        for name in os.environ
+    )
+    assert context._phase_environments is not None
+    assert context._phase_environments["A"] is None
+    assert context._phase_environments["B"] == {
+        "CONNECTOR_LIVE_EGRESS_ENABLED": "false",
+        "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE": "false",
+    }
+    assert context._owned_processes == []
+    assert context._quiesced_process_ids == set()
+    assert context._closed_process_ids == set()
+    assert process.authority_coordinate_posture() == {
+        "retained_environment_names": (),
+        "revoked": True,
+        "stopped": True,
+    }
+    assert settings.nrc_adams_subscription_key == ""
+    assert settings.connector_campaign_definition_path is None
+    assert settings.connector_campaign_definition_sha256 is None
+    assert settings.connector_nrc_aps_grant_path is None
+    assert settings.connector_nrc_aps_grant_sha256 is None
+    assert settings.connector_sciencebase_grant_path is None
+    assert settings.connector_sciencebase_grant_sha256 is None
+    assert settings.connector_live_egress_enabled is False
+    assert settings.connector_live_egress_exclusive_proof_mode is False
+
+
+@pytest.mark.parametrize(
+    "retained_name",
+    dual_live_runtime_module.PHASE_A_AUTHORITY_ENVIRONMENT_NAMES,
+)
+def test_each_retained_parent_authority_coordinate_fails_closed(
+    retained_name: str,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+
+    for name in dual_live_runtime_module.PHASE_A_AUTHORITY_ENVIRONMENT_NAMES:
+        monkeypatch.setenv(name, "retained-fixture")
+    monkeypatch.setattr(config, "settings", _producer_fake_settings(tmp_path))
+    process = _quiesced_authority_process([])
+    context = _measured_authority_context(process)
+    canonical_clear = (
+        dual_live_runtime_module._clear_parent_authority_environment
+    )
+
+    def retain_one() -> list[BaseException]:
+        failures = canonical_clear()
+        monkeypatch.setenv(retained_name, "still-retained")
+        return failures
+
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_clear_parent_authority_environment",
+        retain_one,
+    )
+
+    payload = context._authority_payload("A", process._child)
+
+    assert payload["all_required_absent"] is False
+    assert (
+        payload["authority_posture_sha256"]
+        != dual_live_runtime_module.AUTHORITY_CLEARED_POSTURE_SHA256
+    )
+    assert context._phase_environments is not None
+    assert context._phase_environments["A"] is None
+    assert context._owned_processes == []
+
+
+def test_retained_process_authority_coordinate_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+
+    for name in dual_live_runtime_module.PHASE_A_AUTHORITY_ENVIRONMENT_NAMES:
+        monkeypatch.setenv(name, "retained-fixture")
+    monkeypatch.setattr(config, "settings", _producer_fake_settings(tmp_path))
+    process = _quiesced_authority_process([])
+    context = _measured_authority_context(process)
+    process._retain_authority_coordinates = True
+
+    payload = context._authority_payload("A", process._child)
+
+    assert payload["all_required_absent"] is False
+    assert context._phase_environments is not None
+    assert context._phase_environments["A"] is None
+    assert context._owned_processes == []
+
+
+def test_retained_shared_settings_key_blocks_authority_attestation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.core import config
+
+    class _StickySettings:
+        _sticky: bool
+        nrc_adams_subscription_key: str
+
+        def __init__(self) -> None:
+            object.__setattr__(self, "_sticky", False)
+            for attribute, cleared in (
+                dual_live_runtime_module._PHASE_A_SETTINGS_AUTHORITY_COORDINATES
+            ):
+                object.__setattr__(
+                    self,
+                    attribute,
+                    "retained-fixture"
+                    if cleared is None or cleared == ""
+                    else True,
+                )
+            object.__setattr__(self, "_sticky", True)
+
+        def __setattr__(self, name: str, value: object) -> None:
+            if self._sticky and name == "nrc_adams_subscription_key":
+                raise RuntimeError("fixture retained key")
+            object.__setattr__(self, name, value)
+
+    for name in dual_live_runtime_module.PHASE_A_AUTHORITY_ENVIRONMENT_NAMES:
+        monkeypatch.setenv(name, "retained-fixture")
+    settings = _StickySettings()
+    monkeypatch.setattr(config, "settings", settings)
+    process = _quiesced_authority_process([])
+    context = _measured_authority_context(process)
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        context._authority_payload("A", process._child)
+
+    assert exc.value.code == "dual_live_owned_authority_invalid"
+    assert settings.nrc_adams_subscription_key == "retained-fixture"
+    assert context._phase_environments is not None
+    assert context._phase_environments["A"] is None
+    assert context._owned_processes == []
+
+
+def test_failed_quiescence_cleanup_discards_authority_without_attestation(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+
+    for name in dual_live_runtime_module.PHASE_A_AUTHORITY_ENVIRONMENT_NAMES:
+        monkeypatch.setenv(name, "retained-fixture")
+    settings = cast(Any, _producer_fake_settings(tmp_path))
+    monkeypatch.setattr(config, "settings", settings)
+    events: list[str] = []
+    process = _CaptureOwnedPhaseProcess("A", events)
+    context = _measured_authority_context(process)
+    context._active_process = process
+    context._quiesced_process_ids = set()
+    context._closed_process_ids = set()
+
+    assert context._discard_phase_a_authority() is None
+    assert context._close_all_processes() is None
+
+    assert all(
+        name.upper()
+        not in dual_live_runtime_module._PHASE_A_AUTHORITY_ENVIRONMENT
+        for name in os.environ
+    )
+    assert settings.nrc_adams_subscription_key == ""
+    assert context._phase_environments is not None
+    assert context._phase_environments["A"] is None
+    assert context._owned_processes == []
+    assert process.authority_coordinate_posture()[
+        "retained_environment_names"
+    ] == ()
+    assert not any(event.startswith("authority-") for event in events)
+
 
 @pytest.mark.parametrize(
     "connector_keys",
@@ -1691,6 +2663,2087 @@ def test_read_only_capture_verifier_refuses_caller_transaction(
     db.rollback()
 
 
+_PRODUCER_REQUIRED_ENV = (
+    "CONNECTOR_CAMPAIGN_DEFINITION_PATH",
+    "CONNECTOR_CAMPAIGN_DEFINITION_SHA256",
+    "CONNECTOR_SCIENCEBASE_GRANT_PATH",
+    "CONNECTOR_SCIENCEBASE_GRANT_SHA256",
+    "CONNECTOR_NRC_APS_GRANT_PATH",
+    "CONNECTOR_NRC_APS_GRANT_SHA256",
+    "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT",
+    "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH",
+    "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_SHA256",
+    "CONNECTOR_LIVE_EGRESS_ENABLED",
+    "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE",
+    "DATABASE_URL",
+    "STORAGE_DIR",
+    "NRC_ADAMS_APS_SUBSCRIPTION_KEY",
+)
+
+
+def _producer_fake_settings(tmp_path: Path) -> object:
+    evidence_root = tmp_path / "evidence"
+    storage_root = tmp_path / "storage"
+    database_path = tmp_path / "runtime.db"
+    evidence_root.mkdir()
+    storage_root.mkdir()
+    with sqlite3.connect(database_path) as connection:
+        connection.execute("CREATE TABLE fixture (id INTEGER PRIMARY KEY)")
+
+    class _Settings:
+        connector_campaign_definition_path = tmp_path / "campaign.json"
+        connector_campaign_definition_sha256 = DEFINITION_SHA256
+        connector_sciencebase_grant_path = tmp_path / "sciencebase.json"
+        connector_sciencebase_grant_sha256 = SCIENCEBASE_GRANT_SHA256
+        connector_nrc_aps_grant_path = tmp_path / "nrc.json"
+        connector_nrc_aps_grant_sha256 = NRC_GRANT_SHA256
+        connector_campaign_evidence_root = evidence_root
+        connector_campaign_evidence_index_path = tmp_path / "index.json"
+        connector_campaign_evidence_index_sha256 = INDEX_SHA256
+        connector_live_egress_enabled = True
+        connector_live_egress_exclusive_proof_mode = True
+        database_url = f"sqlite:///{database_path.as_posix()}"
+        storage_dir = str(storage_root)
+        nrc_adams_subscription_key = "fixture-secret"
+        deployment_mode = "local"
+        auth_owner = "none"
+        trusted_proxy_mode = False
+
+        def model_dump(self, **_kwargs: object) -> dict[str, object]:
+            return {
+                name: getattr(self, name)
+                for name in dir(self)
+                if not name.startswith("_")
+                and name != "model_dump"
+                and not callable(getattr(self, name))
+            }
+
+    return _Settings()
+
+
+def _install_producer_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    required = frozenset(_PRODUCER_REQUIRED_ENV)
+    for key in tuple(os.environ):
+        if key.upper() in required:
+            monkeypatch.delenv(key, raising=False)
+    for key in _PRODUCER_REQUIRED_ENV:
+        monkeypatch.setenv(key, "configured")
+
+
+def _install_dependency_verifier(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.services import dual_live_dependencies
+
+    monkeypatch.setattr(
+        dual_live_dependencies,
+        "verify_dual_live_dependencies",
+        lambda: DEPENDENCY_SET_SHA256,
+    )
+
+
+def _phase_timeout_contract(
+    *,
+    nrc_timeout_seconds: int = 30,
+    sciencebase_timeout_seconds: int = 30,
+    nrc_interval_ms: int = 250,
+    sciencebase_interval_ms: int = 250,
+) -> dict[str, Any]:
+    return _producer_preauthorization(
+        nrc_timeout_seconds=nrc_timeout_seconds,
+        sciencebase_timeout_seconds=sciencebase_timeout_seconds,
+        nrc_interval_ms=nrc_interval_ms,
+        sciencebase_interval_ms=sciencebase_interval_ms,
+    ).timeout_contract()
+
+
+def _producer_preauthorization(
+    *,
+    nrc_timeout_seconds: int = 30,
+    sciencebase_timeout_seconds: int = 30,
+    nrc_interval_ms: int = 250,
+    sciencebase_interval_ms: int = 250,
+) -> dual_live_runtime_module._ProducerPreauthorization:
+    return dual_live_runtime_module._ProducerPreauthorization(
+        code_revision=CODE_REVISION,
+        grant_timeouts=(
+            dual_live_runtime_module._ProducerGrantTimeoutInput(
+                connector_key="nrc_adams_aps",
+                max_physical_requests=2,
+                request_timeout_seconds=nrc_timeout_seconds,
+                min_request_interval_ms=nrc_interval_ms,
+            ),
+            dual_live_runtime_module._ProducerGrantTimeoutInput(
+                connector_key="sciencebase_mcs",
+                max_physical_requests=3,
+                request_timeout_seconds=sciencebase_timeout_seconds,
+                min_request_interval_ms=sciencebase_interval_ms,
+            ),
+        ),
+    )
+
+
+def test_public_dual_live_campaign_signature_has_no_injection_seams() -> None:
+    run = dual_live_runtime_module.run_dual_live_campaign
+    parameters = tuple(inspect.signature(run).parameters.values())
+    assert tuple(parameter.name for parameter in parameters) == (
+        "campaign_id",
+        "expected_campaign_fingerprint",
+    )
+    assert all(
+        parameter.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD
+        for parameter in parameters
+    )
+
+
+def test_producer_timeout_contract_is_grant_derived_and_environment_independent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    canonical = _phase_timeout_contract()
+    changed = _phase_timeout_contract(nrc_timeout_seconds=31)
+    monkeypatch.setenv("DUAL_LIVE_PHASE_A_TIMEOUT_SECONDS", "1")
+    monkeypatch.setenv("DUAL_LIVE_PHASE_B_TIMEOUT_SECONDS", "999")
+
+    assert canonical == _phase_timeout_contract()
+    assert canonical["phase_a_timeout_ms"] == 205_750
+    assert canonical["phase_b_timeout_ms"] == 30_000
+    assert changed["phase_a_timeout_ms"] == 207_750
+    assert changed["connector_grants"][0]["request_timeout_seconds"] == 31
+    assert _producer_preauthorization().phase_timeout_seconds() == {
+        "A": 205.75,
+        "B": 30.0,
+    }
+
+
+def test_producer_timeout_contract_rejects_overflow_and_nonfinite_values() -> None:
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        _producer_preauthorization(nrc_timeout_seconds=4_294_968)
+    assert exc.value.code == "dual_live_phase_timeout_contract_invalid"
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._validated_phase_timeout_seconds(
+            {"A": float("nan"), "B": 30.0},
+            "dual_live_phase_timeout_contract_invalid",
+        )
+    assert exc.value.code == "dual_live_phase_timeout_contract_invalid"
+
+
+def test_producer_phase_environments_split_current_authority_from_history(
+    tmp_path: Path,
+) -> None:
+    settings = _producer_fake_settings(tmp_path)
+
+    phase_a, phase_b = dual_live_runtime_module._producer_phase_environments(
+        settings,
+        campaign_id=str(CAMPAIGN_ID),
+        campaign_fingerprint=FINGERPRINT,
+        code_revision=CODE_REVISION,
+        dependency_set_sha256=DEPENDENCY_SET_SHA256,
+    )
+
+    assert phase_a["NRC_ADAMS_APS_SUBSCRIPTION_KEY"] == "fixture-secret"
+    assert phase_a["CONNECTOR_NRC_APS_GRANT_PATH"] == str(
+        settings.connector_nrc_aps_grant_path
+    )
+    assert phase_a["CONNECTOR_SCIENCEBASE_GRANT_PATH"] == str(
+        settings.connector_sciencebase_grant_path
+    )
+    assert phase_a["CONNECTOR_LIVE_EGRESS_ENABLED"] == "true"
+    assert phase_a["CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE"] == "true"
+    assert phase_a["DUAL_LIVE_CAMPAIGN_ID"] == str(CAMPAIGN_ID)
+    assert phase_a["DUAL_LIVE_CAMPAIGN_FINGERPRINT"] == FINGERPRINT
+    assert phase_a["DUAL_LIVE_CODE_REVISION"] == CODE_REVISION
+    assert (
+        phase_a["DUAL_LIVE_DEPENDENCY_SET_SHA256"]
+        == DEPENDENCY_SET_SHA256
+    )
+
+    forbidden_in_phase_b = {
+        "NRC_ADAMS_APS_SUBSCRIPTION_KEY",
+        "CONNECTOR_CAMPAIGN_DEFINITION_PATH",
+        "CONNECTOR_CAMPAIGN_DEFINITION_SHA256",
+        "CONNECTOR_NRC_APS_GRANT_PATH",
+        "CONNECTOR_NRC_APS_GRANT_SHA256",
+        "CONNECTOR_SCIENCEBASE_GRANT_PATH",
+        "CONNECTOR_SCIENCEBASE_GRANT_SHA256",
+    }
+    assert forbidden_in_phase_b.isdisjoint(phase_b)
+    assert phase_b == {
+        "AUTH_OWNER": "none",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH": str(
+            settings.connector_campaign_evidence_index_path
+        ),
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_SHA256": INDEX_SHA256,
+        "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT": str(
+            settings.connector_campaign_evidence_root
+        ),
+        "CONNECTOR_LIVE_EGRESS_ENABLED": "false",
+        "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE": "false",
+        "DATABASE_URL": settings.database_url,
+        "DEPLOYMENT_MODE": "local",
+        "DUAL_LIVE_CAMPAIGN_FINGERPRINT": FINGERPRINT,
+        "DUAL_LIVE_CAMPAIGN_ID": str(CAMPAIGN_ID),
+        "DUAL_LIVE_CODE_REVISION": CODE_REVISION,
+        "DUAL_LIVE_DEPENDENCY_SET_SHA256": DEPENDENCY_SET_SHA256,
+        "STORAGE_DIR": settings.storage_dir,
+        "TRUSTED_PROXY_MODE": "false",
+    }
+
+
+@pytest.mark.parametrize("phase", ("A", "B"))
+def test_producer_phase_environment_matches_windows_child_allowlist(
+    phase: str,
+    tmp_path: Path,
+) -> None:
+    from app.services import dual_live_windows
+
+    settings = _producer_fake_settings(tmp_path)
+    phase_a, phase_b = dual_live_runtime_module._producer_phase_environments(
+        settings,
+        campaign_id=str(CAMPAIGN_ID),
+        campaign_fingerprint=FINGERPRINT,
+        code_revision=CODE_REVISION,
+        dependency_set_sha256=DEPENDENCY_SET_SHA256,
+    )
+    supplied = phase_a if phase == "A" else phase_b
+
+    child_environment = dual_live_windows._owned_child_environment(
+        phase,
+        supplied,
+    )
+
+    assert {
+        name: child_environment[name]
+        for name in supplied
+    } == dict(supplied)
+    assert (
+        child_environment["DUAL_LIVE_DEPENDENCY_SET_SHA256"]
+        == DEPENDENCY_SET_SHA256
+    )
+
+
+@pytest.mark.parametrize("phase", ("A", "B"))
+@pytest.mark.parametrize("mutation", ("missing-digest", "extra-name"))
+def test_windows_child_environment_remains_exact_and_fail_closed(
+    phase: str,
+    mutation: str,
+    tmp_path: Path,
+) -> None:
+    from app.services import dual_live_windows
+
+    settings = _producer_fake_settings(tmp_path)
+    phase_a, phase_b = dual_live_runtime_module._producer_phase_environments(
+        settings,
+        campaign_id=str(CAMPAIGN_ID),
+        campaign_fingerprint=FINGERPRINT,
+        code_revision=CODE_REVISION,
+        dependency_set_sha256=DEPENDENCY_SET_SHA256,
+    )
+    supplied = dict(phase_a if phase == "A" else phase_b)
+    if mutation == "missing-digest":
+        supplied.pop("DUAL_LIVE_DEPENDENCY_SET_SHA256")
+    else:
+        supplied["UNREVIEWED_NAME"] = "blocked"
+
+    with pytest.raises(
+        dual_live_windows.DualLiveWindowsError,
+        match="dual_live_owned_environment_invalid",
+    ):
+        dual_live_windows._owned_child_environment(phase, supplied)
+
+
+def test_public_dual_live_campaign_dependency_failure_precedes_all_effects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_dependencies, dual_live_windows
+
+    def refuse() -> NoReturn:
+        raise dual_live_dependencies.DualLiveDependencyError
+
+    monkeypatch.setattr(
+        dual_live_dependencies,
+        "verify_dual_live_dependencies",
+        refuse,
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_load_producer_settings",
+        lambda: pytest.fail("settings/auth read preceded dependency refusal"),
+    )
+    monkeypatch.setattr(
+        dual_live_windows,
+        "acquire_proof_locks_staged",
+        lambda *_args, **_kwargs: pytest.fail(
+            "proof lock effect preceded dependency refusal"
+        ),
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_open_producer_database",
+        lambda *_args, **_kwargs: pytest.fail(
+            "database effect preceded dependency refusal"
+        ),
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_make_production_owned_controller_context",
+        lambda **_kwargs: pytest.fail(
+            "capture/process effect preceded dependency refusal"
+        ),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module.run_dual_live_campaign(
+            str(CAMPAIGN_ID),
+            FINGERPRINT,
+        )
+
+    assert exc.value.code == "dual_live_dependency_provenance_invalid"
+
+
+def test_public_dual_live_campaign_authorizes_both_local_writers_before_effects(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+    from app.services import dual_live_windows
+
+    _install_dependency_verifier(monkeypatch)
+    _install_producer_environment(monkeypatch)
+    settings = _producer_fake_settings(tmp_path)
+    monkeypatch.setattr(config, "Settings", lambda **_kwargs: settings)
+    monkeypatch.setattr(config, "settings", settings)
+    events: list[str] = []
+
+    def refuse(**kwargs: object) -> NoReturn:
+        assert kwargs == {
+            "settings": settings,
+            "campaign_id": str(CAMPAIGN_ID),
+            "campaign_fingerprint": FINGERPRINT,
+        }
+        events.append("preauthorize")
+        raise dual_live_runtime_module.DualLiveRuntimeError(
+            "dual_live_local_runner_authorization_denied"
+        )
+
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_preauthorize_producer_connectors",
+        refuse,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        dual_live_windows,
+        "acquire_proof_locks_staged",
+        lambda *_args, **_kwargs: pytest.fail(
+            "proof lock effect preceded local-runner authorization"
+        ),
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_open_producer_database",
+        lambda *_args, **_kwargs: pytest.fail(
+            "database effect preceded local-runner authorization"
+        ),
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_make_production_owned_controller_context",
+        lambda **_kwargs: pytest.fail(
+            "capture effect preceded local-runner authorization"
+        ),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module.run_dual_live_campaign(
+            str(CAMPAIGN_ID),
+            FINGERPRINT,
+        )
+
+    assert exc.value.code == "dual_live_local_runner_authorization_denied"
+    assert events == ["preauthorize"]
+
+
+def test_producer_result_requires_exact_seal_derived_event_ids() -> None:
+    run_ids = tuple(
+        sorted(
+            (
+                str(uuid5(NAMESPACE_URL, "producer-nrc-run")),
+                str(uuid5(NAMESPACE_URL, "producer-sciencebase-run")),
+            )
+        )
+    )
+    event_ids = tuple(
+        str(
+            uuid5(
+                NAMESPACE_URL,
+                "project6:connector-egress:"
+                f"{run_id}:campaign_log_capture_sealed:0",
+            )
+        )
+        for run_id in run_ids
+    )
+    result = SimpleNamespace(
+        manifest_sha256="6" * 64,
+        file_set_hash="7" * 64,
+        seal_sha256="8" * 64,
+        event_ids=event_ids,
+        seal=SimpleNamespace(connector_run_ids=run_ids),
+    )
+
+    report = dual_live_runtime_module._producer_result_projection(
+        result,
+        campaign_id=str(CAMPAIGN_ID),
+        campaign_fingerprint=FINGERPRINT,
+    )
+
+    assert report["event_ids"] == list(event_ids)
+
+    result.event_ids = tuple(reversed(event_ids))
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._producer_result_projection(
+            result,
+            campaign_id=str(CAMPAIGN_ID),
+            campaign_fingerprint=FINGERPRINT,
+        )
+    assert exc.value.code == "dual_live_producer_result_invalid"
+
+
+def test_producer_result_refuses_unbounded_event_iterable_without_iteration() -> None:
+    class _Unbounded:
+        def __iter__(self) -> object:
+            pytest.fail("event_ids iterable was materialized before bounding")
+
+    result = SimpleNamespace(
+        manifest_sha256="6" * 64,
+        file_set_hash="7" * 64,
+        seal_sha256="8" * 64,
+        event_ids=_Unbounded(),
+        seal=SimpleNamespace(connector_run_ids=(str(uuid4()), str(uuid4()))),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._producer_result_projection(
+            result,
+            campaign_id=str(CAMPAIGN_ID),
+            campaign_fingerprint=FINGERPRINT,
+        )
+
+    assert exc.value.code == "dual_live_producer_result_invalid"
+
+
+def test_http_counter_ack_runs_only_after_validated_frame_is_persisted() -> None:
+    writers = {stream: io.BytesIO() for stream in PIPE_STREAM_CLASSES}
+    readers = {stream: io.BytesIO() for stream in PIPE_STREAM_CLASSES}
+    events: list[str] = []
+
+    def validate(payload: bytes) -> None:
+        assert payload == b"{}"
+        assert writers["http"].getvalue() == b""
+        events.append("validated")
+
+    def committed() -> None:
+        assert writers["http"].getvalue() == b"{}\n"
+        events.append("persisted-ack")
+
+    pumps = dual_live_runtime_module.FourStreamPumpGroup(
+        readers=readers,
+        writers=writers,
+        boot_callback=lambda _sha256: None,
+        status_callback=lambda _status, _sha256: None,
+        proof_callback=lambda _proof: None,
+        http_frame_validator=validate,
+        http_frame_committed=committed,
+        stop_latch=dual_live_runtime_module.FirstStopLatch(),
+        expected_status_phase="A",
+        expected_status_process_boot_id="1" * 64,
+        expected_status_nonce_sha256="2" * 64,
+        expected_control_nonce="3" * 64,
+        expected_proof_scope="mechanical",
+    )
+
+    pumps._write_frame("http", b"{}")
+
+    assert events == ["validated", "persisted-ack"]
+
+
+def test_owned_phase_a_workload_uses_real_constructor_order_without_network(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.db import session as db_session
+    from app.services import (
+        connector_egress_arming,
+        connector_egress_authorization,
+        connector_egress_transport,
+        connectors_nrc_adams,
+        connectors_sciencebase,
+    )
+
+    monkeypatch.setenv("DUAL_LIVE_CAMPAIGN_ID", str(CAMPAIGN_ID))
+    monkeypatch.setenv("DUAL_LIVE_CAMPAIGN_FINGERPRINT", FINGERPRINT)
+    monkeypatch.setenv("DUAL_LIVE_CODE_REVISION", CODE_REVISION)
+    settings = SimpleNamespace(
+        connector_nrc_aps_grant_sha256=NRC_GRANT_SHA256,
+        connector_sciencebase_grant_sha256=SCIENCEBASE_GRANT_SHA256,
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_load_producer_settings",
+        lambda: settings,
+    )
+    events: list[str] = []
+    campaign = SimpleNamespace(model=SimpleNamespace(code_revision=CODE_REVISION))
+
+    def resolve_campaign(**_kwargs: object) -> object:
+        events.append("campaign")
+        return campaign
+
+    def resolve_grant(**kwargs: object) -> object:
+        connector_key = cast(str, kwargs["connector_key"])
+        events.append(f"grant-{connector_key}")
+        return SimpleNamespace(
+            model=SimpleNamespace(connector_key=connector_key),
+            raw_sha256=cast(str, kwargs["expected_grant_sha256"]),
+            verified_campaign=campaign,
+        )
+
+    def authorize(**kwargs: object) -> object:
+        grant = kwargs["verified_grant"]
+        assert kwargs["access"] == "write"
+        events.append(f"authorize-{grant.model.connector_key}")
+        return SimpleNamespace(
+            model_dump=lambda **_kwargs: {
+                "connector_key": grant.model.connector_key,
+                "access": "write",
+            }
+        )
+
+    monkeypatch.setattr(
+        connector_egress_authorization,
+        "resolve_current_dual_live_campaign_definition",
+        resolve_campaign,
+    )
+    monkeypatch.setattr(
+        connector_egress_authorization,
+        "resolve_current_connector_egress_grant",
+        resolve_grant,
+    )
+    monkeypatch.setattr(
+        connector_egress_authorization,
+        "authorize_connector_egress_local_runner",
+        authorize,
+    )
+
+    class _Db:
+        def close(self) -> None:
+            events.append("db-close")
+
+    monkeypatch.setattr(db_session, "SessionLocal", lambda: _Db())
+
+    def create_arming(
+        _db: object,
+        *,
+        payload: object,
+        verified_grant: object,
+        operator_receipt: object,
+        code_revision: str,
+    ) -> tuple[object, bool]:
+        del payload, operator_receipt
+        assert code_revision == CODE_REVISION
+        connector_key = verified_grant.model.connector_key
+        events.append(f"arm-{connector_key}")
+        return (
+            SimpleNamespace(
+                connector_run_id=f"run-{connector_key}",
+                request_fingerprint=(
+                    NRC_GRANT_SHA256
+                    if connector_key == "nrc_adams_aps"
+                    else SCIENCEBASE_GRANT_SHA256
+                ),
+            ),
+            True,
+        )
+
+    def claim_arming(
+        _db: object,
+        *,
+        connector_run_id: str,
+        **_kwargs: object,
+    ) -> tuple[object, bool]:
+        events.append(f"claim-{connector_run_id}")
+        return SimpleNamespace(connector_run_id=connector_run_id), True
+
+    monkeypatch.setattr(
+        connector_egress_arming,
+        "create_connector_egress_arming",
+        create_arming,
+    )
+    monkeypatch.setattr(
+        connector_egress_arming,
+        "claim_connector_egress_arming",
+        claim_arming,
+    )
+    monkeypatch.setattr(
+        connector_egress_arming,
+        "evaluate_nrc_acquisition_success",
+        lambda *_args, **_kwargs: events.append("nrc-success") or object(),
+    )
+    monkeypatch.setattr(
+        connectors_nrc_adams,
+        "execute_nrc_adams_run",
+        lambda run_id: events.append(f"execute-{run_id}"),
+    )
+    monkeypatch.setattr(
+        connectors_sciencebase,
+        "execute_connector_run",
+        lambda run_id: events.append(f"execute-{run_id}"),
+    )
+
+    @contextmanager
+    def counter_runtime(_context: object) -> object:
+        events.append("counter-install")
+        try:
+            yield _context
+        finally:
+            events.append("counter-remove")
+
+    monkeypatch.setattr(
+        connector_egress_transport,
+        "connector_counter_runtime",
+        counter_runtime,
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_phase_a_acquisition_projection",
+        lambda _db, **kwargs: {
+            "action_codes": [
+                "derived_arming",
+                "raw_acquisition",
+                "terminal_transition",
+            ],
+            "connector_key": kwargs["connector_key"],
+            "connector_run_id": kwargs["connector_run_id"],
+            "connector_run_target_id": f"target-{kwargs['connector_key']}",
+            "ledger_terminal_hash": "3" * 64,
+            "raw_content_sha256": "4" * 64,
+            "terminal_transition_count": 1,
+        },
+    )
+
+    projection = dual_live_runtime_module.run_owned_phase_a_workload(
+        runtime_instance_id=str(uuid4()),
+        process_boot_id="a" * 64,
+        append_counter_frame=lambda _payload: None,
+        revocation_is_set=lambda: False,
+        acquire_send_idle=lambda: None,
+        release_send_idle=lambda: None,
+    )
+
+    assert events == [
+        "campaign",
+        "counter-install",
+        "grant-nrc_adams_aps",
+        "authorize-nrc_adams_aps",
+        "arm-nrc_adams_aps",
+        "claim-run-nrc_adams_aps",
+        "db-close",
+        "execute-run-nrc_adams_aps",
+        "nrc-success",
+        "db-close",
+        "campaign",
+        "grant-sciencebase_mcs",
+        "authorize-sciencebase_mcs",
+        "arm-sciencebase_mcs",
+        "claim-run-sciencebase_mcs",
+        "db-close",
+        "execute-run-sciencebase_mcs",
+        "counter-remove",
+        "db-close",
+    ]
+    assert [
+        item["connector_key"]
+        for item in projection["connector_acquisitions"]
+    ] == ["nrc_adams_aps", "sciencebase_mcs"]
+    assert projection["downstream_action_count"] == 0
+
+
+def test_owned_child_dispatches_phase_workloads_under_distinct_guards() -> None:
+    tool_path = Path(__file__).resolve().parents[2] / "tools" / "dual_live_run.py"
+    spec = importlib.util.spec_from_file_location("dual_live_run_dispatch", tool_path)
+    assert spec is not None and spec.loader is not None
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    events: list[str] = []
+
+    class _Guards:
+        def assert_intact(self) -> None:
+            events.append("guard-all")
+
+        def enable_phase_a_transport(self) -> None:
+            events.append("guard-a-network")
+
+        def install(self) -> None:
+            events.append("guard-reinstall")
+
+    class _Kernel:
+        def WaitForSingleObject(self, _handle: int, _timeout: int) -> int:
+            return runner._WAIT_TIMEOUT
+
+    class _Runtime:
+        class DualLiveRuntimeError(ValueError):
+            def __init__(self, code: str) -> None:
+                super().__init__(code)
+                self.code = code
+
+        def encode_pipe_frame(self, payload: bytes) -> bytes:
+            return payload
+
+        def run_owned_phase_a_workload(self, **kwargs: object) -> object:
+            assert kwargs["runtime_instance_id"] == str(CAMPAIGN_ID)
+            assert kwargs["process_boot_id"] == "a" * 64
+            assert all(
+                callable(kwargs[name])
+                for name in (
+                    "append_counter_frame",
+                    "revocation_is_set",
+                    "acquire_send_idle",
+                    "release_send_idle",
+                )
+            )
+            events.append("workload-A")
+            return {
+                "connector_acquisitions": [],
+                "downstream_action_count": 0,
+            }
+
+        def run_owned_phase_b_workload(self) -> object:
+            events.append("workload-B")
+            return {
+                "downstream_actions": [],
+                "source_bindings": [],
+                "terminal_boundary": "owner_decision_required",
+            }
+
+    handles = {
+        "child_counter_ack_event_handle": 1,
+        "child_http_write_handle": 2,
+        "child_revocation_event_handle": 3,
+        "child_send_idle_event_handle": 4,
+    }
+    runtime = _Runtime()
+    guards = _Guards()
+    kernel = _Kernel()
+
+    assert runner._dispatch_owned_workload(
+        runtime,
+        guards,
+        kernel,
+        phase="A",
+        handles=handles,
+        runtime_instance_id=str(CAMPAIGN_ID),
+        process_boot_id="a" * 64,
+    ) == (0, {"connector_acquisitions": [], "downstream_action_count": 0})
+    assert runner._dispatch_owned_workload(
+        runtime,
+        guards,
+        kernel,
+        phase="B",
+        handles={},
+        runtime_instance_id=str(CAMPAIGN_ID),
+        process_boot_id="b" * 64,
+    ) == (
+        runner._OWNER_DECISION_REQUIRED_EXIT_CODE,
+        {
+            "downstream_actions": [],
+            "source_bindings": [],
+            "terminal_boundary": "owner_decision_required",
+        },
+    )
+    assert events == [
+        "guard-a-network",
+        "workload-A",
+        "guard-reinstall",
+        "guard-all",
+        "workload-B",
+        "guard-all",
+    ]
+
+
+def test_owned_child_does_not_translate_wrong_code_or_message_spoof() -> None:
+    tool_path = Path(__file__).resolve().parents[2] / "tools" / "dual_live_run.py"
+    spec = importlib.util.spec_from_file_location(
+        "dual_live_run_dispatch_negative",
+        tool_path,
+    )
+    assert spec is not None and spec.loader is not None
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+
+    class _CodeError(ValueError):
+        def __init__(self, code: str) -> None:
+            super().__init__(code)
+            self.code = code
+
+    class _Guards:
+        def assert_intact(self) -> None:
+            return None
+
+    for error in (
+        _CodeError("dual_live_phase_failed"),
+        RuntimeError("dual_live_phase_b_owner_decision_required"),
+    ):
+        runtime = SimpleNamespace(
+            run_owned_phase_b_workload=lambda error=error: (
+                (_ for _ in ()).throw(error)
+            )
+        )
+        with pytest.raises(type(error)) as exc:
+            runner._dispatch_owned_workload(
+                runtime,
+                _Guards(),
+                SimpleNamespace(),
+                phase="B",
+                handles={},
+                runtime_instance_id=str(CAMPAIGN_ID),
+                process_boot_id="b" * 64,
+            )
+        assert exc.value is error
+
+
+def test_public_runner_projects_only_reviewed_boundary_codes_secret_safely(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tool_path = Path(__file__).resolve().parents[2] / "tools" / "dual_live_run.py"
+    spec = importlib.util.spec_from_file_location("dual_live_run_refusal", tool_path)
+    assert spec is not None and spec.loader is not None
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    writes: list[tuple[int, bytes]] = []
+    monkeypatch.setattr(
+        runner.os,
+        "write",
+        lambda descriptor, content: (
+            writes.append((descriptor, content)) or len(content)
+        ),
+    )
+
+    inspection = dual_live_runtime_module.DualLiveRuntimeError(
+        "dual_live_phase_timeout_inspection_required"
+    )
+    owner_decision = dual_live_runtime_module.DualLiveRuntimeError(
+        "dual_live_phase_b_owner_decision_required"
+    )
+    message_spoof = RuntimeError(
+        "dual_live_phase_b_owner_decision_required"
+    )
+    wrong_code = dual_live_runtime_module.DualLiveRuntimeError(
+        "dual_live_phase_failed"
+    )
+    unknown = RuntimeError("fixture-secret must never be emitted")
+
+    assert runner._refuse(runner._allowlisted_refusal_code(inspection)) == 2
+    assert runner._refuse(runner._allowlisted_refusal_code(owner_decision)) == 2
+    assert runner._refuse(runner._allowlisted_refusal_code(message_spoof)) == 2
+    assert runner._refuse(runner._allowlisted_refusal_code(wrong_code)) == 2
+    assert runner._refuse(runner._allowlisted_refusal_code(unknown)) == 2
+    assert writes == [
+        (2, b"dual_live_phase_timeout_inspection_required\n"),
+        (2, b"dual_live_phase_b_owner_decision_required\n"),
+        (2, b"dual_live_run_refused\n"),
+        (2, b"dual_live_run_refused\n"),
+        (2, b"dual_live_run_refused\n"),
+    ]
+    assert b"fixture-secret" not in b"".join(content for _fd, content in writes)
+
+
+@pytest.mark.parametrize(
+    ("ack_mode", "expected_error"),
+    (
+        ("success", None),
+        ("revoked", PermissionError),
+        ("timeout", TimeoutError),
+    ),
+)
+def test_owned_child_counter_ack_wait_is_bounded_and_revocation_aware(
+    ack_mode: str,
+    expected_error: type[BaseException] | None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tool_path = Path(__file__).resolve().parents[2] / "tools" / "dual_live_run.py"
+    spec = importlib.util.spec_from_file_location("dual_live_run_ack", tool_path)
+    assert spec is not None and spec.loader is not None
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    monkeypatch.setattr(runner, "_COUNTER_ACK_TIMEOUT_SECONDS", 0.002)
+    events: list[str] = []
+
+    class _Writer:
+        def __init__(self, _kernel: object, handle: int) -> None:
+            assert handle == 2
+
+        def write(self, content: bytes) -> int:
+            events.append("counter-written")
+            assert content == b"framed-counter"
+            return len(content)
+
+    class _Guards:
+        def enable_phase_a_transport(self) -> None:
+            events.append("guard-a-network")
+
+        def install(self) -> None:
+            events.append("guard-reinstall")
+
+    class _Kernel:
+        def __init__(self) -> None:
+            self.ack_waits = 0
+
+        def ResetEvent(self, handle: int) -> int:
+            events.append(f"reset-{handle}")
+            return 1
+
+        def SetEvent(self, handle: int) -> int:
+            events.append(f"set-{handle}")
+            return 1
+
+        def WaitForSingleObject(self, handle: int, _timeout: int) -> int:
+            if handle == 3:
+                if ack_mode == "revoked" and self.ack_waits:
+                    events.append("revocation-observed")
+                    return runner._WAIT_OBJECT_0
+                return runner._WAIT_TIMEOUT
+            assert handle == 1
+            self.ack_waits += 1
+            if self.ack_waits == 1:
+                events.append("ack-waited")
+            if ack_mode == "success":
+                return runner._WAIT_OBJECT_0
+            return runner._WAIT_TIMEOUT
+
+    class _Runtime:
+        def encode_pipe_frame(self, payload: bytes) -> bytes:
+            assert payload == b"counter"
+            return b"framed-counter"
+
+        def run_owned_phase_a_workload(self, **kwargs: object) -> object:
+            events.append("workload-A")
+            append_counter_frame = cast(
+                Callable[[bytes], None],
+                kwargs["append_counter_frame"],
+            )
+            append_counter_frame(b"counter")
+            events.append("workload-A-complete")
+            return {
+                "connector_acquisitions": [],
+                "downstream_action_count": 0,
+            }
+
+    monkeypatch.setattr(runner, "_NativeWriter", _Writer)
+    kernel = _Kernel()
+
+    def call() -> tuple[int, Mapping[str, object]]:
+        return runner._dispatch_owned_workload(
+            _Runtime(),
+            _Guards(),
+            kernel,
+            phase="A",
+            handles={
+                "child_counter_ack_event_handle": 1,
+                "child_http_write_handle": 2,
+                "child_revocation_event_handle": 3,
+                "child_send_idle_event_handle": 4,
+            },
+            runtime_instance_id=str(CAMPAIGN_ID),
+            process_boot_id="a" * 64,
+        )
+
+    if expected_error is None:
+        assert call() == (
+            0,
+            {"connector_acquisitions": [], "downstream_action_count": 0},
+        )
+        assert "workload-A-complete" in events
+    else:
+        with pytest.raises(expected_error):
+            call()
+        assert "workload-A-complete" not in events
+    assert events.index("counter-written") < events.index("ack-waited")
+    assert events[-1] == "guard-reinstall"
+    if ack_mode == "revoked":
+        assert "revocation-observed" in events
+    if ack_mode == "timeout":
+        assert kernel.ack_waits >= 1
+
+
+def test_owned_phase_b_workload_is_secret_free_and_returns_owner_boundary(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.db import session as db_session
+
+    phase_b_environment = {
+        "AUTH_OWNER": "none",
+        "DATABASE_URL": f"sqlite:///{tmp_path / 'phase-b.db'}",
+        "DEPLOYMENT_MODE": "local",
+        "DUAL_LIVE_CAMPAIGN_FINGERPRINT": FINGERPRINT,
+        "DUAL_LIVE_CAMPAIGN_ID": str(CAMPAIGN_ID),
+        "DUAL_LIVE_CODE_REVISION": CODE_REVISION,
+        "DUAL_LIVE_DEPENDENCY_SET_SHA256": DEPENDENCY_SET_SHA256,
+        "STORAGE_DIR": str(tmp_path / "storage"),
+        "TRUSTED_PROXY_MODE": "false",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH": str(tmp_path / "index.json"),
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_SHA256": "1" * 64,
+        "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT": str(tmp_path / "evidence"),
+        "CONNECTOR_LIVE_EGRESS_ENABLED": "false",
+        "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE": "false",
+    }
+    forbidden = {
+        "CONNECTOR_CAMPAIGN_DEFINITION_PATH",
+        "CONNECTOR_CAMPAIGN_DEFINITION_SHA256",
+        "CONNECTOR_NRC_APS_GRANT_PATH",
+        "CONNECTOR_NRC_APS_GRANT_SHA256",
+        "CONNECTOR_SCIENCEBASE_GRANT_PATH",
+        "CONNECTOR_SCIENCEBASE_GRANT_SHA256",
+        "NRC_ADAMS_APS_SUBSCRIPTION_KEY",
+    }
+    for name, value in phase_b_environment.items():
+        monkeypatch.setenv(name, value)
+    for name in forbidden:
+        monkeypatch.delenv(name, raising=False)
+
+    events: list[str] = []
+
+    class _Db:
+        def in_transaction(self) -> bool:
+            return True
+
+        def rollback(self) -> None:
+            events.append("rollback")
+
+        def close(self) -> None:
+            events.append("close")
+
+    db = _Db()
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_assert_phase_b_connector_guards",
+        lambda: events.append("connector-guards"),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_prepare_owned_phase_b",
+        lambda _db, **kwargs: (
+            events.append(
+                "prepare:"
+                + ":".join(
+                    (
+                        kwargs["campaign_id"],
+                        kwargs["campaign_fingerprint"],
+                        kwargs["code_revision"],
+                    )
+                )
+            )
+            or {
+                "downstream_actions": [],
+                "source_bindings": [],
+                "terminal_boundary": "owner_decision_required",
+            }
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        db_session,
+        "SessionLocal",
+        lambda: events.append("session") or db,
+    )
+
+    projection = dual_live_runtime_module.run_owned_phase_b_workload()
+
+    assert events == [
+        "connector-guards",
+        "session",
+        f"prepare:{CAMPAIGN_ID}:{FINGERPRINT}:{CODE_REVISION}",
+        "connector-guards",
+        "rollback",
+        "close",
+    ]
+    assert projection["terminal_boundary"] == "owner_decision_required"
+
+
+def test_owned_phase_b_prepares_both_candidates_without_approving(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import (
+        layer3_connector_source_intake,
+        layer3_origin_continuity,
+        layer3_workbench,
+        nrc_aps_phase_b_linkage,
+    )
+
+    events: list[str] = []
+
+    class _Transaction:
+        def __enter__(self) -> None:
+            events.append("begin")
+
+        def __exit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc: BaseException | None,
+            traceback: object,
+        ) -> None:
+            del exc_type, exc, traceback
+            events.append("commit")
+
+    class _Db:
+        def rollback(self) -> None:
+            events.append("rollback")
+
+        def begin(self) -> _Transaction:
+            return _Transaction()
+
+    targets = SimpleNamespace(
+        nrc_target_id="nrc-target",
+        sciencebase_target_id="sciencebase-target",
+        sciencebase_intake_record_id="sciencebase-intake",
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_resolve_owned_phase_b_targets",
+        lambda *_args, **_kwargs: events.append("resolve") or targets,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        nrc_aps_phase_b_linkage,
+        "bind_strict_nrc_phase_b_linkage",
+        lambda _db, **kwargs: events.append(
+            f"bind:{kwargs['connector_run_target_id']}"
+        )
+        or SimpleNamespace(content_id="nrc-content"),
+    )
+    monkeypatch.setattr(
+        layer3_origin_continuity,
+        "mint_connector_origin_receipt",
+        lambda _db, **kwargs: events.append(
+            f"mint:{kwargs['connector_run_target_id']}"
+        )
+        or {
+            "connector_run_target_id": kwargs["connector_run_target_id"],
+            "connector_origin_receipt_hash": "2" * 64,
+        },
+    )
+    monkeypatch.setattr(
+        layer3_workbench,
+        "preflight",
+        lambda payload: events.append("nrc-preflight")
+        or {"preflight_id": "preflight"},
+    )
+    monkeypatch.setattr(
+        layer3_workbench,
+        "source_preview",
+        lambda payload: events.append("nrc-source-preview")
+        or {
+            "source_set_id": "source-set",
+            "source_candidates": [
+                {"source_candidate_id": "src-aps_content_document-test"}
+            ],
+        },
+    )
+    def material_preview(payload: dict[str, Any], db: object) -> dict[str, Any]:
+        assert db is not None
+        assert payload["query_basis"] == {"terms": ["dual-live-proof"]}
+        events.append("nrc-material-preview")
+        return {"material_candidates": [{"candidate_id": "nrc-candidate"}]}
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "material_preview",
+        material_preview,
+    )
+    monkeypatch.setattr(
+        layer3_connector_source_intake,
+        "connector_source_intake_material_preview",
+        lambda _db, **kwargs: events.append("sciencebase-material-preview")
+        or {"material_candidate": {"candidate_id": "sciencebase-candidate"}},
+    )
+    monkeypatch.setattr(
+        layer3_workbench,
+        "gate_b_decision",
+        lambda *_args, **_kwargs: pytest.fail("Phase B fabricated Gate-B approval"),
+    )
+
+    dual_live_runtime_module._prepare_owned_phase_b(
+        _Db(),
+        campaign_id=str(CAMPAIGN_ID),
+        campaign_fingerprint=FINGERPRINT,
+        code_revision=CODE_REVISION,
+    )
+
+    assert events == [
+        "resolve",
+        "rollback",
+        "bind:nrc-target",
+        "begin",
+        "mint:nrc-target",
+        "commit",
+        "begin",
+        "mint:sciencebase-target",
+        "commit",
+        "nrc-preflight",
+        "nrc-source-preview",
+        "nrc-material-preview",
+        "sciencebase-material-preview",
+        "rollback",
+    ]
+
+
+def test_public_dual_live_campaign_stages_locks_derives_source_and_cleans(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+    from app.services import dual_live_windows
+    import sqlalchemy
+    import sqlalchemy.orm
+
+    _install_dependency_verifier(monkeypatch)
+    _install_producer_environment(monkeypatch)
+    settings = _producer_fake_settings(tmp_path)
+    monkeypatch.setattr(config, "Settings", lambda **_kwargs: settings)
+    monkeypatch.setattr(config, "settings", settings)
+    events: list[str] = []
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_preauthorize_producer_connectors",
+        lambda **_kwargs: (
+            events.append("preauthorize") or _producer_preauthorization()
+        ),
+    )
+
+    class _Locks:
+        root_identity_sha256 = "4" * 64
+        campaign_identity_sha256 = "5" * 64
+
+        def close(self) -> None:
+            events.append("locks-close")
+
+    locks = _Locks()
+
+    def acquire(
+        evidence_root: Path,
+        campaign_id: str,
+        campaign_fingerprint: str,
+        resolver: Any,
+        wait_ms: int = 0,
+    ) -> object:
+        assert evidence_root == settings.connector_campaign_evidence_root
+        assert campaign_id == str(CAMPAIGN_ID)
+        assert campaign_fingerprint == FINGERPRINT
+        assert wait_ms == 0
+        events.append("root-lock")
+        assert resolver() == DEFINITION_SHA256
+        events.append("campaign-lock")
+        return locks
+
+    monkeypatch.setattr(dual_live_windows, "acquire_proof_locks_staged", acquire)
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_resolve_staged_campaign_definition_sha256",
+        lambda *_args, **_kwargs: DEFINITION_SHA256,
+        raising=False,
+    )
+
+    class _Source:
+        code_revision = CODE_REVISION
+        wrapper_image_sha256 = "2" * 64
+        interpreter_image_sha256 = "3" * 64
+
+        def assert_stable(self) -> None:
+            events.append("source-stable")
+
+        def close(self) -> None:
+            events.append("source-close")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_acquire_reviewed_source_custody",
+        lambda: events.append("source-open") or _Source(),
+    )
+
+    class _Connection:
+        def __init__(self) -> None:
+            self.query_only = False
+
+        def exec_driver_sql(self, statement: str) -> tuple[tuple[object, ...], ...]:
+            if statement == "PRAGMA query_only = ON":
+                self.query_only = True
+                return ()
+            if statement == "PRAGMA query_only = OFF":
+                self.query_only = False
+                return ()
+            if statement == "PRAGMA query_only":
+                return ((1 if self.query_only else 0,),)
+            if statement == "PRAGMA database_list":
+                database_path = config._sqlite_database_path(settings.database_url)
+                assert database_path is not None
+                return ((0, "main", str(database_path)),)
+            if statement == "PRAGMA quick_check(1)":
+                return (("ok",),)
+            if statement.startswith("SELECT name FROM sqlite_master"):
+                return tuple((name,) for name in Base.metadata.tables)
+            pytest.fail(f"unexpected producer DB statement: {statement}")
+
+        def rollback(self) -> None:
+            events.append("connection-rollback")
+
+        def in_transaction(self) -> bool:
+            return False
+
+        def close(self) -> None:
+            events.append("connection-close")
+
+    connection = _Connection()
+
+    class _Engine:
+        def connect(self) -> _Connection:
+            events.append("connection-open")
+            return connection
+
+        def dispose(self) -> None:
+            events.append("engine-dispose")
+
+    engine = _Engine()
+    monkeypatch.setattr(
+        sqlalchemy,
+        "create_engine",
+        lambda *_args, **_kwargs: events.append("engine-open") or engine,
+    )
+
+    class _Session:
+        def __init__(self, **kwargs: object) -> None:
+            assert kwargs["bind"] is connection
+            events.append("session-open")
+
+        def close(self) -> None:
+            events.append("session-close")
+
+    monkeypatch.setattr(sqlalchemy.orm, "Session", _Session)
+    context = object()
+    captured: dict[str, object] = {}
+
+    def make_context(**kwargs: object) -> object:
+        captured.update(kwargs)
+        events.append("context")
+        return context
+
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_make_production_owned_controller_context",
+        make_context,
+    )
+    run_ids = tuple(
+        sorted(
+            (
+                str(uuid5(NAMESPACE_URL, "fixture-nrc-run")),
+                str(uuid5(NAMESPACE_URL, "fixture-sciencebase-run")),
+            )
+        )
+    )
+    event_ids = tuple(
+        str(
+            uuid5(
+                NAMESPACE_URL,
+                "project6:connector-egress:"
+                f"{run_id}:campaign_log_capture_sealed:0",
+            )
+        )
+        for run_id in run_ids
+    )
+    result = SimpleNamespace(
+        manifest_sha256="6" * 64,
+        file_set_hash="7" * 64,
+        seal_sha256="8" * 64,
+        event_ids=event_ids,
+        seal=SimpleNamespace(connector_run_ids=run_ids),
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_run_production_owned_two_phase_controller",
+        lambda supplied: (
+            events.append("run") or result
+            if supplied is context
+            else pytest.fail("wrong context")
+        ),
+    )
+
+    report = dual_live_runtime_module.run_dual_live_campaign(
+        str(CAMPAIGN_ID),
+        FINGERPRINT,
+    )
+
+    assert report == {
+        "schema_id": "project6.dual_live_campaign_run.v1",
+        "campaign_id": str(CAMPAIGN_ID),
+        "campaign_fingerprint": FINGERPRINT,
+        "status": "SEALED",
+        "code": "dual_live_campaign_sealed",
+        "manifest_sha256": "6" * 64,
+        "file_set_hash": "7" * 64,
+        "seal_sha256": "8" * 64,
+        "event_ids": list(event_ids),
+    }
+    identity = cast(RuntimeIdentity, captured["identity"])
+    assert identity.code_revision == CODE_REVISION
+    assert identity.wrapper_image_sha256 == "2" * 64
+    assert identity.interpreter_image_sha256 == "3" * 64
+    assert identity.dependency_set_sha256 == DEPENDENCY_SET_SHA256
+    assert identity.root_mutex_identity_sha256 == "4" * 64
+    assert identity.campaign_mutex_identity_sha256 == "5" * 64
+    assert captured["proof_locks"] is locks
+    assert captured["timeout_seconds"] == {"A": 205.75, "B": 30.0}
+    assert cast(dict[str, Any], captured["runtime_start_payload"])[
+        "phase_timeout_contract"
+    ] == _phase_timeout_contract()
+    assert "phase_environments" not in captured
+    assert events == [
+        "preauthorize",
+        "root-lock",
+        "campaign-lock",
+        "engine-open",
+        "connection-open",
+        "connection-rollback",
+        "session-open",
+        "source-open",
+        "source-stable",
+        "source-close",
+        "context",
+        "run",
+        "session-close",
+        "connection-close",
+        "engine-dispose",
+        "locks-close",
+    ]
+
+
+def test_public_dual_live_campaign_missing_environment_refuses_before_effects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import dual_live_windows
+
+    _install_dependency_verifier(monkeypatch)
+    for key in tuple(os.environ):
+        if key.upper() in frozenset(_PRODUCER_REQUIRED_ENV):
+            monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(
+        dual_live_windows,
+        "acquire_proof_locks_staged",
+        lambda *_args, **_kwargs: pytest.fail("lock effect before refusal"),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module.run_dual_live_campaign(
+            str(CAMPAIGN_ID),
+            FINGERPRINT,
+        )
+
+    assert exc.value.code == "dual_live_producer_configuration_missing"
+
+
+def test_public_dual_live_campaign_refuses_empty_database_before_source_process(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+    from app.services import dual_live_windows
+
+    _install_dependency_verifier(monkeypatch)
+    _install_producer_environment(monkeypatch)
+    settings = _producer_fake_settings(tmp_path)
+    database_path = config._sqlite_database_path(settings.database_url)
+    assert database_path is not None
+    database_path.write_bytes(b"")
+    monkeypatch.setattr(config, "Settings", lambda **_kwargs: settings)
+    monkeypatch.setattr(config, "settings", settings)
+    events: list[str] = []
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_preauthorize_producer_connectors",
+        lambda **_kwargs: CODE_REVISION,
+    )
+
+    class _Locks:
+        root_identity_sha256 = "4" * 64
+        campaign_identity_sha256 = "5" * 64
+
+        def close(self) -> None:
+            events.append("locks-close")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "acquire_proof_locks_staged",
+        lambda *_args, **_kwargs: events.append("locks-open") or _Locks(),
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_derive_reviewed_runtime_source_identity",
+        lambda: pytest.fail("source custody opened for invalid local state"),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module.run_dual_live_campaign(
+            str(CAMPAIGN_ID),
+            FINGERPRINT,
+        )
+
+    assert exc.value.code == "dual_live_producer_local_state_invalid"
+    assert events == ["locks-open", "locks-close"]
+
+
+def test_public_dual_live_campaign_refuses_garbage_database_before_source_process(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+    from app.services import dual_live_windows
+
+    _install_dependency_verifier(monkeypatch)
+    _install_producer_environment(monkeypatch)
+    settings = _producer_fake_settings(tmp_path)
+    database_path = config._sqlite_database_path(settings.database_url)
+    assert database_path is not None
+    database_path.write_bytes(b"not-a-sqlite-database")
+    monkeypatch.setattr(config, "Settings", lambda **_kwargs: settings)
+    monkeypatch.setattr(config, "settings", settings)
+    events: list[str] = []
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_preauthorize_producer_connectors",
+        lambda **_kwargs: CODE_REVISION,
+    )
+
+    class _Locks:
+        root_identity_sha256 = "4" * 64
+        campaign_identity_sha256 = "5" * 64
+
+        def close(self) -> None:
+            events.append("locks-close")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "acquire_proof_locks_staged",
+        lambda *_args, **_kwargs: events.append("locks-open") or _Locks(),
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_derive_reviewed_runtime_source_identity",
+        lambda: pytest.fail("source custody opened for garbage database"),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module.run_dual_live_campaign(
+            str(CAMPAIGN_ID),
+            FINGERPRINT,
+        )
+
+    assert exc.value.code == "dual_live_producer_local_state_invalid"
+    assert events == ["locks-open", "locks-close"]
+
+
+def test_producer_database_refuses_empty_existing_database_before_engine(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    import sqlalchemy
+
+    database_path = tmp_path / "empty.db"
+    storage_path = tmp_path / "storage"
+    database_path.write_bytes(b"")
+    storage_path.mkdir()
+    settings = SimpleNamespace(
+        database_url=f"sqlite:///{database_path.as_posix()}",
+        storage_dir=str(storage_path),
+    )
+    monkeypatch.setattr(
+        sqlalchemy,
+        "create_engine",
+        lambda *_args, **_kwargs: pytest.fail("engine opened for empty database"),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._open_producer_database(settings)
+
+    assert exc.value.code == "dual_live_producer_local_state_invalid"
+
+
+def test_producer_database_refuses_missing_schema_or_replacement_and_cleans(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+    import sqlalchemy
+    import sqlalchemy.orm
+
+    original_identity = dual_live_runtime_module._producer_database_file_identity
+    for fault in ("schema", "replacement"):
+        lane = tmp_path / fault
+        lane.mkdir()
+        settings = _producer_fake_settings(lane)
+        database_path = config._sqlite_database_path(settings.database_url)
+        assert database_path is not None
+        events: list[str] = []
+        identity_calls = 0
+
+        def identity(path: Path) -> tuple[int, int, int, int]:
+            nonlocal identity_calls
+            identity_calls += 1
+            value = original_identity(path)
+            if fault == "replacement" and identity_calls == 4:
+                return (*value[:3], value[3] + 1)
+            return value
+
+        class _Connection:
+            def __init__(self) -> None:
+                self.query_only = False
+
+            def exec_driver_sql(
+                self,
+                statement: str,
+            ) -> tuple[tuple[object, ...], ...]:
+                if statement == "PRAGMA query_only = ON":
+                    self.query_only = True
+                    return ()
+                if statement == "PRAGMA query_only = OFF":
+                    self.query_only = False
+                    return ()
+                if statement == "PRAGMA query_only":
+                    return ((1 if self.query_only else 0,),)
+                if statement == "PRAGMA database_list":
+                    return ((0, "main", str(database_path)),)
+                if statement == "PRAGMA quick_check(1)":
+                    return (("ok",),)
+                if statement.startswith("SELECT name FROM sqlite_master"):
+                    if fault == "schema":
+                        return ()
+                    return tuple((name,) for name in Base.metadata.tables)
+                pytest.fail(f"unexpected producer DB statement: {statement}")
+
+            def rollback(self) -> None:
+                events.append("connection-rollback")
+
+            def in_transaction(self) -> bool:
+                return False
+
+            def close(self) -> None:
+                events.append("connection-close")
+
+        connection = _Connection()
+
+        class _Engine:
+            def connect(self) -> _Connection:
+                events.append("connection-open")
+                return connection
+
+            def dispose(self) -> None:
+                events.append("engine-dispose")
+
+        monkeypatch.setattr(
+            dual_live_runtime_module,
+            "_producer_database_file_identity",
+            identity,
+        )
+        monkeypatch.setattr(
+            sqlalchemy,
+            "create_engine",
+            lambda *_args, **_kwargs: events.append("engine-open") or _Engine(),
+        )
+        monkeypatch.setattr(
+            sqlalchemy.orm,
+            "Session",
+            lambda **_kwargs: pytest.fail("Session created before DB proof"),
+        )
+
+        with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+            dual_live_runtime_module._open_producer_database(settings)
+
+        assert exc.value.code == "dual_live_producer_local_state_invalid"
+        if fault == "schema":
+            assert events == [
+                "engine-open",
+                "connection-open",
+                "connection-close",
+                "engine-dispose",
+            ]
+        else:
+            assert events == [
+                "engine-open",
+                "connection-open",
+                "connection-rollback",
+                "connection-close",
+                "engine-dispose",
+            ]
+            assert identity_calls == 4
+
+
+def test_producer_local_state_rejects_sqlite_uri_options_and_file_form(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "runtime.db"
+    storage_path = tmp_path / "storage"
+    with sqlite3.connect(database_path) as connection:
+        connection.execute("CREATE TABLE fixture (id INTEGER PRIMARY KEY)")
+    storage_path.mkdir()
+    canonical = f"sqlite:///{database_path.as_posix()}"
+    unsafe_urls = (
+        f"sqlite:///file:{database_path.as_posix()}?uri=true",
+        f"sqlite:///file:{database_path.as_posix()}?mode=memory&uri=true",
+        f"sqlite:///file:{database_path.as_posix()}?mode=ro&uri=true",
+        f"sqlite:///file:{database_path.as_posix()}?immutable=1&uri=true",
+        f"sqlite:///file:{database_path.as_posix()}?nolock=1&uri=true",
+        f"{canonical}?uri=true",
+        f"{canonical}#alternate",
+    )
+
+    for database_url in unsafe_urls:
+        settings = SimpleNamespace(
+            database_url=database_url,
+            storage_dir=str(storage_path),
+        )
+        with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+            dual_live_runtime_module._validate_producer_local_state(settings)
+        assert exc.value.code == "dual_live_producer_local_state_invalid"
+
+
+def test_producer_local_state_rejects_unc_before_path_resolution(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from app.core import config
+
+    storage_path = tmp_path / "storage"
+    storage_path.mkdir()
+    monkeypatch.setattr(
+        config,
+        "_sqlite_database_path",
+        lambda _url: pytest.fail("UNC path reached filesystem resolution"),
+    )
+    settings = SimpleNamespace(
+        database_url="sqlite://///server/share/runtime.db",
+        storage_dir=str(storage_path),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._validate_producer_local_state(settings)
+
+    assert exc.value.code == "dual_live_producer_local_state_invalid"
+
+
+def test_producer_local_state_rejects_reparse_database(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    reparse_root = tmp_path / "reparse"
+    reparse_root.mkdir()
+    database_path = reparse_root / "runtime.db"
+    storage_path = tmp_path / "storage"
+    with sqlite3.connect(database_path) as connection:
+        connection.execute("CREATE TABLE fixture (id INTEGER PRIMARY KEY)")
+    storage_path.mkdir()
+    real_lstat = os.lstat
+
+    def lstat(path: str | os.PathLike[str]) -> os.stat_result | object:
+        if Path(path) == reparse_root:
+            return SimpleNamespace(
+                st_file_attributes=0x400,
+                st_size=0,
+            )
+        return real_lstat(path)
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    settings = SimpleNamespace(
+        database_url=f"sqlite:///{database_path.as_posix()}",
+        storage_dir=str(storage_path),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._validate_producer_local_state(settings)
+
+    assert exc.value.code == "dual_live_producer_local_state_invalid"
+
+
+def test_staged_producer_resolver_rederives_full_current_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.services import (
+        connector_campaign_log_capture as capture_service,
+        connector_egress_authorization as egress_service,
+    )
+
+    settings = SimpleNamespace(
+        connector_campaign_definition_path=Path("C:/protected/campaign.json"),
+        connector_campaign_definition_sha256=DEFINITION_SHA256,
+    )
+    events: list[str] = []
+
+    def read(*_args: object, **kwargs: object) -> tuple[Path, bytes, str]:
+        assert kwargs["settings_override"] is settings
+        events.append("definition-read")
+        return (
+            settings.connector_campaign_definition_path,
+            DEFINITION_BYTES,
+            DEFINITION_SHA256,
+        )
+
+    def current(**kwargs: object) -> object:
+        assert kwargs["campaign_id"] == CAMPAIGN_ID
+        assert kwargs["expected_campaign_fingerprint"] == FINGERPRINT
+        assert kwargs["expected_code_revision"] == CODE_REVISION
+        events.append("current-authority")
+        return SimpleNamespace(
+            campaign_id=str(CAMPAIGN_ID),
+            campaign_fingerprint=FINGERPRINT,
+            campaign_definition_sha256=DEFINITION_SHA256,
+            code_revision=CODE_REVISION,
+        )
+
+    monkeypatch.setattr(egress_service, "_read_protected_bytes", read)
+    monkeypatch.setattr(
+        egress_service,
+        "_parse_model",
+        lambda *_args, **_kwargs: events.append("definition-parse")
+        or CAMPAIGN_MODEL,
+    )
+    monkeypatch.setattr(capture_service, "_current_authority", current)
+
+    assert dual_live_runtime_module._resolve_staged_campaign_definition_sha256(
+        settings,
+        str(CAMPAIGN_ID),
+        FINGERPRINT,
+    ) == DEFINITION_SHA256
+    assert events == [
+        "definition-read",
+        "definition-parse",
+        "current-authority",
+    ]
+
+
+def test_strict_runner_public_mode_reaches_runtime_and_emits_canonical_json(
+    monkeypatch: pytest.MonkeyPatch,
+    capfd: pytest.CaptureFixture[str],
+) -> None:
+    tool_path = Path(__file__).resolve().parents[2] / "tools" / "dual_live_run.py"
+    spec = importlib.util.spec_from_file_location("dual_live_run_test", tool_path)
+    assert spec is not None and spec.loader is not None
+    runner = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(runner)
+    calls: list[tuple[str, str]] = []
+    report = {
+        "campaign_id": str(CAMPAIGN_ID),
+        "campaign_fingerprint": FINGERPRINT,
+        "code": "dual_live_campaign_sealed",
+        "event_ids": [],
+        "file_set_hash": "7" * 64,
+        "manifest_sha256": "6" * 64,
+        "schema_id": "project6.dual_live_campaign_run.v1",
+        "seal_sha256": "8" * 64,
+        "status": "SEALED",
+    }
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "run_dual_live_campaign",
+        lambda campaign_id, fingerprint: (
+            calls.append((campaign_id, fingerprint)) or report
+        ),
+        raising=False,
+    )
+
+    class _NoopGuards:
+        def __init__(self, phase: str) -> None:
+            assert phase == "wrapper"
+
+        def install(self) -> None:
+            return None
+
+        def assert_intact(self) -> None:
+            return None
+
+    monkeypatch.setattr(runner, "_StandardLibraryGuards", _NoopGuards)
+    monkeypatch.setattr(runner, "_preflight_public_paths", lambda _env: None)
+    monkeypatch.setattr(
+        runner,
+        "_install_wrapper_connector_import_guard",
+        lambda: None,
+    )
+
+    assert runner._run_public_mode(
+        (
+            "--campaign-id",
+            str(CAMPAIGN_ID),
+            "--campaign-fingerprint",
+            FINGERPRINT,
+        )
+    ) == 0
+    captured = capfd.readouterr()
+    assert captured.out.encode("utf-8") == canonical_json_bytes(report) + b"\n"
+    assert captured.err == ""
+    assert calls == [(str(CAMPAIGN_ID), FINGERPRINT)]
+
+    assert runner._run_public_mode(
+        ("--campaign-id", str(CAMPAIGN_ID), "--unexpected", "value")
+    ) == 2
+    captured = capfd.readouterr()
+    assert captured.out == ""
+    assert captured.err == "dual_live_run_refused\n"
+    assert calls == [(str(CAMPAIGN_ID), FINGERPRINT)]
+
+
+def test_strict_runner_public_mode_is_reachable_under_reviewed_posture(
+    tmp_path: Path,
+) -> None:
+    tool_path = Path(__file__).resolve().parents[2] / "tools" / "dual_live_run.py"
+    backend_path = Path(__file__).resolve().parents[1]
+    report = {
+        "campaign_id": str(CAMPAIGN_ID),
+        "campaign_fingerprint": FINGERPRINT,
+        "code": "dual_live_campaign_sealed",
+        "event_ids": [],
+        "file_set_hash": "7" * 64,
+        "manifest_sha256": "6" * 64,
+        "schema_id": "project6.dual_live_campaign_run.v1",
+        "seal_sha256": "8" * 64,
+        "status": "SEALED",
+    }
+    probe = "\n".join(
+        (
+            "import importlib.util, sys, warnings",
+            "warnings.filterwarnings('ignore')",
+            f"sys.path.insert(0, {str(backend_path)!r})",
+            "from app.services import dual_live_runtime as runtime",
+            "from app.services import dual_live_windows as windows",
+            "def run(campaign_id, fingerprint):",
+            "    windows._require_reviewed_controller_python_posture()",
+            f"    return {report!r}",
+            "runtime.run_dual_live_campaign = run",
+            f"spec = importlib.util.spec_from_file_location('dual_live_run_probe', {str(tool_path)!r})",
+            "runner = importlib.util.module_from_spec(spec)",
+            "spec.loader.exec_module(runner)",
+            f"sys.argv = ['dual_live_run.py', '--campaign-id', {str(CAMPAIGN_ID)!r}, '--campaign-fingerprint', {FINGERPRINT!r}]",
+            "raise SystemExit(runner.main())",
+        )
+    )
+    environment = {
+        name: os.environ[name]
+        for name in ("COMSPEC", "SYSTEMROOT", "TEMP", "TMP", "WINDIR")
+        if name in os.environ
+    }
+    public_root = tmp_path / "public"
+    evidence_root = public_root / "evidence"
+    storage_root = public_root / "storage"
+    evidence_root.mkdir(parents=True)
+    storage_root.mkdir()
+    definition_path = public_root / "definition.json"
+    sciencebase_path = public_root / "sciencebase.json"
+    nrc_path = public_root / "nrc.json"
+    index_path = evidence_root / "index.json"
+    database_path = public_root / "proof.db"
+    for path in (
+        definition_path,
+        sciencebase_path,
+        nrc_path,
+        index_path,
+        database_path,
+    ):
+        path.touch()
+    environment.update(
+        {
+            "CONNECTOR_CAMPAIGN_DEFINITION_PATH": str(definition_path),
+            "CONNECTOR_SCIENCEBASE_GRANT_PATH": str(sciencebase_path),
+            "CONNECTOR_NRC_APS_GRANT_PATH": str(nrc_path),
+            "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT": str(evidence_root),
+            "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH": str(index_path),
+            "DATABASE_URL": f"sqlite:///{database_path.as_posix()}",
+            "STORAGE_DIR": str(storage_root),
+        }
+    )
+
+    completed = subprocess.run(
+        (sys.executable, "-I", "-B", "-c", probe),
+        check=False,
+        capture_output=True,
+        env=environment,
+        timeout=10,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stdout == canonical_json_bytes(report) + b"\n"
+    assert completed.stderr == b""
+    assert "spawnve" not in tool_path.read_text(encoding="utf-8")
+
+
+def test_strict_runner_redirects_repo_bytecode_before_public_import(
+    tmp_path: Path,
+) -> None:
+    tool_path = Path(__file__).resolve().parents[2] / "tools" / "dual_live_run.py"
+    module_root = tmp_path / "modules"
+    module_root.mkdir()
+    source_path = module_root / "posture_probe.py"
+    source_path.write_text("VALUE = 'evil'\n", encoding="utf-8")
+    source_stat = source_path.stat()
+    py_compile.compile(str(source_path), doraise=True)
+    source_path.write_text("VALUE = 'safe'\n", encoding="utf-8")
+    os.utime(
+        source_path,
+        ns=(source_stat.st_atime_ns, source_stat.st_mtime_ns),
+    )
+    environment = {
+        name: os.environ[name]
+        for name in ("COMSPEC", "SYSTEMROOT", "TEMP", "TMP", "WINDIR")
+        if name in os.environ
+    }
+    baseline = subprocess.run(
+        (
+            sys.executable,
+            "-I",
+            "-B",
+            "-c",
+            f"import sys;sys.path.insert(0,{str(module_root)!r});"
+            "import posture_probe;print(posture_probe.VALUE)",
+        ),
+        check=False,
+        capture_output=True,
+        env=environment,
+        timeout=10,
+    )
+    assert baseline.returncode == 0
+    assert baseline.stdout == b"evil\r\n"
+
+    probe = "\n".join(
+        (
+            "import importlib.util, sys",
+            f"spec = importlib.util.spec_from_file_location('dual_live_run_probe', {str(tool_path)!r})",
+            "runner = importlib.util.module_from_spec(spec)",
+            "spec.loader.exec_module(runner)",
+            "def public(arguments):",
+            f"    sys.path.insert(0, {str(module_root)!r})",
+            "    import posture_probe",
+            "    print(posture_probe.VALUE)",
+            "    return 0 if posture_probe.VALUE == 'safe' else 7",
+            "runner._run_public_mode = public",
+            "sys.argv = ['dual_live_run.py', '--campaign-id', 'x', "
+            "'--campaign-fingerprint', 'y']",
+            "raise SystemExit(runner.main())",
+        )
+    )
+    completed = subprocess.run(
+        (sys.executable, "-I", "-B", "-c", probe),
+        check=False,
+        capture_output=True,
+        env=environment,
+        timeout=10,
+    )
+
+    assert completed.returncode == 0
+    assert completed.stdout == b"safe\r\n"
+    assert completed.stderr == b""
+
+
 def test_read_only_capture_verifier_refuses_external_bind_transaction(
     db: Session,
     monkeypatch: pytest.MonkeyPatch,
@@ -2016,7 +5069,7 @@ def test_production_owned_binding_signature_has_no_injection_seams() -> None:
 def _production_identity_and_payload(
     locks: Any,
     monkeypatch: pytest.MonkeyPatch,
-) -> tuple[RuntimeIdentity, dict[str, str]]:
+) -> tuple[RuntimeIdentity, dict[str, Any]]:
     from app.services import dual_live_windows
 
     identity = RuntimeIdentity(
@@ -2025,6 +5078,7 @@ def _production_identity_and_payload(
         code_revision=CODE_REVISION,
         wrapper_image_sha256="2" * 64,
         interpreter_image_sha256="3" * 64,
+        dependency_set_sha256=DEPENDENCY_SET_SHA256,
         root_mutex_identity_sha256=locks.root_identity_sha256,
         campaign_mutex_identity_sha256=locks.campaign_identity_sha256,
     )
@@ -2044,6 +5098,8 @@ def _production_identity_and_payload(
         "code_revision": CODE_REVISION,
         "wrapper_image_sha256": identity.wrapper_image_sha256,
         "interpreter_image_sha256": identity.interpreter_image_sha256,
+        "dependency_set_sha256": identity.dependency_set_sha256,
+        "phase_timeout_contract": _phase_timeout_contract(),
         "mutex_identity_sha256": (
             dual_live_runtime_module._combined_mutex_identity_sha256(identity)
         ),
@@ -2059,6 +5115,152 @@ def _production_capture_owner(
     )
     assert type(capture) is dual_live_runtime_module._OwnedCampaignCapture
     return capture
+
+
+def _raw_production_context_for_failure(
+    *,
+    capture_close_error: BaseException | None = None,
+    source_close_error: BaseException | None = None,
+) -> dual_live_runtime_module._ProductionOwnedControllerContext:
+    context = object.__new__(
+        dual_live_runtime_module._ProductionOwnedControllerContext
+    )
+
+    class _Capture:
+        sealed = False
+
+        def _abort_close(self) -> BaseException | None:
+            return capture_close_error
+
+    class _Source:
+        def close(self) -> None:
+            if source_close_error is not None:
+                raise source_close_error
+
+    object.__setattr__(context, "_capture", _Capture())
+    object.__setattr__(context, "_source_custody", _Source())
+    object.__setattr__(context, "_source_custody_closed", False)
+    return context
+
+
+def test_production_post_go_timeout_requires_operator_inspection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    primary = dual_live_runtime_module.DualLiveRuntimeError(
+        "dual_live_phase_exit_timeout"
+    )
+    context = _raw_production_context_for_failure()
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_run_bound_owned_two_phase_controller",
+        lambda _context: (_ for _ in ()).throw(primary),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._run_production_owned_two_phase_controller(
+            context
+        )
+
+    assert exc.value.code == "dual_live_phase_timeout_inspection_required"
+    assert exc.value.__cause__ is primary
+    assert context._capture.sealed is False
+
+
+def test_production_pre_go_census_timeout_keeps_replay_safe_classification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    primary = dual_live_runtime_module.DualLiveRuntimeError(
+        "dual_live_phase_census_failed"
+    )
+    context = _raw_production_context_for_failure()
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_run_bound_owned_two_phase_controller",
+        lambda _context: (_ for _ in ()).throw(primary),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._run_production_owned_two_phase_controller(
+            context
+        )
+
+    assert exc.value is primary
+
+
+def test_production_earlier_primary_is_not_reclassified_by_cleanup_timeout(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    primary = dual_live_runtime_module.DualLiveRuntimeError(
+        "dual_live_phase_control_invalid"
+    )
+    primary.__context__ = dual_live_runtime_module.DualLiveRuntimeError(
+        "dual_live_phase_exit_timeout"
+    )
+    context = _raw_production_context_for_failure()
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_run_bound_owned_two_phase_controller",
+        lambda _context: (_ for _ in ()).throw(primary),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._run_production_owned_two_phase_controller(
+            context
+        )
+
+    assert exc.value is primary
+
+
+def test_production_timeout_preserves_capture_cleanup_failure_precedence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    primary = dual_live_runtime_module.DualLiveRuntimeError(
+        "dual_live_phase_exit_timeout"
+    )
+    capture_error = OSError("bounded fixture close failure")
+    context = _raw_production_context_for_failure(
+        capture_close_error=capture_error
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_run_bound_owned_two_phase_controller",
+        lambda _context: (_ for _ in ()).throw(primary),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._run_production_owned_two_phase_controller(
+            context
+        )
+
+    assert exc.value.code == "dual_live_capture_close_failed"
+    assert exc.value.__cause__ is capture_error
+    assert capture_error.__context__ is primary
+
+
+def test_production_owner_boundary_preserves_cleanup_failure_precedence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    primary = dual_live_runtime_module.DualLiveRuntimeError(
+        "dual_live_phase_b_owner_decision_required"
+    )
+    capture_error = OSError("bounded fixture close failure")
+    context = _raw_production_context_for_failure(
+        capture_close_error=capture_error
+    )
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_run_bound_owned_two_phase_controller",
+        lambda _context: (_ for _ in ()).throw(primary),
+    )
+
+    with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError) as exc:
+        dual_live_runtime_module._run_production_owned_two_phase_controller(
+            context
+        )
+
+    assert exc.value.code == "dual_live_capture_close_failed"
+    assert exc.value.__cause__ is capture_error
+    assert capture_error.__context__ is primary
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
@@ -2884,8 +6086,10 @@ def test_production_owned_binding_begins_runs_and_seals_canonical_capture(
     assert result.seal.connector_run_ids == tuple(
         sorted(authority.run_ids[key] for key in connector_keys)
     )
-    assert events.index("quiesce-A") < events.index("create-B")
+    assert events.index("quiesce-A") < events.index("authority-A")
+    assert events.index("authority-A") < events.index("create-B")
     assert events.index("quiesce-B") < events.index("close-B")
+    assert context._owned_processes == []
     final_stable = max(
         index
         for index, event in enumerate(events)
@@ -2970,6 +6174,7 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
         code_revision=CODE_REVISION,
         wrapper_image_sha256="2" * 64,
         interpreter_image_sha256="3" * 64,
+        dependency_set_sha256=DEPENDENCY_SET_SHA256,
         root_mutex_identity_sha256="4" * 64,
         campaign_mutex_identity_sha256="5" * 64,
     )
@@ -3030,6 +6235,8 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
             "code_revision": CODE_REVISION,
             "wrapper_image_sha256": identity.wrapper_image_sha256,
             "interpreter_image_sha256": identity.interpreter_image_sha256,
+            "dependency_set_sha256": identity.dependency_set_sha256,
+            "phase_timeout_contract": _phase_timeout_contract(),
             "mutex_identity_sha256": "6" * 64,
         },
         writers={writer.stream_class: writer for writer in capture.writers},
@@ -3042,8 +6249,8 @@ def test_task5_controller_closeout_seals_existing_runtime_records_once(
         timeout_seconds=2,
     )
     assert seal_calls == 1
-    assert events.index("authority-A") < events.index("quiesce-A")
-    assert events.index("quiesce-A") < events.index("create-B")
+    assert events.index("quiesce-A") < events.index("authority-A")
+    assert events.index("authority-A") < events.index("create-B")
     assert "authority-B" not in events
     assert events[-1] == "seal"
     assert all(writer.closed for writer in capture.writers)
