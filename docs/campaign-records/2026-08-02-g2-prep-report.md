@@ -166,3 +166,37 @@ This PREP subset does not authorize or complete G2. Remaining blockers are exact
 P7 was already closed by G1. P9 is nonblocking. Nothing in this reply permits fresh live ScienceBase or NRC APS acquisition.
 
 Goal accounting: 1,049,113 tokens; 7,728 seconds (about 2h 8m 48s).
+
+## Adversarial verification (Fable, 2026-08-02) — G2-PREP-SOUND; C2 delta review PASS
+Zero critical/major. Every quantitative claim reproduced on this host (21/39/27/356/404 tests, 15 mypy,
+evidence-record SHA-256, frozen blob 68f740af, seal b8a89df2, no-push). Both substrate changes PASS C2:
+- Route-disable (router.py:593-613): the 409 fires BEFORE any side effect — lazy SQLAlchemy session
+  (never touched), header-only auth gate, all 4 service seams + the route clock monkeypatched to
+  pytest.fail and proven un-reached; OpenAPI advertises only the 409 contract; auth behavior + non-strict
+  routes unchanged; no alternate HTTP path to claim/executor (claim only called from the CLI child).
+- Evaluator structural fail-closed (dual_live_evaluator.py:1183-1184): phase_b_sources->origin,
+  downstream->origin+phase_b_sources; propagation is ADD-ONLY; r17 blocks via _domain_error (INDETERMINATE)
+  before any evidence read and cannot PASS on those failures; aggregation blocks on INDETERMINATE; base-vs-
+  head confirms the pre-fix incidental-only gap is now structural. No new false-PASS.
+- Recovery tool (tools/dual_live_recovery.py, fully read): stdlib-only, SQLite mode=ro+immutable/query_only,
+  zero DML/deletion; poison publish via production atomic strict-new no-replace publisher (partial final
+  poison.json structurally impossible, fsync-injection test confirms); raw SQLite family byte-preserved
+  (SQLite never opens the raw DB during archive); symlink/reparse+junction refusal (real-host test);
+  network denial. Disclosed residuals (interrupted poison-publish / archive) correctly bounded — retained,
+  never a false/actionable state, force operator adjudication.
+- P4 harness: real Popen(-I -B) children killed at 22 REAL commit boundaries (trip() after the ORIGINAL
+  production commit returns), DB-derived contiguous-prefix classification (independent of the harness),
+  every partial FAIL/INDETERMINATE never PASS; secret-free/default-off children with production denial
+  guards installed+exercised+re-asserted; no silent-refetch path.
+- Scope/STOP clean: exactly 11 files, frozen+seal untouched, dual_live_windows.py zero changes, no
+  atomicity-model change, no credential provisioning, no C3 PREP-ONLY violation; 15-mypy waiver legit
+  (0 runtime defects); G2-P3 dependency warning correctly left OPEN not waived.
+3 MINORS (non-blocking, for a future hygiene pass / the P5 live-host half): (1) a pre-existing census
+flake (test_seq_owned_binder... , range-untouched, isolated-passing — harden its timing before a gate run);
+(2) gate-allowlist self-widening (legitimate/minimal here, but every future delta review must diff it —
+this one did); (3) no interrupted-ARCHIVE test (poison-interrupt is tested; archive-interrupt is design-
+bounded+disclosed only). NITs: dead route params, a dead except-branch, add a tripwire-seam comment on
+_strict_egress_executor so a future dead-code cleanup doesn't remove the seam the tests depend on.
+
+**G2 OFFLINE-PREP COMPLETE + VERIFIED. Remaining G2 is entirely owner/infra-gated (P1/P2/P3 provisioning
++ CVE, P5 live-host half, P6 residual acceptance, P8 live-run authorization).**
