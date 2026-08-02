@@ -3,11 +3,12 @@ from __future__ import annotations
 import ast
 import base64
 from collections.abc import Mapping
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, contextmanager
 import ctypes
 from dataclasses import FrozenInstanceError, fields
 import gc
 import hashlib
+import importlib.util
 import inspect
 import io
 import json
@@ -15,11 +16,14 @@ import os
 import runpy
 import shutil
 import socket
+import sqlite3
 import subprocess
 import sys
 import threading
 import time
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
@@ -42,6 +46,11 @@ from app.services.connector_egress_authorization import (  # noqa: E402
     canonical_json_bytes as framework_canonical_json_bytes,
 )
 from app.services.dual_live_runtime import WINDOWS_MIB_TCP_STATES  # noqa: E402
+from app.services.dual_live_evaluator import (  # noqa: E402
+    EVALUATOR_CHECK_ORDER,
+    EVALUATOR_NONCLAIMS,
+    build_indeterminate_dual_live_report,
+)
 
 
 GATE = ROOT / "tools" / "dual_live_gate.py"
@@ -80,12 +89,16 @@ ALLOWED_CHANGED_PRODUCTION_PATHS = frozenset(
         *ALLOWED_NEW_PRODUCTION_PATHS,
         "backend/app/core/config.py",
         "backend/app/services/connector_egress_authorization.py",
+        "backend/app/services/connector_egress_evidence.py",
         "backend/app/services/connector_egress_transport.py",
         "backend/app/services/connectors_nrc_adams.py",
         "backend/app/services/connector_egress_arming.py",
         "backend/app/services/connector_campaign_log_capture.py",
+        "backend/app/services/dual_live_dependencies.py",
         "backend/app/services/dual_live_evaluator.py",
+        "backend/app/services/layer3_gate_b_state.py",
         "backend/app/services/layer3_origin_continuity.py",
+        "backend/app/services/layer3_workbench.py",
         "backend/app/services/nrc_aps_phase_b_linkage.py",
         "tools/dual_live_gate.py",
         "project6.ps1",
@@ -99,30 +112,6 @@ AUTHORITY_VARIABLES = (
     "CONNECTOR_NRC_APS_GRANT_PATH",
     "CONNECTOR_NRC_APS_GRANT_SHA256",
 )
-EXPECTED_REPORT = {
-    "schema_id": "project6.dual_live_evaluation.v1",
-    "campaign_id": CAMPAIGN_ID,
-    "expected_campaign_fingerprint": CAMPAIGN_FINGERPRINT,
-    "status": "INDETERMINATE",
-    "fresh_live": False,
-    "evaluation_complete": False,
-    "code": "tracked_s3_clearance_and_privileged_runner_required",
-    "blocking_dependencies": [
-        "tracked_external_s3_clause_5_clearance",
-        "privileged_dual_live_runner",
-    ],
-    "validated_surfaces": [],
-    "nonclaims": [
-        "no campaign evidence evaluated",
-        "no connector run executed",
-        "no live acquisition performed",
-        "no Layer 3 continuity verdict",
-        "no package or handoff verdict",
-        "no production readiness claim",
-    ],
-}
-
-
 def _git_output(*args: str) -> str:
     completed = subprocess.run(
         ["git", *args],
@@ -387,6 +376,7 @@ def test_owned_process_surface_is_factory_only_and_opaque() -> None:
         "phase",
         "runtime_instance_id",
         "wrapper_nonce_sha256",
+        "environment",
     )
     with pytest.raises(
         DualLiveWindowsError,
@@ -415,8 +405,12 @@ def test_owned_child_boot_go_exit_job_and_inert_authority_contract(
     phase: str,
 ) -> None:
     from app.services.dual_live_runtime import (
+        CHILD_PROOF_SCHEMA_ID,
+        canonical_json_bytes,
+        decode_child_proof_frame,
         decode_child_status_frame,
         encode_child_control_frame,
+        encode_pipe_frame,
         read_pipe_frame,
     )
 
@@ -466,6 +460,52 @@ def test_owned_child_boot_go_exit_job_and_inert_authority_contract(
             expected_ordinal=1,
         )
         assert pre["payload"]["census_point"] == "pre_activity"
+        boot_frame_sha256 = hashlib.sha256(
+            encode_pipe_frame(
+                canonical_json_bytes(
+                    {
+                        "control_nonce": child.control_nonce,
+                        "phase": phase,
+                        "process_boot_id": child.process_boot_id,
+                        "schema_id": "project6.dual_live_owned_boot.v1",
+                        "status_nonce_sha256": child.status_nonce_sha256,
+                    }
+                )
+            )
+        ).hexdigest()
+        pre_status_frame_sha256 = hashlib.sha256(
+            len(pre_payload).to_bytes(4, "big") + pre_payload
+        ).hexdigest()
+        previous_proof_sha256: str | None = None
+
+        def read_proof(ordinal: int) -> dict[str, object]:
+            nonlocal previous_proof_sha256
+            payload = dual_live_runtime._read_pipe_frame(
+                child.readers["stdout"],
+                allowed_reserved_schema_ids=frozenset((CHILD_PROOF_SCHEMA_ID,)),
+            )
+            assert payload is not None
+            proof = decode_child_proof_frame(
+                payload,
+                expected_phase=phase,
+                expected_process_boot_id=child.process_boot_id,
+                expected_status_nonce_sha256=child.status_nonce_sha256,
+                expected_ordinal=ordinal,
+                expected_previous_record_sha256=previous_proof_sha256,
+                expected_proof_scope="mechanical",
+            )
+            previous_proof_sha256 = cast(str, proof["record_sha256"])
+            return cast(dict[str, object], proof)
+
+        if phase == "B":
+            pre_guard = read_proof(1)
+            pre_guard_payload = cast(dict[str, object], pre_guard["payload"])
+            assert pre_guard_payload["proof_point"] == "pre_go"
+            assert pre_guard_payload["boot_frame_sha256"] == boot_frame_sha256
+            assert (
+                pre_guard_payload["pre_activity_status_frame_sha256"]
+                == pre_status_frame_sha256
+            )
 
         go_frame = encode_child_control_frame(
             phase=phase,
@@ -498,30 +538,60 @@ def test_owned_child_boot_go_exit_job_and_inert_authority_contract(
         assert exited["payload"]["topology_sha256"] == pre["payload"][
             "topology_sha256"
         ]
+        exit_status_frame_sha256 = hashlib.sha256(
+            len(exit_payload).to_bytes(4, "big") + exit_payload
+        ).hexdigest()
+        control_frame_sha256 = hashlib.sha256(go_frame).hexdigest()
         assert read_pipe_frame(child.readers["app"]) is None
         assert read_pipe_frame(child.readers["http"]) is None
-        guard_payload = read_pipe_frame(child.readers["stdout"])
-        assert guard_payload is not None
-        guard = json.loads(guard_payload)
-        assert guard == {
-            "denied_routes": ["dns", "http", "socket", "subprocess"],
-            "guard_state": "selected_standard_routes",
-            "http_call_count": 0,
-            "phase": phase,
-            "schema_id": "project6.dual_live_inert_guard.v1",
-        }
+        terminal_proofs = [read_proof(1 if phase == "A" else 2)]
+        if phase == "B":
+            terminal_proofs.append(read_proof(3))
+        for proof in terminal_proofs:
+            proof_payload = cast(dict[str, object], proof["payload"])
+            assert proof_payload["boot_frame_sha256"] == boot_frame_sha256
+            assert proof_payload["control_frame_sha256"] == control_frame_sha256
+            assert (
+                proof_payload["pre_activity_status_frame_sha256"]
+                == pre_status_frame_sha256
+            )
+            assert (
+                proof_payload["exit_status_frame_sha256"]
+                == exit_status_frame_sha256
+            )
+        if phase == "A":
+            assert terminal_proofs[0]["event"] == "acquisition_boundary"
+            assert cast(dict[str, object], terminal_proofs[0]["payload"])[
+                "connector_acquisitions"
+            ] == []
+        else:
+            assert [proof["event"] for proof in terminal_proofs] == [
+                "downstream_chain",
+                "guard",
+            ]
+            assert cast(dict[str, object], terminal_proofs[0]["payload"])[
+                "terminal_boundary"
+            ] == "mechanical_complete"
+            assert cast(dict[str, object], terminal_proofs[1]["payload"])[
+                "proof_point"
+            ] == "exit"
+        assert read_pipe_frame(child.readers["stdout"]) is None
         assert read_pipe_frame(child.readers["stderr"]) is None
 
         child.stop()
         child.stop()
-        if phase == "A":
-            authority = child.authority_cleared_payload()
-            assert authority["all_required_absent"] is True
-        else:
-            child.revoke_before_stop("permanent_denial")
         socket_payload, job_payload = child.quiesce_and_close()
         assert socket_payload["stable"] is True
         assert job_payload["active_process_count"] == 0
+        if phase == "A":
+            authority = child.authority_cleared_payload()
+            assert authority["all_required_absent"] is True
+            assert (
+                authority["authority_posture_sha256"]
+                == dual_live_runtime.AUTHORITY_CLEARED_POSTURE_SHA256
+            )
+        else:
+            child.revoke_before_stop("permanent_denial")
     finally:
         child.close()
 
@@ -529,7 +599,7 @@ def test_owned_child_boot_go_exit_job_and_inert_authority_contract(
 @pytest.mark.parametrize(
     ("wait_result", "expected_exit", "expected_guard_calls", "raises"),
     (
-        (0x102, 0, ["restore", "install"], False),
+        (0x102, 0, [], False),
         (0, 23, [], False),
         (0xFFFFFFFF, None, [], True),
         (7, None, [], True),
@@ -572,6 +642,102 @@ def test_phase_a_guard_window_requires_exact_revocation_wait_result(
         assert operation(Kernel(), Guards(), idle=11, revoked=12) == expected_exit
     assert actual_guard_calls == expected_guard_calls
     assert idle_set_calls == 1
+
+
+def test_phase_b_standard_guards_are_permanent_and_report_exact_routes() -> None:
+    runner = runpy.run_path(str(RUNNER))
+    guards = runner["_StandardLibraryGuards"]("B")
+    try:
+        guards.install()
+        assert guards.exercise(connector_probe=lambda: None) == {
+            "denied_routes": [
+                "dns",
+                "http",
+                "socket",
+                "subprocess",
+                "connector_transport",
+            ],
+            "network_enable_attempt_count": 0,
+            "original_implementation_call_count": 0,
+        }
+        with pytest.raises(
+            PermissionError,
+            match="dual_live_inert_guard_enable_denied",
+        ):
+            guards.enable_phase_a_transport()
+        with pytest.raises(
+            RuntimeError,
+            match="dual_live_inert_guard_enable_attempted",
+        ):
+            guards.assert_intact()
+        with pytest.raises(
+            RuntimeError,
+            match="dual_live_inert_guard_permanent",
+        ):
+            guards.restore()
+    finally:
+        for target, name, original in guards._entries:
+            setattr(target, name, original)
+
+
+def test_phase_a_network_guard_can_open_once_then_seals() -> None:
+    runner = runpy.run_path(str(RUNNER))
+    guards = runner["_StandardLibraryGuards"]("A")
+    try:
+        guards.install()
+        guards.enable_phase_a_transport()
+        guards.assert_intact()
+        guards.install()
+        guards.assert_intact()
+        with pytest.raises(
+            PermissionError,
+            match="dual_live_inert_guard_enable_denied",
+        ):
+            guards.enable_phase_a_transport()
+        guards.assert_intact()
+    finally:
+        for target, name, original in guards._entries:
+            setattr(target, name, original)
+
+
+def test_wrapper_guard_precedes_backend_import_and_preserves_native_factory() -> None:
+    from app.services import dual_live_runtime
+
+    runner = runpy.run_path(str(RUNNER))
+    blocker = runner["_WrapperConnectorImportGuard"]()
+    for module_name in runner["_WRAPPER_BLOCKED_CONNECTOR_MODULES"]:
+        with pytest.raises(
+            ImportError,
+            match="dual_live_wrapper_connector_import_denied",
+        ):
+            blocker.find_spec(module_name)
+    assert blocker.find_spec("app.services.dual_live_runtime") is None
+
+    public_source = inspect.getsource(runner["_run_public_mode"])
+    assert (
+        public_source.index('_StandardLibraryGuards("wrapper")')
+        < public_source.index("guards.install()")
+        < public_source.index("_install_wrapper_connector_import_guard()")
+        < public_source.index('backend = Path(__file__).resolve()')
+        < public_source.index(
+            "from app.services.dual_live_runtime import run_dual_live_campaign"
+        )
+    )
+    controller_source = inspect.getsource(
+        dual_live_runtime._run_bound_owned_two_phase_controller
+    )
+    assert controller_source.count(
+        "dual_live_windows._create_owned_phase_process"
+    ) == 1
+    assert controller_source.index(
+        "owned_child_factory = dual_live_windows._create_owned_phase_process"
+    ) < controller_source.index("def create(")
+    windows_source = inspect.getsource(
+        dual_live_windows._create_child_in_job_locked
+    )
+    assert "CreateProcessW" in windows_source
+    assert "subprocess.Popen" not in windows_source
+    assert "subprocess.run" not in windows_source
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
@@ -882,9 +1048,9 @@ def test_phase_a_revoked_before_go_cannot_complete_inert_enable_edge() -> None:
             ),
         ) is not None
         child.stop()
-        assert child.authority_cleared_payload()["all_required_absent"] is True
         _, job_payload = child.quiesce_and_close()
         assert job_payload["active_process_count"] == 0
+        assert child.authority_cleared_payload()["all_required_absent"] is True
     finally:
         child.close()
 
@@ -1623,6 +1789,7 @@ def test_owned_control_race_cannot_create_phase_b_or_seal(
         code_revision="2" * 40,
         wrapper_image_sha256="3" * 64,
         interpreter_image_sha256="4" * 64,
+        dependency_set_sha256="8" * 64,
         root_mutex_identity_sha256="5" * 64,
         campaign_mutex_identity_sha256="6" * 64,
     )
@@ -1636,6 +1803,28 @@ def test_owned_control_race_cannot_create_phase_b_or_seal(
             "code_revision": identity.code_revision,
             "wrapper_image_sha256": identity.wrapper_image_sha256,
             "interpreter_image_sha256": identity.interpreter_image_sha256,
+            "dependency_set_sha256": identity.dependency_set_sha256,
+            "phase_timeout_contract": {
+                "schema_id": "project6.dual_live_phase_timeout.v1",
+                "phase_a_timeout_ms": 205_750,
+                "phase_b_timeout_ms": 30_000,
+                "fixed_non_egress_overhead_ms": 30_000,
+                "counter_ack_timeout_ms": 5_000,
+                "connector_grants": [
+                    {
+                        "connector_key": "nrc_adams_aps",
+                        "max_physical_requests": 2,
+                        "request_timeout_seconds": 30,
+                        "min_request_interval_ms": 250,
+                    },
+                    {
+                        "connector_key": "sciencebase_mcs",
+                        "max_physical_requests": 3,
+                        "request_timeout_seconds": 30,
+                        "min_request_interval_ms": 250,
+                    },
+                ],
+            },
             "mutex_identity_sha256": "7" * 64,
         },
         app_writer=writers["app"],
@@ -2063,7 +2252,8 @@ def test_owned_lifecycle_releases_all_parent_handles_across_repeated_phases() ->
     handle_ceiling = len(current_handles())
 
     for phase in ("A", "B", "A", "B"):
-        before_count = len(current_handles())
+        before_handles = current_handles()
+        before_count = len(before_handles)
         assert before_count <= handle_ceiling
         child = dual_live_windows._create_owned_phase_process(
             phase,
@@ -2093,7 +2283,16 @@ def test_owned_lifecycle_releases_all_parent_handles_across_repeated_phases() ->
             ) is not None
             for stream in ("app", "http", "stdout", "stderr"):
                 while (
-                    dual_live_runtime.read_pipe_frame(child.readers[stream])
+                    dual_live_runtime._read_pipe_frame(
+                        child.readers[stream],
+                        allowed_reserved_schema_ids=(
+                            frozenset(
+                                (dual_live_runtime.CHILD_PROOF_SCHEMA_ID,)
+                            )
+                            if stream == "stdout"
+                            else frozenset()
+                        ),
+                    )
                     is not None
                 ):
                     pass
@@ -2101,6 +2300,7 @@ def test_owned_lifecycle_releases_all_parent_handles_across_repeated_phases() ->
                 handle
                 for handle in (
                     child._control_write_handle,
+                    child._counter_ack_event_handle,
                     child._revocation_event_handle,
                     child._send_idle_event_handle,
                     *(reader._pipe_handle for reader in child.readers.values()),
@@ -2118,17 +2318,18 @@ def test_owned_lifecycle_releases_all_parent_handles_across_repeated_phases() ->
                 retained[0] for retained in job_child._retained_processes.values()
             )
             child.stop()
+            child.quiesce_and_close()
             if phase == "A":
                 assert (
                     child.authority_cleared_payload()["all_required_absent"]
                     is True
                 )
-            child.quiesce_and_close()
         finally:
             child.close()
 
         assert child._child is None
         assert child._control_write_handle is None
+        assert child._counter_ack_event_handle is None
         assert child._revocation_event_handle is None
         assert child._send_idle_event_handle is None
         assert all(
@@ -2146,8 +2347,89 @@ def test_owned_lifecycle_releases_all_parent_handles_across_repeated_phases() ->
         del job_child, child
         gc.collect()
         observed = wait_for_handle_ceiling(before_count)
-        assert len(observed) <= before_count
+        assert len(observed) <= before_count, {
+            "phase": phase,
+            "before_count": before_count,
+            "after_count": len(observed),
+            "new_handle_values": sorted(observed - before_handles),
+        }
         handle_ceiling = min(handle_ceiling, len(observed))
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_owned_phase_a_ack_handle_close_failure_is_retryable_without_leak(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    warmup = dual_live_windows._create_owned_phase_process(
+        "A",
+        RUNTIME_INSTANCE_ID,
+        WRAPPER_NONCE_SHA,
+    )
+    warmup.close()
+    del warmup
+    gc.collect()
+    baseline = _process_handle_count()
+
+    child = dual_live_windows._create_owned_phase_process(
+        "A",
+        RUNTIME_INSTANCE_ID,
+        WRAPPER_NONCE_SHA,
+    )
+    ack_handle = child._counter_ack_event_handle
+    assert ack_handle is not None
+    original_close = dual_live_windows._kernel32.CloseHandle
+    ack_close_calls = 0
+
+    def fail_ack_close_once(handle: object) -> int:
+        nonlocal ack_close_calls
+        if int(handle) == ack_handle:
+            ack_close_calls += 1
+            if ack_close_calls == 1:
+                ctypes.set_last_error(5)
+                return 0
+        return int(original_close(handle))
+
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "CloseHandle",
+        fail_ack_close_once,
+    )
+    try:
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_owned_cleanup_failed",
+        ):
+            child.close()
+        assert ack_close_calls == 1
+        assert child._counter_ack_event_handle == ack_handle
+        flags = ctypes.wintypes.DWORD()
+        assert dual_live_windows._kernel32.GetHandleInformation(
+            ack_handle,
+            ctypes.byref(flags),
+        )
+
+        monkeypatch.setattr(
+            dual_live_windows._kernel32,
+            "CloseHandle",
+            original_close,
+        )
+        child.close()
+        assert child._counter_ack_event_handle is None
+        assert not dual_live_windows._kernel32.GetHandleInformation(
+            ack_handle,
+            ctypes.byref(flags),
+        )
+    finally:
+        monkeypatch.setattr(
+            dual_live_windows._kernel32,
+            "CloseHandle",
+            original_close,
+        )
+        child.close()
+
+    del child
+    gc.collect()
+    assert _process_handle_count() <= baseline
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
@@ -3683,7 +3965,7 @@ def _assert_phase_factory_rejects(call: object) -> None:
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
-@pytest.mark.parametrize(("phase", "expected_child_count"), (("A", 10), ("B", 8)))
+@pytest.mark.parametrize(("phase", "expected_child_count"), (("A", 11), ("B", 8)))
 def test_phase_channels_are_read_only_owned_and_phase_exact(
     phase: str,
     expected_child_count: int,
@@ -3694,7 +3976,7 @@ def test_phase_channels_are_read_only_owned_and_phase_exact(
         assert channels.phase == phase
         with _lease_wrapper_handles(channels) as wrapper_handles:
             with _lease_child_handles(channels) as child_handles:
-                assert len(wrapper_handles) == (8 if phase == "A" else 6)
+                assert len(wrapper_handles) == (9 if phase == "A" else 6)
                 assert len(child_handles) == expected_child_count
                 all_handles = tuple(wrapper_handles.values()) + tuple(
                     child_handles.values()
@@ -3707,10 +3989,16 @@ def test_phase_channels_are_read_only_owned_and_phase_exact(
                 assert ("wrapper_send_idle_event_handle" in wrapper_handles) is (
                     phase == "A"
                 )
+                assert (
+                    "wrapper_counter_ack_event_handle" in wrapper_handles
+                ) is (phase == "A")
                 assert ("child_revocation_event_handle" in child_handles) is (
                     phase == "A"
                 )
                 assert ("child_send_idle_event_handle" in child_handles) is (
+                    phase == "A"
+                )
+                assert ("child_counter_ack_event_handle" in child_handles) is (
                     phase == "A"
                 )
         with pytest.raises(AttributeError):
@@ -5017,7 +5305,9 @@ def test_phase_channel_concurrent_close_never_double_closes(
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+@pytest.mark.parametrize("duplicate_failure_call", (3, 11))
 def test_phase_channel_creation_failure_and_success_cleanup_do_not_leak_handles(
+    duplicate_failure_call: int,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     warmup = dual_live_windows.create_phase_channels("A")
@@ -5026,10 +5316,10 @@ def test_phase_channel_creation_failure_and_success_cleanup_do_not_leak_handles(
     original_duplicate = dual_live_windows._kernel32.DuplicateHandle
     duplicate_calls = 0
 
-    def fail_third_duplicate(*args: object) -> int:
+    def fail_selected_duplicate(*args: object) -> int:
         nonlocal duplicate_calls
         duplicate_calls += 1
-        if duplicate_calls == 3:
+        if duplicate_calls == duplicate_failure_call:
             ctypes.set_last_error(5)
             return 0
         return int(original_duplicate(*args))
@@ -5037,7 +5327,7 @@ def test_phase_channel_creation_failure_and_success_cleanup_do_not_leak_handles(
     monkeypatch.setattr(
         dual_live_windows._kernel32,
         "DuplicateHandle",
-        fail_third_duplicate,
+        fail_selected_duplicate,
     )
     with pytest.raises(
         DualLiveWindowsError,
@@ -5676,6 +5966,196 @@ def test_job_unsafe_executable_namespace_refuses_before_any_io(
         DualLiveWindowsError, match="dual_live_executable_invalid"
     ):
         dual_live_windows._validated_executable_path_text(unsafe_executable)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+@pytest.mark.parametrize(
+    "unsafe_path",
+    (
+        r"\\server\share\proof",
+        r"//SERVER/share/proof",
+        r"\\.\C:\proof",
+        r"\\?\UNC\server\share\proof",
+        r"\\?\c:\proof",
+        r"\??\C:\proof",
+        r"\Device\Mup\server\share\proof",
+        r"C:\proof\index.json:stream",
+        r"C:\proof\CON.json",
+        "C:\\proof\\trailing.\\index.json",
+        "C:\\proof\\trailing \\index.json",
+    ),
+)
+def test_local_fixed_path_rejects_namespaces_before_drive_probe(
+    unsafe_path: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    drive_probes: list[str] = []
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetDriveTypeW",
+        lambda root: drive_probes.append(str(root)) or 3,
+    )
+
+    with pytest.raises(DualLiveWindowsError, match="dual_live_path_not_fixed_local"):
+        dual_live_windows.assert_local_fixed_path_before_touch(
+            unsafe_path,
+            code="dual_live_path_not_fixed_local",
+        )
+
+    assert drive_probes == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+def test_local_fixed_path_rejects_mapped_drive_before_path_touch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    probes: list[str] = []
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetDriveTypeW",
+        lambda root: probes.append(str(root)) or 4,
+    )
+
+    with pytest.raises(DualLiveWindowsError, match="dual_live_path_not_fixed_local"):
+        dual_live_windows.assert_local_fixed_path_before_touch(
+            r"z:\proof\evidence",
+            code="dual_live_path_not_fixed_local",
+        )
+
+    assert probes == ["z:\\"]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+def test_local_fixed_path_accepts_drive_letter_on_fixed_volume(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    probes: list[str] = []
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetDriveTypeW",
+        lambda root: probes.append(str(root)) or 3,
+    )
+
+    result = dual_live_windows.assert_local_fixed_path_before_touch(
+        r"C:\proof\evidence",
+        code="dual_live_path_not_fixed_local",
+    )
+
+    assert result == Path(r"C:\proof\evidence")
+    assert probes == ["C:\\"]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+def test_fixed_local_ancestor_walk_rejects_reparse_before_open(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    probes: list[str] = []
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetDriveTypeW",
+        lambda _root: 3,
+    )
+
+    def attributes(path: str) -> int:
+        probes.append(str(path))
+        return 0x400 if str(path).casefold() == r"c:\proof" else 0x10
+
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetFileAttributesW",
+        attributes,
+        raising=False,
+    )
+
+    with pytest.raises(DualLiveWindowsError, match="dual_live_path_not_fixed_local"):
+        dual_live_windows.assert_fixed_local_no_reparse_path_before_open(
+            r"C:\proof\evidence\index.json",
+            code="dual_live_path_not_fixed_local",
+        )
+
+    assert probes == ["C:\\", r"C:\proof"]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+def test_fixed_local_ancestor_walk_fails_closed_on_missing_descendant(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetDriveTypeW",
+        lambda _root: 3,
+    )
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetFileAttributesW",
+        lambda _path: 0xFFFFFFFF,
+        raising=False,
+    )
+
+    with pytest.raises(DualLiveWindowsError, match="dual_live_path_not_fixed_local"):
+        dual_live_windows.assert_fixed_local_no_reparse_path_before_open(
+            r"C:\missing\proof.db",
+            code="dual_live_path_not_fixed_local",
+        )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+@pytest.mark.parametrize(
+    "final_path",
+    (
+        r"\\?\UNC\server\share\proof.db",
+        r"\Device\Mup\server\share\proof.db",
+        r"\\.\C:\proof.db",
+    ),
+)
+def test_open_handle_rejects_remote_or_device_final_path(
+    final_path: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    drive_probes: list[str] = []
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_final_path_name_from_handle",
+        lambda _handle, *, code: final_path,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetDriveTypeW",
+        lambda root: drive_probes.append(str(root)) or 3,
+    )
+
+    with pytest.raises(DualLiveWindowsError, match="dual_live_path_not_fixed_local"):
+        dual_live_windows.assert_open_handle_local_fixed(
+            123,
+            expected_path=Path(r"C:\proof.db"),
+            code="dual_live_path_not_fixed_local",
+        )
+
+    assert drive_probes == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+def test_open_handle_accepts_matching_fixed_local_final_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_final_path_name_from_handle",
+        lambda _handle, *, code: r"\\?\C:\proof.db",
+        raising=False,
+    )
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetDriveTypeW",
+        lambda _root: 3,
+    )
+
+    assert dual_live_windows.assert_open_handle_local_fixed(
+        123,
+        expected_path=Path(r"c:\PROOF.db"),
+        code="dual_live_path_not_fixed_local",
+    ) == Path(r"C:\proof.db")
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
@@ -7462,12 +7942,1188 @@ def _compact(payload: dict[str, object]) -> bytes:
 def _refusal(code: str) -> bytes:
     return _compact(
         {
-            "code": code,
-            "fresh_live": False,
             "schema_id": "project6.dual_live_gate_refusal.v1",
             "status": "REFUSED",
+            "fresh_live": False,
+            "evaluation_complete": False,
+            "code": code,
         }
     )
+
+
+def _load_gate_contract_module() -> object:
+    module_name = f"dual_live_gate_contract_{time.time_ns()}"
+    spec = importlib.util.spec_from_file_location(module_name, GATE)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(module_name, None)
+    return module
+
+
+def _load_runner_contract_module() -> object:
+    module_name = f"dual_live_run_contract_{time.time_ns()}"
+    spec = importlib.util.spec_from_file_location(module_name, RUNNER)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(module_name, None)
+    return module
+
+
+def _runner_public_path_environment() -> dict[str, str]:
+    return {
+        "CONNECTOR_CAMPAIGN_DEFINITION_PATH": r"C:\proof\definition.json",
+        "CONNECTOR_SCIENCEBASE_GRANT_PATH": r"C:\proof\sciencebase.json",
+        "CONNECTOR_NRC_APS_GRANT_PATH": r"C:\proof\nrc.json",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT": r"C:\proof\evidence",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH": r"C:\proof\evidence\index.json",
+        "DATABASE_URL": "sqlite:///C:/proof/proof.db",
+        "STORAGE_DIR": r"C:\proof\storage",
+    }
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+def test_runner_rejects_unc_before_kernel_or_backend_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = _load_runner_contract_module()
+    environ = _runner_public_path_environment()
+    environ["CONNECTOR_CAMPAIGN_DEFINITION_PATH"] = r"\\server\share\definition.json"
+    backend_effects: list[str] = []
+    monkeypatch.setattr(runner, "_public_path_kernel32", lambda: backend_effects.append("kernel"))
+
+    with pytest.raises(ValueError, match="dual_live_public_path_invalid"):
+        runner._preflight_public_paths(environ)
+
+    assert backend_effects == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+def test_runner_rejects_mapped_drive_before_ancestor_probe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = _load_runner_contract_module()
+    environ = _runner_public_path_environment()
+    environ["STORAGE_DIR"] = r"z:\proof\storage"
+
+    class Kernel:
+        def GetDriveTypeW(self, root: str) -> int:
+            return 4 if str(root).casefold() == "z:\\" else 3
+
+        def GetFileAttributesW(self, _path: str) -> int:
+            raise AssertionError("ancestor probe reached for mapped drive")
+
+    monkeypatch.setattr(runner, "_public_path_kernel32", Kernel)
+
+    with pytest.raises(ValueError, match="dual_live_public_path_invalid"):
+        runner._preflight_public_paths(environ)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+def test_runner_rejects_reparse_before_backend_path_or_runtime_import(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runner = _load_runner_contract_module()
+    environ = _runner_public_path_environment()
+    before_sys_path = tuple(sys.path)
+
+    class Kernel:
+        def GetDriveTypeW(self, _root: str) -> int:
+            return 3
+
+        def GetFileAttributesW(self, path: str) -> int:
+            return 0x400 if str(path).casefold() == r"c:\proof" else 0x10
+
+    monkeypatch.setattr(runner, "_public_path_kernel32", Kernel)
+
+    with pytest.raises(ValueError, match="dual_live_public_path_invalid"):
+        runner._run_public_mode(
+            ("--campaign-id", CAMPAIGN_ID, "--campaign-fingerprint", "a" * 64),
+            environ=environ,
+        )
+
+    assert tuple(sys.path) == before_sys_path
+
+
+def _evaluation_report(
+    *, status: str = "INDETERMINATE", code: str = "test_indeterminate"
+) -> dict[str, object]:
+    report = build_indeterminate_dual_live_report(
+        campaign_id=CAMPAIGN_ID,
+        expected_campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        code=code,
+    )
+    if status == "PASS":
+        report["status"] = "PASS"
+        report["fresh_live"] = True
+        report["evaluation_complete"] = True
+        report["code"] = "all_checks_pass"
+        for check in report["checks"]:
+            check["status"] = "PASS"
+            check["code"] = f"{check['check_id'].lower()}_pass"
+    elif status == "FAIL":
+        report["status"] = "FAIL"
+        report["evaluation_complete"] = True
+        report["code"] = "test_failure"
+        report["checks"][0]["status"] = "FAIL"
+        report["checks"][0]["code"] = "test_failure"
+    return report
+
+
+def test_gate_registry_is_exact_frozen_and_immutable() -> None:
+    gate = _load_gate_contract_module()
+
+    assert gate.GATE_CHECK_ORDER == (
+        "G01_GATE_REFUSAL_PRECONDITIONS",
+        "G02_GATE_NETWORK_DENIAL",
+    )
+    result = gate.GateCheckResult(
+        check_id="G01_GATE_REFUSAL_PRECONDITIONS",
+        status="PASS",
+        code="g01_gate_preconditions_passed",
+    )
+    assert tuple(field.name for field in fields(result)) == (
+        "check_id",
+        "status",
+        "code",
+    )
+    with pytest.raises(FrozenInstanceError):
+        result.status = "REFUSED"
+
+    with pytest.raises(Exception, match="dual_live_gate_check_id_invalid"):
+        gate.GateCheckResult(check_id="G99_UNKNOWN", status="PASS", code="valid_code")
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof custody only")
+def test_read_only_database_custody_is_query_only_and_byte_stable(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "proof.db"
+    connection = sqlite3.connect(database_path)
+    try:
+        connection.execute("CREATE TABLE proof (value TEXT NOT NULL)")
+        connection.execute("INSERT INTO proof VALUES ('stable')")
+        connection.commit()
+    finally:
+        connection.close()
+    before = database_path.read_bytes()
+    gate = _load_gate_contract_module()
+
+    with gate._ReadOnlyDatabase.open(database_path) as database:
+        assert Path(database._engine.url.database).resolve() == database_path.resolve()
+        first_identity = database.stable_identity()
+        with database.session() as session:
+            assert session.connection().exec_driver_sql("PRAGMA query_only").scalar_one() == 1
+            assert (
+                session.connection().exec_driver_sql("PRAGMA journal_mode").scalar_one()
+                == "delete"
+            )
+            assert session.execute(gate._sql_text("SELECT value FROM proof")).scalar_one() == "stable"
+            with pytest.raises(Exception):
+                session.execute(gate._sql_text("UPDATE proof SET value='changed'"))
+        assert database.stable_identity() == first_identity
+
+    assert database_path.read_bytes() == before
+    assert not any((tmp_path / f"proof.db{suffix}").exists() for suffix in ("-journal", "-wal", "-shm"))
+
+
+@pytest.mark.parametrize("status,exit_code", [("PASS", 0), ("FAIL", 1), ("INDETERMINATE", 2)])
+def test_evaluator_status_has_exact_exit_mapping(status: str, exit_code: int) -> None:
+    gate = _load_gate_contract_module()
+
+    assert gate._exit_code_for_status(status) == exit_code
+
+
+def test_report_contract_requires_exact_registry_nonclaims_and_safe_evidence() -> None:
+    gate = _load_gate_contract_module()
+    report = _evaluation_report(status="PASS")
+    report["checks"][0]["evidence"] = {
+        "campaign_fingerprint": CAMPAIGN_FINGERPRINT,
+        "connector_count": 2,
+        "terminal_hashes": ["b" * 64, "c" * 64],
+        "process_boot_id": "d" * 64,
+        "parent_run_id": "54b073bc-4b09-5fbc-9065-9623aae6c0d9",
+        "code_revision": "e" * 40,
+        "canonical": True,
+    }
+
+    assert gate._report_is_exact(
+        report,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
+
+    adversaries = []
+    wrong_order = json.loads(json.dumps(report))
+    wrong_order["checks"][0], wrong_order["checks"][1] = (
+        wrong_order["checks"][1],
+        wrong_order["checks"][0],
+    )
+    adversaries.append(wrong_order)
+    wrong_nonclaims = json.loads(json.dumps(report))
+    wrong_nonclaims["nonclaims"] = [*EVALUATOR_NONCLAIMS, "secretcredential"]
+    adversaries.append(wrong_nonclaims)
+    unsafe_path = json.loads(json.dumps(report))
+    unsafe_path["checks"][0]["evidence"] = {"detail": "C:\\secret\\credential.txt"}
+    adversaries.append(unsafe_path)
+    unsafe_token = json.loads(json.dumps(report))
+    unsafe_token["checks"][0]["evidence"] = {"domain": "secretcredential"}
+    adversaries.append(unsafe_token)
+    oversized = json.loads(json.dumps(report))
+    oversized["checks"][0]["evidence"] = {"detail": "x" * 129}
+    adversaries.append(oversized)
+    too_deep = json.loads(json.dumps(report))
+    too_deep["checks"][0]["evidence"] = {"a": {"b": {"c": {"d": 1}}}}
+    adversaries.append(too_deep)
+
+    assert tuple(check["check_id"] for check in report["checks"]) == EVALUATOR_CHECK_ORDER
+    assert all(
+        not gate._report_is_exact(
+            candidate,
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        )
+        for candidate in adversaries
+    )
+
+
+def test_report_contract_requires_canonical_uuid5_parent_arming_id() -> None:
+    gate = _load_gate_contract_module()
+    report = _evaluation_report(status="PASS")
+    l11 = report["checks"][EVALUATOR_CHECK_ORDER.index("L11_NRC_FIRST_BINDING")]
+    l11["evidence"] = {
+        "parent_run_id": "54b073bc-4b09-5fbc-9065-9623aae6c0d9",
+        "parent_terminal_hash": "b" * 64,
+    }
+
+    assert gate._report_is_exact(
+        report,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
+
+    for invalid in (CAMPAIGN_ID, "run-nrc", "54B073BC-4B09-5FBC-9065-9623AAE6C0D9"):
+        candidate = json.loads(json.dumps(report))
+        candidate["checks"][EVALUATOR_CHECK_ORDER.index("L11_NRC_FIRST_BINDING")][
+            "evidence"
+        ]["parent_run_id"] = invalid
+        assert not gate._report_is_exact(
+            candidate,
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        )
+
+
+def test_report_contract_accepts_exact_indeterminate_domain_error_only() -> None:
+    gate = _load_gate_contract_module()
+    report = _evaluation_report(status="INDETERMINATE", code="origin_unavailable")
+    report["checks"][0]["evidence"] = {
+        "domain": "origin",
+        "reason_code": "layer3_origin_nrc_phase_b_invalid",
+    }
+
+    assert gate._report_is_exact(
+        report,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
+
+    for evidence in (
+        {"domain": "unknown", "reason_code": "layer3_origin_nrc_phase_b_invalid"},
+        {"domain": "origin", "reason_code": "unsafe-value"},
+        {
+            "domain": "origin",
+            "reason_code": "layer3_origin_nrc_phase_b_invalid",
+            "extra": 1,
+        },
+    ):
+        candidate = json.loads(json.dumps(report))
+        candidate["checks"][0]["evidence"] = evidence
+        assert not gate._report_is_exact(
+            candidate,
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        )
+
+    pass_candidate = _evaluation_report(status="PASS")
+    pass_candidate["checks"][0]["evidence"] = report["checks"][0]["evidence"]
+    assert not gate._report_is_exact(
+        pass_candidate,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
+
+
+def test_report_contract_accepts_exact_runtime_start_contract_evidence() -> None:
+    gate = _load_gate_contract_module()
+    report = _evaluation_report(status="PASS")
+    r05 = report["checks"][EVALUATOR_CHECK_ORDER.index("R05_RUNTIME_CHAIN")]
+    r05["evidence"] = {
+        "record_count": 18,
+        "terminal_record_sha256": "b" * 64,
+        "dependency_set_sha256": "c" * 64,
+        "phase_a_timeout_ms": 120_000,
+        "phase_b_timeout_ms": 30_000,
+    }
+
+    assert gate._report_is_exact(
+        report,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
+
+    for key, invalid in (
+        ("dependency_set_sha256", "not-a-digest"),
+        ("phase_a_timeout_ms", 0),
+        ("phase_a_timeout_ms", 0xFFFFFFFF),
+        ("phase_b_timeout_ms", True),
+    ):
+        candidate = json.loads(json.dumps(report))
+        candidate["checks"][EVALUATOR_CHECK_ORDER.index("R05_RUNTIME_CHAIN")][
+            "evidence"
+        ][key] = invalid
+        assert not gate._report_is_exact(
+            candidate,
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        )
+
+
+def test_report_contract_accepts_real_evaluator_f09_pass_shape_only() -> None:
+    from app.services import dual_live_evaluator
+
+    gate = _load_gate_contract_module()
+    f09_evidence = {
+        "connector_results": (
+            {
+                "connector_key": "nrc_adams_aps",
+                "projection_sha256": "1" * 64,
+            },
+            {
+                "connector_key": "sciencebase_mcs",
+                "projection_sha256": "2" * 64,
+            },
+        ),
+        "combined_result": {"projection_sha256": "3" * 64},
+    }
+    results = tuple(
+        dual_live_evaluator.CheckResult(
+            check_id=check_id,
+            status="PASS",
+            code=f"{check_id.lower()}_pass",
+            evidence=(
+                f09_evidence
+                if check_id == "F09_CONNECTOR_AND_COMBINED_REPORTS"
+                else {}
+            ),
+        )
+        for check_id in EVALUATOR_CHECK_ORDER
+    )
+    report = dual_live_evaluator._evaluation_report(
+        campaign_id=CAMPAIGN_ID,
+        expected_campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        results=results,
+    )
+
+    assert gate._report_is_exact(
+        report,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
+
+    f09_index = EVALUATOR_CHECK_ORDER.index("F09_CONNECTOR_AND_COMBINED_REPORTS")
+    wrong_connector_order = json.loads(json.dumps(report))
+    wrong_connector_order["checks"][f09_index]["evidence"]["connector_results"].reverse()
+    wrong_nested_key = json.loads(json.dumps(report))
+    wrong_nested_key["checks"][f09_index]["evidence"]["combined_result"][
+        "detail"
+    ] = "4" * 64
+    wrong_digest = json.loads(json.dumps(report))
+    wrong_digest["checks"][f09_index]["evidence"]["connector_results"][0][
+        "projection_sha256"
+    ] = "secretcredential"
+    wrong_check = json.loads(json.dumps(report))
+    wrong_check["checks"][0]["evidence"] = wrong_check["checks"][f09_index][
+        "evidence"
+    ]
+
+    assert all(
+        not gate._report_is_exact(
+            candidate,
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        )
+        for candidate in (
+            wrong_connector_order,
+            wrong_nested_key,
+            wrong_digest,
+            wrong_check,
+        )
+    )
+
+
+def test_exception_code_boundary_rejects_arbitrary_secret_code() -> None:
+    gate = _load_gate_contract_module()
+
+    class SecretError(RuntimeError):
+        code = "secretcredential"
+
+    assert (
+        gate._safe_exception_code(SecretError("must-not-escape"), "safe_fallback")
+        == "safe_fallback"
+    )
+    assert (
+        gate._safe_exception_code(
+            gate.DualLiveGateError("dual_live_database_sidecar_present"),
+            "safe_fallback",
+        )
+        == "dual_live_database_sidecar_present"
+    )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof custody only")
+def test_session_exception_still_runs_stability_checks_and_preserves_primary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database_path = tmp_path / "proof.db"
+    connection = sqlite3.connect(database_path)
+    connection.execute("CREATE TABLE proof (value TEXT NOT NULL)")
+    connection.commit()
+    connection.close()
+    gate = _load_gate_contract_module()
+    stability_calls = 0
+
+    class PrimaryFailure(RuntimeError):
+        pass
+
+    def fail_stability(_database: object) -> None:
+        nonlocal stability_calls
+        stability_calls += 1
+        raise gate.DualLiveGateError("dual_live_database_custody_changed")
+
+    database = gate._ReadOnlyDatabase.open(database_path)
+    monkeypatch.setattr(gate._ReadOnlyDatabase, "assert_stable", fail_stability)
+    with database:
+        with pytest.raises(PrimaryFailure) as caught:
+            with database.session():
+                raise PrimaryFailure("primary")
+
+    assert stability_calls >= 1
+    assert "dual_live_database_custody_changed" in " ".join(caught.value.__notes__)
+
+
+def test_database_close_attempts_retained_handle_after_engine_dispose_failure() -> None:
+    gate = _load_gate_contract_module()
+    custody_closed = False
+
+    class Engine:
+        def dispose(self, *, close: bool) -> None:
+            assert close is True
+            raise RuntimeError("dispose failed")
+
+    class Custody:
+        def close(self) -> None:
+            nonlocal custody_closed
+            custody_closed = True
+
+    database = gate._ReadOnlyDatabase(Path("C:/proof.db"), Custody(), Engine())
+
+    with pytest.raises(RuntimeError, match="dispose failed"):
+        database.close()
+    assert custody_closed is True
+
+
+def test_g01_g02_pass_before_evaluator_and_final_reread_follows_snapshot_two(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _load_gate_contract_module()
+    database_path = tmp_path / "proof.db"
+    database_path.write_bytes(b"proof")
+    events: list[str] = []
+    chain = SimpleNamespace(
+        head=SimpleNamespace(
+            campaigns=(
+                SimpleNamespace(
+                    campaign_id=CAMPAIGN_ID,
+                    campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+                    raw_definition_sha256=DEFINITION_SHA,
+                ),
+            )
+        ),
+        revisions=(
+            SimpleNamespace(
+                model=SimpleNamespace(revision=1),
+                raw_sha256="d" * 64,
+                raw_bytes=b"index",
+            ),
+        ),
+    )
+    settings = SimpleNamespace(storage_dir=str(tmp_path))
+    load_count = 0
+
+    def load_chain(_settings: object) -> object:
+        nonlocal load_count
+        load_count += 1
+        events.append("initial_chain" if load_count == 1 else "final_chain")
+        return chain
+
+    @contextmanager
+    def staged_locks(
+        _root: Path,
+        _campaign_id: str,
+        _campaign_fingerprint: str,
+        resolver: object,
+    ) -> object:
+        events.append("root_lock")
+        resolver()
+        events.append("campaign_lock")
+        try:
+            yield
+        finally:
+            events.append("locks_released")
+
+    class FakeDatabase:
+        def __enter__(self) -> object:
+            return self
+
+        def __exit__(self, *exc_info: object) -> None:
+            events.append("database_closed")
+
+        @contextmanager
+        def session(self) -> object:
+            yield SimpleNamespace()
+
+        def stable_identity(self) -> tuple[str]:
+            events.append("database_identity")
+            return ("stable",)
+
+        def assert_stable(self) -> None:
+            events.append("database_stable")
+
+    class FakeReadOnlyDatabase:
+        @classmethod
+        def open(cls, _path: Path) -> FakeDatabase:
+            return FakeDatabase()
+
+    capture_count = 0
+
+    def verify_capture(*_args: object) -> None:
+        nonlocal capture_count
+        capture_count += 1
+        events.append("g01_capture" if capture_count == 1 else "final_capture")
+
+    evaluation_count = 0
+    report = _evaluation_report()
+
+    def evaluate(*_args: object, **_kwargs: object) -> dict[str, object]:
+        nonlocal evaluation_count
+        evaluation_count += 1
+        events.append(f"evaluate_{evaluation_count}")
+        return json.loads(json.dumps(report))
+
+    def g01() -> object:
+        events.append("g01_pass")
+        return gate.GateCheckResult(
+            "G01_GATE_REFUSAL_PRECONDITIONS", "PASS", "g01_gate_preconditions_passed"
+        )
+
+    def g02() -> object:
+        events.append("g02_pass")
+        return gate.GateCheckResult(
+            "G02_GATE_NETWORK_DENIAL", "PASS", "g02_network_denial_passed"
+        )
+
+    def install_connector_guard() -> None:
+        events.append("connector_guard_installed")
+
+    import app.services.connector_campaign_log_capture as capture_module
+    import app.services.connector_egress_authorization as authorization_module
+    import app.services.dual_live_evaluator as evaluator_module
+    import app.services.dual_live_windows as windows_module
+
+    monkeypatch.setattr(
+        gate,
+        "_settings_and_paths",
+        lambda _environ: (settings, tmp_path, database_path),
+    )
+    monkeypatch.setattr(gate, "_ReadOnlyDatabase", FakeReadOnlyDatabase)
+    monkeypatch.setattr(gate, "_g01_pass", g01)
+    monkeypatch.setattr(gate, "_g02_pass", g02)
+    monkeypatch.setattr(gate, "_install_connector_transport_guard", install_connector_guard)
+    monkeypatch.setattr(
+        capture_module, "verify_connector_campaign_log_capture_read_only", verify_capture
+    )
+    monkeypatch.setattr(
+        authorization_module, "load_evidence_index_chain_read_only", load_chain
+    )
+    monkeypatch.setattr(windows_module, "acquire_proof_locks_staged", staged_locks)
+    monkeypatch.setattr(evaluator_module, "evaluate_dual_live_proof", evaluate)
+
+    result = gate._run_guarded_evaluation(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        environ={},
+    )
+
+    assert result == report
+    assert (
+        events.index("g01_pass")
+        < events.index("connector_guard_installed")
+        < events.index("g02_pass")
+        < events.index("evaluate_1")
+    )
+    assert events.index("evaluate_2") < events.index("final_chain")
+    assert events.index("final_chain") < events.index("final_capture")
+    final_identity = max(
+        index for index, event in enumerate(events) if event == "database_identity"
+    )
+    assert events.index("final_capture") < final_identity
+    assert events.index("database_closed") < events.index("locks_released")
+
+
+def test_g01_refuses_unsealed_capture_before_evaluator_entry(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _load_gate_contract_module()
+    database_path = tmp_path / "proof.db"
+    database_path.write_bytes(b"proof")
+    chain = SimpleNamespace(
+        head=SimpleNamespace(
+            campaigns=(
+                SimpleNamespace(
+                    campaign_id=CAMPAIGN_ID,
+                    campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+                    raw_definition_sha256=DEFINITION_SHA,
+                ),
+            )
+        ),
+        revisions=(),
+    )
+    settings = SimpleNamespace(storage_dir=str(tmp_path))
+    evaluator_calls = 0
+    connector_guard_calls = 0
+
+    @contextmanager
+    def staged_locks(*args: object) -> object:
+        args[-1]()
+        yield
+
+    class FakeDatabase:
+        def __enter__(self) -> object:
+            return self
+
+        def __exit__(self, *exc_info: object) -> None:
+            return None
+
+        @contextmanager
+        def session(self) -> object:
+            yield SimpleNamespace()
+
+        def stable_identity(self) -> tuple[str]:
+            return ("stable",)
+
+    class FakeReadOnlyDatabase:
+        @classmethod
+        def open(cls, _path: Path) -> FakeDatabase:
+            return FakeDatabase()
+
+    def evaluate(*_args: object, **_kwargs: object) -> dict[str, object]:
+        nonlocal evaluator_calls
+        evaluator_calls += 1
+        return _evaluation_report()
+
+    def install_connector_guard() -> None:
+        nonlocal connector_guard_calls
+        connector_guard_calls += 1
+
+    import app.services.connector_campaign_log_capture as capture_module
+    import app.services.connector_egress_authorization as authorization_module
+    import app.services.dual_live_evaluator as evaluator_module
+    import app.services.dual_live_windows as windows_module
+
+    monkeypatch.setattr(
+        gate,
+        "_settings_and_paths",
+        lambda _environ: (settings, tmp_path, database_path),
+    )
+    monkeypatch.setattr(gate, "_ReadOnlyDatabase", FakeReadOnlyDatabase)
+    monkeypatch.setattr(gate, "_install_connector_transport_guard", install_connector_guard)
+    monkeypatch.setattr(
+        capture_module,
+        "verify_connector_campaign_log_capture_read_only",
+        lambda *_args: (_ for _ in ()).throw(RuntimeError("unsealed")),
+    )
+    monkeypatch.setattr(
+        authorization_module,
+        "load_evidence_index_chain_read_only",
+        lambda _settings: chain,
+    )
+    monkeypatch.setattr(windows_module, "acquire_proof_locks_staged", staged_locks)
+    monkeypatch.setattr(evaluator_module, "evaluate_dual_live_proof", evaluate)
+
+    with pytest.raises(gate.DualLiveGateError, match="dual_live_capture_unsealed"):
+        gate._run_guarded_evaluation(
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+            environ={},
+        )
+    assert evaluator_calls == 0
+    assert connector_guard_calls == 0
+
+
+def test_gate_lock_refusal_never_enters_evaluator(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _load_gate_contract_module()
+    database_path = tmp_path / "proof.db"
+    database_path.write_bytes(b"proof")
+    evaluator_calls = 0
+    connector_guard_calls = 0
+
+    def refuse_lock(*_args: object) -> object:
+        raise DualLiveWindowsError("dual_live_lock_busy")
+
+    def evaluate(*_args: object, **_kwargs: object) -> dict[str, object]:
+        nonlocal evaluator_calls
+        evaluator_calls += 1
+        return _evaluation_report()
+
+    def install_connector_guard() -> None:
+        nonlocal connector_guard_calls
+        connector_guard_calls += 1
+
+    import app.services.dual_live_evaluator as evaluator_module
+    import app.services.dual_live_windows as windows_module
+
+    monkeypatch.setattr(
+        gate,
+        "_settings_and_paths",
+        lambda _environ: (SimpleNamespace(storage_dir=str(tmp_path)), tmp_path, database_path),
+    )
+    monkeypatch.setattr(windows_module, "acquire_proof_locks_staged", refuse_lock)
+    monkeypatch.setattr(evaluator_module, "evaluate_dual_live_proof", evaluate)
+    monkeypatch.setattr(gate, "_install_connector_transport_guard", install_connector_guard)
+
+    with pytest.raises(DualLiveWindowsError, match="dual_live_lock_busy"):
+        gate._run_guarded_evaluation(
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+            environ={},
+        )
+    assert evaluator_calls == 0
+    assert connector_guard_calls == 0
+
+
+@pytest.mark.parametrize(
+    "authority_name",
+    [AUTHORITY_VARIABLES[0].lower(), AUTHORITY_VARIABLES[1].swapcase()],
+)
+def test_g01_refuses_case_variant_authority_aliases(authority_name: str) -> None:
+    gate = _load_gate_contract_module()
+
+    assert (
+        gate._environment_refusal({authority_name: "secretcredential"})
+        == "dual_live_send_authority_environment_present"
+    )
+
+
+def _complete_gate_environment(tmp_path: Path, database_url: str) -> dict[str, str]:
+    return {
+        "DATABASE_URL": database_url,
+        "STORAGE_DIR": str(tmp_path),
+        "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT": str(tmp_path),
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH": str(tmp_path / "index.json"),
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_SHA256": "d" * 64,
+        "NRC_ADAMS_APS_SUBSCRIPTION_KEY": "fake-scan-key",
+    }
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
+@pytest.mark.parametrize(
+    ("name", "value", "code"),
+    (
+        ("STORAGE_DIR", r"Z:\proof\storage", "dual_live_storage_invalid"),
+        (
+            "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT",
+            r"z:\proof\evidence",
+            "dual_live_evidence_root_invalid",
+        ),
+        (
+            "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH",
+            r"Z:\proof\index.json",
+            "dual_live_evidence_index_path_invalid",
+        ),
+        (
+            "DATABASE_URL",
+            "sqlite:///Z:/proof/proof.db",
+            "dual_live_database_path_unsafe",
+        ),
+    ),
+)
+def test_gate_rejects_mapped_config_before_settings_or_path_touch(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
+    value: str,
+    code: str,
+) -> None:
+    gate = _load_gate_contract_module()
+    environ = _complete_gate_environment(
+        tmp_path,
+        f"sqlite:///{(tmp_path / 'proof.db').as_posix()}",
+    )
+    environ[name] = value
+    touched: list[str] = []
+    monkeypatch.setattr(
+        dual_live_windows._kernel32,
+        "GetDriveTypeW",
+        lambda root: 4 if str(root).casefold() == "z:\\" else 3,
+    )
+    monkeypatch.setattr(
+        gate,
+        "_load_settings",
+        lambda _environ: touched.append("settings"),
+    )
+    monkeypatch.setattr(
+        gate,
+        "_path_has_reparse_component",
+        lambda _path: touched.append("lstat") or False,
+    )
+
+    with pytest.raises(gate.DualLiveGateError, match=code):
+        gate._settings_and_paths(environ)
+
+    assert touched == []
+
+
+def test_gate_rejects_send_authority_before_settings_construction(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _load_gate_contract_module()
+    environ = _complete_gate_environment(
+        tmp_path,
+        f"sqlite:///{(tmp_path / 'proof.db').as_posix()}",
+    )
+    environ["CONNECTOR_CAMPAIGN_DEFINITION_PATH"] = r"\\server\share\definition.json"
+    settings_calls = 0
+
+    def load_settings(_environ: Mapping[str, str]) -> object:
+        nonlocal settings_calls
+        settings_calls += 1
+        return object()
+
+    monkeypatch.setattr(gate, "_load_settings", load_settings)
+
+    with pytest.raises(
+        gate.DualLiveGateError,
+        match="dual_live_send_authority_environment_present",
+    ):
+        gate._settings_and_paths(environ)
+
+    assert settings_calls == 0
+
+
+@pytest.mark.parametrize(
+    ("database_url", "code"),
+    [
+        ("sqlite:///:memory:", "dual_live_database_url_invalid"),
+        ("sqlite:///relative.db", "dual_live_database_path_unsafe"),
+        ("sqlite://///server/share/proof.db", "dual_live_database_path_unsafe"),
+        ("sqlite:///C:/proof.db?mode=rw", "dual_live_database_url_invalid"),
+        ("postgresql://localhost/proof", "dual_live_database_url_invalid"),
+    ],
+)
+def test_g01_refuses_nonlocal_or_overridden_database_before_effect(
+    tmp_path: Path,
+    database_url: str,
+    code: str,
+) -> None:
+    completed = _run_gate(
+        tmp_path,
+        env_updates=_complete_gate_environment(tmp_path, database_url),
+    )
+
+    assert completed.returncode == 2
+    assert completed.stdout == _refusal(code)
+    assert completed.stderr == b""
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof custody only")
+def test_database_refuses_sidecar_active_writer_and_replacement(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "proof.db"
+    connection = sqlite3.connect(database_path)
+    connection.execute("CREATE TABLE proof (value TEXT NOT NULL)")
+    connection.commit()
+    connection.close()
+    gate = _load_gate_contract_module()
+    sidecar = Path(f"{database_path}-wal")
+    sidecar.write_bytes(b"unsafe")
+    with pytest.raises(gate.DualLiveGateError, match="dual_live_database_sidecar_present"):
+        gate._ReadOnlyDatabase.open(database_path)
+    sidecar.unlink()
+
+    replacement = tmp_path / "replacement.db"
+    replacement.write_bytes(database_path.read_bytes())
+    with gate._ReadOnlyDatabase.open(database_path) as database:
+        with pytest.raises((OSError, sqlite3.OperationalError)):
+            writer = sqlite3.connect(database_path, timeout=0)
+            try:
+                writer.execute("INSERT INTO proof VALUES ('changed')")
+                writer.commit()
+            finally:
+                writer.close()
+        with pytest.raises(OSError):
+            os.replace(replacement, database_path)
+        database.assert_stable()
+
+
+def test_same_connection_data_version_drift_is_detected(tmp_path: Path) -> None:
+    from sqlalchemy import create_engine
+    from sqlalchemy.pool import NullPool
+
+    database_path = tmp_path / "proof.db"
+    writer = sqlite3.connect(database_path)
+    writer.execute("CREATE TABLE proof (value TEXT NOT NULL)")
+    writer.execute("INSERT INTO proof VALUES ('before')")
+    writer.commit()
+    writer.close()
+    gate = _load_gate_contract_module()
+    uri = f"file:{database_path.as_posix()}?mode=ro&cache=private"
+
+    def connect() -> sqlite3.Connection:
+        connection = sqlite3.connect(uri, uri=True)
+        connection.execute("PRAGMA query_only=ON")
+        return connection
+
+    class FakeCustody:
+        def stable_identity(self) -> tuple[str]:
+            return ("stable",)
+
+        def assert_stable(self) -> None:
+            return None
+
+        def close(self) -> None:
+            return None
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        creator=connect,
+        future=True,
+        poolclass=NullPool,
+    )
+    database = gate._ReadOnlyDatabase(database_path, FakeCustody(), engine)
+
+    with pytest.raises(
+        gate.DualLiveGateError,
+        match="dual_live_database_data_version_changed",
+    ):
+        with database.session():
+            writer = sqlite3.connect(database_path)
+            writer.execute("UPDATE proof SET value='after'")
+            writer.commit()
+            writer.close()
+    database.close()
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof custody and locks only")
+def test_guarded_fixture_uses_real_locks_and_read_only_database(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _load_gate_contract_module()
+    database_path = tmp_path / "proof.db"
+    connection = sqlite3.connect(database_path)
+    connection.execute("CREATE TABLE proof (value TEXT NOT NULL)")
+    connection.execute("INSERT INTO proof VALUES ('stable')")
+    connection.commit()
+    connection.close()
+    before_bytes = database_path.read_bytes()
+    before_files = tuple(sorted(path.name for path in tmp_path.iterdir()))
+    chain = SimpleNamespace(
+        head=SimpleNamespace(
+            campaigns=(
+                SimpleNamespace(
+                    campaign_id=CAMPAIGN_ID,
+                    campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+                    raw_definition_sha256=DEFINITION_SHA,
+                ),
+            )
+        ),
+        revisions=(
+            SimpleNamespace(
+                model=SimpleNamespace(revision=1),
+                raw_sha256="d" * 64,
+                raw_bytes=b"index",
+            ),
+        ),
+    )
+    settings = SimpleNamespace(storage_dir=str(tmp_path))
+    capture_calls = 0
+    evaluator_calls = 0
+    report = _evaluation_report()
+
+    def verify_capture(session: object, *_args: object) -> None:
+        nonlocal capture_calls
+        capture_calls += 1
+        assert session.connection().exec_driver_sql("PRAGMA query_only").scalar_one() == 1
+
+    def evaluate(session: object, **_kwargs: object) -> dict[str, object]:
+        nonlocal evaluator_calls
+        evaluator_calls += 1
+        assert session.execute(gate._sql_text("SELECT value FROM proof")).scalar_one() == "stable"
+        return json.loads(json.dumps(report))
+
+    import app.services.connector_campaign_log_capture as capture_module
+    import app.services.connector_egress_authorization as authorization_module
+    import app.services.dual_live_evaluator as evaluator_module
+
+    monkeypatch.setattr(
+        gate,
+        "_settings_and_paths",
+        lambda _environ: (settings, tmp_path, database_path),
+    )
+    monkeypatch.setattr(
+        capture_module,
+        "verify_connector_campaign_log_capture_read_only",
+        verify_capture,
+    )
+    monkeypatch.setattr(
+        authorization_module,
+        "load_evidence_index_chain_read_only",
+        lambda _settings: chain,
+    )
+    monkeypatch.setattr(evaluator_module, "evaluate_dual_live_proof", evaluate)
+    monkeypatch.setattr(gate, "_install_connector_transport_guard", lambda: None)
+    monkeypatch.setattr(
+        gate,
+        "_g02_pass",
+        lambda: gate.GateCheckResult(
+            "G02_GATE_NETWORK_DENIAL", "PASS", "g02_network_denial_passed"
+        ),
+    )
+
+    result = gate._run_guarded_evaluation(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        environ={},
+    )
+
+    assert result == report
+    assert capture_calls == 2
+    assert evaluator_calls == 2
+    assert database_path.read_bytes() == before_bytes
+    assert tuple(sorted(path.name for path in tmp_path.iterdir())) == before_files
+
+
+def test_main_emits_exact_safe_report_and_rejects_nested_secret() -> None:
+    probe = f"""
+import contextlib
+import importlib.util
+import io
+import json
+import os
+spec = importlib.util.spec_from_file_location("dual_live_gate_probe", {str(GATE)!r})
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+check_ids = {EVALUATOR_CHECK_ORDER!r}
+nonclaims = {EVALUATOR_NONCLAIMS!r}
+def report(secret=False):
+    checks = [{{
+        "check_id": check_id,
+        "status": "PASS",
+        "code": check_id.lower() + "_pass",
+        "evidence": {{}},
+    }} for check_id in check_ids]
+    if secret:
+        checks[0]["evidence"] = {{"detail": "C:/secret/credential.txt"}}
+    return {{
+        "schema_id": "project6.dual_live_evaluation.v1",
+        "campaign_id": {CAMPAIGN_ID!r},
+        "expected_campaign_fingerprint": {CAMPAIGN_FINGERPRINT!r},
+        "status": "PASS",
+        "fresh_live": True,
+        "evaluation_complete": True,
+        "code": "all_checks_pass",
+        "checks": checks,
+        "nonclaims": list(nonclaims),
+    }}
+module._install_network_guard = lambda: None
+module._install_connector_transport_guard = lambda: None
+module._network_guard_intact = lambda: True
+module._base_network_guard_intact = lambda: True
+module._unsafe_backend_module_preloaded = lambda: False
+module._backend_path = lambda: None
+key = "PYMUPDF_SUGGEST_LAYOUT_ANALYZER"
+os.environ.pop(key, None)
+outputs = []
+for secret in (False, True):
+    observed = []
+    def evaluate(**kwargs):
+        observed.append(os.environ.get(key))
+        if os.environ.get(key) != "0":
+            print("pymupdf recommendation")
+        return report(secret)
+    module._run_guarded_evaluation = evaluate
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        result = module.main({ _valid_args()!r}, {{}})
+    outputs.append([result, output.getvalue(), observed, key in os.environ])
+print(json.dumps(outputs))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-I", "-B", "-c", probe],
+        cwd=ROOT,
+        env=_clean_env(),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    safe, unsafe = json.loads(completed.stdout)
+    assert safe[0] == 0
+    assert safe[1] == _captured(_evaluation_report(status="PASS"))
+    assert safe[2:] == [["0"], False]
+    assert unsafe == [
+        2,
+        _captured_refusal("dual_live_evaluation_contract_invalid"),
+        ["0"],
+        False,
+    ]
+    assert "secret" not in unsafe[1]
+    assert completed.stderr == ""
+
+
+def test_pymupdf_layout_suppression_restores_exact_prior_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    gate = _load_gate_contract_module()
+    key = "PYMUPDF_SUGGEST_LAYOUT_ANALYZER"
+
+    monkeypatch.delenv(key, raising=False)
+    with gate._suppress_pymupdf_layout_recommendation():
+        assert os.environ[key] == "0"
+    assert key not in os.environ
+
+    monkeypatch.setenv(key, "owner-value")
+    with gate._suppress_pymupdf_layout_recommendation():
+        assert os.environ[key] == "0"
+    assert os.environ[key] == "owner-value"
 
 
 def _captured(payload: dict[str, object]) -> str:
@@ -7508,7 +9164,13 @@ def _run_gate(
     if env_updates:
         env.update(env_updates)
     return subprocess.run(
-        [sys.executable, "-B", str(GATE), *(args if args is not None else _valid_args())],
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            str(GATE),
+            *(args if args is not None else _valid_args()),
+        ],
         cwd=tmp_path,
         env=env,
         check=False,
@@ -7552,14 +9214,16 @@ def _run_powershell(
     )
 
 
-def test_valid_gate_is_exact_inert_and_cwd_independent(tmp_path: Path) -> None:
+def test_gate_refuses_missing_runtime_exactly_and_cwd_independently(
+    tmp_path: Path,
+) -> None:
     completed = _run_gate(
         tmp_path,
         env_updates={"CONNECTOR_LIVE_EGRESS_ENABLED": "OFF", "PYTHONPATH": ""},
     )
 
     assert completed.returncode == 2
-    assert completed.stdout == _compact(EXPECTED_REPORT)
+    assert completed.stdout == _refusal("dual_live_database_missing")
     assert completed.stderr == b""
     assert list(tmp_path.iterdir()) == []
 
@@ -7574,8 +9238,17 @@ def test_false_egress_values_are_accepted_without_stripping(
     )
 
     assert completed.returncode == 2
-    assert completed.stdout == _compact(EXPECTED_REPORT)
+    assert completed.stdout == _refusal("dual_live_database_missing")
     assert completed.stderr == b""
+
+
+def test_empty_false_egress_value_remains_false_in_environment_only_settings() -> None:
+    gate = _load_gate_contract_module()
+    gate._backend_path()
+
+    settings = gate._load_settings({"CONNECTOR_LIVE_EGRESS_ENABLED": ""})
+
+    assert settings.connector_live_egress_enabled is False
 
 
 @pytest.mark.parametrize("true_value", ["1", "true", "TRUE", "yes", "YES", "on", "ON"])
@@ -7641,7 +9314,7 @@ def test_whitespace_authority_is_present_and_empty_authority_is_absent(
     absent = _run_gate(tmp_path, env_updates={AUTHORITY_VARIABLES[0]: ""})
 
     assert present.stdout == _refusal("dual_live_send_authority_environment_present")
-    assert absent.stdout == _compact(EXPECTED_REPORT)
+    assert absent.stdout == _refusal("dual_live_database_missing")
 
 
 @pytest.mark.parametrize(
@@ -7909,7 +9582,133 @@ print(json.dumps({{"idempotent": idempotent, "denials": denials}}))
     assert completed.stderr == ""
 
 
-def test_valid_main_imports_only_inert_app_surface() -> None:
+def test_g02_connector_transport_guard_precedes_observer_counter_and_reservation() -> None:
+    probe = f"""
+import importlib.util
+import json
+import sys
+spec = importlib.util.spec_from_file_location("dual_live_gate_probe", {str(GATE)!r})
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+try:
+    module._install_connector_transport_guard()
+except RuntimeError:
+    prerequisite_refused = True
+else:
+    prerequisite_refused = False
+transport_preloaded = "app.services.connector_egress_transport" in sys.modules
+module._install_network_guard()
+module._backend_path()
+module._install_connector_transport_guard()
+from app.services import connector_egress_transport as transport
+observer_calls = []
+reservation_calls = []
+original_reserve = transport.reserve_physical_request
+transport.reserve_physical_request = lambda **kwargs: reservation_calls.append(kwargs)
+counter = transport._DeliveredByteCounter()
+adapter = transport.CountingHTTPAdapter(
+    observe_prepared=lambda request: observer_calls.append(request),
+    counter=counter,
+)
+denials = []
+for invoke in (
+    lambda: adapter.send(object()),
+    lambda: transport.BoundedConnectorTransport.send_once(
+        object(), ordinal=1, stage="detail", request=object()
+    ),
+):
+    try:
+        invoke()
+    except OSError as exc:
+        denials.append([type(exc).__name__, getattr(exc, "code", None), str(exc)])
+    else:
+        denials.append(None)
+transport.reserve_physical_request = original_reserve
+guard_hook = transport.CountingHTTPAdapter.send
+transport.CountingHTTPAdapter.send = lambda *args, **kwargs: None
+tamper_detected = not module._network_guard_intact()
+transport.CountingHTTPAdapter.send = guard_hook
+print(json.dumps({{
+    "adapter_hook": transport.CountingHTTPAdapter.send is module._deny_network,
+    "transport_hook": transport.BoundedConnectorTransport.send_once is module._deny_network,
+    "guard_intact": module._network_guard_intact(),
+    "tamper_detected": tamper_detected,
+    "denials": denials,
+    "observer_calls": len(observer_calls),
+    "reservation_calls": len(reservation_calls),
+    "delivered_body_bytes": counter.delivered_body_bytes,
+    "network_send_started": adapter.network_send_started,
+    "counter_runtime_records": len(transport._COUNTER_RUNTIME_RECORDS),
+    "prerequisite_refused": prerequisite_refused,
+    "transport_preloaded": transport_preloaded,
+}}))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-I", "-B", "-c", probe],
+        cwd=ROOT,
+        env=_clean_env(),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload == {
+        "adapter_hook": True,
+        "transport_hook": True,
+        "guard_intact": True,
+        "tamper_detected": True,
+        "denials": [
+            [
+                "DualLiveNetworkDenied",
+                "dual_live_network_denied",
+                "dual_live_network_denied",
+            ]
+        ]
+        * 2,
+        "observer_calls": 0,
+        "reservation_calls": 0,
+        "delivered_body_bytes": 0,
+        "network_send_started": False,
+        "counter_runtime_records": 0,
+        "prerequisite_refused": True,
+        "transport_preloaded": False,
+    }
+    assert completed.stderr == ""
+
+
+def test_connector_transport_import_does_not_bind_runtime_settings_or_database() -> None:
+    probe = f"""
+import json
+import sys
+sys.path.insert(0, {str(BACKEND)!r})
+from app.services import connector_egress_transport as transport
+print(json.dumps({{
+    "config_loaded": "app.core.config" in sys.modules,
+    "db_session_loaded": "app.db.session" in sys.modules,
+    "factory_name": transport.SESSION_FACTORY.__name__,
+}}))
+"""
+    completed = subprocess.run(
+        [sys.executable, "-I", "-B", "-W", "ignore", "-c", probe],
+        cwd=ROOT,
+        env=_clean_env(),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout) == {
+        "config_loaded": False,
+        "db_session_loaded": False,
+        "factory_name": "_default_session_factory",
+    }
+    assert completed.stderr == ""
+
+
+def test_missing_runtime_refuses_before_transport_or_evaluator_import() -> None:
     probe = f"""
 import contextlib
 import importlib.util
@@ -7922,17 +9721,17 @@ spec.loader.exec_module(module)
 output = io.StringIO()
 with contextlib.redirect_stdout(output):
     result = module.main({_valid_args()!r}, {{}})
-forbidden = [
-    name for name in sys.modules
-    if name in ("app.core.config", "app.db.session")
-    or name == "sqlalchemy"
-    or name.startswith("sqlalchemy.")
-    or (name.startswith("app.") and "connector" in name)
-]
-print(json.dumps({{"result": result, "output": output.getvalue(), "forbidden": forbidden}}))
+transport = sys.modules.get("app.services.connector_egress_transport")
+print(json.dumps({{
+    "result": result,
+    "output": output.getvalue(),
+    "transport_loaded": transport is not None,
+    "db_session_loaded": "app.db.session" in sys.modules,
+    "evaluator_loaded": "app.services.dual_live_evaluator" in sys.modules,
+}}))
 """
     completed = subprocess.run(
-        [sys.executable, "-B", "-c", probe],
+        [sys.executable, "-I", "-B", "-c", probe],
         cwd=ROOT,
         env=_clean_env(),
         check=False,
@@ -7943,8 +9742,10 @@ print(json.dumps({{"result": result, "output": output.getvalue(), "forbidden": f
     assert completed.returncode == 0, completed.stderr
     payload = json.loads(completed.stdout)
     assert payload["result"] == 2
-    assert payload["output"] == _captured(EXPECTED_REPORT)
-    assert payload["forbidden"] == []
+    assert payload["output"] == _captured_refusal("dual_live_database_missing")
+    assert payload["transport_loaded"] is False
+    assert payload["db_session_loaded"] is False
+    assert payload["evaluator_loaded"] is False
     assert completed.stderr == ""
 
 
@@ -7977,7 +9778,7 @@ with contextlib.redirect_stdout(output):
 print(json.dumps({{"result": result, "output": output.getvalue()}}))
 """
     completed = subprocess.run(
-        [sys.executable, "-B", "-c", probe],
+        [sys.executable, "-I", "-B", "-c", probe],
         cwd=ROOT,
         env=_clean_env(),
         check=False,
@@ -8027,34 +9828,13 @@ print(json.dumps({{"result": result, "output": output.getvalue()}}))
 
 
 def test_report_drift_is_internal_refusal() -> None:
-    probe = f"""
-import contextlib
-import importlib.util
-import io
-import json
-spec = importlib.util.spec_from_file_location("dual_live_gate_probe", {str(GATE)!r})
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-module._evaluate = lambda **kwargs: {{"status": "PASS"}}
-output = io.StringIO()
-with contextlib.redirect_stdout(output):
-    result = module.main({_valid_args()!r}, {{}})
-print(json.dumps({{"result": result, "output": output.getvalue()}}))
-"""
-    completed = subprocess.run(
-        [sys.executable, "-B", "-c", probe],
-        cwd=ROOT,
-        env=_clean_env(),
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    gate = _load_gate_contract_module()
 
-    assert completed.returncode == 0, completed.stderr
-    payload = json.loads(completed.stdout)
-    assert payload["result"] == 2
-    assert payload["output"] == _captured_refusal("dual_live_gate_internal_error")
-    assert completed.stderr == ""
+    assert not gate._report_is_exact(
+        {"status": "PASS"},
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
 
 
 def test_unexpected_valid_path_failure_is_secret_safe() -> None:
@@ -8076,7 +9856,7 @@ with contextlib.redirect_stdout(output):
 print(json.dumps({{"result": result, "output": output.getvalue()}}))
 """
     completed = subprocess.run(
-        [sys.executable, "-B", "-c", probe],
+        [sys.executable, "-I", "-B", "-c", probe],
         cwd=ROOT,
         env=_clean_env(),
         check=False,
@@ -8092,31 +9872,34 @@ print(json.dumps({{"result": result, "output": output.getvalue()}}))
     assert completed.stderr == ""
 
 
-def test_run_action_is_exact_refusal_without_child_or_side_effect(
+def test_run_action_prechecks_missing_id_without_child_or_side_effect(
     tmp_path: Path,
 ) -> None:
     completed = _run_powershell(
         tmp_path,
         action="run-dual-live-proof",
-        env_updates={
-            "DUAL_LIVE_CAMPAIGN_ID": CAMPAIGN_ID,
-            "DUAL_LIVE_CAMPAIGN_FINGERPRINT": CAMPAIGN_FINGERPRINT,
-        },
         empty_path=True,
     )
 
     assert completed.returncode == 2
-    assert completed.stdout == _compact(
-        {
-            "action": "run-dual-live-proof",
-            "code": "tracked_s3_clearance_and_privileged_runner_required",
-            "fresh_live": False,
-            "schema_id": "project6.dual_live_run_refusal.v1",
-            "status": "REFUSED",
-        }
-    )
+    assert completed.stdout == _refusal("dual_live_campaign_id_missing")
     assert completed.stderr == b""
     assert list(tmp_path.iterdir()) == []
+
+
+def test_run_action_contains_mandated_isolated_launcher_shape() -> None:
+    source = PROJECT6.read_text(encoding="utf-8")
+    required = """Push-Location $RepoRoot
+        try {
+            & py "-$PythonVersion" -I -B .\\tools\\dual_live_run.py --campaign-id $env:DUAL_LIVE_CAMPAIGN_ID --campaign-fingerprint $env:DUAL_LIVE_CAMPAIGN_FINGERPRINT
+            $DualLiveRunExitCode = $LASTEXITCODE
+        }
+        finally {
+            Pop-Location
+        }
+        exit $DualLiveRunExitCode"""
+
+    assert required in source
 
 
 @pytest.mark.parametrize(
@@ -8178,7 +9961,7 @@ def test_validate_action_directly_preserves_gate_output_exit_and_cwd(
     )
 
     assert completed.returncode == 2
-    assert completed.stdout == _compact(EXPECTED_REPORT)
+    assert completed.stdout == _refusal("dual_live_database_missing")
     assert completed.stderr == b""
     assert list(tmp_path.iterdir()) == []
 
@@ -8187,7 +9970,7 @@ def test_validate_action_contains_mandated_direct_launcher_shape() -> None:
     source = PROJECT6.read_text(encoding="utf-8")
     required = """Push-Location $RepoRoot
         try {
-            & py "-$PythonVersion" -B .\\tools\\dual_live_gate.py --campaign-id $env:DUAL_LIVE_CAMPAIGN_ID --campaign-fingerprint $env:DUAL_LIVE_CAMPAIGN_FINGERPRINT
+            & py "-$PythonVersion" -I -B .\\tools\\dual_live_gate.py --campaign-id $env:DUAL_LIVE_CAMPAIGN_ID --campaign-fingerprint $env:DUAL_LIVE_CAMPAIGN_FINGERPRINT
             $DualLiveGateExitCode = $LASTEXITCODE
         }
         finally {
