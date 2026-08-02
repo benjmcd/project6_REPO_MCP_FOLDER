@@ -28,6 +28,7 @@ CONNECTOR_SOURCE_INTAKE_SCHEMA_ID = "layer3.connector_source_intake_record.v1"
 CONNECTOR_SOURCE_INTAKE_MODE = "connector_produced_source_intake"
 CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION = "record_connector_produced_source"
 CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY = "connector_produced_single_source"
+STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS = "strict_sciencebase_connector_single_source"
 CONNECTOR_SOURCE_INTAKE_STATUS = "recorded"
 CONNECTOR_SOURCE_INTAKE_STORAGE_SEGMENT = "layer3-connector-source-intake"
 CONNECTOR_SOURCE_INTAKE_INVENTORY_SCHEMA_ID = "layer3.connector_source_intake_inventory.v1"
@@ -701,6 +702,11 @@ def connector_source_intake_material_preview(
         }
     )[:36]
     source_ref = f"connector_source_intake_record:{record.connector_source_intake_record_id}"
+    gate_b_source_class = (
+        STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+        if origin_projection is not None
+        else CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+    )
     source_identity = _source_identity(record)
     if origin_projection is not None:
         source_identity[CONNECTOR_ORIGIN_RECEIPT_HASH_KEY] = (
@@ -715,7 +721,7 @@ def connector_source_intake_material_preview(
         "connector_source_intake_record_id": (
             record.connector_source_intake_record_id
         ),
-        "source_class": CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+        "source_class": gate_b_source_class,
         "content_sha256": record.content_sha256,
         "metadata_hash": record.metadata_hash,
         "authority_basis_hash": record.authority_basis_hash,
@@ -738,7 +744,7 @@ def connector_source_intake_material_preview(
     }
     material_candidate = {
         "candidate_id": f"{CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX}{record.connector_source_intake_record_id}",
-        "source_class": CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+        "source_class": gate_b_source_class,
         "source_ref": source_ref,
         "query_basis": CONNECTOR_SOURCE_INTAKE_QUERY_BASIS,
         "provenance_ref": (
@@ -790,7 +796,7 @@ def validate_connector_intake_gate_b_decision_basis(
     *,
     candidate_id: str,
     decision_basis: Mapping[str, Any],
-) -> None:
+) -> str:
     blocked_fields = _gate_b_forbidden_decision_basis_fields(decision_basis)
     if blocked_fields:
         raise ConnectorSourceIntakeError(
@@ -923,7 +929,11 @@ def validate_connector_intake_gate_b_decision_basis(
         record,
         fields={
             "connector_source_intake_record_id": record.connector_source_intake_record_id,
-            "source_class": CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+            "source_class": (
+                STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+                if origin_projection is not None
+                else CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+            ),
             "content_sha256": record.content_sha256,
             "metadata_hash": record.metadata_hash,
             "authority_basis_hash": record.authority_basis_hash,
@@ -971,6 +981,11 @@ def validate_connector_intake_gate_b_decision_basis(
                 ),
             },
         )
+    return (
+        STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+        if origin_projection is not None
+        else CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+    )
 
 
 def _normalise_required(value: Any, field: str) -> str:

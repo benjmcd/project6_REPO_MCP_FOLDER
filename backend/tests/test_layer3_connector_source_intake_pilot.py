@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import hashlib
 import os
 from pathlib import Path
@@ -30,6 +31,7 @@ from app.models.models import (
 )
 from app.services.layer3_connector_source_intake import (
     CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+    STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
     ConnectorSourceIntakeError,
     connector_source_intake_material_preview,
     record_connector_produced_source_intake,
@@ -124,13 +126,13 @@ def _seed_downloaded_sciencebase_target(
 
 def _decision_basis(candidate: dict, *, include_connector_target: bool = False) -> dict:
     basis = {
-        "source_ref": candidate["source_ref"],
-        "query_basis": candidate["query_basis"],
-        "provenance_ref": candidate["provenance_ref"],
-        "source_identity": candidate["source_identity"],
-        "source_provenance": candidate["source_provenance"],
-        "payload": candidate["payload"],
-        "load_summary": candidate["load_summary"],
+        "source_ref": deepcopy(candidate["source_ref"]),
+        "query_basis": deepcopy(candidate["query_basis"]),
+        "provenance_ref": deepcopy(candidate["provenance_ref"]),
+        "source_identity": deepcopy(candidate["source_identity"]),
+        "source_provenance": deepcopy(candidate["source_provenance"]),
+        "payload": deepcopy(candidate["payload"]),
+        "load_summary": deepcopy(candidate["load_summary"]),
     }
     if include_connector_target:
         basis["connector_target"] = {
@@ -188,6 +190,23 @@ def test_sciencebase_csv_connector_intake_reaches_gate_b_through_existing_route(
         assert preview["material_preview_hash"]
 
         decision_basis = _decision_basis(candidate, include_connector_target=True)
+        assert (
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=candidate["candidate_id"],
+                decision_basis=decision_basis,
+            )
+            == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+        )
+        spoofed_basis = _decision_basis(candidate, include_connector_target=True)
+        spoofed_basis["payload"]["source_class"] = STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+        with pytest.raises(ConnectorSourceIntakeError) as spoofed:
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=candidate["candidate_id"],
+                decision_basis=spoofed_basis,
+            )
+        assert spoofed.value.code == "connector_source_intake_gate_b_payload_mismatch"
         response = client.post(
             "/api/v1/layer3/gate-b/decision",
             json={
@@ -235,6 +254,16 @@ def test_sciencebase_csv_connector_intake_reaches_gate_b_through_existing_route(
         gate_c_body = gate_c_response.json()
         assert gate_c_body["next_state"] == "connector_source_intake_gate_b_admitted"
         assert gate_c_body["authority_rail"]["current_gate"] == "gate_b"
+        blocked_gate_c = client.post(
+            "/api/v1/layer3/gate-c/preview",
+            json={
+                "client_request_id": "sciencebase-envelope-gate-c-bypass-001",
+                "session_id": body["session_id"],
+                "commit_typing": True,
+            },
+        )
+        assert blocked_gate_c.status_code == 409, blocked_gate_c.text
+        assert blocked_gate_c.json()["error_code"] == "typing_not_ready"
         assert (
             db.query(L3GateBIdempotencyKey)
             .filter(L3GateBIdempotencyKey.client_request_id == "sciencebase-envelope-gate-b-001")

@@ -31,6 +31,7 @@ from app.models.models import (
     L3AnalysisPlan,
     L3AnalysisSet,
     L3AnalysisUnit,
+    L3ConnectorSourceIntakeRecord,
     L3ConnectorLocalDestinationReceipt,
     L3ExternalLocalExportAuditEvent,
     L3ExternalLocalExportReceipt,
@@ -262,6 +263,7 @@ from app.services.layer3_source_intake import (
 )
 from app.services.layer3_connector_source_intake import (
     CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+    STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
     ConnectorSourceIntakeError,
     validate_connector_intake_gate_b_decision_basis,
 )
@@ -467,6 +469,12 @@ ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW = "source_intake_qualitative_pre
 SOURCE_INTAKE_EXECUTION_OUTPUT_SCHEMA_ID = "layer3.source_intake_execution_output.v1"
 SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE = "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE"
 SOURCE_INTAKE_EXECUTION_METHOD_NAME = "operator_uploaded_source_review_preview"
+SOURCE_INTAKE_EXECUTION_SOURCE_SHAPES = frozenset(
+    {
+        SOURCE_INTAKE_SOURCE_FAMILY,
+        STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
+    }
+)
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
@@ -878,6 +886,42 @@ WORKBENCH_STATE_MODEL_STATE_NAMES = {
     "EXECUTION_RESULT_STATUS_BLOCKED_STATE": EXECUTION_RESULT_STATUS_BLOCKED_STATE,
     "EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE": EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE,
 }
+
+
+def _source_intake_source_shape(output_metadata_summary: Mapping[str, Any]) -> str:
+    source_shape = str(
+        output_metadata_summary.get("source_intake_source_shape")
+        or SOURCE_INTAKE_SOURCE_FAMILY
+    ).strip()
+    if source_shape not in SOURCE_INTAKE_EXECUTION_SOURCE_SHAPES:
+        raise Layer3WorkbenchError(
+            "source_intake_source_shape_not_admitted",
+            "Source-intake downstream state contains an unsupported source shape.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["source_intake_source_shape"],
+        )
+    return source_shape
+
+
+def _source_intake_connector_authority(
+    output_metadata_summary: Mapping[str, Any],
+) -> dict[str, Any]:
+    if _source_intake_source_shape(output_metadata_summary) != STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS:
+        return {}
+    return {
+        field: output_metadata_summary.get(field)
+        for field in (
+            "connector_source_intake_record_id",
+            "connector_key",
+            "connector_run_id",
+            "connector_run_target_id",
+            "connector_origin_receipt_hash",
+            "content_sha256",
+        )
+    }
+
+
 def _signed_reference_state_workbench_error(exc: SignedReferenceStateError) -> Layer3WorkbenchError:
     return Layer3WorkbenchError(
         exc.error_code,
@@ -2284,7 +2328,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 ) from exc
         if source_class == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY:
             try:
-                validate_connector_intake_gate_b_decision_basis(
+                source_class = validate_connector_intake_gate_b_decision_basis(
                     db,
                     candidate_id=candidate_id,
                     decision_basis=decision_basis,
@@ -3610,6 +3654,8 @@ def _source_intake_package_payload_extras(
     package_review_preview_hash: str,
     result_review_state: dict[str, Any],
 ) -> dict[str, dict[str, Any]]:
+    source_shape = _source_intake_source_shape(output_metadata_summary)
+    connector_authority = _source_intake_connector_authority(output_metadata_summary)
     source_authority = {
         "schema_id": "layer3.source_intake_package_source_authority.v1",
         "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
@@ -3617,13 +3663,14 @@ def _source_intake_package_payload_extras(
         "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
         "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
         "package_construction_source_gate": SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE,
-        "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+        "source_shape": source_shape,
         "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
         "candidate_id": output_metadata_summary.get("candidate_id"),
         "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
         "output_payload_hash": output_metadata_summary.get("output_hash"),
         "package_review_preview_hash": package_review_preview_hash,
         "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        **connector_authority,
     }
     negative_capabilities = {
         "package_review_submit_enabled": False,
@@ -3654,6 +3701,8 @@ def _source_intake_package_payload_extras(
                 "output_payload_hash": output_metadata_summary.get("output_hash"),
                 "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
                 "reviewed_output_item_count": len(reviewed_items),
+                "source_shape": source_shape,
+                **connector_authority,
             },
             "negative_capability_flags": _json_clone(negative_capabilities),
         },
@@ -4725,12 +4774,114 @@ def _is_source_intake_execution_start_planned_pass(*, pass_run: L3PassRun, plann
     )
 
 
-def _source_intake_execution_output_ref(*, pass_run_id: str, payload: dict[str, Any]) -> str:
+def _source_intake_execution_record(
+    db: Session,
+    *,
+    planned_pass: dict[str, Any],
+) -> tuple[L3SourceIntakeRecord | L3ConnectorSourceIntakeRecord | None, str, str]:
+    source_shape = str(
+        planned_pass.get("source_intake_source_shape") or SOURCE_INTAKE_SOURCE_FAMILY
+    ).strip()
+    source_intake_record_id = str(planned_pass.get("source_intake_record_id") or "").strip()
+    if source_shape == STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS:
+        connector_record_id = str(
+            planned_pass.get("connector_source_intake_record_id") or ""
+        ).strip()
+        if connector_record_id != source_intake_record_id:
+            raise Layer3WorkbenchError(
+                "source_intake_execution_start_record_identity_mismatch",
+                "Connector source-intake execution requires one exact record identity.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["connector_source_intake_record_id", "source_intake_record_id"],
+            )
+        record = (
+            db.query(L3ConnectorSourceIntakeRecord)
+            .filter(
+                L3ConnectorSourceIntakeRecord.connector_source_intake_record_id
+                == connector_record_id
+            )
+            .with_for_update()
+            .first()
+        )
+        return record, source_shape, connector_record_id
+    if source_shape != SOURCE_INTAKE_SOURCE_FAMILY:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_start_source_shape_not_admitted",
+            "Source-intake execution start requires an admitted source shape.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["source_intake_source_shape"],
+        )
+    record = (
+        db.query(L3SourceIntakeRecord)
+        .filter(L3SourceIntakeRecord.source_intake_record_id == source_intake_record_id)
+        .with_for_update()
+        .first()
+    )
+    return record, source_shape, source_intake_record_id
+
+
+def _connector_source_intake_execution_projection(
+    *,
+    record: L3ConnectorSourceIntakeRecord,
+    planned_pass: dict[str, Any],
+) -> dict[str, Any]:
+    provenance = record.provenance_json or {}
+    projection = {
+        "connector_source_intake_record_id": record.connector_source_intake_record_id,
+        "connector_key": record.connector_key,
+        "connector_run_id": record.connector_run_id,
+        "connector_run_target_id": record.connector_run_target_id,
+        "connector_origin_receipt_hash": provenance.get("connector_origin_receipt_hash"),
+        "content_sha256": record.content_sha256,
+    }
+    mismatches = [
+        field
+        for field, actual in projection.items()
+        if planned_pass.get(field) != actual
+    ]
+    if mismatches:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_start_connector_authority_mismatch",
+            "Connector source-intake execution requires exact planned connector authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(mismatches),
+        )
+    return projection
+
+
+def _source_intake_execution_output_ref(
+    *,
+    pass_run_id: str,
+    payload: dict[str, Any],
+    public_safe_ref: bool = False,
+) -> str:
     output_dir = Path(settings.artifact_storage_dir) / "layer3"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"l3_source_intake_output_{pass_run_id}.json"
     output_path.write_bytes(_canonical_json_bytes(payload))
+    if public_safe_ref:
+        return output_path.name
     return str(output_path)
+
+
+def _source_intake_execution_output_path(output_ref: str) -> Path:
+    candidate = Path(output_ref)
+    if candidate.is_absolute():
+        return candidate
+    root = (Path(settings.artifact_storage_dir) / "layer3").resolve()
+    resolved = (root / candidate).resolve()
+    if resolved != root and root not in resolved.parents:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_result_status_output_not_admitted",
+            "Source-intake output reference resolves outside artifact storage.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["output_payload_ref"],
+        )
+    return resolved
 
 
 def _execute_source_intake_execution_start(
@@ -4765,12 +4916,9 @@ def _execute_source_intake_execution_start(
             blocked_fields=["pass_run_id"],
         )
 
-    source_intake_record_id = str(planned_pass.get("source_intake_record_id") or "").strip()
-    record = (
-        db.query(L3SourceIntakeRecord)
-        .filter(L3SourceIntakeRecord.source_intake_record_id == source_intake_record_id)
-        .with_for_update()
-        .first()
+    record, source_shape, source_intake_record_id = _source_intake_execution_record(
+        db,
+        planned_pass=planned_pass,
     )
     if record is None:
         raise Layer3WorkbenchError(
@@ -4780,6 +4928,11 @@ def _execute_source_intake_execution_start(
             http_status=409,
             blocked_fields=["source_intake_record_id"],
         )
+    connector_projection = (
+        _connector_source_intake_execution_projection(record=record, planned_pass=planned_pass)
+        if isinstance(record, L3ConnectorSourceIntakeRecord)
+        else {}
+    )
 
     completed_at = datetime.now(timezone.utc)
     completed_at_text = completed_at.isoformat()
@@ -4795,7 +4948,9 @@ def _execute_source_intake_execution_start(
         "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
         "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
         "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
-        "source_intake_record_id": record.source_intake_record_id,
+        "source_intake_record_id": source_intake_record_id,
+        "source_intake_source_shape": source_shape,
+        **connector_projection,
         "candidate_id": planned_pass.get("candidate_id"),
         "source_identity": {
             "source_family": record.source_family,
@@ -4806,11 +4961,20 @@ def _execute_source_intake_execution_start(
             "content_sha256": record.content_sha256,
             "metadata_hash": record.metadata_hash,
             "authority_basis_hash": record.authority_basis_hash,
+            **connector_projection,
         },
         "source_provenance": _json_clone(record.provenance_json or {}),
         "storage_pointer": {
-            "storage_ref": record.storage_ref,
-            "storage_authority": "server_raw_storage",
+            "storage_ref": (
+                f"sha256:{record.content_sha256}"
+                if isinstance(record, L3ConnectorSourceIntakeRecord)
+                else record.storage_ref
+            ),
+            "storage_authority": (
+                "server_connector_raw_storage"
+                if isinstance(record, L3ConnectorSourceIntakeRecord)
+                else "server_raw_storage"
+            ),
             "content_addressed": True,
             "absolute_path_exposed": False,
         },
@@ -4822,7 +4986,11 @@ def _execute_source_intake_execution_start(
         "created_at": completed_at_text,
     }
     output_payload["output_hash"] = _stable_hash(output_payload)
-    output_ref = _source_intake_execution_output_ref(pass_run_id=pass_run.pass_run_id, payload=output_payload)
+    output_ref = _source_intake_execution_output_ref(
+        pass_run_id=pass_run.pass_run_id,
+        payload=output_payload,
+        public_safe_ref=isinstance(record, L3ConnectorSourceIntakeRecord),
+    )
 
     pass_run.status = PASS_STATUS_COMPLETED
     pass_run.started_at = completed_at
@@ -4837,7 +5005,9 @@ def _execute_source_intake_execution_start(
         "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
         "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
         "planned_pass_source_gate": planned_pass.get("source_gate"),
-        "source_intake_record_id": record.source_intake_record_id,
+        "source_intake_record_id": source_intake_record_id,
+        "source_intake_source_shape": source_shape,
+        **connector_projection,
         "candidate_id": planned_pass.get("candidate_id"),
         "source_label": record.source_label,
         "content_sha256": record.content_sha256,
@@ -4873,7 +5043,9 @@ def _source_intake_result_status_output_summary(
         payload: dict[str, Any] = {}
     else:
         try:
-            loaded_payload = json.loads(Path(output_ref).read_text(encoding="utf-8"))
+            loaded_payload = json.loads(
+                _source_intake_execution_output_path(output_ref).read_text(encoding="utf-8")
+            )
         except (OSError, json.JSONDecodeError) as exc:
             raise Layer3WorkbenchError(
                 "source_intake_execution_result_status_output_not_admitted",
@@ -4907,11 +5079,24 @@ def _source_intake_result_status_output_summary(
         "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
         "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
         "source_intake_record_id": planned_pass.get("source_intake_record_id"),
+        "source_intake_source_shape": planned_pass.get("source_intake_source_shape")
+        or SOURCE_INTAKE_SOURCE_FAMILY,
         "candidate_id": planned_pass.get("candidate_id"),
     }
     for key, expected in expected_scalars.items():
         if payload.get(key) != expected:
             blocked_fields.append(key)
+    if expected_scalars["source_intake_source_shape"] == STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS:
+        for key in (
+            "connector_source_intake_record_id",
+            "connector_key",
+            "connector_run_id",
+            "connector_run_target_id",
+            "connector_origin_receipt_hash",
+            "content_sha256",
+        ):
+            if payload.get(key) != planned_pass.get(key):
+                blocked_fields.append(key)
 
     source_identity = payload.get("source_identity")
     if not isinstance(source_identity, dict):
@@ -4957,6 +5142,23 @@ def _source_intake_result_status_output_summary(
         **output_metadata_summary,
         "schema_id": payload.get("schema_id"),
         "source_intake_record_id": payload.get("source_intake_record_id"),
+        "source_intake_source_shape": payload.get("source_intake_source_shape"),
+        **(
+            {
+                key: payload.get(key)
+                for key in (
+                    "connector_source_intake_record_id",
+                    "connector_key",
+                    "connector_run_id",
+                    "connector_run_target_id",
+                    "connector_origin_receipt_hash",
+                    "content_sha256",
+                )
+            }
+            if payload.get("source_intake_source_shape")
+            == STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+            else {}
+        ),
         "candidate_id": payload.get("candidate_id"),
         "planned_pass_source_gate": payload.get("planned_pass_source_gate"),
         "source_identity": _json_clone(source_identity),
@@ -7372,7 +7574,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
                 "pass_type": pass_run.pass_type,
                 "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
                 "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
-                "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+                "source_shape": _source_intake_source_shape(output_metadata_summary),
                 "status": "source_intake_package_construction_admitted",
                 "reason": "Source-intake package-review preview can proceed to bounded package construction.",
             },
@@ -7392,7 +7594,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
             "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
             "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
-            "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+            "source_shape": _source_intake_source_shape(output_metadata_summary),
             "source_dataset_version_ids": [],
             "cohort_shape": None,
             "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
@@ -8538,13 +8740,18 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
     authority_basis_extra: dict[str, Any] | None = None
     package_payload_extras_by_kind: dict[str, dict[str, Any]] | None = None
     authority_schema_id = "layer3.workbench_package_construction_authority.v1"
+    source_intake_source_shape = (
+        _source_intake_source_shape(output_metadata_summary)
+        if source_intake_commit
+        else None
+    )
     if source_intake_commit:
         authority_schema_id = "layer3.source_intake_package_construction_authority.v1"
         authority_basis_extra = {
             "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
             "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
             "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
-            "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+            "source_shape": source_intake_source_shape,
             "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
             "package_construction_source_gate": SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE,
             "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
@@ -8628,7 +8835,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
     package_source_shape = (
         SOURCE_SHAPE_APS_CONTENT_DOCUMENT
         if qualitative_aps_commit
-        else SOURCE_INTAKE_SOURCE_FAMILY
+        else source_intake_source_shape
         if source_intake_commit
         else _package_source_shape(
             output_metadata_summary=output_metadata_summary,
@@ -9319,6 +9526,11 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
+    source_intake_source_shape = (
+        _source_intake_source_shape(output_metadata_summary)
+        if source_intake_submit
+        else None
+    )
     submit_basis = {
         "schema_id": "layer3.package_review_submit_authority.v1",
         "session_id": session_id,
@@ -9343,7 +9555,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
         "source_shape": (
-            SOURCE_INTAKE_SOURCE_FAMILY
+            source_intake_source_shape
             if source_intake_submit
             else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
             if qualitative_aps_submit
@@ -9476,7 +9688,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
         "source_shape": (
-            SOURCE_INTAKE_SOURCE_FAMILY
+            source_intake_source_shape
             if source_intake_submit
             else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
             if qualitative_aps_submit
@@ -9542,7 +9754,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             "source_gate": output_metadata_summary.get("source_gate"),
             "package_construction_source_gate": package_construction_source_gate,
             "source_shape": (
-                SOURCE_INTAKE_SOURCE_FAMILY
+                source_intake_source_shape
                 if source_intake_submit
                 else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
                 if qualitative_aps_submit
@@ -10357,6 +10569,11 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         status_body=status_body,
         output_metadata_summary=output_metadata_summary,
     )
+    source_intake_source_shape = (
+        _source_intake_source_shape(output_metadata_summary)
+        if source_intake_prepare
+        else None
+    )
     if (
         status_body.get("engine_family") == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW
         and not source_intake_prepare
@@ -10924,7 +11141,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
             "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
             "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
-            "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+            "source_shape": source_intake_source_shape,
             "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
             "candidate_id": output_metadata_summary.get("candidate_id"),
             "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
@@ -10981,7 +11198,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         )
 
     source_shape = (
-        SOURCE_INTAKE_SOURCE_FAMILY
+        source_intake_source_shape
         if source_intake_prepare
         else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
         if qualitative_aps_prepare

@@ -39,6 +39,7 @@ from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED_WITH_WARNINGS,
     SESSION_STATUS_FAILED,
 )
+from app.services.layer3_connector_source_intake import STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
 from app.services.layer3_source_boundary import SOURCE_INTAKE_GATE_B_SOURCE_CLASS
 from app.services.layer3_typing_entry import (
     MODALITY_QUANTITATIVE,
@@ -299,9 +300,18 @@ def _source_intake_candidate_exclusion_reason(
         return "source_intake_set_modality_not_qualitative"
     if analysis_unit.analysis_modality != "qualitative":
         return "source_intake_unit_modality_not_qualitative"
-    if material_snapshot.source_shape != SOURCE_INTAKE_GATE_B_SOURCE_CLASS:
+    if material_snapshot.source_shape not in {
+        SOURCE_INTAKE_GATE_B_SOURCE_CLASS,
+        STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
+    }:
         return "source_intake_source_shape_not_operator_uploaded_single_source"
     identity = material_snapshot.source_identity_json or {}
+    if material_snapshot.source_shape == STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS:
+        if not str(identity.get("connector_source_intake_record_id") or "").strip() or not str(
+            identity.get("candidate_id") or ""
+        ).strip():
+            return "source_intake_identity_incomplete"
+        return None
     if not str(identity.get("source_intake_record_id") or "").strip() and not str(
         identity.get("candidate_id") or ""
     ).strip():
@@ -903,6 +913,20 @@ def _planned_pass_source_fields(candidate: _AdmittedSetCandidate) -> dict[str, A
     if _is_source_intake_qualitative_candidate(candidate):
         snapshot = candidate.snapshots[0]
         identity = snapshot.source_identity_json or {}
+        if snapshot.source_shape == STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS:
+            record_id = identity.get("connector_source_intake_record_id")
+            return {
+                "material_snapshot_id": snapshot.material_snapshot_id,
+                "source_intake_record_id": record_id,
+                "connector_source_intake_record_id": record_id,
+                "source_intake_source_shape": STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
+                "connector_key": identity.get("connector_key"),
+                "connector_run_id": identity.get("connector_run_id"),
+                "connector_run_target_id": identity.get("connector_run_target_id"),
+                "connector_origin_receipt_hash": identity.get("connector_origin_receipt_hash"),
+                "content_sha256": identity.get("content_sha256"),
+                "candidate_id": identity.get("candidate_id"),
+            }
         return {
             "material_snapshot_id": snapshot.material_snapshot_id,
             "source_intake_record_id": identity.get("source_intake_record_id"),

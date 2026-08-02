@@ -3469,7 +3469,9 @@ _DOWNSTREAM_ORIGIN_BOUNDARIES = frozenset(
 )
 CONNECTOR_ORIGIN_INTEGRITY_SCHEMA_ID = "layer3.connector_origin_integrity.v1"
 CONNECTOR_ORIGIN_INTEGRITY_KEY = "connector_origin_integrity_v1"
-_DOWNSTREAM_SCIENCEBASE_SOURCE_CLASS = "connector_produced_single_source"
+_DOWNSTREAM_SCIENCEBASE_SOURCE_CLASS = (
+    layer3_connector_source_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+)
 _DOWNSTREAM_NRC_SOURCE_CLASS = "aps_content_document"
 _DOWNSTREAM_SCIENCEBASE_CANDIDATE_PREFIX = (
     "mat-connector_source_intake_record-"

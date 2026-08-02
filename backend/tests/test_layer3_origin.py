@@ -29,6 +29,7 @@ from app.models.models import (
     DatasetSourceProvenance,
     DatasetVersion,
     L3ConnectorSourceIntakeRecord,
+    L3PassRun,
 )
 from app.schemas.api import (
     CAMPAIGN_NON_AUTHORITIES,
@@ -44,6 +45,7 @@ from app.services import (
     connector_egress_transport,
     connectors_nrc_adams,
     layer3_connector_source_intake as connector_intake,
+    layer3_workbench,
     nrc_aps_artifact_ingestion,
     nrc_aps_document_processing,
     nrc_aps_phase_b_linkage as phase_b,
@@ -3391,6 +3393,9 @@ def test_actual_sciencebase_phase_a_mint_is_atomic_exact_and_replay_safe(
         )
     )
     candidate = preview["material_candidate"]
+    assert candidate["source_class"] == (
+        connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+    )
     for surface in (
         candidate["source_identity"],
         candidate["source_provenance"],
@@ -3403,22 +3408,34 @@ def test_actual_sciencebase_phase_a_mint_is_atomic_exact_and_replay_safe(
     assert "connector_origin_receipt_hash" not in (
         candidate["load_summary"]
     )
-    connector_intake.validate_connector_intake_gate_b_decision_basis(
+    decision_basis = {
+        key: candidate[key]
+        for key in (
+            "source_ref",
+            "query_basis",
+            "provenance_ref",
+            "source_identity",
+            "source_provenance",
+            "payload",
+            "load_summary",
+        )
+    }
+    assert connector_intake.validate_connector_intake_gate_b_decision_basis(
         db,
         candidate_id=candidate["candidate_id"],
-        decision_basis={
-            key: candidate[key]
-            for key in (
-                "source_ref",
-                "query_basis",
-                "provenance_ref",
-                "source_identity",
-                "source_provenance",
-                "payload",
-                "load_summary",
-            )
-        },
+        decision_basis=decision_basis,
+    ) == connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+    downgraded_basis = deepcopy(decision_basis)
+    downgraded_basis["payload"]["source_class"] = (
+        connector_intake.CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
     )
+    with pytest.raises(connector_intake.ConnectorSourceIntakeError) as downgraded:
+        connector_intake.validate_connector_intake_gate_b_decision_basis(
+            db,
+            candidate_id=candidate["candidate_id"],
+            decision_basis=downgraded_basis,
+        )
+    assert downgraded.value.code == "connector_source_intake_gate_b_payload_mismatch"
 
     with _record_dml(
         db,
@@ -3458,6 +3475,240 @@ def test_actual_sciencebase_phase_a_mint_is_atomic_exact_and_replay_safe(
     assert origin.ORIGIN_RECEIPT_STORAGE_KEY not in (
         durable_target.source_reference_json or {}
     )
+
+
+def test_strict_sciencebase_public_chain_reaches_internal_prepared_handoff(
+    origin_file_dbs,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    db, _ = origin_file_dbs
+    run, target, _, intake, digest, raw_path = _seed_actual_sciencebase_phase_a(db)
+    _install_live_proof(
+        monkeypatch,
+        run_id=run.connector_run_id,
+        connector_key=run.connector_key,
+        entries=[
+            _entry(1, "item_hydration"),
+            _entry(
+                2,
+                "artifact",
+                body_sha256=digest,
+                byte_count=intake.content_size_bytes,
+            ),
+        ],
+    )
+    db.rollback()
+    with db.begin():
+        origin_projection = origin.mint_connector_origin_receipt(
+            db,
+            connector_run_target_id=target.connector_run_target_id,
+        )
+
+    material = connector_intake.connector_source_intake_material_preview(
+        db,
+        connector_source_intake_record_id=intake.connector_source_intake_record_id,
+    )
+    candidate = material["material_candidate"]
+    assert candidate["source_class"] == connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+    decision_basis = {
+        key: deepcopy(candidate[key])
+        for key in (
+            "source_ref",
+            "query_basis",
+            "provenance_ref",
+            "source_identity",
+            "source_provenance",
+            "payload",
+            "load_summary",
+        )
+    }
+    gate_b = layer3_workbench.gate_b_decision(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-gate-b",
+            "preflight_id": "strict-sciencebase-preflight",
+            "source_set_id": "strict-sciencebase-source-set",
+            "material_preview_id": material["material_preview_id"],
+            "material_preview_hash": material["material_preview_hash"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "decision_basis": decision_basis,
+                }
+            ],
+            "commit_reason": "strict_sciencebase_dual_live_phase_b",
+            "actor": "dual_live_campaign",
+        },
+    )
+    assert gate_b["next_state"] == "gate_c_preview_ready"
+    gate_c = layer3_workbench.gate_c_preview(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-gate-c",
+            "session_id": gate_b["session_id"],
+            "commit_typing": True,
+        },
+    )
+    assert gate_c["next_state"] == "plan_preview_ready"
+    preview = layer3_workbench.plan_preview(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-plan-preview",
+            "session_id": gate_b["session_id"],
+        },
+    )
+    approval = layer3_workbench.plan_approval(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-plan-approval",
+            "session_id": gate_b["session_id"],
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    selection = layer3_workbench.execution_selection(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-selection",
+            "session_id": gate_b["session_id"],
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "preview_id": preview["preview_id"],
+            "preview_hash": preview["preview_hash"],
+        },
+    )
+    pass_run = db.get(L3PassRun, selection["pass_run_ids"][0])
+    assert pass_run is not None
+    planned = pass_run.summary_json["planned_pass"]
+    assert planned["source_intake_source_shape"] == (
+        connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+    )
+    assert planned["connector_source_intake_record_id"] == (
+        intake.connector_source_intake_record_id
+    )
+    assert planned["connector_run_id"] == run.connector_run_id
+    assert planned["connector_run_target_id"] == target.connector_run_target_id
+    assert planned["connector_origin_receipt_hash"] == (
+        origin_projection["connector_origin_receipt_hash"]
+    )
+    common = {
+        "session_id": gate_b["session_id"],
+        "analysis_plan_id": approval["analysis_plan_id"],
+        "pass_run_id": pass_run.pass_run_id,
+        "preview_id": preview["preview_id"],
+        "preview_hash": preview["preview_hash"],
+    }
+    start = layer3_workbench.analysis_execution_start(
+        db,
+        {"client_request_id": "strict-sciencebase-start", **common},
+    )
+    db.refresh(pass_run)
+    assert pass_run.output_payload_ref is not None
+    assert not Path(pass_run.output_payload_ref).is_absolute()
+    resolved_output_path = (
+        Path(settings.artifact_storage_dir) / "layer3" / pass_run.output_payload_ref
+    ).resolve()
+    output_payload = json.loads(resolved_output_path.read_text(encoding="utf-8"))
+    raw_path_text = str(raw_path.resolve())
+    resolved_output_path_text = str(resolved_output_path)
+    assert output_payload["storage_pointer"]["storage_ref"] == f"sha256:{digest}"
+    assert raw_path_text not in json.dumps(output_payload, sort_keys=True)
+    review = layer3_workbench.execution_result_review(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-review",
+            **common,
+            "analysis_run_id": start.get("analysis_run_id"),
+            "operator_decision": "approved",
+            "reviewed_output_items": [],
+        },
+    )
+    package_preview = layer3_workbench.package_review_preview(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-package-preview",
+            **common,
+            "analysis_run_id": start.get("analysis_run_id"),
+            "result_review_record_ref": review["review_record_ref"],
+        },
+    )
+    package_preview_receipt = package_preview["package_review_preview_hash"]
+    package_preview_prefix = "l3-source-intake-package-preview-"
+    assert package_preview_receipt.startswith(package_preview_prefix)
+    assert len(package_preview_receipt) == len(package_preview_prefix) + 16
+    assert all(
+        character in "0123456789abcdef"
+        for character in package_preview_receipt[len(package_preview_prefix) :]
+    )
+    expected_kinds = ["canonical_internal", "user_facing", "review_facing"]
+    package_commit = layer3_workbench.package_construction_commit(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-package-commit",
+            **common,
+            "analysis_run_id": start.get("analysis_run_id"),
+            "result_review_record_ref": review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            "expected_package_kinds": expected_kinds,
+        },
+    )
+    submit = layer3_workbench.package_review_submit(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-package-submit",
+            **common,
+            "analysis_run_id": start.get("analysis_run_id"),
+            "result_review_record_ref": review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            "construction_basis_hash": package_commit["construction_basis_hash"],
+            "reconciliation_record_id": package_commit["reconciliation_record_id"],
+            "output_package_ids": package_commit["output_package_ids"],
+            "payload_refs": package_commit["payload_refs"],
+            "payload_hashes": package_commit["payload_hashes"],
+            "expected_package_kinds": expected_kinds,
+            "operator_decision": "approved",
+        },
+    )
+    handoff = layer3_workbench.handoff_export_prepare(
+        db,
+        {
+            "client_request_id": "strict-sciencebase-handoff",
+            **common,
+            "analysis_run_id": start.get("analysis_run_id"),
+            "result_review_record_ref": review["review_record_ref"],
+            "package_review_preview_hash": package_preview["package_review_preview_hash"],
+            "construction_basis_hash": package_commit["construction_basis_hash"],
+            "reconciliation_record_id": package_commit["reconciliation_record_id"],
+            "package_review_submit_record_ref": submit["submit_record_ref"],
+            "package_review_state": submit["package_review_state"],
+            "package_review_submit_schema_id": submit["schema_id"],
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "operator_decision": "authorize_prepare",
+            "output_package_ids": package_commit["output_package_ids"],
+            "payload_refs": package_commit["payload_refs"],
+            "payload_hashes": package_commit["payload_hashes"],
+            "expected_package_kinds": expected_kinds,
+        },
+    )
+    assert review["review_state"] == "execution_result_review_approved"
+    assert package_commit["package_kinds"] == expected_kinds
+    assert len(package_commit["output_package_ids"]) == 3
+    assert submit["package_review_state"] == "package_review_approved"
+    assert handoff["handoff_export_state"] == "handoff_export_prepared"
+    assert handoff["handoff_export_envelope"]["external_handoff_enabled"] is False
+    assert handoff["handoff_export_envelope"]["source_shape"] == (
+        connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+    )
+    for payload_ref in package_commit["payload_refs"]:
+        package_text = Path(payload_ref).read_text(encoding="utf-8")
+        assert raw_path_text not in package_text
+        assert resolved_output_path_text not in package_text
+    for public_projection in (start, review, package_commit, submit, handoff):
+        projection_text = json.dumps(public_projection, sort_keys=True)
+        assert raw_path_text not in projection_text
+        assert resolved_output_path_text not in projection_text
 
 
 def test_mint_preserves_existing_nested_and_flushes_unrelated_work(
