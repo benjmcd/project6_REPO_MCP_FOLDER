@@ -1234,26 +1234,51 @@ def _capture_controller_child(
             downstream_actions = (
                 []
                 if proof_scope == "mechanical"
-                else [
-                    "nrc_strict_parse",
-                    "nrc_origin_receipt",
-                    "sciencebase_origin_receipt",
-                    "nrc_preflight",
-                    "nrc_source_preview",
-                    "nrc_material_preview",
-                    "sciencebase_material_preview",
-                    "owner_decision_required",
-                ]
+                else list(dual_live_runtime_module._PHASE_B_DOWNSTREAM_ACTIONS)
             )
+            action_receipts = [
+                {"action": action, "result_sha256": "9" * 64}
+                for action in downstream_actions
+            ]
             source_bindings = (
                 []
                 if proof_scope == "mechanical"
                 else [
                     {
+                        "analysis_plan_id": f"plan-{connector_key}",
+                        "analysis_run_id": None,
                         "candidate_id": f"candidate-{connector_key}",
                         "connector_key": connector_key,
                         "connector_origin_receipt_hash": "8" * 64,
+                        "connector_run_id": f"run-{connector_key}",
                         "connector_run_target_id": f"target-{connector_key}",
+                        "construction_basis_hash": "a" * 64,
+                        "handoff_export_envelope_ref": f"envelope-{connector_key}",
+                        "output_package_ids": [
+                            f"package-{connector_key}-{ordinal}"
+                            for ordinal in range(3)
+                        ],
+                        "package_kinds": list(
+                            dual_live_runtime_module._PHASE_B_PACKAGE_KINDS
+                        ),
+                        "package_review_preview_hash": (
+                            (
+                                "l3-qual-aps-package-preview-"
+                                if connector_key == "nrc_adams_aps"
+                                else "l3-source-intake-package-preview-"
+                            )
+                            + "b" * 16
+                        ),
+                        "package_review_submit_record_ref": f"submit-{connector_key}",
+                        "pass_run_id": f"pass-{connector_key}",
+                        "payload_hashes": ["c" * 64, "d" * 64, "e" * 64],
+                        "prepare_record_ref": f"prepare-{connector_key}",
+                        "reconciliation_record_id": f"reconcile-{connector_key}",
+                        "result_review_record_ref": f"review-{connector_key}",
+                        "session_id": f"session-{connector_key}",
+                        "source_shape": dual_live_runtime_module._PHASE_B_SOURCE_SHAPES[
+                            connector_key
+                        ],
                         "source_record_id": f"source-{connector_key}",
                     }
                     for connector_key in (
@@ -1271,12 +1296,17 @@ def _capture_controller_child(
                 previous_record_sha256=previous_proof_sha256,
                 payload={
                     **common,
+                    **(
+                        {"action_receipts": action_receipts}
+                        if proof_scope == "production"
+                        else {}
+                    ),
                     "downstream_actions": downstream_actions,
                     "source_bindings": source_bindings,
                     "terminal_boundary": (
                         "mechanical_complete"
                         if proof_scope == "mechanical"
-                        else "owner_decision_required"
+                        else "handoff_prepared"
                     ),
                 },
             )
@@ -1511,7 +1541,6 @@ def test_child_proof_codec_binds_exact_chain_and_owned_identities() -> None:
         expected_proof_scope="mechanical",
     )
     assert second["previous_record_sha256"] == first["record_sha256"]
-
     tampered = {**second, "process_boot_id": "2" * 64}
     with pytest.raises(
         dual_live_runtime_module.DualLiveRuntimeError,
@@ -1527,6 +1556,91 @@ def test_child_proof_codec_binds_exact_chain_and_owned_identities() -> None:
             expected_proof_scope="mechanical",
         )
 
+
+def test_phase_b_production_proof_requires_exact_two_connector_bindings() -> None:
+    def binding(connector_key: str) -> dict[str, Any]:
+        return {
+            "analysis_plan_id": f"plan-{connector_key}",
+            "analysis_run_id": None,
+            "candidate_id": f"candidate-{connector_key}",
+            "connector_key": connector_key,
+            "connector_origin_receipt_hash": "1" * 64,
+            "connector_run_id": f"run-{connector_key}",
+            "connector_run_target_id": f"target-{connector_key}",
+            "construction_basis_hash": "2" * 64,
+            "handoff_export_envelope_ref": f"envelope-{connector_key}",
+            "output_package_ids": [
+                f"package-{connector_key}-{ordinal}" for ordinal in range(3)
+            ],
+            "package_kinds": list(
+                dual_live_runtime_module._PHASE_B_PACKAGE_KINDS
+            ),
+            "package_review_preview_hash": (
+                (
+                    "l3-qual-aps-package-preview-"
+                    if connector_key == "nrc_adams_aps"
+                    else "l3-source-intake-package-preview-"
+                )
+                + "3" * 16
+            ),
+            "package_review_submit_record_ref": f"submit-{connector_key}",
+            "pass_run_id": f"pass-{connector_key}",
+            "payload_hashes": ["4" * 64, "5" * 64, "6" * 64],
+            "prepare_record_ref": f"prepare-{connector_key}",
+            "reconciliation_record_id": f"reconcile-{connector_key}",
+            "result_review_record_ref": f"review-{connector_key}",
+            "session_id": f"session-{connector_key}",
+            "source_shape": dual_live_runtime_module._PHASE_B_SOURCE_SHAPES[
+                connector_key
+            ],
+            "source_record_id": f"source-{connector_key}",
+        }
+
+    actions = list(dual_live_runtime_module._PHASE_B_DOWNSTREAM_ACTIONS)
+    nrc = binding("nrc_adams_aps")
+    sciencebase = binding("sciencebase_mcs")
+    payload = {
+        "action_receipts": [
+            {"action": action, "result_sha256": "7" * 64}
+            for action in actions
+        ],
+        "boot_frame_sha256": "8" * 64,
+        "control_frame_sha256": "9" * 64,
+        "control_nonce_sha256": "a" * 64,
+        "downstream_actions": actions,
+        "exit_status_frame_sha256": "b" * 64,
+        "pre_activity_status_frame_sha256": "c" * 64,
+        "proof_scope": "production",
+        "source_bindings": [nrc, sciencebase],
+        "terminal_boundary": "handoff_prepared",
+    }
+
+    assert dual_live_runtime_module._validate_child_proof_payload(
+        phase="B",
+        event="downstream_chain",
+        ordinal=2,
+        payload=payload,
+        expected_proof_scope="production",
+    ) == payload
+
+    invalid_bindings = (
+        [nrc],
+        [nrc, nrc],
+        [sciencebase, nrc],
+        [nrc, sciencebase, deepcopy(sciencebase)],
+    )
+    for bindings in invalid_bindings:
+        with pytest.raises(
+            dual_live_runtime_module.DualLiveRuntimeError,
+            match="dual_live_child_proof_invalid",
+        ):
+            dual_live_runtime_module._validate_child_proof_payload(
+                phase="B",
+                event="downstream_chain",
+                ordinal=2,
+                payload={**payload, "source_bindings": bindings},
+                expected_proof_scope="production",
+            )
 
 @pytest.mark.parametrize("at_or_after_bound", (False, True))
 def test_controller_accepts_before_bound_and_rejects_at_or_after_bound(
@@ -1621,10 +1735,10 @@ def test_controller_accepts_before_bound_and_rejects_at_or_after_bound(
     (
         ("A", 24, "dual_live_phase_failed"),
         ("B", 25, "dual_live_phase_failed"),
-        ("B", 24, "dual_live_phase_b_owner_decision_required"),
+        ("B", 24, "dual_live_phase_failed"),
     ),
 )
-def test_controller_projects_only_reserved_phase_b_owner_exit_after_cleanup(
+def test_controller_projects_all_nonzero_child_exits_as_phase_failure(
     exit_phase: str,
     exit_code: int,
     expected_code: str,
@@ -3419,7 +3533,7 @@ def test_owned_child_dispatches_phase_workloads_under_distinct_guards() -> None:
             return {
                 "downstream_actions": [],
                 "source_bindings": [],
-                "terminal_boundary": "owner_decision_required",
+                "terminal_boundary": "handoff_prepared",
             }
 
     handles = {
@@ -3450,11 +3564,11 @@ def test_owned_child_dispatches_phase_workloads_under_distinct_guards() -> None:
         runtime_instance_id=str(CAMPAIGN_ID),
         process_boot_id="b" * 64,
     ) == (
-        runner._OWNER_DECISION_REQUIRED_EXIT_CODE,
+        0,
         {
             "downstream_actions": [],
             "source_bindings": [],
-            "terminal_boundary": "owner_decision_required",
+            "terminal_boundary": "handoff_prepared",
         },
     )
     assert events == [
@@ -3488,7 +3602,7 @@ def test_owned_child_does_not_translate_wrong_code_or_message_spoof() -> None:
 
     for error in (
         _CodeError("dual_live_phase_failed"),
-        RuntimeError("dual_live_phase_b_owner_decision_required"),
+        RuntimeError("dual_live_phase_b_projection_invalid"),
     ):
         runtime = SimpleNamespace(
             run_owned_phase_b_workload=lambda error=error: (
@@ -3528,11 +3642,8 @@ def test_public_runner_projects_only_reviewed_boundary_codes_secret_safely(
     inspection = dual_live_runtime_module.DualLiveRuntimeError(
         "dual_live_phase_timeout_inspection_required"
     )
-    owner_decision = dual_live_runtime_module.DualLiveRuntimeError(
-        "dual_live_phase_b_owner_decision_required"
-    )
     message_spoof = RuntimeError(
-        "dual_live_phase_b_owner_decision_required"
+        "dual_live_phase_timeout_inspection_required"
     )
     wrong_code = dual_live_runtime_module.DualLiveRuntimeError(
         "dual_live_phase_failed"
@@ -3540,13 +3651,11 @@ def test_public_runner_projects_only_reviewed_boundary_codes_secret_safely(
     unknown = RuntimeError("fixture-secret must never be emitted")
 
     assert runner._refuse(runner._allowlisted_refusal_code(inspection)) == 2
-    assert runner._refuse(runner._allowlisted_refusal_code(owner_decision)) == 2
     assert runner._refuse(runner._allowlisted_refusal_code(message_spoof)) == 2
     assert runner._refuse(runner._allowlisted_refusal_code(wrong_code)) == 2
     assert runner._refuse(runner._allowlisted_refusal_code(unknown)) == 2
     assert writes == [
         (2, b"dual_live_phase_timeout_inspection_required\n"),
-        (2, b"dual_live_phase_b_owner_decision_required\n"),
         (2, b"dual_live_run_refused\n"),
         (2, b"dual_live_run_refused\n"),
         (2, b"dual_live_run_refused\n"),
@@ -3672,7 +3781,7 @@ def test_owned_child_counter_ack_wait_is_bounded_and_revocation_aware(
         assert kernel.ack_waits >= 1
 
 
-def test_owned_phase_b_workload_is_secret_free_and_returns_owner_boundary(
+def test_owned_phase_b_workload_is_secret_free_and_returns_prepared_handoff(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -3744,7 +3853,7 @@ def test_owned_phase_b_workload_is_secret_free_and_returns_owner_boundary(
             or {
                 "downstream_actions": [],
                 "source_bindings": [],
-                "terminal_boundary": "owner_decision_required",
+                "terminal_boundary": "handoff_prepared",
             }
         ),
         raising=False,
@@ -3765,10 +3874,10 @@ def test_owned_phase_b_workload_is_secret_free_and_returns_owner_boundary(
         "rollback",
         "close",
     ]
-    assert projection["terminal_boundary"] == "owner_decision_required"
+    assert projection["terminal_boundary"] == "handoff_prepared"
 
 
-def test_owned_phase_b_prepares_both_candidates_without_approving(
+def test_owned_phase_b_completes_both_public_chains_to_prepared_handoff(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.services import (
@@ -3801,7 +3910,9 @@ def test_owned_phase_b_prepares_both_candidates_without_approving(
             return _Transaction()
 
     targets = SimpleNamespace(
+        nrc_run_id="nrc-run",
         nrc_target_id="nrc-target",
+        sciencebase_run_id="sciencebase-run",
         sciencebase_target_id="sciencebase-target",
         sciencebase_intake_record_id="sciencebase-intake",
     )
@@ -3851,7 +3962,21 @@ def test_owned_phase_b_prepares_both_candidates_without_approving(
         assert db is not None
         assert payload["query_basis"] == {"terms": ["dual-live-proof"]}
         events.append("nrc-material-preview")
-        return {"material_candidates": [{"candidate_id": "nrc-candidate"}]}
+        return {
+            "material_preview_id": "nrc-material",
+            "material_candidates": [
+                {
+                    "candidate_id": "nrc-candidate",
+                    "source_ref": "nrc-source",
+                    "query_basis": {},
+                    "provenance_ref": "nrc-provenance",
+                    "source_identity": {},
+                    "source_provenance": {},
+                    "payload": {},
+                    "load_summary": {},
+                }
+            ],
+        }
 
     monkeypatch.setattr(
         layer3_workbench,
@@ -3862,15 +3987,71 @@ def test_owned_phase_b_prepares_both_candidates_without_approving(
         layer3_connector_source_intake,
         "connector_source_intake_material_preview",
         lambda _db, **kwargs: events.append("sciencebase-material-preview")
-        or {"material_candidate": {"candidate_id": "sciencebase-candidate"}},
+        or {
+            "material_preview_id": "sciencebase-material",
+            "material_preview_hash": "3" * 64,
+            "material_candidate": {
+                "candidate_id": "sciencebase-candidate",
+                "source_class": (
+                    layer3_connector_source_intake
+                    .STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+                ),
+                "source_ref": "sciencebase-source",
+                "query_basis": {},
+                "provenance_ref": "sciencebase-provenance",
+                "source_identity": {},
+                "source_provenance": {},
+                "payload": {},
+                "load_summary": {},
+            },
+        },
     )
+
+    def gate_b(_db: object, payload: dict[str, Any]) -> dict[str, Any]:
+        candidate_id = payload["candidate_decisions"][0]["candidate_id"]
+        connector = (
+            "nrc" if candidate_id == "nrc-candidate" else "sciencebase"
+        )
+        events.append(f"{connector}-gate-b")
+        assert payload["candidate_decisions"][0]["decision"] == "approved"
+        return {"session_id": f"{connector}-session"}
+
     monkeypatch.setattr(
         layer3_workbench,
         "gate_b_decision",
-        lambda *_args, **_kwargs: pytest.fail("Phase B fabricated Gate-B approval"),
+        gate_b,
     )
 
-    dual_live_runtime_module._prepare_owned_phase_b(
+    def complete_chain(
+        _db: object,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        prefix = kwargs["action_prefix"]
+        events.append(f"{prefix}-complete")
+        assert kwargs["gate_b_result"] == {
+            "session_id": f"{prefix}-session"
+        }
+        actions = (
+            dual_live_runtime_module._PHASE_B_NRC_ACTIONS[3:]
+            if prefix == "nrc"
+            else dual_live_runtime_module._PHASE_B_SCIENCEBASE_ACTIONS[1:]
+        )
+        kwargs["action_receipts"].extend(
+            {"action": action, "result_sha256": "4" * 64}
+            for action in actions
+        )
+        return {
+            **kwargs["source_binding"],
+            "session_id": f"{prefix}-session",
+        }
+
+    monkeypatch.setattr(
+        dual_live_runtime_module,
+        "_complete_owned_phase_b_chain",
+        complete_chain,
+    )
+
+    projection = dual_live_runtime_module._prepare_owned_phase_b(
         _Db(),
         campaign_id=str(CAMPAIGN_ID),
         campaign_fingerprint=FINGERPRINT,
@@ -3890,9 +4071,166 @@ def test_owned_phase_b_prepares_both_candidates_without_approving(
         "nrc-preflight",
         "nrc-source-preview",
         "nrc-material-preview",
+        "nrc-gate-b",
+        "nrc-complete",
         "sciencebase-material-preview",
-        "rollback",
+        "sciencebase-gate-b",
+        "sciencebase-complete",
     ]
+    assert projection["terminal_boundary"] == "handoff_prepared"
+    assert projection["downstream_actions"] == list(
+        dual_live_runtime_module._PHASE_B_DOWNSTREAM_ACTIONS
+    )
+    assert [item["action"] for item in projection["action_receipts"]] == (
+        projection["downstream_actions"]
+    )
+    assert [item["connector_key"] for item in projection["source_bindings"]] == [
+        "nrc_adams_aps",
+        "sciencebase_mcs",
+    ]
+
+
+def test_owned_phase_b_finisher_binds_internal_handoff_and_fails_closed() -> None:
+    package_ids = ["package-0", "package-1", "package-2"]
+    package_hashes = ["4" * 64, "5" * 64, "6" * 64]
+    package_refs = ["canonical.json", "user.json", "review.json"]
+    no_delivery = {
+        flag: False
+        for flag in dual_live_runtime_module._PHASE_B_NO_DELIVERY_FLAGS
+    }
+    baseline = {
+        "gate_c_preview": {"next_state": "plan_preview_ready"},
+        "plan_preview": {
+            "preview_id": "preview-sciencebase",
+            "preview_hash": "1" * 64,
+        },
+        "plan_approval": {"analysis_plan_id": "plan-sciencebase"},
+        "execution_selection": {"pass_run_ids": ["pass-sciencebase"]},
+        "analysis_execution_start": {"analysis_run_id": "run-analysis"},
+        "execution_result_review": {
+            "review_state": "execution_result_review_approved",
+            "review_record_ref": "review-sciencebase",
+        },
+        "package_review_preview": {
+            "package_review_preview_hash": (
+                "l3-source-intake-package-preview-" + "2" * 16
+            ),
+        },
+        "package_construction_commit": {
+            "construction_basis_hash": "3" * 64,
+            "output_package_ids": package_ids,
+            "package_kinds": list(
+                dual_live_runtime_module._PHASE_B_PACKAGE_KINDS
+            ),
+            "payload_hashes": package_hashes,
+            "payload_refs": package_refs,
+            "reconciliation_record_id": "reconcile-sciencebase",
+        },
+        "package_review_submit": {
+            "package_review_state": "package_review_approved",
+            "schema_id": "layer3.source_intake_package_review_submit.v1",
+            "submit_record_ref": "submit-sciencebase",
+        },
+        "handoff_export_prepare": {
+            **no_delivery,
+            "export_mode": "prepare_only",
+            "handoff_export_envelope": {
+                **no_delivery,
+                "source_shape": "strict_sciencebase_connector_single_source",
+            },
+            "handoff_export_envelope_ref": "envelope-sciencebase",
+            "handoff_export_state": "handoff_export_prepared",
+            "handoff_target": "internal_export_envelope",
+            "prepare_record_ref": "prepare-sciencebase",
+            "source_shape": "strict_sciencebase_connector_single_source",
+        },
+    }
+
+    def run(
+        responses: dict[str, dict[str, Any]],
+    ) -> tuple[dict[str, Any], list[tuple[str, dict[str, Any]]], list[dict[str, str]]]:
+        calls: list[tuple[str, dict[str, Any]]] = []
+
+        def invoke(name: str, *_args: object) -> dict[str, Any]:
+            payload = _args[-1]
+            assert isinstance(payload, dict)
+            calls.append((name, deepcopy(payload)))
+            return deepcopy(responses[name])
+
+        workbench = SimpleNamespace(
+            **{
+                name: (
+                    lambda *_args, name=name: invoke(name, *_args)
+                )
+                for name in responses
+            }
+        )
+        receipts: list[dict[str, str]] = []
+        result = dual_live_runtime_module._complete_owned_phase_b_chain(
+            object(),
+            layer3_workbench=workbench,
+            connector_key="sciencebase_mcs",
+            action_prefix="sciencebase",
+            request_prefix="dual-live-campaign-sciencebase",
+            gate_b_result={"session_id": "session-sciencebase"},
+            source_binding={
+                "candidate_id": "candidate-sciencebase",
+                "connector_key": "sciencebase_mcs",
+                "connector_origin_receipt_hash": "7" * 64,
+                "connector_run_id": "run-sciencebase",
+                "connector_run_target_id": "target-sciencebase",
+                "source_record_id": "intake-sciencebase",
+            },
+            action_receipts=receipts,
+        )
+        return result, calls, receipts
+
+    result, calls, receipts = run(deepcopy(baseline))
+    assert [name for name, _payload in calls] == list(baseline)
+    assert [receipt["action"] for receipt in receipts] == list(
+        dual_live_runtime_module._PHASE_B_SCIENCEBASE_ACTIONS[1:]
+    )
+    assert result["output_package_ids"] == package_ids
+    assert result["payload_hashes"] == package_hashes
+    assert result["prepare_record_ref"] == "prepare-sciencebase"
+    assert calls[2][1]["operator_confirmation"] is True
+    assert calls[5][1]["operator_decision"] == "approved"
+    assert calls[8][1]["operator_decision"] == "approved"
+    assert calls[9][1] == {
+        **calls[9][1],
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+        "operator_decision": "authorize_prepare",
+    }
+
+    invalids = []
+    top_flag = deepcopy(baseline)
+    top_flag["handoff_export_prepare"]["external_export_enabled"] = True
+    invalids.append(top_flag)
+    nested_flag = deepcopy(baseline)
+    nested_flag["handoff_export_prepare"]["handoff_export_envelope"][
+        "dispatch_enabled"
+    ] = True
+    invalids.append(nested_flag)
+    wrong_shape = deepcopy(baseline)
+    wrong_shape["handoff_export_prepare"]["source_shape"] = "wrong"
+    invalids.append(wrong_shape)
+    duplicate_packages = deepcopy(baseline)
+    duplicate_packages["package_construction_commit"]["output_package_ids"] = [
+        "package-0",
+        "package-0",
+        "package-2",
+    ]
+    invalids.append(duplicate_packages)
+    blank_ref = deepcopy(baseline)
+    blank_ref["package_construction_commit"]["payload_refs"][1] = ""
+    invalids.append(blank_ref)
+    bad_hash = deepcopy(baseline)
+    bad_hash["package_construction_commit"]["construction_basis_hash"] = "bad"
+    invalids.append(bad_hash)
+    for invalid in invalids:
+        with pytest.raises(dual_live_runtime_module.DualLiveRuntimeError):
+            run(invalid)
 
 
 def test_public_dual_live_campaign_stages_locks_derives_source_and_cleans(
@@ -4528,6 +4866,8 @@ def test_strict_runner_public_mode_reaches_runtime_and_emits_canonical_json(
     monkeypatch: pytest.MonkeyPatch,
     capfd: pytest.CaptureFixture[str],
 ) -> None:
+    from app.services import dual_live_windows
+
     tool_path = Path(__file__).resolve().parents[2] / "tools" / "dual_live_run.py"
     spec = importlib.util.spec_from_file_location("dual_live_run_test", tool_path)
     assert spec is not None and spec.loader is not None
@@ -4557,6 +4897,10 @@ def test_strict_runner_public_mode_reaches_runtime_and_emits_canonical_json(
     class _NoopGuards:
         def __init__(self, phase: str) -> None:
             assert phase == "wrapper"
+            self._guard = lambda *_args, **_kwargs: None
+
+        def install_wrapper_network_denial(self) -> None:
+            return None
 
         def install(self) -> None:
             return None
@@ -4565,6 +4909,16 @@ def test_strict_runner_public_mode_reaches_runtime_and_emits_canonical_json(
             return None
 
     monkeypatch.setattr(runner, "_StandardLibraryGuards", _NoopGuards)
+    monkeypatch.setattr(
+        runner,
+        "_assert_wrapper_backend_not_preloaded",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_register_subprocess_gate_baseline",
+        lambda _guard: None,
+    )
     monkeypatch.setattr(runner, "_preflight_public_paths", lambda _env: None)
     monkeypatch.setattr(
         runner,
@@ -4598,7 +4952,6 @@ def test_strict_runner_public_mode_is_reachable_under_reviewed_posture(
     tmp_path: Path,
 ) -> None:
     tool_path = Path(__file__).resolve().parents[2] / "tools" / "dual_live_run.py"
-    backend_path = Path(__file__).resolve().parents[1]
     report = {
         "campaign_id": str(CAMPAIGN_ID),
         "campaign_fingerprint": FINGERPRINT,
@@ -4612,15 +4965,23 @@ def test_strict_runner_public_mode_is_reachable_under_reviewed_posture(
     }
     probe = "\n".join(
         (
-            "import importlib.util, sys, warnings",
+            "import importlib.abc, importlib.util, sys, warnings",
             "warnings.filterwarnings('ignore')",
-            f"sys.path.insert(0, {str(backend_path)!r})",
-            "from app.services import dual_live_runtime as runtime",
-            "from app.services import dual_live_windows as windows",
-            "def run(campaign_id, fingerprint):",
-            "    windows._require_reviewed_controller_python_posture()",
-            f"    return {report!r}",
-            "runtime.run_dual_live_campaign = run",
+            "class RuntimeLoader(importlib.abc.Loader):",
+            "    def create_module(self, spec):",
+            "        return None",
+            "    def exec_module(self, module):",
+            "        def run(campaign_id, fingerprint):",
+            "            from app.services import dual_live_windows as windows",
+            "            windows._require_reviewed_controller_python_posture()",
+            f"            return {report!r}",
+            "        module.run_dual_live_campaign = run",
+            "class RuntimeFinder(importlib.abc.MetaPathFinder):",
+            "    def find_spec(self, fullname, path, target=None):",
+            "        if fullname == 'app.services.dual_live_runtime':",
+            "            return importlib.util.spec_from_loader(fullname, RuntimeLoader())",
+            "        return None",
+            "sys.meta_path.insert(0, RuntimeFinder())",
             f"spec = importlib.util.spec_from_file_location('dual_live_run_probe', {str(tool_path)!r})",
             "runner = importlib.util.module_from_spec(spec)",
             "spec.loader.exec_module(runner)",
@@ -5237,11 +5598,11 @@ def test_production_timeout_preserves_capture_cleanup_failure_precedence(
     assert capture_error.__context__ is primary
 
 
-def test_production_owner_boundary_preserves_cleanup_failure_precedence(
+def test_production_phase_failure_preserves_cleanup_failure_precedence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     primary = dual_live_runtime_module.DualLiveRuntimeError(
-        "dual_live_phase_b_owner_decision_required"
+        "dual_live_phase_failed"
     )
     capture_error = OSError("bounded fixture close failure")
     context = _raw_production_context_for_failure(

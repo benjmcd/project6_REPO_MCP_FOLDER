@@ -63,7 +63,6 @@ MAX_STREAM_BYTES = 16 * 1024 * 1024
 MAX_CAPTURE_BYTES = 32 * 1024 * 1024
 PUMP_CANCEL_JOIN_SECONDS = 1.0
 _CHILD_WAIT_POLL_SECONDS = 0.05
-_PHASE_B_OWNER_DECISION_EXIT_CODE = 24
 PIPE_STREAM_CLASSES = ("app", "http", "stdout", "stderr")
 DUAL_LIVE_CAMPAIGN_RUN_SCHEMA_ID = "project6.dual_live_campaign_run.v1"
 DUAL_LIVE_PHASE_TIMEOUT_SCHEMA_ID = "project6.dual_live_phase_timeout.v1"
@@ -149,6 +148,63 @@ _PHASE_B_FORBIDDEN_ENVIRONMENT = frozenset(
     )
 )
 _PHASE_B_RUN_SCAN_CAP = 10_000
+_PHASE_B_PACKAGE_KINDS = (
+    "canonical_internal",
+    "user_facing",
+    "review_facing",
+)
+_PHASE_B_SOURCE_SHAPES = MappingProxyType(
+    {
+        "nrc_adams_aps": "aps_content_document",
+        "sciencebase_mcs": "strict_sciencebase_connector_single_source",
+    }
+)
+_PHASE_B_NO_DELIVERY_FLAGS = (
+    "external_handoff_enabled",
+    "external_export_enabled",
+    "dispatch_enabled",
+    "aps_handoff_enabled",
+    "external_export_download_enabled",
+    "connector_dispatch_enabled",
+    "provider_public_url_enabled",
+)
+_PHASE_B_NRC_ACTIONS = (
+    "nrc_preflight",
+    "nrc_source_preview",
+    "nrc_material_preview",
+    "nrc_gate_b_decision",
+    "nrc_gate_c_typing",
+    "nrc_plan_preview",
+    "nrc_plan_approval",
+    "nrc_execution_selection",
+    "nrc_analysis_execution_start",
+    "nrc_execution_result_review",
+    "nrc_package_review_preview",
+    "nrc_package_construction_commit",
+    "nrc_package_review_submit",
+    "nrc_handoff_export_prepare",
+)
+_PHASE_B_SCIENCEBASE_ACTIONS = (
+    "sciencebase_material_preview",
+    "sciencebase_gate_b_decision",
+    "sciencebase_gate_c_typing",
+    "sciencebase_plan_preview",
+    "sciencebase_plan_approval",
+    "sciencebase_execution_selection",
+    "sciencebase_analysis_execution_start",
+    "sciencebase_execution_result_review",
+    "sciencebase_package_review_preview",
+    "sciencebase_package_construction_commit",
+    "sciencebase_package_review_submit",
+    "sciencebase_handoff_export_prepare",
+)
+_PHASE_B_DOWNSTREAM_ACTIONS = (
+    "nrc_strict_parse",
+    "nrc_origin_receipt",
+    "sciencebase_origin_receipt",
+    *_PHASE_B_NRC_ACTIONS,
+    *_PHASE_B_SCIENCEBASE_ACTIONS,
+)
 LOGGER_TOPOLOGY_SCHEMA_ID = "project6.dual_live_logger_topology.v1"
 WINDOWS_MIB_TCP_STATES = (
     "MIB_TCP_STATE_CLOSED",
@@ -1532,7 +1588,7 @@ def _validate_child_proof_payload(
             )
         return value
     if phase == "B" and event == "downstream_chain" and ordinal == 2:
-        if set(value) != {
+        expected_keys = {
             "boot_frame_sha256",
             "control_frame_sha256",
             "control_nonce_sha256",
@@ -1542,7 +1598,10 @@ def _validate_child_proof_payload(
             "proof_scope",
             "source_bindings",
             "terminal_boundary",
-        }:
+        }
+        if expected_proof_scope == "production":
+            expected_keys.add("action_receipts")
+        if set(value) != expected_keys:
             _fail(code)
         _proof_hash_fields(
             value,
@@ -1562,18 +1621,26 @@ def _validate_child_proof_payload(
             if actions or bindings or value.get("terminal_boundary") != "mechanical_complete":
                 _fail(code)
             return value
-        expected_actions = (
-            "nrc_strict_parse",
-            "nrc_origin_receipt",
-            "sciencebase_origin_receipt",
-            "nrc_preflight",
-            "nrc_source_preview",
-            "nrc_material_preview",
-            "sciencebase_material_preview",
-            "owner_decision_required",
-        )
-        if tuple(actions) != expected_actions or value.get("terminal_boundary") != "owner_decision_required":
+        action_receipts = value.get("action_receipts")
+        if (
+            tuple(actions) != _PHASE_B_DOWNSTREAM_ACTIONS
+            or value.get("terminal_boundary") != "handoff_prepared"
+            or not isinstance(action_receipts, list)
+            or len(action_receipts) != len(_PHASE_B_DOWNSTREAM_ACTIONS)
+        ):
             _fail(code)
+        for expected_action, receipt in zip(
+            _PHASE_B_DOWNSTREAM_ACTIONS,
+            action_receipts,
+            strict=True,
+        ):
+            if (
+                type(receipt) is not dict
+                or set(receipt) != {"action", "result_sha256"}
+                or receipt.get("action") != expected_action
+            ):
+                _fail(code)
+            _proof_hash_fields(receipt, ("result_sha256",))
         if tuple(item.get("connector_key") for item in bindings if isinstance(item, dict)) != (
             "nrc_adams_aps",
             "sciencebase_mcs",
@@ -1581,20 +1648,78 @@ def _validate_child_proof_payload(
             _fail(code)
         for item in bindings:
             if type(item) is not dict or set(item) != {
+                "analysis_plan_id",
+                "analysis_run_id",
                 "candidate_id",
                 "connector_key",
                 "connector_origin_receipt_hash",
+                "connector_run_id",
                 "connector_run_target_id",
+                "construction_basis_hash",
+                "handoff_export_envelope_ref",
+                "output_package_ids",
+                "package_kinds",
+                "package_review_preview_hash",
+                "package_review_submit_record_ref",
+                "pass_run_id",
+                "payload_hashes",
+                "prepare_record_ref",
+                "reconciliation_record_id",
+                "result_review_record_ref",
+                "session_id",
+                "source_shape",
                 "source_record_id",
             }:
                 _fail(code)
             for name in (
+                "analysis_plan_id",
                 "candidate_id",
+                "connector_run_id",
                 "connector_run_target_id",
+                "handoff_export_envelope_ref",
+                "package_review_preview_hash",
+                "package_review_submit_record_ref",
+                "pass_run_id",
+                "prepare_record_ref",
+                "reconciliation_record_id",
+                "result_review_record_ref",
+                "session_id",
                 "source_record_id",
             ):
                 _proof_identifier(item[name], code)
-            _proof_hash_fields(item, ("connector_origin_receipt_hash",))
+            if item.get("analysis_run_id") is not None:
+                _proof_identifier(item["analysis_run_id"], code)
+            if item.get("source_shape") != _PHASE_B_SOURCE_SHAPES.get(
+                item["connector_key"]
+            ):
+                _fail(code)
+            package_ids = item.get("output_package_ids")
+            package_kinds = item.get("package_kinds")
+            payload_hashes = item.get("payload_hashes")
+            if (
+                not isinstance(package_ids, list)
+                or len(package_ids) != 3
+                or len(set(package_ids)) != 3
+                or not all(
+                    isinstance(package_id, str) and package_id
+                    for package_id in package_ids
+                )
+                or tuple(package_kinds or ()) != _PHASE_B_PACKAGE_KINDS
+                or not isinstance(payload_hashes, list)
+                or len(payload_hashes) != 3
+            ):
+                _fail(code)
+            for package_id in package_ids:
+                _proof_identifier(package_id, code)
+            for payload_hash in payload_hashes:
+                _proof_hash_fields({"payload_hash": payload_hash}, ("payload_hash",))
+            _proof_hash_fields(
+                item,
+                (
+                    "connector_origin_receipt_hash",
+                    "construction_basis_hash",
+                ),
+            )
         return value
     _fail(code)
 
@@ -3122,11 +3247,6 @@ def _run_two_phase_controller(
                 _fail("dual_live_phase_stopped")
             if exit_code != 0:
                 stop_latch.latch("child_exit_nonzero")
-                if (
-                    phase == "B"
-                    and exit_code == _PHASE_B_OWNER_DECISION_EXIT_CODE
-                ):
-                    _fail("dual_live_phase_b_owner_decision_required")
                 _fail("dual_live_phase_failed")
         except BaseException as exc:
             reason = stop_latch.reason_code
@@ -5486,7 +5606,9 @@ def _phase_a_acquisition_projection(
 
 @dataclass(frozen=True, slots=True)
 class _OwnedPhaseBTargets:
+    nrc_run_id: str
     nrc_target_id: str
+    sciencebase_run_id: str
     sciencebase_target_id: str
     sciencebase_intake_record_id: str
 
@@ -5721,12 +5843,406 @@ def _resolve_owned_phase_b_targets(
     ):
         _fail("dual_live_phase_b_sciencebase_intake_invalid")
     return _OwnedPhaseBTargets(
+        nrc_run_id=str(selected["nrc_adams_aps"].connector_run_id),
         nrc_target_id=str(selected["nrc_adams_aps"].connector_run_target_id),
+        sciencebase_run_id=str(sciencebase_target.connector_run_id),
         sciencebase_target_id=str(sciencebase_target.connector_run_target_id),
         sciencebase_intake_record_id=str(
             intake.connector_source_intake_record_id
         ),
     )
+
+
+def _owned_phase_b_json_mapping(value: object, code: str) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        _fail(code)
+    try:
+        copied = strict_json_loads(canonical_json_bytes(dict(value)))
+    except (TypeError, ValueError):
+        _fail(code)
+    if type(copied) is not dict:
+        _fail(code)
+    return cast(dict[str, Any], copied)
+
+
+def _owned_phase_b_record_action(
+    receipts: list[dict[str, str]],
+    *,
+    action: str,
+    result: object,
+) -> dict[str, Any]:
+    copied = _owned_phase_b_json_mapping(
+        result,
+        f"dual_live_phase_b_{action}_invalid",
+    )
+    receipts.append(
+        {
+            "action": action,
+            "result_sha256": hashlib.sha256(
+                canonical_json_bytes(copied)
+            ).hexdigest(),
+        }
+    )
+    return copied
+
+
+def _owned_phase_b_required_text(
+    value: Mapping[str, Any],
+    field: str,
+    code: str,
+) -> str:
+    text = value.get(field)
+    if not isinstance(text, str) or not text.strip():
+        _fail(code)
+    return text
+
+
+def _owned_phase_b_decision_basis(candidate: Mapping[str, Any]) -> dict[str, Any]:
+    fields = (
+        "source_ref",
+        "query_basis",
+        "provenance_ref",
+        "source_identity",
+        "source_provenance",
+        "payload",
+        "load_summary",
+    )
+    if any(field not in candidate for field in fields):
+        _fail("dual_live_phase_b_candidate_decision_basis_invalid")
+    return _owned_phase_b_json_mapping(
+        {field: candidate[field] for field in fields},
+        "dual_live_phase_b_candidate_decision_basis_invalid",
+    )
+
+
+def _complete_owned_phase_b_chain(
+    db: Any,
+    *,
+    layer3_workbench: Any,
+    connector_key: str,
+    action_prefix: str,
+    request_prefix: str,
+    gate_b_result: object,
+    source_binding: Mapping[str, Any],
+    action_receipts: list[dict[str, str]],
+) -> dict[str, Any]:
+    gate_b = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_gate_b_decision",
+        result=gate_b_result,
+    )
+    session_id = _owned_phase_b_required_text(
+        gate_b,
+        "session_id",
+        "dual_live_phase_b_gate_b_session_invalid",
+    )
+    gate_c = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_gate_c_typing",
+        result=layer3_workbench.gate_c_preview(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-gate-c",
+                "session_id": session_id,
+                "commit_typing": True,
+            },
+        ),
+    )
+    if gate_c.get("next_state") != "plan_preview_ready":
+        _fail("dual_live_phase_b_gate_c_not_ready")
+    plan_preview = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_plan_preview",
+        result=layer3_workbench.plan_preview(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-plan-preview",
+                "session_id": session_id,
+            },
+        ),
+    )
+    preview_id = _owned_phase_b_required_text(
+        plan_preview,
+        "preview_id",
+        "dual_live_phase_b_plan_preview_invalid",
+    )
+    preview_hash = _owned_phase_b_required_text(
+        plan_preview,
+        "preview_hash",
+        "dual_live_phase_b_plan_preview_invalid",
+    )
+    if _LOWERCASE_SHA256.fullmatch(preview_hash) is None:
+        _fail("dual_live_phase_b_plan_preview_invalid")
+    approval = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_plan_approval",
+        result=layer3_workbench.plan_approval(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-plan-approval",
+                "session_id": session_id,
+                "preview_id": preview_id,
+                "preview_hash": preview_hash,
+                "operator_confirmation": True,
+            },
+        ),
+    )
+    analysis_plan_id = _owned_phase_b_required_text(
+        approval,
+        "analysis_plan_id",
+        "dual_live_phase_b_plan_approval_invalid",
+    )
+    selection = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_execution_selection",
+        result=layer3_workbench.execution_selection(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-selection",
+                "session_id": session_id,
+                "analysis_plan_id": analysis_plan_id,
+                "preview_id": preview_id,
+                "preview_hash": preview_hash,
+            },
+        ),
+    )
+    pass_run_ids = selection.get("pass_run_ids")
+    if (
+        not isinstance(pass_run_ids, list)
+        or len(pass_run_ids) != 1
+        or not isinstance(pass_run_ids[0], str)
+        or not pass_run_ids[0]
+    ):
+        _fail("dual_live_phase_b_execution_selection_invalid")
+    pass_run_id = pass_run_ids[0]
+    common = {
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_id": preview_id,
+        "preview_hash": preview_hash,
+    }
+    start = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_analysis_execution_start",
+        result=layer3_workbench.analysis_execution_start(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-start",
+                **common,
+            },
+        ),
+    )
+    analysis_run_id_value = start.get("analysis_run_id")
+    analysis_run_id = (
+        analysis_run_id_value
+        if isinstance(analysis_run_id_value, str) and analysis_run_id_value
+        else None
+    )
+    review = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_execution_result_review",
+        result=layer3_workbench.execution_result_review(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-review",
+                **common,
+                "analysis_run_id": analysis_run_id,
+                "operator_decision": "approved",
+                "reviewed_output_items": [],
+            },
+        ),
+    )
+    if review.get("review_state") != "execution_result_review_approved":
+        _fail("dual_live_phase_b_result_review_not_approved")
+    review_ref = _owned_phase_b_required_text(
+        review,
+        "review_record_ref",
+        "dual_live_phase_b_result_review_invalid",
+    )
+    package_preview = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_package_review_preview",
+        result=layer3_workbench.package_review_preview(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-package-preview",
+                **common,
+                "analysis_run_id": analysis_run_id,
+                "result_review_record_ref": review_ref,
+            },
+        ),
+    )
+    package_preview_hash = _owned_phase_b_required_text(
+        package_preview,
+        "package_review_preview_hash",
+        "dual_live_phase_b_package_preview_invalid",
+    )
+    package_commit = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_package_construction_commit",
+        result=layer3_workbench.package_construction_commit(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-package-commit",
+                **common,
+                "analysis_run_id": analysis_run_id,
+                "result_review_record_ref": review_ref,
+                "package_review_preview_hash": package_preview_hash,
+                "expected_package_kinds": list(_PHASE_B_PACKAGE_KINDS),
+            },
+        ),
+    )
+    output_package_ids = package_commit.get("output_package_ids")
+    payload_hashes = package_commit.get("payload_hashes")
+    payload_refs = package_commit.get("payload_refs")
+    if (
+        tuple(package_commit.get("package_kinds") or ()) != _PHASE_B_PACKAGE_KINDS
+        or not isinstance(output_package_ids, list)
+        or len(output_package_ids) != 3
+        or len(set(output_package_ids)) != 3
+        or not all(isinstance(item, str) and item for item in output_package_ids)
+        or not isinstance(payload_hashes, list)
+        or len(payload_hashes) != 3
+        or not all(
+            isinstance(item, str) and _LOWERCASE_SHA256.fullmatch(item)
+            for item in payload_hashes
+        )
+        or not isinstance(payload_refs, list)
+        or len(payload_refs) != 3
+        or not all(isinstance(item, str) and item for item in payload_refs)
+    ):
+        _fail("dual_live_phase_b_package_commit_invalid")
+
+    construction_basis_hash = _owned_phase_b_required_text(
+        package_commit,
+        "construction_basis_hash",
+        "dual_live_phase_b_package_commit_invalid",
+    )
+    if _LOWERCASE_SHA256.fullmatch(construction_basis_hash) is None:
+        _fail("dual_live_phase_b_package_commit_invalid")
+    reconciliation_record_id = _owned_phase_b_required_text(
+        package_commit,
+        "reconciliation_record_id",
+        "dual_live_phase_b_package_commit_invalid",
+    )
+    submit = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_package_review_submit",
+        result=layer3_workbench.package_review_submit(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-package-submit",
+                **common,
+                "analysis_run_id": analysis_run_id,
+                "result_review_record_ref": review_ref,
+                "package_review_preview_hash": package_preview_hash,
+                "construction_basis_hash": construction_basis_hash,
+                "reconciliation_record_id": reconciliation_record_id,
+                "output_package_ids": output_package_ids,
+                "payload_refs": payload_refs,
+                "payload_hashes": payload_hashes,
+                "expected_package_kinds": list(_PHASE_B_PACKAGE_KINDS),
+                "operator_decision": "approved",
+            },
+        ),
+    )
+    if submit.get("package_review_state") != "package_review_approved":
+        _fail("dual_live_phase_b_package_submit_not_approved")
+    submit_ref = _owned_phase_b_required_text(
+        submit,
+        "submit_record_ref",
+        "dual_live_phase_b_package_submit_invalid",
+    )
+    submit_schema_id = _owned_phase_b_required_text(
+        submit,
+        "schema_id",
+        "dual_live_phase_b_package_submit_invalid",
+    )
+    handoff = _owned_phase_b_record_action(
+        action_receipts,
+        action=f"{action_prefix}_handoff_export_prepare",
+        result=layer3_workbench.handoff_export_prepare(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-handoff",
+                **common,
+                "analysis_run_id": analysis_run_id,
+                "result_review_record_ref": review_ref,
+                "package_review_preview_hash": package_preview_hash,
+                "construction_basis_hash": construction_basis_hash,
+                "reconciliation_record_id": reconciliation_record_id,
+                "package_review_submit_record_ref": submit_ref,
+                "package_review_state": submit["package_review_state"],
+                "package_review_submit_schema_id": submit_schema_id,
+                "handoff_target": "internal_export_envelope",
+                "export_mode": "prepare_only",
+                "operator_decision": "authorize_prepare",
+                "output_package_ids": output_package_ids,
+                "payload_refs": payload_refs,
+                "payload_hashes": payload_hashes,
+                "expected_package_kinds": list(_PHASE_B_PACKAGE_KINDS),
+            },
+        ),
+    )
+    expected_source_shape = _PHASE_B_SOURCE_SHAPES.get(connector_key)
+    handoff_envelope = handoff.get("handoff_export_envelope")
+    if (
+        expected_source_shape is None
+        or handoff.get("handoff_export_state") != "handoff_export_prepared"
+        or handoff.get("handoff_target") != "internal_export_envelope"
+        or handoff.get("export_mode") != "prepare_only"
+        or handoff.get("source_shape") != expected_source_shape
+        or any(handoff.get(flag) is not False for flag in _PHASE_B_NO_DELIVERY_FLAGS)
+        or not isinstance(handoff_envelope, Mapping)
+        or handoff_envelope.get("source_shape") != expected_source_shape
+        or any(
+            handoff_envelope.get(flag) is not False
+            for flag in _PHASE_B_NO_DELIVERY_FLAGS
+        )
+    ):
+        _fail("dual_live_phase_b_handoff_not_prepared")
+    prepare_record_ref = _owned_phase_b_required_text(
+        handoff,
+        "prepare_record_ref",
+        "dual_live_phase_b_handoff_invalid",
+    )
+    envelope_ref = _owned_phase_b_required_text(
+        handoff,
+        "handoff_export_envelope_ref",
+        "dual_live_phase_b_handoff_invalid",
+    )
+    source_shape = _owned_phase_b_required_text(
+        handoff,
+        "source_shape",
+        "dual_live_phase_b_handoff_invalid",
+    )
+    binding = _owned_phase_b_json_mapping(
+        source_binding,
+        "dual_live_phase_b_source_binding_invalid",
+    )
+    binding.update(
+        {
+            "analysis_plan_id": analysis_plan_id,
+            "analysis_run_id": analysis_run_id,
+            "construction_basis_hash": construction_basis_hash,
+            "handoff_export_envelope_ref": envelope_ref,
+            "package_kinds": list(_PHASE_B_PACKAGE_KINDS),
+            "package_review_preview_hash": package_preview_hash,
+            "package_review_submit_record_ref": submit_ref,
+            "pass_run_id": pass_run_id,
+            "payload_hashes": list(payload_hashes),
+            "prepare_record_ref": prepare_record_ref,
+            "reconciliation_record_id": reconciliation_record_id,
+            "result_review_record_ref": review_ref,
+            "session_id": session_id,
+            "source_shape": source_shape,
+            "output_package_ids": list(output_package_ids),
+        }
+    )
+    if binding.get("connector_key") != connector_key:
+        _fail("dual_live_phase_b_source_binding_invalid")
+    return binding
 
 
 def _prepare_owned_phase_b(
@@ -5751,6 +6267,7 @@ def _prepare_owned_phase_b(
     )
     if db.rollback() is not None:
         _fail("dual_live_phase_b_database_rollback_failed")
+    action_receipts: list[dict[str, str]] = []
     linkage = nrc_aps_phase_b_linkage.bind_strict_nrc_phase_b_linkage(
         db,
         connector_run_target_id=targets.nrc_target_id,
@@ -5758,37 +6275,49 @@ def _prepare_owned_phase_b(
     content_id = getattr(linkage, "content_id", None)
     if not isinstance(content_id, str) or not content_id.strip():
         _fail("dual_live_phase_b_nrc_linkage_invalid")
+    _owned_phase_b_record_action(
+        action_receipts,
+        action="nrc_strict_parse",
+        result={
+            "connector_run_id": targets.nrc_run_id,
+            "connector_run_target_id": targets.nrc_target_id,
+            "content_id": content_id,
+        },
+    )
 
     origins: dict[str, dict[str, Any]] = {}
-    for target_id in (
-        targets.nrc_target_id,
-        targets.sciencebase_target_id,
+    for action, target_id in (
+        ("nrc_origin_receipt", targets.nrc_target_id),
+        ("sciencebase_origin_receipt", targets.sciencebase_target_id),
     ):
         with db.begin():
             projection = layer3_origin_continuity.mint_connector_origin_receipt(
                 db,
                 connector_run_target_id=target_id,
             )
-            if (
-                not isinstance(projection, Mapping)
-                or projection.get("connector_run_target_id") != target_id
-                or not isinstance(
-                    projection.get("connector_origin_receipt_hash"), str
-                )
-                or _LOWERCASE_SHA256.fullmatch(
-                    str(projection["connector_origin_receipt_hash"])
-                )
-                is None
-            ):
-                _fail("dual_live_phase_b_origin_projection_invalid")
-            origins[target_id] = dict(projection)
+        origin = _owned_phase_b_record_action(
+            action_receipts,
+            action=action,
+            result=projection,
+        )
+        if (
+            origin.get("connector_run_target_id") != target_id
+            or not isinstance(origin.get("connector_origin_receipt_hash"), str)
+            or _LOWERCASE_SHA256.fullmatch(
+                str(origin["connector_origin_receipt_hash"])
+            )
+            is None
+        ):
+            _fail("dual_live_phase_b_origin_projection_invalid")
+        origins[target_id] = origin
 
-    result: dict[str, Any] | None = None
-    try:
-        request_prefix = f"dual-live-{campaign_id}-nrc"
-        preflight = layer3_workbench.preflight(
+    nrc_prefix = f"dual-live-{campaign_id}-nrc"
+    preflight = _owned_phase_b_record_action(
+        action_receipts,
+        action="nrc_preflight",
+        result=layer3_workbench.preflight(
             {
-                "client_request_id": f"{request_prefix}-preflight",
+                "client_request_id": f"{nrc_prefix}-preflight",
                 "natural_language_intent": (
                     "Review the acquired NRC APS document as qualitative source material."
                 ),
@@ -5796,52 +6325,115 @@ def _prepare_owned_phase_b(
                     "source_classes": ["aps_content_document"]
                 },
             }
-        )
-        preflight_id = preflight.get("preflight_id")
-        if not isinstance(preflight_id, str) or not preflight_id:
-            _fail("dual_live_phase_b_nrc_preflight_invalid")
-        source = layer3_workbench.source_preview(
+        ),
+    )
+    preflight_id = _owned_phase_b_required_text(
+        preflight,
+        "preflight_id",
+        "dual_live_phase_b_nrc_preflight_invalid",
+    )
+    source = _owned_phase_b_record_action(
+        action_receipts,
+        action="nrc_source_preview",
+        result=layer3_workbench.source_preview(
             {
-                "client_request_id": f"{request_prefix}-source",
+                "client_request_id": f"{nrc_prefix}-source",
                 "preflight_id": preflight_id,
                 "selected_source_classes": ["aps_content_document"],
             }
-        )
-        source_set_id = source.get("source_set_id")
-        source_candidates = source.get("source_candidates")
-        if (
-            not isinstance(source_set_id, str)
-            or not source_set_id
-            or not isinstance(source_candidates, list)
-            or len(source_candidates) != 1
-            or not isinstance(source_candidates[0], Mapping)
-            or not isinstance(
-                source_candidates[0].get("source_candidate_id"), str
-            )
-        ):
-            _fail("dual_live_phase_b_nrc_source_preview_invalid")
-        material = layer3_workbench.material_preview(
+        ),
+    )
+    source_set_id = _owned_phase_b_required_text(
+        source,
+        "source_set_id",
+        "dual_live_phase_b_nrc_source_preview_invalid",
+    )
+    source_candidates = source.get("source_candidates")
+    if (
+        not isinstance(source_candidates, list)
+        or len(source_candidates) != 1
+        or not isinstance(source_candidates[0], Mapping)
+    ):
+        _fail("dual_live_phase_b_nrc_source_preview_invalid")
+    source_candidate_id = _owned_phase_b_required_text(
+        source_candidates[0],
+        "source_candidate_id",
+        "dual_live_phase_b_nrc_source_preview_invalid",
+    )
+    nrc_material = _owned_phase_b_record_action(
+        action_receipts,
+        action="nrc_material_preview",
+        result=layer3_workbench.material_preview(
             {
-                "client_request_id": f"{request_prefix}-material",
+                "client_request_id": f"{nrc_prefix}-material",
                 "preflight_id": preflight_id,
                 "source_set_id": source_set_id,
-                "source_candidate_ids": [
-                    source_candidates[0]["source_candidate_id"]
-                ],
+                "source_candidate_ids": [source_candidate_id],
                 "aps_content_document_ids": [content_id],
                 "query_basis": {"terms": ["dual-live-proof"]},
             },
             db,
-        )
-        nrc_candidates = material.get("material_candidates")
-        if (
-            not isinstance(nrc_candidates, list)
-            or len(nrc_candidates) != 1
-            or not isinstance(nrc_candidates[0], Mapping)
-            or not isinstance(nrc_candidates[0].get("candidate_id"), str)
-        ):
-            _fail("dual_live_phase_b_nrc_material_preview_invalid")
-        sciencebase_preview = (
+        ),
+    )
+    nrc_candidates = nrc_material.get("material_candidates")
+    if (
+        not isinstance(nrc_candidates, list)
+        or len(nrc_candidates) != 1
+        or not isinstance(nrc_candidates[0], Mapping)
+    ):
+        _fail("dual_live_phase_b_nrc_material_preview_invalid")
+    nrc_candidate = nrc_candidates[0]
+    nrc_candidate_id = _owned_phase_b_required_text(
+        nrc_candidate,
+        "candidate_id",
+        "dual_live_phase_b_nrc_material_preview_invalid",
+    )
+    nrc_gate_b = layer3_workbench.gate_b_decision(
+        db,
+        {
+            "client_request_id": f"{nrc_prefix}-gate-b",
+            "preflight_id": preflight_id,
+            "source_set_id": source_set_id,
+            "material_preview_id": nrc_material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": nrc_candidate_id,
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": _owned_phase_b_decision_basis(
+                        nrc_candidate
+                    ),
+                }
+            ],
+            "commit_reason": "dual_live_campaign_nrc",
+            "actor": "dual_live_campaign",
+        },
+    )
+    nrc_binding = _complete_owned_phase_b_chain(
+        db,
+        layer3_workbench=layer3_workbench,
+        connector_key="nrc_adams_aps",
+        action_prefix="nrc",
+        request_prefix=nrc_prefix,
+        gate_b_result=nrc_gate_b,
+        source_binding={
+            "candidate_id": nrc_candidate_id,
+            "connector_key": "nrc_adams_aps",
+            "connector_origin_receipt_hash": origins[targets.nrc_target_id][
+                "connector_origin_receipt_hash"
+            ],
+            "connector_run_id": targets.nrc_run_id,
+            "connector_run_target_id": targets.nrc_target_id,
+            "source_record_id": content_id,
+        },
+        action_receipts=action_receipts,
+    )
+
+    sciencebase_prefix = f"dual-live-{campaign_id}-sciencebase"
+    sciencebase_preview = _owned_phase_b_record_action(
+        action_receipts,
+        action="sciencebase_material_preview",
+        result=(
             layer3_connector_source_intake
             .connector_source_intake_material_preview(
                 db,
@@ -5849,60 +6441,77 @@ def _prepare_owned_phase_b(
                     targets.sciencebase_intake_record_id
                 ),
             )
-        )
-        sciencebase_candidate = sciencebase_preview.get("material_candidate")
-        if (
-            not isinstance(sciencebase_candidate, Mapping)
-            or not isinstance(sciencebase_candidate.get("candidate_id"), str)
-        ):
-            _fail("dual_live_phase_b_sciencebase_material_preview_invalid")
-        result = {
-            "downstream_actions": [
-                "nrc_strict_parse",
-                "nrc_origin_receipt",
-                "sciencebase_origin_receipt",
-                "nrc_preflight",
-                "nrc_source_preview",
-                "nrc_material_preview",
-                "sciencebase_material_preview",
-                "owner_decision_required",
+        ),
+    )
+    sciencebase_candidate = sciencebase_preview.get("material_candidate")
+    if not isinstance(sciencebase_candidate, Mapping):
+        _fail("dual_live_phase_b_sciencebase_material_preview_invalid")
+    sciencebase_candidate_id = _owned_phase_b_required_text(
+        sciencebase_candidate,
+        "candidate_id",
+        "dual_live_phase_b_sciencebase_material_preview_invalid",
+    )
+    if (
+        sciencebase_candidate.get("source_class")
+        != layer3_connector_source_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+    ):
+        _fail("dual_live_phase_b_sciencebase_source_class_invalid")
+    sciencebase_gate_b = layer3_workbench.gate_b_decision(
+        db,
+        {
+            "client_request_id": f"{sciencebase_prefix}-gate-b",
+            "preflight_id": f"{sciencebase_prefix}-preflight",
+            "source_set_id": f"{sciencebase_prefix}-source-set",
+            "material_preview_id": sciencebase_preview["material_preview_id"],
+            "material_preview_hash": sciencebase_preview[
+                "material_preview_hash"
             ],
-            "source_bindings": [
+            "candidate_decisions": [
                 {
-                    "candidate_id": str(nrc_candidates[0]["candidate_id"]),
-                    "connector_key": "nrc_adams_aps",
-                    "connector_origin_receipt_hash": str(
-                        origins[targets.nrc_target_id][
-                            "connector_origin_receipt_hash"
-                        ]
+                    "candidate_id": sciencebase_candidate_id,
+                    "decision": "approved",
+                    "decision_basis": _owned_phase_b_decision_basis(
+                        sciencebase_candidate
                     ),
-                    "connector_run_target_id": targets.nrc_target_id,
-                    "source_record_id": content_id,
-                },
-                {
-                    "candidate_id": str(sciencebase_candidate["candidate_id"]),
-                    "connector_key": "sciencebase_mcs",
-                    "connector_origin_receipt_hash": str(
-                        origins[targets.sciencebase_target_id][
-                            "connector_origin_receipt_hash"
-                        ]
-                    ),
-                    "connector_run_target_id": targets.sciencebase_target_id,
-                    "source_record_id": targets.sciencebase_intake_record_id,
-                },
+                }
             ],
-            "terminal_boundary": "owner_decision_required",
-        }
-    finally:
-        if cast(Callable[[], object], db.rollback)() is not None:
-            _fail("dual_live_phase_b_database_rollback_failed")
-    if result is None:
-        _fail("dual_live_phase_b_projection_invalid")
-    return result
+            "commit_reason": "dual_live_campaign_sciencebase",
+            "actor": "dual_live_campaign",
+        },
+    )
+    sciencebase_binding = _complete_owned_phase_b_chain(
+        db,
+        layer3_workbench=layer3_workbench,
+        connector_key="sciencebase_mcs",
+        action_prefix="sciencebase",
+        request_prefix=sciencebase_prefix,
+        gate_b_result=sciencebase_gate_b,
+        source_binding={
+            "candidate_id": sciencebase_candidate_id,
+            "connector_key": "sciencebase_mcs",
+            "connector_origin_receipt_hash": origins[
+                targets.sciencebase_target_id
+            ]["connector_origin_receipt_hash"],
+            "connector_run_id": targets.sciencebase_run_id,
+            "connector_run_target_id": targets.sciencebase_target_id,
+            "source_record_id": targets.sciencebase_intake_record_id,
+        },
+        action_receipts=action_receipts,
+    )
+    if tuple(item["action"] for item in action_receipts) != (
+        _PHASE_B_DOWNSTREAM_ACTIONS
+    ):
+        _fail("dual_live_phase_b_action_order_invalid")
+    return {
+        "action_receipts": action_receipts,
+        "downstream_actions": list(_PHASE_B_DOWNSTREAM_ACTIONS),
+        "source_bindings": [nrc_binding, sciencebase_binding],
+        "terminal_boundary": "handoff_prepared",
+    }
 
 
 def run_owned_phase_b_workload() -> Mapping[str, Any]:
-    """Prepare historical artifacts, then stop before owner-gated admission."""
+    """Complete both admitted internal public chains through prepared handoff."""
 
     campaign_id, campaign_fingerprint, code_revision = (
         _phase_b_environment_coordinates()
@@ -5918,6 +6527,8 @@ def run_owned_phase_b_workload() -> Mapping[str, Any]:
             campaign_fingerprint=campaign_fingerprint,
             code_revision=code_revision,
         )
+        if result.get("terminal_boundary") != "handoff_prepared":
+            _fail("dual_live_phase_b_projection_invalid")
         _assert_phase_b_connector_guards()
         return result
     finally:

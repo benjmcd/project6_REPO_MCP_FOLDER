@@ -160,7 +160,9 @@ _OWNED_PHASE_B_ENVIRONMENT = _OWNED_PHASE_SHARED_ENVIRONMENT | frozenset(
 )
 _OWNED_BOOT_SCHEMA_ID = "project6.dual_live_owned_boot.v1"
 _OWNED_IO_TIMEOUT_SECONDS = 5.0
-_STANDARD_POPEN = subprocess.Popen
+_REVIEWED_GIT_POPEN = subprocess.Popen
+_SUBPROCESS_GATE_BASELINE: object = subprocess.Popen
+_SUBPROCESS_GATE_BASELINE_REGISTERED = False
 WINDOWS_MIB_TCP_STATES = (
     "MIB_TCP_STATE_CLOSED",
     "MIB_TCP_STATE_LISTEN",
@@ -1914,6 +1916,24 @@ def _live_non_system_python_threads() -> tuple[threading.Thread, ...]:
     )
 
 
+def _register_subprocess_gate_baseline(baseline: object) -> None:
+    """Bind the exact public-wrapper Popen denial once before runtime import."""
+
+    global _SUBPROCESS_GATE_BASELINE
+    global _SUBPROCESS_GATE_BASELINE_REGISTERED
+    with _child_creation_gate:
+        if _SUBPROCESS_GATE_BASELINE_REGISTERED:
+            _fail("dual_live_subprocess_gate_baseline_already_registered")
+        if (
+            not callable(baseline)
+            or baseline is _refuse_unrelated_subprocess
+            or subprocess.Popen is not baseline
+        ):
+            _fail("dual_live_subprocess_gate_baseline_invalid")
+        _SUBPROCESS_GATE_BASELINE = baseline
+        _SUBPROCESS_GATE_BASELINE_REGISTERED = True
+
+
 @contextmanager
 def _owned_child_creation_window() -> Iterator[None]:
     """Guard the complete inheritable-handle window for one owned child.
@@ -1924,7 +1944,11 @@ def _owned_child_creation_window() -> Iterator[None]:
     """
 
     with _child_creation_gate:
-        if subprocess.Popen is not _STANDARD_POPEN:
+        baseline = _SUBPROCESS_GATE_BASELINE
+        if not callable(baseline):
+            _fail("dual_live_subprocess_gate_compromised")
+        if subprocess.Popen is not baseline:
+            setattr(subprocess, "Popen", baseline)
             _fail("dual_live_subprocess_gate_compromised")
         setattr(subprocess, "Popen", _refuse_unrelated_subprocess)
         try:
@@ -1935,7 +1959,7 @@ def _owned_child_creation_window() -> Iterator[None]:
             gate_compromised = (
                 subprocess.Popen is not _refuse_unrelated_subprocess
             )
-            setattr(subprocess, "Popen", _STANDARD_POPEN)
+            setattr(subprocess, "Popen", baseline)
             if gate_compromised:
                 _fail("dual_live_subprocess_gate_compromised")
 
@@ -3215,7 +3239,7 @@ def _run_reviewed_git(
     *arguments: str,
     allowed_codes: frozenset[int] = frozenset((0,)),
 ) -> tuple[int, bytes]:
-    process = _STANDARD_POPEN(
+    process = _REVIEWED_GIT_POPEN(
         (
             git_custody.final_path,
             "-c",

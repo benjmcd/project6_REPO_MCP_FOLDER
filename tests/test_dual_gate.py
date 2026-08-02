@@ -97,7 +97,10 @@ ALLOWED_CHANGED_PRODUCTION_PATHS = frozenset(
         "backend/app/services/dual_live_dependencies.py",
         "backend/app/services/dual_live_evaluator.py",
         "backend/app/services/layer3_gate_b_state.py",
+        "backend/app/services/layer3_connector_source_intake.py",
         "backend/app/services/layer3_origin_continuity.py",
+        "backend/app/services/layer3_pass_entry.py",
+        "backend/app/services/layer3_typing_entry.py",
         "backend/app/services/layer3_workbench.py",
         "backend/app/services/nrc_aps_phase_b_linkage.py",
         "tools/dual_live_gate.py",
@@ -700,6 +703,39 @@ def test_phase_a_network_guard_can_open_once_then_seals() -> None:
             setattr(target, name, original)
 
 
+def test_wrapper_guard_stages_network_before_permanent_subprocess_denial() -> None:
+    runner = runpy.run_path(str(RUNNER))
+    guards = runner["_StandardLibraryGuards"]("wrapper")
+    try:
+        guards.install_wrapper_network_denial()
+        assert all(
+            getattr(target, name) is guards._guard
+            for target, name, _original in guards._network_entries
+        )
+        assert all(
+            getattr(target, name) is original
+            for target, name, original in guards._subprocess_entries
+        )
+        with pytest.raises(RuntimeError, match="dual_live_inert_guard_changed"):
+            guards.assert_intact()
+
+        guards.install()
+        guards.assert_intact()
+        assert all(
+            getattr(target, name) is guards._guard
+            for target, name, _original in guards._entries
+        )
+        for _target, _name, callback in (
+            (target, name, getattr(target, name))
+            for target, name, _original in guards._subprocess_entries
+        ):
+            with pytest.raises(PermissionError, match="dual_live_inert_guard"):
+                callback((sys.executable, "-I", "-B", "-c", "pass"))
+    finally:
+        for target, name, original in guards._entries:
+            setattr(target, name, original)
+
+
 def test_wrapper_guard_precedes_backend_import_and_preserves_native_factory() -> None:
     from app.services import dual_live_runtime
 
@@ -716,13 +752,27 @@ def test_wrapper_guard_precedes_backend_import_and_preserves_native_factory() ->
     public_source = inspect.getsource(runner["_run_public_mode"])
     assert (
         public_source.index('_StandardLibraryGuards("wrapper")')
-        < public_source.index("guards.install()")
+        < public_source.index("guards.install_wrapper_network_denial()")
         < public_source.index("_install_wrapper_connector_import_guard()")
         < public_source.index('backend = Path(__file__).resolve()')
+        < public_source.index("from app.services import dual_live_windows")
+        < public_source.index("guards.install()")
+        < public_source.index(
+            "dual_live_windows._register_subprocess_gate_baseline(guards._guard)"
+        )
         < public_source.index(
             "from app.services.dual_live_runtime import run_dual_live_campaign"
         )
     )
+    assert public_source.count("from app.services import dual_live_windows") == 1
+    windows_module_source = inspect.getsource(dual_live_windows)
+    reviewed_git_source = inspect.getsource(dual_live_windows._run_reviewed_git)
+    assert windows_module_source.count("_REVIEWED_GIT_POPEN") == 2
+    assert "process = _REVIEWED_GIT_POPEN(" in reviewed_git_source
+    assert "_SUBPROCESS_GATE_BASELINE" not in reviewed_git_source
+    assert "shell=False" in reviewed_git_source
+    assert "cwd=str(repo_root)" in reviewed_git_source
+    assert "env=_reviewed_git_environment()" in reviewed_git_source
     controller_source = inspect.getsource(
         dual_live_runtime._run_bound_owned_two_phase_controller
     )
@@ -738,6 +788,191 @@ def test_wrapper_guard_precedes_backend_import_and_preserves_native_factory() ->
     assert "CreateProcessW" in windows_source
     assert "subprocess.Popen" not in windows_source
     assert "subprocess.run" not in windows_source
+
+
+def test_owned_child_window_restores_one_time_registered_wrapper_baseline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_popen = subprocess.Popen
+
+    def wrapper_denial(*_args: object, **_kwargs: object) -> None:
+        raise PermissionError("wrapper denial")
+
+    def mutation(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("mutated")
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_SUBPROCESS_GATE_BASELINE",
+        original_popen,
+    )
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_SUBPROCESS_GATE_BASELINE_REGISTERED",
+        False,
+    )
+    try:
+        setattr(subprocess, "Popen", wrapper_denial)
+        dual_live_windows._register_subprocess_gate_baseline(wrapper_denial)
+
+        with dual_live_windows._owned_child_creation_window():
+            assert subprocess.Popen is dual_live_windows._refuse_unrelated_subprocess
+        assert subprocess.Popen is wrapper_denial
+
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_subprocess_gate_baseline_already_registered",
+        ):
+            dual_live_windows._register_subprocess_gate_baseline(wrapper_denial)
+
+        setattr(subprocess, "Popen", mutation)
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_subprocess_gate_compromised",
+        ):
+            with dual_live_windows._owned_child_creation_window():
+                raise AssertionError("pre-window mutation was admitted")
+        assert subprocess.Popen is wrapper_denial
+
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_subprocess_gate_compromised",
+        ):
+            with dual_live_windows._owned_child_creation_window():
+                setattr(subprocess, "Popen", mutation)
+        assert subprocess.Popen is wrapper_denial
+    finally:
+        setattr(subprocess, "Popen", original_popen)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows wrapper activation only")
+def test_fresh_wrapper_activation_preserves_only_reviewed_git_launch(
+) -> None:
+    probe = f"""
+import importlib
+import json
+import os
+from pathlib import Path
+import runpy
+import subprocess
+import sys
+
+runner = runpy.run_path({str(RUNNER)!r})
+original_popen = subprocess.Popen
+guards = runner["_StandardLibraryGuards"]("wrapper")
+guards.install_wrapper_network_denial()
+runner["_install_wrapper_connector_import_guard"]()
+sys.path.insert(0, {str(BACKEND)!r})
+assert "app.services.dual_live_windows" not in sys.modules
+assert "app.services.dual_live_runtime" not in sys.modules
+from app.services import dual_live_windows as windows
+assert windows._REVIEWED_GIT_POPEN is original_popen
+assert "app.services.dual_live_runtime" not in sys.modules
+assert not any(
+    name in sys.modules for name in runner["_WRAPPER_BLOCKED_CONNECTOR_MODULES"]
+)
+
+guards.install()
+windows._register_subprocess_gate_baseline(guards._guard)
+guards.assert_intact()
+
+def assert_denied() -> None:
+    for name in ("Popen", "run", "check_call", "check_output"):
+        try:
+            getattr(subprocess, name)((sys.executable, "-I", "-B", "-c", "pass"))
+        except PermissionError as exc:
+            assert str(exc) == "dual_live_inert_guard"
+        else:
+            raise AssertionError(name)
+
+def assert_permanent() -> None:
+    guards.assert_intact()
+    assert all(
+        getattr(target, name) is guards._guard
+        for target, name, _original in guards._network_entries
+    )
+    assert_denied()
+    for module_name in runner["_WRAPPER_BLOCKED_CONNECTOR_MODULES"]:
+        try:
+            importlib.import_module(module_name)
+        except ImportError as exc:
+            assert str(exc) == "dual_live_wrapper_connector_import_denied"
+        else:
+            raise AssertionError(module_name)
+
+assert_permanent()
+git_custody = windows._open_executable_custody(str(windows._trusted_git_path()))
+try:
+    git_code, git_output = windows._run_reviewed_git(
+        git_custody,
+        Path({str(ROOT)!r}),
+        "rev-parse",
+        "--show-toplevel",
+    )
+finally:
+    windows._close_handle(git_custody.handle)
+assert git_code == 0 and git_output.strip()
+assert_permanent()
+
+created = []
+marker = object()
+original_create = windows.create_child_in_job
+def fake_create_child(**kwargs):
+    assert subprocess.Popen is windows._refuse_unrelated_subprocess
+    created.append(tuple(kwargs["argv"]))
+    return marker
+windows.create_child_in_job = fake_create_child
+try:
+    for phase in ("A", "B"):
+        channels = windows.create_phase_channels(phase)
+        try:
+            assert channels._admit_owned_child(
+                windows._PHASE_CHANNELS_FACTORY_TOKEN,
+                runtime_instance_id={RUNTIME_INSTANCE_ID!r},
+                wrapper_nonce_sha256={WRAPPER_NONCE_SHA!r},
+            ) is marker
+        finally:
+            channels.close()
+        assert subprocess.Popen is guards._guard
+finally:
+    windows.create_child_in_job = original_create
+assert len(created) == 2
+assert_permanent()
+
+runtime = importlib.import_module("app.services.dual_live_runtime")
+assert callable(runtime.run_dual_live_campaign)
+asyncio_windows = importlib.import_module("asyncio.windows_utils")
+try:
+    asyncio_windows.Popen((sys.executable, "-I", "-B", "-c", "pass"))
+except PermissionError as exc:
+    assert str(exc) == "dual_live_inert_guard"
+else:
+    raise AssertionError("asyncio subprocess denial was bypassed")
+assert not any(
+    name in sys.modules for name in runner["_WRAPPER_BLOCKED_CONNECTOR_MODULES"]
+)
+assert_permanent()
+os.write(1, json.dumps({{"git": True, "phases": len(created)}}).encode("ascii"))
+"""
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            "-X",
+            "pycache_prefix=NUL",
+            "-c",
+            probe,
+        ],
+        cwd=ROOT,
+        env=_job_environment(),
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout) == {"git": True, "phases": 2}
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")

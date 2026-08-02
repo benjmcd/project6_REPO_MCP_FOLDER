@@ -25,11 +25,7 @@ _WAIT_FAILED = 0xFFFFFFFF
 _COUNTER_ACK_TIMEOUT_SECONDS = 5.0
 _COUNTER_ACK_POLL_MILLISECONDS = 50
 _INSPECTION_REQUIRED_CODE = "dual_live_phase_timeout_inspection_required"
-_OWNER_DECISION_REQUIRED_CODE = "dual_live_phase_b_owner_decision_required"
-_OWNER_DECISION_REQUIRED_EXIT_CODE = 24
-_PUBLIC_REFUSAL_CODES = frozenset(
-    (_INSPECTION_REQUIRED_CODE, _OWNER_DECISION_REQUIRED_CODE)
-)
+_PUBLIC_REFUSAL_CODES = frozenset((_INSPECTION_REQUIRED_CODE,))
 _PUBLIC_PATH_ENVIRONMENT_NAMES = (
     "CONNECTOR_CAMPAIGN_DEFINITION_PATH",
     "CONNECTOR_SCIENCEBASE_GRANT_PATH",
@@ -464,9 +460,15 @@ def _emit_status(
     return hashlib.sha256(frame).hexdigest()
 
 
-def _deny_guard(*args: object, **kwargs: object) -> None:
-    del args, kwargs
-    raise PermissionError("dual_live_inert_guard")
+class _DenyGuard:
+    """Subclass-safe permanent denial for late standard-library imports."""
+
+    def __new__(cls, *args: object, **kwargs: object) -> NoReturn:
+        del cls, args, kwargs
+        raise PermissionError("dual_live_inert_guard")
+
+
+_deny_guard = _DenyGuard
 
 
 class _StandardLibraryGuards:
@@ -518,12 +520,43 @@ class _StandardLibraryGuards:
         self._original_implementation_call_count = 0
 
     def install(self) -> None:
+        if self._phase == "wrapper":
+            if self._network_state != "denied" or any(
+                getattr(target, name) is not self._guard
+                for target, name, _original in self._network_entries
+            ):
+                raise RuntimeError("dual_live_inert_guard_changed")
+            if any(
+                getattr(target, name) is not original
+                for target, name, original in self._subprocess_entries
+            ):
+                raise RuntimeError("dual_live_inert_guard_changed")
         previously_enabled = self._network_state == "phase_a_enabled"
         for target, name, _original in self._entries:
             setattr(target, name, self._guard)
         self._installed = True
         self._network_state = "sealed" if previously_enabled else "denied"
         self.assert_intact()
+
+    def install_wrapper_network_denial(self) -> None:
+        if (
+            self._phase != "wrapper"
+            or self._installed
+            or self._network_state != "uninstalled"
+            or any(
+                getattr(target, name) is not original
+                for target, name, original in self._subprocess_entries
+            )
+        ):
+            raise RuntimeError("dual_live_inert_guard_changed")
+        for target, name, _original in self._network_entries:
+            setattr(target, name, self._guard)
+        self._network_state = "denied"
+        if any(
+            getattr(target, name) is not self._guard
+            for target, name, _original in self._network_entries
+        ):
+            raise RuntimeError("dual_live_inert_guard_changed")
 
     def restore(self) -> None:
         raise RuntimeError("dual_live_inert_guard_permanent")
@@ -644,10 +677,10 @@ def _dispatch_owned_workload(
         guards.assert_intact()
         if (
             not isinstance(projection, Mapping)
-            or projection.get("terminal_boundary") != "owner_decision_required"
+            or projection.get("terminal_boundary") != "handoff_prepared"
         ):
             raise RuntimeError("dual_live_phase_b_projection_invalid")
-        return _OWNER_DECISION_REQUIRED_EXIT_CODE, dict(projection)
+        return 0, dict(projection)
     if phase != "A":
         raise ValueError("dual_live_owned_phase_invalid")
 
@@ -1040,6 +1073,17 @@ def _install_wrapper_connector_import_guard() -> _WrapperConnectorImportGuard:
     return guard
 
 
+def _assert_wrapper_backend_not_preloaded() -> None:
+    if any(
+        name in sys.modules
+        for name in (
+            "app.services.dual_live_runtime",
+            "app.services.dual_live_windows",
+        )
+    ):
+        raise RuntimeError("dual_live_wrapper_backend_import_preloaded")
+
+
 def _run_public_mode(
     arguments: tuple[str, ...],
     *,
@@ -1051,10 +1095,16 @@ def _run_public_mode(
     campaign_id, campaign_fingerprint = parsed
     _preflight_public_paths(os.environ if environ is None else environ)
     guards = _StandardLibraryGuards("wrapper")
-    guards.install()
+    guards.install_wrapper_network_denial()
     _install_wrapper_connector_import_guard()
     backend = Path(__file__).resolve().parents[1] / "backend"
     sys.path.insert(0, str(backend))
+    _assert_wrapper_backend_not_preloaded()
+    from app.services import dual_live_windows
+
+    guards.install()
+    dual_live_windows._register_subprocess_gate_baseline(guards._guard)
+    guards.assert_intact()
     from app.services.dual_live_runtime import run_dual_live_campaign
 
     guards.assert_intact()
