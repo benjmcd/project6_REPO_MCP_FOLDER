@@ -14,13 +14,26 @@ import threading
 import time
 from collections.abc import Callable
 from contextlib import suppress
+from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
+from types import MappingProxyType, SimpleNamespace
+from typing import Any
 
 import pytest
+import test_dual_eval_acceptance as dual_live_acceptance
 
+from app.services import connector_egress_evidence as connector_evidence_module
+from app.services import dual_live_evaluator as dual_live_evaluator_module
 from app.services import dual_live_runtime as dual_live_runtime_module
 from app.services.dual_live_evaluator import (
+    CHECKS,
+    EVALUATOR_CHECK_ORDER,
+    EVALUATOR_NONCLAIMS,
+    CheckResult,
     DualLiveEvaluationError,
+    _aggregate_check_results,
+    build_indeterminate_dual_live_report,
     evaluate_dual_live_proof,
 )
 from app.services.dual_live_runtime import (
@@ -37,7 +50,7 @@ from app.services.dual_live_runtime import (
     CampaignPipeHandler,
     CampaignPipeSink,
     FirstStopLatch,
-    FourStreamPumpGroup,
+    FourStreamPumpGroup as _RuntimeFourStreamPumpGroup,
     LockedCampaignSink,
     PhaseControlState,
     DualLiveRuntimeError,
@@ -53,6 +66,7 @@ from app.services.dual_live_runtime import (
     read_pipe_frame,
     read_runtime_records,
 )
+from app.services.layer3_utils import stable_json_text_hash
 from app.services.connector_egress_authorization import canonical_json_bytes
 
 
@@ -61,6 +75,25 @@ CAMPAIGN_ID = "123e4567-e89b-42d3-a456-426614174000"
 CAMPAIGN_FINGERPRINT = "a" * 64
 STATUS_PROCESS_BOOT_ID = "b" * 64
 STATUS_NONCE_SHA256 = "c" * 64
+
+
+class FourStreamPumpGroup(_RuntimeFourStreamPumpGroup):
+    def __init__(self, **kwargs: Any) -> None:
+        status_callback = kwargs.get("status_callback")
+        if (
+            callable(status_callback)
+            and len(inspect.signature(status_callback).parameters) == 1
+        ):
+            kwargs["status_callback"] = (
+                lambda value, _frame_sha256: status_callback(value)
+            )
+        kwargs.setdefault("boot_callback", lambda _frame_sha256: None)
+        kwargs.setdefault("proof_callback", lambda _proof: None)
+        kwargs.setdefault("expected_control_nonce", "f" * 64)
+        kwargs.setdefault("expected_proof_scope", "mechanical")
+        super().__init__(**kwargs)
+
+
 EXPECTED_REPORT = {
     "schema_id": "project6.dual_live_evaluation.v1",
     "campaign_id": CAMPAIGN_ID,
@@ -68,30 +101,49 @@ EXPECTED_REPORT = {
     "status": "INDETERMINATE",
     "fresh_live": False,
     "evaluation_complete": False,
-    "code": "tracked_s3_clearance_and_privileged_runner_required",
-    "blocking_dependencies": [
-        "tracked_external_s3_clause_5_clearance",
-        "privileged_dual_live_runner",
+    "code": "dual_live_evaluation_internal_error",
+    "checks": [
+        {
+            "check_id": check_id,
+            "status": "INDETERMINATE",
+            "code": "dual_live_evaluation_internal_error",
+            "evidence": {},
+        }
+        for check_id in EVALUATOR_CHECK_ORDER
     ],
-    "validated_surfaces": [],
-    "nonclaims": [
-        "no campaign evidence evaluated",
-        "no connector run executed",
-        "no live acquisition performed",
-        "no Layer 3 continuity verdict",
-        "no package or handoff verdict",
-        "no production readiness claim",
-    ],
+    "nonclaims": list(EVALUATOR_NONCLAIMS),
 }
 RUNTIME_INSTANCE_ID = "223e4567-e89b-42d3-a456-426614174000"
 BOOT_ID = "7" * 64
 UUID_BOOT_ID = "323e4567-e89b-42d3-a456-426614174000"
+PHASE_TIMEOUT_CONTRACT = {
+    "schema_id": "project6.dual_live_phase_timeout.v1",
+    "phase_a_timeout_ms": 205_750,
+    "phase_b_timeout_ms": 30_000,
+    "fixed_non_egress_overhead_ms": 30_000,
+    "counter_ack_timeout_ms": 5_000,
+    "connector_grants": [
+        {
+            "connector_key": "nrc_adams_aps",
+            "max_physical_requests": 2,
+            "request_timeout_seconds": 30,
+            "min_request_interval_ms": 250,
+        },
+        {
+            "connector_key": "sciencebase_mcs",
+            "max_physical_requests": 3,
+            "request_timeout_seconds": 30,
+            "min_request_interval_ms": 250,
+        },
+    ],
+}
 RUNTIME_IDENTITY = RuntimeIdentity(
     runtime_instance_id=RUNTIME_INSTANCE_ID,
     wrapper_nonce_sha256="1" * 64,
     code_revision="2" * 40,
     wrapper_image_sha256="3" * 64,
     interpreter_image_sha256="4" * 64,
+    dependency_set_sha256="8" * 64,
     root_mutex_identity_sha256="5" * 64,
     campaign_mutex_identity_sha256="6" * 64,
 )
@@ -99,6 +151,8 @@ RUNTIME_START_PAYLOAD = {
     "code_revision": RUNTIME_IDENTITY.code_revision,
     "wrapper_image_sha256": RUNTIME_IDENTITY.wrapper_image_sha256,
     "interpreter_image_sha256": RUNTIME_IDENTITY.interpreter_image_sha256,
+    "dependency_set_sha256": RUNTIME_IDENTITY.dependency_set_sha256,
+    "phase_timeout_contract": PHASE_TIMEOUT_CONTRACT,
     "mutex_identity_sha256": "7" * 64,
 }
 CHILD_START_PAYLOAD = {
@@ -299,13 +353,2548 @@ def test_signature_is_the_public_keyword_only_contract() -> None:
     assert str(signature.return_annotation) == "dict[str, Any]"
 
 
+def test_evaluator_registry_is_exact_complete_and_immutable() -> None:
+    expected = tuple(
+        f"{prefix}{ordinal:02d}_{name}"
+        for prefix, names in (
+            (
+                "A",
+                (
+                    "INPUT_IDENTITY",
+                    "INDEX_LINEAR_HEAD",
+                    "ARCHIVE_EXACT",
+                    "SLICE_CARDINALITY",
+                    "SELECTED_UNION",
+                    "INTRODUCTION_PARITY",
+                    "MARKER_ONE_USE",
+                    "ORIGINAL_WINDOWS",
+                    "CODE_CAMPAIGN_FINGERPRINTS",
+                    "PROOF_CLASS",
+                ),
+            ),
+            (
+                "R",
+                (
+                    "CAPTURE_MEMBERSHIP",
+                    "MANIFEST_FILE_HASHES",
+                    "SEAL_PARITY",
+                    "SEAL_EVENT_PARITY",
+                    "RUNTIME_CHAIN",
+                    "STARTUP_LOGGER_CENSUS",
+                    "EXIT_LOGGER_CENSUS",
+                    "PHASE_A_IDENTITY",
+                    "PHASE_A_JOB_ZERO",
+                    "PHASE_A_SOCKET_QUIESCENCE",
+                    "AUTHORITY_CLEARED",
+                    "PHASE_B_GUARDS",
+                    "PHASE_B_JOB_ZERO",
+                    "RUNTIME_TERMINAL",
+                    "WRAPPER_NETWORK_INERT",
+                    "PHASE_A_RAW_ONLY",
+                    "PHASE_B_STRICT_FLOW",
+                    "PHASE_A_TERMINAL_ONCE",
+                    "A_TO_B_ORDER",
+                    "FOUR_STREAM_CLOSEOUT",
+                    "EXTANT_RUN_SEAL_EVENTS",
+                    "CAPTURE_START_CONTRACT",
+                ),
+            ),
+            (
+                "L",
+                (
+                    "RUN_CARDINALITY",
+                    "TERMINAL_EVENT",
+                    "POST_TERMINAL_EXTINCTION",
+                    "LEDGER_RECONSTRUCTION",
+                    "COUNTER_BIJECTION",
+                    "COUNTER_BOOT",
+                    "BYTE_ALLOWANCE",
+                    "REQUEST_CADENCE",
+                    "TRANSPORT_POLICY",
+                    "FRESH_200_BYTES",
+                    "NRC_FIRST_BINDING",
+                    "RESERVATION_RESOLUTION",
+                ),
+            ),
+            (
+                "D",
+                (
+                    "ORIGIN_RECEIPT",
+                    "RAW_PROVENANCE_LINKAGE",
+                    "LAYER3_EXECUTION",
+                    "REVIEW_RESULT",
+                    "PACKAGE_SET",
+                    "PACKAGE_PAYLOAD",
+                    "SUBMIT_RECEIPT",
+                    "HANDOFF_RECEIPT",
+                ),
+            ),
+            (
+                "C",
+                (
+                    "STRICT_NULLS",
+                    "DB_SCALAR_JSON_SCAN",
+                    "NON_SOURCE_FILE_SCAN",
+                    "SERIALIZATION_EVENT_SCAN",
+                    "RUNTIME_LOG_SCAN",
+                    "BOUNDED_DECODERS",
+                    "SOURCE_EXEMPTION",
+                    "SECRET_SCAN",
+                ),
+            ),
+            (
+                "F",
+                (
+                    "EVIDENCE_STABILITY",
+                    "DATABASE_STABILITY",
+                    "NONCLAIMS_REPORT",
+                    "READ_ONLY_EVALUATION",
+                    "PROJECTION_REDERIVATION",
+                    "NO_EGRESS_DEPENDENCY",
+                    "PUBLIC_API_CONTRACT",
+                    "RESULT_AGGREGATION",
+                    "CONNECTOR_AND_COMBINED_REPORTS",
+                ),
+            ),
+        )
+        for ordinal, name in enumerate(names, start=1)
+    )
+
+    assert EVALUATOR_CHECK_ORDER == expected
+    assert isinstance(EVALUATOR_CHECK_ORDER, tuple)
+    assert len(EVALUATOR_CHECK_ORDER) == 69
+    assert len(set(EVALUATOR_CHECK_ORDER)) == 69
+
+
+def test_check_registry_is_literal_ordered_executable_functions() -> None:
+    assert isinstance(CHECKS, tuple)
+    assert len(CHECKS) == 69
+    assert len({function.__name__ for function in CHECKS}) == 69
+    assert tuple(
+        function.__name__.removeprefix("_check_").upper()
+        for function in CHECKS
+    ) == EVALUATOR_CHECK_ORDER
+    assert all(callable(function) for function in CHECKS)
+
+
+def test_check_result_is_frozen_and_secret_safe() -> None:
+    result = CheckResult(
+        check_id="A01_INPUT_IDENTITY",
+        status="PASS",
+        code="a01_input_identity_pass",
+        evidence={"verified": True},
+    )
+
+    assert result.as_dict() == {
+        "check_id": "A01_INPUT_IDENTITY",
+        "status": "PASS",
+        "code": "a01_input_identity_pass",
+        "evidence": {"verified": True},
+    }
+    with pytest.raises((AttributeError, TypeError)):
+        result.status = "FAIL"  # type: ignore[misc]
+    with pytest.raises(TypeError):
+        result.evidence["verified"] = False  # type: ignore[index]
+
+
+def test_fixed_aggregation_precedence_is_indeterminate_then_fail_then_pass() -> None:
+    passing = tuple(
+        CheckResult(check_id=check_id, status="PASS", code="pass", evidence={})
+        for check_id in EVALUATOR_CHECK_ORDER
+    )
+    failing = list(passing)
+    failing[7] = CheckResult(
+        check_id=EVALUATOR_CHECK_ORDER[7],
+        status="FAIL",
+        code="failure",
+        evidence={},
+    )
+    indeterminate = list(failing)
+    indeterminate[-1] = CheckResult(
+        check_id=EVALUATOR_CHECK_ORDER[-1],
+        status="INDETERMINATE",
+        code="uncertain",
+        evidence={},
+    )
+
+    assert _aggregate_check_results(passing) == ("PASS", "all_checks_pass")
+    assert _aggregate_check_results(tuple(failing)) == ("FAIL", "failure")
+    assert _aggregate_check_results(tuple(indeterminate)) == (
+        "INDETERMINATE",
+        "uncertain",
+    )
+
+
+def test_gate_owned_indeterminate_report_uses_fixed_evaluator_shape() -> None:
+    report = build_indeterminate_dual_live_report(
+        campaign_id=CAMPAIGN_ID,
+        expected_campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        code="dual_live_database_changed_during_evaluation",
+    )
+
+    assert list(report) == [
+        "schema_id",
+        "campaign_id",
+        "expected_campaign_fingerprint",
+        "status",
+        "fresh_live",
+        "evaluation_complete",
+        "code",
+        "checks",
+        "nonclaims",
+    ]
+    assert report["status"] == "INDETERMINATE"
+    assert report["fresh_live"] is False
+    assert report["evaluation_complete"] is False
+    assert report["code"] == "dual_live_database_changed_during_evaluation"
+    assert [item["check_id"] for item in report["checks"]] == list(
+        EVALUATOR_CHECK_ORDER
+    )
+    assert {
+        (item["status"], item["code"]) for item in report["checks"]
+    } == {
+        (
+            "INDETERMINATE",
+            "dual_live_database_changed_during_evaluation",
+        )
+    }
+    assert report["nonclaims"] == list(EVALUATOR_NONCLAIMS)
+
+
+def test_gate_owned_indeterminate_report_rejects_unsafe_code() -> None:
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        build_indeterminate_dual_live_report(
+            campaign_id=CAMPAIGN_ID,
+            expected_campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+            code="unsafe code: secret-value",
+        )
+
+    assert caught.value.code == "dual_live_result_code_invalid"
+
+
+def test_evaluator_refuses_pending_session_state_before_dependency_access() -> None:
+    class PendingSession:
+        new = (object(),)
+        dirty: tuple[object, ...] = ()
+        deleted: tuple[object, ...] = ()
+
+        def __getattribute__(self, name: str) -> object:
+            if name in {"new", "dirty", "deleted"}:
+                return object.__getattribute__(self, name)
+            raise AssertionError(f"unexpected dependency access: {name}")
+
+    report = evaluate_dual_live_proof(
+        PendingSession(),  # type: ignore[arg-type]
+        campaign_id=CAMPAIGN_ID,
+        expected_campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+    )
+
+    assert report["status"] == "INDETERMINATE"
+    assert report["code"] == "dual_live_evaluation_pending_session_state"
+
+
+def test_origin_absence_returns_exact_69_ordered_results(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    errors = {"origin": "dual_live_origin_receipt_unavailable"}
+    dual_live_evaluator_module._materialize_dependency_errors(errors)
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=SimpleNamespace(new=(), dirty=(), deleted=()),
+        domain_errors=errors,
+    )
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_collect_evidence",
+        lambda *_args, **_kwargs: context,
+    )
+
+    results = dual_live_evaluator_module._run_dual_live_checks(
+        NoAccess(),
+        campaign_id=CAMPAIGN_ID,
+        expected_campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+    )
+
+    assert len(results) == 69
+    assert tuple(result.check_id for result in results) == EVALUATOR_CHECK_ORDER
+    assert all(isinstance(result, CheckResult) for result in results)
+
+
+def test_domain_error_preserves_secret_safe_reason_code() -> None:
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        domain_errors={
+            "capture": "connector_campaign_log_read_object_oversized",
+        },
+    )
+
+    result = dual_live_evaluator_module._domain_error(
+        context,
+        "R01_CAPTURE_MEMBERSHIP",
+        "capture",
+    )
+
+    assert result is not None
+    assert result.as_dict() == {
+        "check_id": "R01_CAPTURE_MEMBERSHIP",
+        "status": "INDETERMINATE",
+        "code": "r01_capture_membership_evidence_unavailable",
+        "evidence": {
+            "domain": "capture",
+            "reason_code": "connector_campaign_log_read_object_oversized",
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    ("checker", "component", "check_id"),
+    (
+        (
+            dual_live_evaluator_module._check_r02_manifest_file_hashes,
+            "streams",
+            "R02_MANIFEST_FILE_HASHES",
+        ),
+        (
+            dual_live_evaluator_module._check_r03_seal_parity,
+            "manifest",
+            "R03_SEAL_PARITY",
+        ),
+        (
+            dual_live_evaluator_module._check_r04_seal_event_parity,
+            "events",
+            "R04_SEAL_EVENT_PARITY",
+        ),
+    ),
+)
+def test_independent_capture_read_error_preserves_exact_taxonomy(
+    checker: Callable[..., CheckResult],
+    component: str,
+    check_id: str,
+) -> None:
+    reason_code = "connector_campaign_log_read_changed"
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        independent_capture=(
+            dual_live_evaluator_module._IndependentCaptureEvidence(
+                errors=MappingProxyType({component: reason_code}),
+            )
+        ),
+        domain_errors={
+            "capture": "connector_campaign_log_manifest_hash_mismatch",
+        },
+    )
+
+    assert checker(context).as_dict() == {
+        "check_id": check_id,
+        "status": "INDETERMINATE",
+        "code": f"{check_id.lower()}_evidence_unavailable",
+        "evidence": {
+            "domain": "capture",
+            "reason_code": reason_code,
+        },
+    }
+
+
+def test_independent_observation_engine_preserves_caller_transaction(
+    tmp_path: Path,
+) -> None:
+    from sqlalchemy import create_engine
+
+    database_path = tmp_path / "observer.db"
+    caller_engine = create_engine(
+        f"sqlite:///{database_path.as_posix()}",
+        future=True,
+    )
+    with caller_engine.begin() as setup_connection:
+        setup_connection.exec_driver_sql(
+            "CREATE TABLE observer_probe (value INTEGER NOT NULL)"
+        )
+    caller_connection = caller_engine.connect()
+    caller_transaction = caller_connection.begin()
+    try:
+        caller_connection.exec_driver_sql(
+            "INSERT INTO observer_probe (value) VALUES (1)"
+        )
+        assert caller_connection.exec_driver_sql(
+            "SELECT COUNT(*) FROM observer_probe"
+        ).scalar_one() == 1
+
+        observation_engine = (
+            dual_live_evaluator_module._build_independent_observation_engine(
+                SimpleNamespace(
+                    database_url=(
+                        f"sqlite:///{database_path.as_posix()}"
+                    )
+                )
+            )
+        )
+        try:
+            with observation_engine.connect() as observation_connection:
+                assert observation_connection.exec_driver_sql(
+                    "PRAGMA query_only"
+                ).scalar_one() == 1
+                assert observation_connection.exec_driver_sql(
+                    "SELECT COUNT(*) FROM observer_probe"
+                ).scalar_one() == 0
+        finally:
+            observation_engine.dispose()
+
+        assert caller_connection.in_transaction()
+        assert caller_connection.exec_driver_sql(
+            "SELECT COUNT(*) FROM observer_probe"
+        ).scalar_one() == 1
+    finally:
+        if caller_transaction.is_active:
+            caller_transaction.rollback()
+        caller_connection.close()
+        caller_engine.dispose()
+
+
+def _ledger_entry(*, ordinal: int, stage: str, fingerprint: str) -> dict[str, object]:
+    return {
+        "ordinal": ordinal,
+        "stage": stage,
+        "request_fingerprint": fingerprint,
+        "response_status": 200,
+        "byte_count": 4,
+        "body_sha256": "d" * 64,
+        "send_started_at": "2026-07-31T00:00:00.000000Z",
+    }
+
+
+def _counter_record(*, ordinal: int, stage: str, fingerprint: str) -> dict[str, object]:
+    return {
+        "ordinal": ordinal,
+        "stage": stage,
+        "request_fingerprint": fingerprint,
+        "response_status": 200,
+        "decoded_body_bytes": 4,
+        "decoded_body_sha256": "d" * 64,
+    }
+
+
+def test_l05_binds_counter_order_to_nrc_then_sciencebase_ledgers() -> None:
+    nrc = SimpleNamespace(
+        connector_run_id="run-nrc",
+        entries=(_ledger_entry(ordinal=1, stage="nrc", fingerprint="1" * 64),),
+    )
+    sciencebase = SimpleNamespace(
+        connector_run_id="run-sciencebase",
+        entries=(
+            _ledger_entry(
+                ordinal=1,
+                stage="sciencebase",
+                fingerprint="2" * 64,
+            ),
+        ),
+    )
+    ordered = (
+        _counter_record(ordinal=1, stage="nrc", fingerprint="1" * 64),
+        _counter_record(
+            ordinal=1,
+            stage="sciencebase",
+            fingerprint="2" * 64,
+        ),
+    )
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        ledgers={"nrc_adams_aps": nrc, "sciencebase_mcs": sciencebase},
+        counter_records=ordered,
+    )
+
+    passing = dual_live_evaluator_module._check_l05_counter_bijection(context)
+    changed = dual_live_evaluator_module._check_l05_counter_bijection(
+        replace(
+            context,
+            counter_records=tuple(reversed(ordered)),
+        )
+    )
+
+    assert (passing.status, passing.code) == (
+        "PASS",
+        "l05_counter_bijection_pass",
+    )
+    assert (changed.status, changed.code) == (
+        "INDETERMINATE",
+        "l05_counter_ledger_bijection_invalid",
+    )
+
+
+def test_l03_rejects_same_timestamp_post_terminal_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    instant = datetime(2026, 7, 31, tzinfo=timezone.utc)
+    run = SimpleNamespace(connector_run_id="run-nrc")
+    events = (
+        SimpleNamespace(
+            event_type="egress_run_terminal",
+            created_at=instant,
+            status_after="completed",
+        ),
+        SimpleNamespace(
+            event_type="failed",
+            created_at=instant,
+            status_after="failed",
+        ),
+    )
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_run_events",
+        lambda _context, _run: events,
+    )
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        runs=(run,),
+    )
+
+    result = dual_live_evaluator_module._check_l03_post_terminal_extinction(
+        context
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "l03_post_terminal_contradiction",
+    )
+
+
+def test_source_blob_rejects_parent_traversal_before_read(
+    tmp_path: Path,
+) -> None:
+    raw_root = tmp_path / "raw"
+    raw_root.mkdir()
+    (tmp_path / "outside.bin").write_bytes(b"outside")
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=SimpleNamespace(connector_raw_dir=raw_root),
+        db=NoAccess(),
+    )
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._source_blob(context, "../outside.bin")
+
+    assert caught.value.code == "dual_live_source_ref_outside_root"
+
+
+def _guard_unsafe_filesystem_touch(
+    monkeypatch: pytest.MonkeyPatch,
+    unsafe_root: str,
+) -> None:
+    original_exists = Path.exists
+    original_resolve = Path.resolve
+    original_lstat = Path.lstat
+    original_open = Path.open
+    original_scandir = os.scandir
+
+    def is_unsafe(value: object) -> bool:
+        return str(value).casefold().startswith(unsafe_root.casefold())
+
+    def exists(path: Path) -> bool:
+        if is_unsafe(path):
+            raise AssertionError("unsafe path exists() touched")
+        return original_exists(path)
+
+    def resolve(path: Path, *args: object, **kwargs: object) -> Path:
+        if is_unsafe(path):
+            raise AssertionError("unsafe path resolve() touched")
+        return original_resolve(path, *args, **kwargs)
+
+    def lstat(path: Path, *args: object, **kwargs: object) -> os.stat_result:
+        if is_unsafe(path):
+            raise AssertionError("unsafe path lstat() touched")
+        return original_lstat(path, *args, **kwargs)
+
+    def open_path(path: Path, *args: object, **kwargs: object) -> object:
+        if is_unsafe(path):
+            raise AssertionError("unsafe path open() touched")
+        return original_open(path, *args, **kwargs)
+
+    def scandir(path: object) -> object:
+        if is_unsafe(path):
+            raise AssertionError("unsafe path scandir() touched")
+        return original_scandir(path)
+
+    monkeypatch.setattr(Path, "exists", exists)
+    monkeypatch.setattr(Path, "resolve", resolve)
+    monkeypatch.setattr(Path, "lstat", lstat)
+    monkeypatch.setattr(Path, "open", open_path)
+    monkeypatch.setattr(os, "scandir", scandir)
+
+
+@pytest.mark.parametrize(
+    "unsafe_root",
+    (
+        r"\\server\share\evidence",
+        r"\\?\C:\evidence",
+        r"\\.\C:\evidence",
+        r"C:\evidence:stream",
+        r"C:\CON\evidence",
+        "C:\\evidence. ",
+    ),
+)
+def test_non_source_root_rejects_unsafe_windows_alias_before_touch(
+    monkeypatch: pytest.MonkeyPatch,
+    unsafe_root: str,
+) -> None:
+    _guard_unsafe_filesystem_touch(monkeypatch, unsafe_root)
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._collect_non_source_files(
+            _non_source_settings(Path(unsafe_root)),
+            source_exemptions=(),
+        )
+
+    assert caught.value.code == "dual_live_scan_root_unsafe"
+
+
+@pytest.mark.parametrize(
+    "unsafe_root",
+    (
+        r"\\server\share\raw",
+        r"\\?\C:\raw",
+        r"\\.\C:\raw",
+        r"C:\raw:stream",
+        r"C:\AUX\raw",
+        "C:\\raw. ",
+    ),
+)
+def test_source_root_rejects_unsafe_windows_alias_before_touch(
+    monkeypatch: pytest.MonkeyPatch,
+    unsafe_root: str,
+) -> None:
+    _guard_unsafe_filesystem_touch(monkeypatch, unsafe_root)
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=SimpleNamespace(connector_raw_dir=unsafe_root),
+        db=NoAccess(),
+    )
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._source_blob(context, "blob.bin")
+
+    assert caught.value.code == "dual_live_source_root_invalid"
+
+
+@pytest.mark.parametrize(
+    "unsafe_path",
+    (
+        r"\\server\share\proof.sqlite",
+        r"\\?\C:\proof.sqlite",
+        r"C:\proof.sqlite:stream",
+        r"Z:\proof.sqlite",
+    ),
+)
+def test_database_path_rejects_remote_alias_before_touch(
+    monkeypatch: pytest.MonkeyPatch,
+    unsafe_path: str,
+) -> None:
+    _guard_unsafe_filesystem_touch(monkeypatch, unsafe_path)
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._database_path(
+            SimpleNamespace(database_url=f"sqlite:///{unsafe_path}")
+        )
+
+    assert caught.value.code in {
+        "dual_live_database_path_unsafe",
+        "dual_live_database_url_invalid",
+    }
+
+
+@pytest.mark.parametrize(
+    "unsafe_root",
+    (
+        r"\\server\share\evidence",
+        r"\\?\C:\evidence",
+        r"C:\evidence:stream",
+        r"Z:\evidence",
+    ),
+)
+def test_evidence_root_rejects_remote_alias_before_touch(
+    monkeypatch: pytest.MonkeyPatch,
+    unsafe_root: str,
+) -> None:
+    _guard_unsafe_filesystem_touch(monkeypatch, unsafe_root)
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._preflight_evidence_settings(
+            SimpleNamespace(
+                connector_campaign_evidence_root=unsafe_root,
+                connector_campaign_evidence_index_path=(
+                    f"{unsafe_root}\\indexes\\{'a' * 64}.json"
+                ),
+                connector_campaign_evidence_index_sha256="a" * 64,
+            )
+        )
+
+    assert caught.value.code == "dual_live_evidence_root_unsafe"
+
+
+@pytest.mark.parametrize(
+    "unsafe_root",
+    (
+        r"\\server\share\evidence",
+        r"\\?\C:\evidence",
+        r"C:\evidence:stream",
+        r"Z:\evidence",
+    ),
+)
+def test_evidence_leaf_rejects_remote_alias_before_touch(
+    monkeypatch: pytest.MonkeyPatch,
+    unsafe_root: str,
+) -> None:
+    _guard_unsafe_filesystem_touch(monkeypatch, unsafe_root)
+
+    with pytest.raises(connector_evidence_module.ConnectorEvidenceError) as caught:
+        connector_evidence_module._evidence_root(
+            SimpleNamespace(connector_campaign_evidence_root=unsafe_root)
+        )
+
+    assert caught.value.code == "connector_evidence_path_invalid"
+
+
+def test_evidence_leaf_binds_open_file_to_expected_fixed_local_path(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / "source.bin"
+    source.write_bytes(b"proof")
+    monkeypatch.setattr(
+        connector_evidence_module,
+        "_opened_fixed_local_evidence_path",
+        lambda _handle: tmp_path / "other.bin",
+    )
+
+    with pytest.raises(connector_evidence_module.ConnectorEvidenceError) as caught:
+        connector_evidence_module._read_evidence_file(
+            tmp_path,
+            source.name,
+            max_bytes=16,
+        )
+
+    assert caught.value.code == "connector_evidence_path_invalid"
+
+
+def test_evidence_leaf_reads_fixed_local_file_with_handle_binding(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "source.bin"
+    source.write_bytes(b"proof")
+
+    snapshot = connector_evidence_module._read_evidence_file(
+        tmp_path,
+        source.name,
+        max_bytes=16,
+    )
+
+    assert snapshot.data == b"proof"
+    assert snapshot.sha256 == hashlib.sha256(b"proof").hexdigest()
+
+
+def test_f06_evaluator_source_has_no_write_or_egress_dependency() -> None:
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+    )
+
+    result = dual_live_evaluator_module._check_f06_no_egress_dependency(context)
+
+    assert (result.status, result.code) == (
+        "PASS",
+        "f06_no_egress_dependency_pass",
+    )
+
+
+def test_f06_recursive_source_closure_detects_all_import_forms(tmp_path: Path) -> None:
+    package = tmp_path / "fixture"
+    package.mkdir()
+    (package / "__init__.py").write_text(
+        "from .entry import run\n",
+        encoding="utf-8",
+    )
+    (package / "entry.py").write_text(
+        "from typing import TYPE_CHECKING\n"
+        "if TYPE_CHECKING:\n"
+        "    from . import typed\n"
+        "def run():\n"
+        "    from . import local\n"
+        "    return local.value\n",
+        encoding="utf-8",
+    )
+    (package / "local.py").write_text(
+        "import importlib\n"
+        "value = importlib.import_module('socket')\n",
+        encoding="utf-8",
+    )
+    (package / "typed.py").write_text("import requests\n", encoding="utf-8")
+
+    closure = dual_live_evaluator_module._reachable_source_imports(
+        ("fixture.entry",),
+        source_root=tmp_path,
+    )
+
+    assert set(closure) >= {
+        "fixture",
+        "fixture.entry",
+        "fixture.local",
+        "fixture.typed",
+        "requests",
+        "socket",
+    }
+
+
+def _patch_f06_evaluator_source(
+    monkeypatch: pytest.MonkeyPatch,
+    source: str,
+) -> None:
+    original_read = dual_live_evaluator_module._stable_bounded_read
+    evaluator_path = Path(dual_live_evaluator_module.__file__).resolve()
+
+    def source_read(path: Path, *args: Any, **kwargs: Any) -> bytes:
+        if Path(path).resolve() == evaluator_path:
+            return source.encode("utf-8")
+        return original_read(path, *args, **kwargs)
+
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_stable_bounded_read",
+        source_read,
+    )
+
+
+def test_f06_allows_local_database_engine_connect(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_f06_evaluator_source(
+        monkeypatch,
+        "with engine.connect() as connection:\n    pass\n",
+    )
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+    )
+
+    result = dual_live_evaluator_module._check_f06_no_egress_dependency(context)
+
+    assert (result.status, result.code) == (
+        "PASS",
+        "f06_no_egress_dependency_pass",
+    )
+
+
+@pytest.mark.parametrize("qualified_call", ("requests.connect()", "socket.connect()"))
+def test_f06_rejects_network_qualified_connect(
+    monkeypatch: pytest.MonkeyPatch,
+    qualified_call: str,
+) -> None:
+    _patch_f06_evaluator_source(
+        monkeypatch,
+        f"{qualified_call}\n",
+    )
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+    )
+
+    result = dual_live_evaluator_module._check_f06_no_egress_dependency(context)
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "f06_write_or_egress_call_present",
+    )
+
+
+def test_l09_uses_the_canonical_read_only_transport_rule_tables() -> None:
+    rule = SimpleNamespace(
+        stage="exact_accession_api",
+        method="GET",
+        allowed_hosts=("adams.nrc.gov",),
+        path_rule_id="nrc_get_document_exact_v1",
+        query_rule_id="none_v1",
+        credential_audience="nrc-aps",
+    )
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        historical={
+            "nrc_adams_aps": SimpleNamespace(
+                model=SimpleNamespace(request_rules=(rule,))
+            ),
+        },
+        ledgers={
+            "nrc_adams_aps": SimpleNamespace(
+                entries=(
+                    {
+                        "stage": rule.stage,
+                        "method": rule.method,
+                        "host": rule.allowed_hosts[0],
+                        "path_class": "nrc_accession_exact",
+                        "query_class": "none",
+                        "credential_audience": rule.credential_audience,
+                    },
+                )
+            )
+        },
+    )
+
+    result = dual_live_evaluator_module._check_l09_transport_policy(context)
+
+    assert (result.status, result.code) == (
+        "PASS",
+        "l09_transport_policy_pass",
+    )
+
+
+def test_decoder_accepts_two_layers_and_rejects_any_third_layer() -> None:
+    forms = dual_live_evaluator_module._decoded_forms(
+        b"https&amp;#58;&amp;#47;&amp;#47;example.com",
+        strict_utf8=True,
+    )
+
+    assert "https://example.com" in forms
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._decoded_forms(
+            b"https&amp;amp;#58;&amp;amp;#47;&amp;amp;#47;example.com",
+            strict_utf8=True,
+        )
+    assert caught.value.code == "dual_live_scan_third_encoding_layer"
+
+
+def test_decoder_preserves_literal_percent_and_decodes_real_escape() -> None:
+    forms = dual_live_evaluator_module._decoded_forms(
+        b"%PDF-1.7 progress=100%25 complete",
+        strict_utf8=True,
+    )
+
+    assert "%PDF-1.7 progress=100% complete" in forms
+
+
+def test_decoder_rejects_percent_escape_with_invalid_utf8() -> None:
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._decoded_forms(
+            b"invalid=%FF",
+            strict_utf8=True,
+        )
+
+    assert caught.value.code == "dual_live_scan_percent_encoding_invalid"
+
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        b"\xffhttps%3A%2F%2Fexample.com",
+        b"\xffhttps&#58;&#47;&#47;example.com",
+        b"\xffhttps\\u003a\\u002f\\u002fexample.com",
+    ),
+)
+def test_binary_decoder_still_decodes_ascii_escape_regions(payload: bytes) -> None:
+    forms = dual_live_evaluator_module._decoded_forms(
+        payload,
+        strict_utf8=False,
+    )
+
+    assert any("https://example.com" in form for form in forms)
+
+
+def test_binary_decoder_still_rejects_third_encoding_layer() -> None:
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._decoded_forms(
+            b"\xffhttps%25253A%25252F%25252Fexample.com",
+            strict_utf8=False,
+        )
+
+    assert caught.value.code == "dual_live_scan_third_encoding_layer"
+
+
+def test_canonical_bytes_thaws_frozen_package_mappings() -> None:
+    frozen = MappingProxyType(
+        {
+            "nested": MappingProxyType({"value": "ok"}),
+            "rows": (MappingProxyType({"ordinal": 1}),),
+        }
+    )
+
+    assert dual_live_evaluator_module._canonical_bytes(frozen) == (
+        b'{"nested":{"value":"ok"},"rows":[{"ordinal":1}]}'
+    )
+
+
+def _non_source_settings(root: Path) -> SimpleNamespace:
+    return SimpleNamespace(
+        connector_reports_dir=root,
+        connector_manifests_dir="",
+        connector_snapshots_dir="",
+        artifact_storage_dir="",
+        dataset_storage_dir="",
+        layer3_local_outbox_dir="",
+    )
+
+
+def test_non_source_file_cap_is_checked_before_any_file_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "reports"
+    root.mkdir()
+    (root / "a.txt").write_bytes(b"a")
+    (root / "b.txt").write_bytes(b"b")
+    monkeypatch.setattr(dual_live_evaluator_module, "MAX_SCAN_FILES", 1)
+    monkeypatch.setattr(
+        Path,
+        "open",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("file read occurred before cardinality refusal")
+        ),
+    )
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._collect_non_source_files(
+            _non_source_settings(root),
+            source_exemptions=(),
+        )
+
+    assert caught.value.code == "dual_live_scan_file_cap_exceeded"
+
+
+def test_non_source_scan_does_not_exempt_same_relative_name_in_another_root(
+    tmp_path: Path,
+) -> None:
+    raw_root = tmp_path / "raw"
+    report_root = tmp_path / "reports"
+    raw_root.mkdir()
+    report_root.mkdir()
+    source_payload = b"bound raw source"
+    reflected = b"reflected-secret"
+    (raw_root / "shared.bin").write_bytes(source_payload)
+    (report_root / "shared.bin").write_bytes(reflected)
+    settings = _non_source_settings(report_root)
+    settings.connector_raw_dir = raw_root
+
+    files = dual_live_evaluator_module._collect_non_source_files(
+        settings,
+        source_exemptions=(
+            ("shared.bin", hashlib.sha256(source_payload).hexdigest()),
+        ),
+    )
+
+    assert files == (("root-0:shared.bin", reflected),)
+
+
+def test_source_size_cap_is_checked_before_open(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "raw"
+    root.mkdir()
+    oversized = root / "oversized.bin"
+    with oversized.open("wb") as handle:
+        handle.truncate(2)
+    monkeypatch.setattr(dual_live_evaluator_module, "MAX_SOURCE_BYTES", 1)
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=SimpleNamespace(connector_raw_dir=root),
+        db=NoAccess(),
+    )
+    monkeypatch.setattr(
+        Path,
+        "open",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("oversized source was opened")
+        ),
+    )
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._source_blob(context, "oversized.bin")
+
+    assert caught.value.code == "dual_live_source_blob_size_invalid"
+
+
+def test_r11_requires_exact_authority_posture_digest() -> None:
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        runtime_records=(
+            {
+                "phase": "A",
+                "event": "authority_cleared",
+                "payload": {
+                    "all_required_absent": True,
+                    "authority_posture_sha256": "0" * 64,
+                },
+            },
+        ),
+    )
+
+    result = dual_live_evaluator_module._check_r11_authority_cleared(context)
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "r11_authority_not_cleared",
+    )
+
+
+def test_r11_accepts_only_bound_authority_posture_digest() -> None:
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        runtime_records=(
+            {
+                "phase": "A",
+                "event": "authority_cleared",
+                "payload": {
+                    "all_required_absent": True,
+                    "authority_posture_sha256": (
+                        "59629217f25b985366b9b16a9f6bd7b9"
+                        "a45d5544375dc04f847f1b7bc1e07cd2"
+                    ),
+                },
+            },
+        ),
+    )
+
+    result = dual_live_evaluator_module._check_r11_authority_cleared(context)
+
+    assert (result.status, result.code) == (
+        "PASS",
+        "r11_authority_cleared_pass",
+    )
+
+
+def _production_phase_proof_material(
+    *,
+    phase: str,
+    process_boot_id: str,
+    status_nonce_sha256: str,
+    control_nonce: str,
+) -> SimpleNamespace:
+    boot_payload = canonical_json_bytes(
+        {
+            "control_nonce": control_nonce,
+            "phase": phase,
+            "process_boot_id": process_boot_id,
+            "schema_id": dual_live_runtime_module.CHILD_BOOT_SCHEMA_ID,
+            "status_nonce_sha256": status_nonce_sha256,
+        }
+    )
+    boot_frame = dual_live_runtime_module.encode_pipe_frame(boot_payload)
+    status_frames = tuple(
+        dual_live_runtime_module.encode_child_status_frame(
+            phase=phase,
+            event="logger_census",
+            process_boot_id=process_boot_id,
+            status_nonce_sha256=status_nonce_sha256,
+            ordinal=ordinal,
+            payload={
+                "census_point": point,
+                "handler_count": 1,
+                "topology_sha256": "9" * 64,
+            },
+        )
+        for ordinal, point in ((1, "pre_activity"), (2, "exit"))
+    )
+    control_frame = encode_child_control_frame(
+        phase=phase,
+        command="GO",
+        control_nonce=control_nonce,
+    )
+    common = {
+        "boot_frame_sha256": hashlib.sha256(boot_frame).hexdigest(),
+        "control_nonce_sha256": hashlib.sha256(
+            control_nonce.encode("ascii")
+        ).hexdigest(),
+        "pre_activity_status_frame_sha256": hashlib.sha256(
+            status_frames[0]
+        ).hexdigest(),
+        "proof_scope": "production",
+    }
+    terminal = {
+        **common,
+        "control_frame_sha256": hashlib.sha256(control_frame).hexdigest(),
+        "exit_status_frame_sha256": hashlib.sha256(status_frames[1]).hexdigest(),
+    }
+    runtime_records = (
+        {
+            "phase": phase,
+            "event": "phase_child_start",
+            "process_boot_id": process_boot_id,
+            "payload": CHILD_START_PAYLOAD,
+        },
+        {
+            "phase": phase,
+            "event": "logger_census",
+            "process_boot_id": process_boot_id,
+            "payload": {
+                "census_point": "pre_activity",
+                "topology_sha256": "9" * 64,
+                "handler_count": 1,
+                "guard_state": f"{phase}_CENSUS_OK",
+                "topology_matches_initial": True,
+            },
+        },
+        {
+            "phase": phase,
+            "event": "phase_go",
+            "process_boot_id": process_boot_id,
+            "payload": {
+                "prior_state": f"{phase}_CENSUS_OK",
+                "next_state": f"{phase}_GO",
+                "control_nonce_sha256": common["control_nonce_sha256"],
+            },
+        },
+        {
+            "phase": phase,
+            "event": "logger_census",
+            "process_boot_id": process_boot_id,
+            "payload": {
+                "census_point": "exit",
+                "topology_sha256": "9" * 64,
+                "handler_count": 1,
+                "guard_state": f"{phase}_STOPPED",
+                "topology_matches_initial": True,
+            },
+        },
+    )
+    return SimpleNamespace(
+        boot_payload=boot_payload,
+        common=common,
+        terminal=terminal,
+        runtime_records=runtime_records,
+    )
+
+
+def _production_child_proof_materials() -> tuple[SimpleNamespace, SimpleNamespace]:
+    return (
+        _production_phase_proof_material(
+            phase="A",
+            process_boot_id="1" * 64,
+            status_nonce_sha256="3" * 64,
+            control_nonce="5" * 64,
+        ),
+        _production_phase_proof_material(
+            phase="B",
+            process_boot_id="2" * 64,
+            status_nonce_sha256="4" * 64,
+            control_nonce="6" * 64,
+        ),
+    )
+
+
+def _production_child_proof_stdout() -> bytes:
+    phase_a, phase_b = _production_child_proof_materials()
+    phase_a_boot = "1" * 64
+    phase_b_boot = "2" * 64
+    phase_a_status = "3" * 64
+    phase_b_status = "4" * 64
+    common_a = phase_a.terminal
+    common_b = phase_b.common
+    terminal_b = phase_b.terminal
+    acquisitions = [
+        {
+            "action_codes": [
+                "derived_arming",
+                "raw_acquisition",
+                "terminal_transition",
+            ],
+            "connector_key": connector_key,
+            "connector_run_id": f"run-{connector_key}",
+            "connector_run_target_id": f"target-{connector_key}",
+            "ledger_terminal_hash": ("f" if ordinal == 1 else "0") * 64,
+            "raw_content_sha256": ("1" if ordinal == 1 else "2") * 64,
+            "terminal_transition_count": 1,
+        }
+        for ordinal, connector_key in enumerate(
+            ("nrc_adams_aps", "sciencebase_mcs"),
+            start=1,
+        )
+    ]
+    bindings = [
+        {
+            "analysis_plan_id": f"plan-{connector_key}",
+            "analysis_run_id": None,
+            "candidate_id": f"candidate-{connector_key}",
+            "connector_key": connector_key,
+            "connector_origin_receipt_hash": (
+                "3" if ordinal == 1 else "4"
+            )
+            * 64,
+            "connector_run_id": f"run-{connector_key}",
+            "connector_run_target_id": f"target-{connector_key}",
+            "construction_basis_hash": (
+                "5" if ordinal == 1 else "6"
+            )
+            * 64,
+            "handoff_export_envelope_ref": f"envelope-{connector_key}",
+            "output_package_ids": [
+                f"package-{connector_key}-{package_ordinal}"
+                for package_ordinal in range(3)
+            ],
+            "package_kinds": [
+                "canonical_internal",
+                "user_facing",
+                "review_facing",
+            ],
+            "package_review_preview_hash": (
+                "l3-qual-aps-package-preview-7777777777777777"
+                if ordinal == 1
+                else "l3-source-intake-package-preview-8888888888888888"
+            ),
+            "package_review_submit_record_ref": f"submit-{connector_key}",
+            "pass_run_id": f"pass-{connector_key}",
+            "payload_hashes": [
+                f"{ordinal * 3 + package_ordinal:064x}"
+                for package_ordinal in range(3)
+            ],
+            "prepare_record_ref": f"prepare-{connector_key}",
+            "reconciliation_record_id": f"reconciliation-{connector_key}",
+            "result_review_record_ref": f"review-{connector_key}",
+            "session_id": f"session-{connector_key}",
+            "source_shape": (
+                "aps_content_document"
+                if connector_key == "nrc_adams_aps"
+                else "strict_sciencebase_connector_single_source"
+            ),
+            "source_record_id": f"source-{connector_key}",
+        }
+        for ordinal, connector_key in enumerate(
+            ("nrc_adams_aps", "sciencebase_mcs"),
+            start=1,
+        )
+    ]
+    frames: list[bytes] = []
+    frames.append(
+        dual_live_runtime_module.encode_child_proof_frame(
+            phase="A",
+            event="acquisition_boundary",
+            process_boot_id=phase_a_boot,
+            status_nonce_sha256=phase_a_status,
+            ordinal=1,
+            previous_record_sha256=None,
+            payload={
+                **common_a,
+                "connector_acquisitions": acquisitions,
+                "downstream_action_count": 0,
+            },
+        )
+    )
+    phase_b_pre = dual_live_runtime_module.encode_child_proof_frame(
+        phase="B",
+        event="guard",
+        process_boot_id=phase_b_boot,
+        status_nonce_sha256=phase_b_status,
+        ordinal=1,
+        previous_record_sha256=None,
+        payload={
+            **common_b,
+            "denied_routes": [
+                "dns",
+                "http",
+                "socket",
+                "subprocess",
+                "connector_transport",
+            ],
+            "network_enable_attempt_count": 0,
+            "original_implementation_call_count": 0,
+            "proof_point": "pre_go",
+        },
+    )
+    frames.append(phase_b_pre)
+    predecessor = json.loads(phase_b_pre[4:].decode("utf-8"))["record_sha256"]
+    phase_b_chain = dual_live_runtime_module.encode_child_proof_frame(
+        phase="B",
+        event="downstream_chain",
+        process_boot_id=phase_b_boot,
+        status_nonce_sha256=phase_b_status,
+        ordinal=2,
+        previous_record_sha256=predecessor,
+        payload={
+            **terminal_b,
+            "action_receipts": [
+                {
+                    "action": action,
+                    "result_sha256": f"{index:064x}",
+                }
+                for index, action in enumerate(
+                    dual_live_evaluator_module._PHASE_B_DOWNSTREAM_ACTIONS,
+                    start=1,
+                )
+            ],
+            "downstream_actions": list(
+                dual_live_evaluator_module._PHASE_B_DOWNSTREAM_ACTIONS
+            ),
+            "source_bindings": bindings,
+            "terminal_boundary": "handoff_prepared",
+        },
+    )
+    frames.append(phase_b_chain)
+    predecessor = json.loads(phase_b_chain[4:].decode("utf-8"))["record_sha256"]
+    frames.append(
+        dual_live_runtime_module.encode_child_proof_frame(
+            phase="B",
+            event="guard",
+            process_boot_id=phase_b_boot,
+            status_nonce_sha256=phase_b_status,
+            ordinal=3,
+            previous_record_sha256=predecessor,
+            payload={
+                **terminal_b,
+                "denied_routes": [
+                    "dns",
+                    "http",
+                    "socket",
+                    "subprocess",
+                    "connector_transport",
+                ],
+                "network_enable_attempt_count": 0,
+                "original_implementation_call_count": 0,
+                "proof_point": "exit",
+            },
+        )
+    )
+    return b"".join(frame[4:] + b"\n" for frame in frames)
+
+
+def test_child_proof_parser_accepts_exact_production_sequence() -> None:
+    records = dual_live_evaluator_module._parse_child_proof_records(
+        _production_child_proof_stdout()
+    )
+
+    assert tuple(
+        (record["phase"], record["ordinal"], record["event"])
+        for record in records
+    ) == (
+        ("A", 1, "acquisition_boundary"),
+        ("B", 1, "guard"),
+        ("B", 2, "downstream_chain"),
+        ("B", 3, "guard"),
+    )
+
+
+def test_child_proofs_bind_to_boot_status_control_and_runtime() -> None:
+    phase_a, phase_b = _production_child_proof_materials()
+    records = dual_live_evaluator_module._parse_child_proof_records(
+        _production_child_proof_stdout()
+    )
+
+    dual_live_evaluator_module._validate_child_proof_runtime_bindings(
+        child_proofs=records,
+        runtime_records=phase_a.runtime_records + phase_b.runtime_records,
+        app_log=phase_a.boot_payload + b"\n" + phase_b.boot_payload + b"\n",
+    )
+
+
+def test_child_proofs_reject_changed_runtime_control_binding() -> None:
+    phase_a, phase_b = _production_child_proof_materials()
+    records = dual_live_evaluator_module._parse_child_proof_records(
+        _production_child_proof_stdout()
+    )
+    runtime_records = list(phase_a.runtime_records + phase_b.runtime_records)
+    changed = dict(runtime_records[2])
+    changed["payload"] = {
+        **changed["payload"],
+        "control_nonce_sha256": "0" * 64,
+    }
+    runtime_records[2] = changed
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._validate_child_proof_runtime_bindings(
+            child_proofs=records,
+            runtime_records=runtime_records,
+            app_log=phase_a.boot_payload + b"\n" + phase_b.boot_payload + b"\n",
+        )
+
+    assert caught.value.code == "dual_live_child_proof_invalid"
+
+
+def test_child_proof_parser_rejects_guard_enable_attempt_even_if_rehashed() -> None:
+    lines = _production_child_proof_stdout().splitlines()
+    record = json.loads(lines[1])
+    record["payload"]["network_enable_attempt_count"] = 1
+    record["record_sha256"] = hashlib.sha256(
+        canonical_json_bytes(
+            {
+                key: value
+                for key, value in record.items()
+                if key != "record_sha256"
+            }
+        )
+    ).hexdigest()
+    lines[1] = canonical_json_bytes(record)
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._parse_child_proof_records(
+            b"\n".join(lines) + b"\n"
+        )
+
+    assert caught.value.code == "dual_live_child_proof_invalid"
+
+
+def test_child_proof_parser_rejects_noncanonical_package_preview_id() -> None:
+    lines = _production_child_proof_stdout().splitlines()
+    downstream = json.loads(lines[2])
+    downstream["payload"]["source_bindings"][0][
+        "package_review_preview_hash"
+    ] = "7" * 64
+    downstream["record_sha256"] = hashlib.sha256(
+        canonical_json_bytes(
+            {
+                key: value
+                for key, value in downstream.items()
+                if key != "record_sha256"
+            }
+        )
+    ).hexdigest()
+    lines[2] = canonical_json_bytes(downstream)
+    exit_guard = json.loads(lines[3])
+    exit_guard["previous_record_sha256"] = downstream["record_sha256"]
+    exit_guard["record_sha256"] = hashlib.sha256(
+        canonical_json_bytes(
+            {
+                key: value
+                for key, value in exit_guard.items()
+                if key != "record_sha256"
+            }
+        )
+    ).hexdigest()
+    lines[3] = canonical_json_bytes(exit_guard)
+
+    with pytest.raises(DualLiveEvaluationError) as caught:
+        dual_live_evaluator_module._parse_child_proof_records(
+            b"\n".join(lines) + b"\n"
+        )
+
+    assert caught.value.code == "dual_live_child_proof_invalid"
+
+
+def _proof_check_context() -> dual_live_evaluator_module._EvidenceContext:
+    phase_a, phase_b = _production_child_proof_materials()
+    a_boot = "1" * 64
+    b_boot = "2" * 64
+    a_complete_hash = "a" * 64
+    b_complete_hash = "b" * 64
+    runtime_records = (
+        {
+            "ordinal": 1,
+            "phase": "wrapper",
+            "event": "runtime_start",
+            "process_boot_id": None,
+            "payload": RUNTIME_START_PAYLOAD,
+        },
+        {
+            "ordinal": 2,
+            **phase_a.runtime_records[0],
+        },
+        {"ordinal": 3, **phase_a.runtime_records[1]},
+        {"ordinal": 4, **phase_a.runtime_records[2]},
+        {"ordinal": 5, **phase_a.runtime_records[3]},
+        {
+            "ordinal": 6,
+            "phase": "A",
+            "event": "socket_census",
+            "process_boot_id": a_boot,
+            "payload": {
+                "tcp4_state_counts": ZERO_TCP_STATE_COUNTS,
+                "tcp6_state_counts": ZERO_TCP_STATE_COUNTS,
+                "udp4_count": 0,
+                "udp6_count": 0,
+                "process_identity_sha256": "c" * 64,
+                "stable": True,
+            },
+        },
+        {
+            "ordinal": 7,
+            "phase": "A",
+            "event": "job_zero",
+            "process_boot_id": a_boot,
+            "payload": {
+                "active_process_count": 0,
+                "process_list_sha256": "d" * 64,
+            },
+        },
+        {
+            "ordinal": 8,
+            "phase": "A",
+            "event": "authority_cleared",
+            "process_boot_id": a_boot,
+            "payload": {
+                "authority_posture_sha256": (
+                    dual_live_evaluator_module._AUTHORITY_CLEARED_POSTURE_SHA256
+                ),
+                "all_required_absent": True,
+            },
+        },
+        {
+            "ordinal": 9,
+            "phase": "A",
+            "event": "phase_complete",
+            "process_boot_id": a_boot,
+            "record_sha256": a_complete_hash,
+            "payload": {"terminal_state": "completed", "exit_code": 0},
+        },
+        {"ordinal": 10, **phase_b.runtime_records[0]},
+        {"ordinal": 11, **phase_b.runtime_records[1]},
+        {"ordinal": 12, **phase_b.runtime_records[2]},
+        {"ordinal": 13, **phase_b.runtime_records[3]},
+        {
+            "ordinal": 14,
+            "phase": "B",
+            "event": "phase_complete",
+            "process_boot_id": b_boot,
+            "record_sha256": b_complete_hash,
+            "payload": {"terminal_state": "completed", "exit_code": 0},
+        },
+        {
+            "ordinal": 15,
+            "phase": "wrapper",
+            "event": "runtime_complete",
+            "process_boot_id": None,
+            "payload": {
+                "phase_a_result_sha256": a_complete_hash,
+                "phase_b_result_sha256": b_complete_hash,
+                "terminal_state": "completed",
+            },
+        },
+    )
+    connectors = ("nrc_adams_aps", "sciencebase_mcs")
+    runs = {
+        connector: SimpleNamespace(connector_run_id=f"run-{connector}")
+        for connector in connectors
+    }
+    targets = {
+        connector: SimpleNamespace(
+            connector_run_id=f"run-{connector}",
+            connector_run_target_id=f"target-{connector}",
+            downloaded_sha256=("1" if ordinal == 1 else "2") * 64,
+        )
+        for ordinal, connector in enumerate(connectors, start=1)
+    }
+    ledgers = {
+        connector: SimpleNamespace(
+            eligible=True,
+            ledger_terminal_hash=("f" if ordinal == 1 else "0") * 64,
+        )
+        for ordinal, connector in enumerate(connectors, start=1)
+    }
+    origins = {
+        connector: {
+            "receipt_hash": ("3" if ordinal == 1 else "4") * 64,
+            "raw_content_sha256": ("1" if ordinal == 1 else "2") * 64,
+        }
+        for ordinal, connector in enumerate(connectors, start=1)
+    }
+    source_shapes = {
+        "nrc_adams_aps": "aps_content_document",
+        "sciencebase_mcs": "strict_sciencebase_connector_single_source",
+    }
+    downstream_sessions = {
+        connector: SimpleNamespace(
+            session_id=f"session-{connector}",
+            operator_context_json={
+                "layer3_gate_b_decision_manifest_v1": {
+                    "items": [
+                        {
+                            "candidate_id": f"candidate-{connector}",
+                            "decision": "approved",
+                            "source_class": source_shapes[connector],
+                        }
+                    ]
+                }
+            },
+        )
+        for connector in connectors
+    }
+    pass_runs = {
+        connector: SimpleNamespace(
+            analysis_plan_id=f"plan-{connector}",
+            pass_run_id=f"pass-{connector}",
+            summary_json={
+                "analysis_execution_start": {"analysis_run_id": None}
+            },
+        )
+        for connector in connectors
+    }
+    review_states = {
+        connector: {"review_record_ref": f"review-{connector}"}
+        for connector in connectors
+    }
+    reconciliations = {
+        connector: SimpleNamespace(
+            reconciliation_record_id=f"reconciliation-{connector}"
+        )
+        for connector in connectors
+    }
+    packages = {
+        connector: tuple(
+            SimpleNamespace(
+                package_kind=package_kind,
+                output_package_id=f"package-{connector}-{package_ordinal}",
+                payload_ref=f"payload-{connector}-{package_ordinal}",
+                payload_hash=f"{ordinal * 3 + package_ordinal:064x}",
+            )
+            for package_ordinal, package_kind in enumerate(
+                ("canonical_internal", "user_facing", "review_facing")
+            )
+        )
+        for ordinal, connector in enumerate(connectors, start=1)
+    }
+    package_commits = {
+        connector: {
+            "construction_basis_hash": (
+                "5" if ordinal == 1 else "6"
+            )
+            * 64,
+            "package_review_preview_hash": (
+                "l3-qual-aps-package-preview-7777777777777777"
+                if ordinal == 1
+                else "l3-source-intake-package-preview-8888888888888888"
+            ),
+        }
+        for ordinal, connector in enumerate(connectors, start=1)
+    }
+    submit_states = {
+        connector: {"submit_record_ref": f"submit-{connector}"}
+        for connector in connectors
+    }
+    handoff_states = {
+        connector: {
+            "prepare_record_ref": f"prepare-{connector}",
+            "source_shape": source_shapes[connector],
+            "handoff_export_envelope": {
+                "envelope_ref": f"envelope-{connector}",
+                "source_shape": source_shapes[connector],
+            },
+        }
+        for connector in connectors
+    }
+    return dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        manifest=SimpleNamespace(runtime_started_at=0, runtime_stopped_at=1),
+        runtime_records=runtime_records,
+        child_proofs=dual_live_evaluator_module._parse_child_proof_records(
+            _production_child_proof_stdout()
+        ),
+        counter_records=(
+            {"process_boot_id": a_boot},
+            {"process_boot_id": a_boot},
+        ),
+        run_by_connector=runs,
+        targets=targets,
+        ledgers=ledgers,
+        origins=origins,
+        source_record_ids={
+            connector: f"source-{connector}" for connector in connectors
+        },
+        downstream_sessions=downstream_sessions,
+        pass_runs=pass_runs,
+        review_states=review_states,
+        reconciliations=reconciliations,
+        packages=packages,
+        package_commits=package_commits,
+        submit_states=submit_states,
+        handoff_states=handoff_states,
+    )
+
+
+@pytest.mark.parametrize(
+    "check",
+    (
+        dual_live_evaluator_module._check_r12_phase_b_guards,
+        dual_live_evaluator_module._check_r14_runtime_terminal,
+        dual_live_evaluator_module._check_r15_wrapper_network_inert,
+        dual_live_evaluator_module._check_r16_phase_a_raw_only,
+        dual_live_evaluator_module._check_r17_phase_b_strict_flow,
+        dual_live_evaluator_module._check_r18_phase_a_terminal_once,
+        dual_live_evaluator_module._check_r19_a_to_b_order,
+    ),
+)
+def test_r12_r14_through_r19_accept_exact_bound_child_proofs(
+    check: Callable[[object], CheckResult],
+) -> None:
+    assert check(_proof_check_context()).status == "PASS"
+
+
+def _changed_child_payload(
+    context: dual_live_evaluator_module._EvidenceContext,
+    *,
+    index: int,
+    changes: dict[str, object],
+) -> tuple[dict[str, object], ...]:
+    records = [
+        json.loads(dual_live_evaluator_module._canonical_bytes(record))
+        for record in context.child_proofs
+    ]
+    records[index]["payload"] = {**records[index]["payload"], **changes}
+    return tuple(records)
+
+
+def test_r12_rejects_guard_replacement_or_enable_attempt() -> None:
+    context = _proof_check_context()
+    changed = replace(
+        context,
+        child_proofs=_changed_child_payload(
+            context,
+            index=1,
+            changes={"network_enable_attempt_count": 1},
+        ),
+    )
+
+    result = dual_live_evaluator_module._check_r12_phase_b_guards(changed)
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "r12_phase_b_guards_unproven",
+    )
+
+
+def test_r14_rejects_missing_child_terminal_proof() -> None:
+    context = _proof_check_context()
+    result = dual_live_evaluator_module._check_r14_runtime_terminal(
+        replace(context, child_proofs=context.child_proofs[:-1])
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "r14_runtime_terminal_invalid",
+    )
+
+
+def test_r15_rejects_counter_outside_phase_a_child() -> None:
+    context = _proof_check_context()
+    result = dual_live_evaluator_module._check_r15_wrapper_network_inert(
+        replace(context, counter_records=({"process_boot_id": "2" * 64},))
+    )
+
+    assert result.status == "FAIL"
+
+
+def test_r16_rejects_phase_a_downstream_action_proof() -> None:
+    context = _proof_check_context()
+    changed = replace(
+        context,
+        child_proofs=_changed_child_payload(
+            context,
+            index=0,
+            changes={"downstream_action_count": 1},
+        ),
+    )
+
+    assert dual_live_evaluator_module._check_r16_phase_a_raw_only(changed).status == (
+        "FAIL"
+    )
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    (
+        ("source_record_id", "foreign-source"),
+        ("connector_run_id", "foreign-run"),
+        (
+            "package_review_preview_hash",
+            "l3-qual-aps-package-preview-9999999999999999",
+        ),
+        (
+            "output_package_ids",
+            ["foreign-package-0", "foreign-package-1", "foreign-package-2"],
+        ),
+    ),
+)
+def test_r17_rejects_changed_phase_b_source_binding(
+    field: str,
+    replacement: object,
+) -> None:
+    context = _proof_check_context()
+    records = list(context.child_proofs)
+    downstream = json.loads(
+        dual_live_evaluator_module._canonical_bytes(records[2])
+    )
+    downstream["payload"]["source_bindings"][0][field] = replacement
+    records[2] = downstream
+
+    result = dual_live_evaluator_module._check_r17_phase_b_strict_flow(
+        replace(context, child_proofs=tuple(records))
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "r17_phase_b_flow_invalid",
+    )
+
+
+def test_r18_rejects_unbound_phase_a_raw_digest() -> None:
+    context = _proof_check_context()
+    records = list(context.child_proofs)
+    acquisition = json.loads(
+        dual_live_evaluator_module._canonical_bytes(records[0])
+    )
+    acquisition["payload"]["connector_acquisitions"][0][
+        "raw_content_sha256"
+    ] = "9" * 64
+    records[0] = acquisition
+
+    result = dual_live_evaluator_module._check_r18_phase_a_terminal_once(
+        replace(context, child_proofs=tuple(records))
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "r18_phase_a_terminalization_invalid",
+    )
+
+
+def test_r19_rejects_phase_b_creation_before_phase_a_quiescence() -> None:
+    context = _proof_check_context()
+    records = tuple(
+        {**record, "ordinal": 7}
+        if record.get("phase") == "B" and record.get("event") == "phase_child_start"
+        else record
+        for record in context.runtime_records
+    )
+
+    result = dual_live_evaluator_module._check_r19_a_to_b_order(
+        replace(context, runtime_records=records)
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "r19_a_to_b_order_invalid",
+    )
+
+
+@pytest.mark.parametrize("reflected_ref", ("nrc.bin", "sciencebase.bin"))
+def test_c08_scans_each_c07_bound_raw_blob_for_exact_nrc_key(
+    monkeypatch: pytest.MonkeyPatch,
+    reflected_ref: str,
+) -> None:
+    secret = "matrix-nrc-key"
+    payloads = {
+        "nrc.bin": b"safe-nrc",
+        "sciencebase.bin": b"safe-sciencebase",
+    }
+    payloads[reflected_ref] = b"prefix:" + secret.encode("utf-8") + b":suffix"
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=SimpleNamespace(nrc_adams_subscription_key=secret),
+        db=NoAccess(),
+        source_exemptions=tuple(
+            (raw_ref, hashlib.sha256(payloads[raw_ref]).hexdigest())
+            for raw_ref in ("nrc.bin", "sciencebase.bin")
+        ),
+    )
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_forbidden_candidates",
+        lambda *_args, **_kwargs: (secret,),
+    )
+    monkeypatch.setattr(dual_live_evaluator_module, "_db_scan_payloads", lambda _c: ())
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_runtime_scan_payloads",
+        lambda _c: (),
+    )
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_source_blob",
+        lambda _context, raw_ref: payloads[raw_ref],
+    )
+
+    result = dual_live_evaluator_module._check_c08_secret_scan(context)
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "c08_forbidden_secret_material",
+    )
+    assert secret not in json.dumps(result.as_dict(), sort_keys=True)
+
+
+def test_c08_raw_source_scan_does_not_decode_or_scan_url_candidates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    secret = "matrix-nrc-key"
+    raw_payload = b"https://forbidden.invalid/raw matrix%2Dnrc%2Dkey"
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=SimpleNamespace(nrc_adams_subscription_key=secret),
+        db=NoAccess(),
+        source_exemptions=(
+            ("nrc.bin", hashlib.sha256(raw_payload).hexdigest()),
+            ("sciencebase.bin", hashlib.sha256(raw_payload).hexdigest()),
+        ),
+    )
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_forbidden_candidates",
+        lambda *_args, **_kwargs: (secret, "https://forbidden.invalid/raw"),
+    )
+    monkeypatch.setattr(dual_live_evaluator_module, "_db_scan_payloads", lambda _c: ())
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_runtime_scan_payloads",
+        lambda _c: (),
+    )
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_source_blob",
+        lambda _context, _raw_ref: raw_payload,
+    )
+
+    result = dual_live_evaluator_module._check_c08_secret_scan(context)
+
+    assert result.status == "PASS"
+
+
+def test_c08_rejects_non_exact_source_scope_before_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=SimpleNamespace(nrc_adams_subscription_key="matrix-nrc-key"),
+        db=NoAccess(),
+        source_exemptions=(("nrc.bin", "a" * 64),),
+    )
+    monkeypatch.setattr(
+        dual_live_evaluator_module,
+        "_source_blob",
+        lambda *_args, **_kwargs: pytest.fail("source read must not occur"),
+    )
+
+    result = dual_live_evaluator_module._check_c08_secret_scan(context)
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "c08_source_scope_invalid",
+    )
+
+
+def test_f01_and_f02_use_separate_fresh_observation_domains() -> None:
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        initial_snapshot_sha256="a" * 64,
+        final_snapshot_sha256="a" * 64,
+        initial_database_snapshot_sha256="b" * 64,
+        final_database_snapshot_sha256="b" * 64,
+    )
+
+    evidence = dual_live_evaluator_module._check_f01_evidence_stability(context)
+    database = dual_live_evaluator_module._check_f02_database_stability(context)
+    changed = dual_live_evaluator_module._check_f02_database_stability(
+        replace(context, final_database_snapshot_sha256="c" * 64)
+    )
+
+    assert evidence.status == "PASS"
+    assert database.status == "PASS"
+    assert (changed.status, changed.code) == (
+        "INDETERMINATE",
+        "f02_database_stability_mismatch",
+    )
+
+
+def _test_stable_id(prefix: str, value: object) -> str:
+    return (
+        f"{prefix}-"
+        f"{hashlib.sha256(dual_live_evaluator_module._canonical_bytes(value)).hexdigest()[:16]}"
+    )
+
+
+def _durable_downstream_context() -> object:
+    connectors = ("nrc_adams_aps", "sciencebase_mcs")
+    origins: dict[str, dict[str, object]] = {}
+    sessions: dict[str, object] = {}
+    pass_runs: dict[str, object] = {}
+    outputs: dict[str, dict[str, object]] = {}
+    reviews: dict[str, dict[str, object]] = {}
+    reconciliations: dict[str, object] = {}
+    packages: dict[str, tuple[object, ...]] = {}
+    payloads: dict[str, tuple[dict[str, object], ...]] = {}
+    commits: dict[str, dict[str, object]] = {}
+    submits: dict[str, dict[str, object]] = {}
+    handoffs: dict[str, dict[str, object]] = {}
+    for ordinal, connector_key in enumerate(connectors, start=1):
+        session_id = f"session-{ordinal}"
+        pass_run_id = f"pass-{ordinal}"
+        analysis_plan_id = f"plan-{ordinal}"
+        reconciliation_id = f"reconciliation-{ordinal}"
+        receipt_hash = str(ordinal) * 64
+        target_id = f"target-{ordinal}"
+        origin = {
+            "schema_id": "layer3.connector_origin_integrity.v1",
+            "connector_key": connector_key,
+            "connector_run_target_id": target_id,
+            "connector_origin_receipt_hash": receipt_hash,
+            "proof_class": "fresh_live",
+        }
+        output = {
+            "schema_id": "layer3.connector_output_integrity.v1",
+            "connector_key": connector_key,
+            "connector_run_target_id": target_id,
+            "connector_origin_receipt_hash": receipt_hash,
+            "proof_class": "fresh_live",
+            "artifact_receipts": [],
+            "artifact_set_hash": str(ordinal + 2) * 64,
+            "output_manifest_sha256": str(ordinal + 4) * 64,
+        }
+        review_ref = f"review-{ordinal}"
+        review = {
+            "schema_id": "layer3.execution_result_review_state.v1",
+            "review_record_ref": review_ref,
+            "review_state": "execution_result_review_approved",
+            "operator_decision": "approved",
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "unresolved_trace_count": 0,
+            "connector_origin_integrity_v1": origin,
+            "connector_output_integrity_v1": output,
+        }
+        pass_run = SimpleNamespace(
+            pass_run_id=pass_run_id,
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            status="completed",
+            output_payload_ref=f"output-{ordinal}.json",
+            summary_json={
+                "connector_origin_integrity_v1": origin,
+                "connector_output_integrity_v1": output,
+                "execution_result_review": review,
+            },
+        )
+        package_rows = tuple(
+            SimpleNamespace(
+                output_package_id=f"package-{ordinal}-{kind}",
+                session_id=session_id,
+                reconciliation_record_id=reconciliation_id,
+                package_kind=kind,
+                status="complete",
+                payload_ref=f"payload-{ordinal}-{kind}.json",
+                payload_hash=str(ordinal + index + 5) * 64,
+            )
+            for index, kind in enumerate(
+                ("canonical_internal", "user_facing", "review_facing")
+            )
+        )
+        package_ids = [row.output_package_id for row in package_rows]
+        package_kinds = [row.package_kind for row in package_rows]
+        payload_refs = [row.payload_ref for row in package_rows]
+        payload_hashes = [row.payload_hash for row in package_rows]
+        commit_basis = {
+            "schema_id": "layer3.workbench_package_construction_authority.v1",
+            "session_id": session_id,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "result_review_record_ref": review_ref,
+        }
+        commit = {
+            "schema_id": "layer3.workbench_package_commit_summary.v1",
+            "authority_basis": commit_basis,
+            "authority_basis_hash": stable_json_text_hash(commit_basis),
+            "construction_basis_hash": stable_json_text_hash(
+                {
+                    **commit_basis,
+                    "package_kinds": package_kinds,
+                    "payload_refs": payload_refs,
+                    "payload_hashes": payload_hashes,
+                }
+            ),
+            "result_review_record_ref": review_ref,
+        }
+        submit_basis = {
+            "schema_id": "layer3.package_review_submit_authority.v1",
+            "session_id": session_id,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "result_review_record_ref": review_ref,
+            "reconciliation_record_id": reconciliation_id,
+            "output_package_ids": package_ids,
+            "package_kinds": package_kinds,
+            "payload_hashes": payload_hashes,
+            "operator_decision": "approved",
+        }
+        submit_ref = _test_stable_id("l3-package-review-submit", submit_basis)
+        submit = {
+            "schema_id": "layer3.package_review_submit_state.v1",
+            "submit_record_ref": submit_ref,
+            "authority_basis": submit_basis,
+            "package_review_state": "package_review_approved",
+            "operator_decision": "approved",
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "result_review_record_ref": review_ref,
+            "reconciliation_record_id": reconciliation_id,
+            "output_package_ids": package_ids,
+            "package_kinds": package_kinds,
+            "payload_hashes": payload_hashes,
+            "handoff_enabled": False,
+            "export_enabled": False,
+            "connector_origin_integrity_v1": origin,
+            "connector_output_integrity_v1": output,
+        }
+        handoff_basis = {
+            "schema_id": "layer3.handoff_export_prepare_authority.v1",
+            "session_id": session_id,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "result_review_record_ref": review_ref,
+            "reconciliation_record_id": reconciliation_id,
+            "output_package_ids": package_ids,
+            "package_kinds": package_kinds,
+            "payload_refs": payload_refs,
+            "payload_hashes": payload_hashes,
+            "package_review_submit_record_ref": submit_ref,
+            "package_review_state": "package_review_approved",
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "operator_decision": "authorize_prepare",
+        }
+        envelope_basis = {
+            **handoff_basis,
+            "schema_id": "layer3.handoff_export_envelope_authority.v1",
+        }
+        flags = {
+            "external_handoff_enabled": False,
+            "external_export_enabled": False,
+            "dispatch_enabled": False,
+            "aps_handoff_enabled": False,
+            "external_export_download_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_url_enabled": False,
+        }
+        envelope = {
+            "schema_id": "layer3.handoff_export_envelope.v1",
+            "envelope_ref": _test_stable_id(
+                "l3-handoff-export-envelope", envelope_basis
+            ),
+            "session_id": session_id,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "result_review_record_ref": review_ref,
+            "package_review_submit_record_ref": submit_ref,
+            "reconciliation_record_id": reconciliation_id,
+            "output_package_ids": package_ids,
+            "package_kinds": package_kinds,
+            "payload_refs": payload_refs,
+            "payload_hashes": payload_hashes,
+            "connector_origin_integrity_v1": origin,
+            "connector_output_integrity_v1": output,
+            **flags,
+        }
+        handoff = {
+            "schema_id": "layer3.handoff_export_prepare_state.v1",
+            "prepare_record_ref": _test_stable_id(
+                "l3-handoff-export-prepare", handoff_basis
+            ),
+            "authority_basis": handoff_basis,
+            "package_review_submit_record_ref": submit_ref,
+            "package_review_state": "package_review_approved",
+            "operator_decision": "authorize_prepare",
+            "handoff_export_state": "handoff_export_prepared",
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "result_review_record_ref": review_ref,
+            "reconciliation_record_id": reconciliation_id,
+            "output_package_ids": package_ids,
+            "package_kinds": package_kinds,
+            "payload_refs": payload_refs,
+            "payload_hashes": payload_hashes,
+            "connector_origin_integrity_v1": origin,
+            "connector_output_integrity_v1": output,
+            "handoff_export_envelope": envelope,
+            **flags,
+        }
+        origins[connector_key] = {
+            "connector_key": connector_key,
+            "receipt_hash": receipt_hash,
+            "connector_run_target_id": target_id,
+            "proof_class": "fresh_live",
+        }
+        sessions[connector_key] = SimpleNamespace(session_id=session_id)
+        pass_runs[connector_key] = pass_run
+        outputs[connector_key] = output
+        reviews[connector_key] = review
+        reconciliations[connector_key] = SimpleNamespace(
+            reconciliation_record_id=reconciliation_id,
+            session_id=session_id,
+        )
+        packages[connector_key] = package_rows
+        payloads[connector_key] = tuple(
+            {
+                "package_header": {"package_kind": row.package_kind},
+                "connector_origin_integrity_v1": origin,
+                "connector_output_integrity_v1": output,
+            }
+            for row in package_rows
+        )
+        commits[connector_key] = commit
+        submits[connector_key] = submit
+        handoffs[connector_key] = handoff
+    return dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        origins=origins,
+        downstream_sessions=sessions,
+        pass_runs=pass_runs,
+        output_integrity=outputs,
+        review_states=reviews,
+        reconciliations=reconciliations,
+        packages=packages,
+        package_payloads=payloads,
+        package_commits=commits,
+        submit_states=submits,
+        handoff_states=handoffs,
+    )
+
+
+@pytest.mark.parametrize(
+    ("check", "field"),
+    (
+        (dual_live_evaluator_module._check_d03_layer3_execution, "pass_runs"),
+        (dual_live_evaluator_module._check_d04_review_result, "review_states"),
+        (dual_live_evaluator_module._check_d05_package_set, "packages"),
+        (dual_live_evaluator_module._check_d06_package_payload, "package_payloads"),
+        (dual_live_evaluator_module._check_d07_submit_receipt, "submit_states"),
+        (dual_live_evaluator_module._check_d08_handoff_receipt, "handoff_states"),
+    ),
+)
+def test_d03_d08_indetermine_one_deleted_required_boundary(
+    check: Callable[[object], CheckResult],
+    field: str,
+) -> None:
+    context = _durable_downstream_context()
+    changed = dict(getattr(context, field))
+    changed.pop("sciencebase_mcs")
+
+    result = check(replace(context, **{field: changed}))
+
+    assert result.status == "INDETERMINATE"
+
+
+def test_d03_rejects_mutated_execution_output_binding() -> None:
+    context = _durable_downstream_context()
+    pass_runs = dict(context.pass_runs)
+    original = pass_runs["sciencebase_mcs"]
+    summary = dict(original.summary_json)
+    summary["connector_output_integrity_v1"] = {
+        **summary["connector_output_integrity_v1"],
+        "artifact_set_hash": "f" * 64,
+    }
+    pass_runs["sciencebase_mcs"] = SimpleNamespace(
+        **{**vars(original), "summary_json": summary}
+    )
+
+    result = dual_live_evaluator_module._check_d03_layer3_execution(
+        replace(context, pass_runs=pass_runs)
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "d03_layer3_execution_invalid",
+    )
+
+
+def test_d04_rejects_mutated_review_output_binding_only() -> None:
+    context = _durable_downstream_context()
+    reviews = {key: dict(value) for key, value in context.review_states.items()}
+    reviews["sciencebase_mcs"]["connector_output_integrity_v1"] = {
+        **reviews["sciencebase_mcs"]["connector_output_integrity_v1"],
+        "artifact_set_hash": "f" * 64,
+    }
+
+    assert dual_live_evaluator_module._check_d03_layer3_execution(context).status == "PASS"
+    result = dual_live_evaluator_module._check_d04_review_result(
+        replace(context, review_states=reviews)
+    )
+
+    assert (result.status, result.code) == ("FAIL", "d04_review_result_invalid")
+
+
+def test_d05_rejects_mutated_package_commit_hash_only() -> None:
+    context = _durable_downstream_context()
+    commits = {key: dict(value) for key, value in context.package_commits.items()}
+    commits["sciencebase_mcs"]["authority_basis_hash"] = "f" * 64
+
+    result = dual_live_evaluator_module._check_d05_package_set(
+        replace(context, package_commits=commits)
+    )
+
+    assert (result.status, result.code) == ("FAIL", "d05_package_set_invalid")
+
+
+def test_d05_accepts_production_package_hash_encoding() -> None:
+    result = dual_live_evaluator_module._check_d05_package_set(
+        _durable_downstream_context()
+    )
+
+    assert result.status == "PASS"
+
+
+def test_d06_keys_payloads_by_kind_not_query_order() -> None:
+    context = _durable_downstream_context()
+    reversed_payloads = {
+        key: tuple(reversed(value)) for key, value in context.package_payloads.items()
+    }
+
+    result = dual_live_evaluator_module._check_d06_package_payload(
+        replace(context, package_payloads=reversed_payloads)
+    )
+
+    assert result.status == "PASS"
+
+
+def test_d06_rejects_mutated_payload_output_binding_only() -> None:
+    context = _durable_downstream_context()
+    payloads = {key: list(value) for key, value in context.package_payloads.items()}
+    changed = dict(payloads["sciencebase_mcs"][1])
+    changed["connector_output_integrity_v1"] = {
+        **changed["connector_output_integrity_v1"],
+        "artifact_set_hash": "f" * 64,
+    }
+    payloads["sciencebase_mcs"][1] = changed
+
+    result = dual_live_evaluator_module._check_d06_package_payload(
+        replace(
+            context,
+            package_payloads={key: tuple(value) for key, value in payloads.items()},
+        )
+    )
+
+    assert (result.status, result.code) == ("FAIL", "d06_package_payload_invalid")
+
+
+def test_d07_rejects_mutated_submit_package_hash_only() -> None:
+    context = _durable_downstream_context()
+    submits = {key: dict(value) for key, value in context.submit_states.items()}
+    submits["sciencebase_mcs"]["payload_hashes"] = ["f" * 64] * 3
+
+    result = dual_live_evaluator_module._check_d07_submit_receipt(
+        replace(context, submit_states=submits)
+    )
+
+    assert (result.status, result.code) == ("FAIL", "d07_submit_receipt_invalid")
+
+
+def test_d08_rejects_single_delivery_claim_only() -> None:
+    context = _durable_downstream_context()
+    handoffs = {key: dict(value) for key, value in context.handoff_states.items()}
+    handoffs["sciencebase_mcs"]["dispatch_enabled"] = True
+
+    assert dual_live_evaluator_module._check_d07_submit_receipt(context).status == "PASS"
+    result = dual_live_evaluator_module._check_d08_handoff_receipt(
+        replace(context, handoff_states=handoffs)
+    )
+
+    assert (result.status, result.code) == ("FAIL", "d08_handoff_receipt_invalid")
+
+
+def _f09_context() -> object:
+    context = _durable_downstream_context()
+    origins = {key: dict(value) for key, value in context.origins.items()}
+    ledgers: dict[str, object] = {}
+    runs: dict[str, object] = {}
+    for ordinal, connector_key in enumerate(
+        ("nrc_adams_aps", "sciencebase_mcs"),
+        start=1,
+    ):
+        run_id = f"run-{ordinal}"
+        origins[connector_key].update(
+            {
+                "connector_run_id": run_id,
+                "raw_content_sha256": str(ordinal + 2) * 64,
+            }
+        )
+        ledgers[connector_key] = SimpleNamespace(
+            connector_run_id=run_id,
+            ledger_terminal_hash=str(ordinal + 4) * 64,
+        )
+        runs[connector_key] = SimpleNamespace(connector_run_id=run_id)
+    return replace(
+        context,
+        origins=origins,
+        ledgers=ledgers,
+        run_by_connector=runs,
+    )
+
+
+def test_f09_emits_independent_connector_and_combined_projections() -> None:
+    context = _f09_context()
+
+    result = dual_live_evaluator_module._check_f09_connector_and_combined_reports(
+        context
+    )
+
+    assert result.status == "PASS"
+    assert tuple(item["connector_key"] for item in result.evidence["connector_results"]) == (
+        "nrc_adams_aps",
+        "sciencebase_mcs",
+    )
+    connector_digests = {
+        item["projection_sha256"] for item in result.evidence["connector_results"]
+    }
+    assert len(connector_digests) == 2
+    assert result.evidence["combined_result"]["projection_sha256"] not in connector_digests
+
+
+def test_f09_rejects_copied_connector_result_domain() -> None:
+    context = _f09_context()
+    origins = {key: dict(value) for key, value in context.origins.items()}
+    copied_hash = origins["nrc_adams_aps"]["receipt_hash"]
+    origins["sciencebase_mcs"]["receipt_hash"] = copied_hash
+
+    result = dual_live_evaluator_module._check_f09_connector_and_combined_reports(
+        replace(context, origins=origins)
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "f09_result_domains_invalid",
+    )
+
+
 def test_valid_inputs_return_exact_ordered_indeterminate_report() -> None:
     report = _evaluate()
 
     assert report == EXPECTED_REPORT
     assert list(report) == list(EXPECTED_REPORT)
     assert report is not EXPECTED_REPORT
-    assert report["blocking_dependencies"] is not EXPECTED_REPORT["blocking_dependencies"]
+    assert report["checks"] is not EXPECTED_REPORT["checks"]
     assert report["nonclaims"] is not EXPECTED_REPORT["nonclaims"]
 
 
@@ -315,8 +2904,8 @@ def test_evaluation_is_repeatable_and_does_not_reuse_mutable_values() -> None:
 
     assert first == second == EXPECTED_REPORT
     assert first is not second
-    assert first["blocking_dependencies"] is not second["blocking_dependencies"]
-    assert first["validated_surfaces"] is not second["validated_surfaces"]
+    assert first["checks"] is not second["checks"]
+    assert first["checks"][0] is not second["checks"][0]
     assert first["nonclaims"] is not second["nonclaims"]
 
 
@@ -717,6 +3306,142 @@ def test_r05_runtime_event_phase_matrix_rejects_cross_phase_records() -> None:
         )
 
 
+def _r05_evaluator_context(
+    payload: dict[str, object] = RUNTIME_START_PAYLOAD,
+) -> object:
+    historical = {
+        connector_key: SimpleNamespace(
+            model=SimpleNamespace(
+                max_physical_requests=max_physical_requests,
+                request_timeout_seconds=30,
+                min_request_interval_ms=250,
+            )
+        )
+        for connector_key, max_physical_requests in (
+            ("nrc_adams_aps", 2),
+            ("sciencebase_mcs", 3),
+        )
+    }
+    return dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        historical=historical,
+        runtime_records=(
+            {
+                "ordinal": 1,
+                "phase": "wrapper",
+                "event": "runtime_start",
+                "payload": payload,
+                "record_sha256": "f" * 64,
+            },
+        ),
+    )
+
+
+def test_r05_evaluator_rederives_exact_producer_timeout_contract() -> None:
+    result = dual_live_evaluator_module._check_r05_runtime_chain(
+        _r05_evaluator_context()
+    )
+
+    assert (result.status, result.code) == (
+        "PASS",
+        "r05_runtime_chain_pass",
+    )
+    assert result.evidence["dependency_set_sha256"] == "8" * 64
+    assert result.evidence["phase_a_timeout_ms"] == 205_750
+    assert result.evidence["phase_b_timeout_ms"] == 30_000
+
+
+def test_r05_evaluator_requires_exactly_one_runtime_start() -> None:
+    context = _r05_evaluator_context()
+    duplicate = {
+        **context.runtime_records[0],
+        "ordinal": 2,
+        "record_sha256": "e" * 64,
+    }
+
+    result = dual_live_evaluator_module._check_r05_runtime_chain(
+        replace(
+            context,
+            runtime_records=(*context.runtime_records, duplicate),
+        )
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "r05_runtime_chain_invalid",
+    )
+
+
+def test_r05_evaluator_rejects_historical_timeout_grant_mismatch() -> None:
+    context = _r05_evaluator_context()
+    historical = dict(context.historical)
+    historical["nrc_adams_aps"] = SimpleNamespace(
+        model=SimpleNamespace(
+            max_physical_requests=2,
+            request_timeout_seconds=31,
+            min_request_interval_ms=250,
+        )
+    )
+
+    result = dual_live_evaluator_module._check_r05_runtime_chain(
+        replace(context, historical=historical)
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "r05_runtime_chain_invalid",
+    )
+
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        {
+            **RUNTIME_START_PAYLOAD,
+            "dependency_set_sha256": "A" * 64,
+        },
+        {
+            **RUNTIME_START_PAYLOAD,
+            "phase_timeout_contract": {
+                **PHASE_TIMEOUT_CONTRACT,
+                "connector_grants": list(
+                    reversed(PHASE_TIMEOUT_CONTRACT["connector_grants"])
+                ),
+            },
+        },
+        {
+            **RUNTIME_START_PAYLOAD,
+            "phase_timeout_contract": {
+                **PHASE_TIMEOUT_CONTRACT,
+                "phase_a_timeout_ms": 207_750,
+                "connector_grants": [
+                    {
+                        **PHASE_TIMEOUT_CONTRACT["connector_grants"][0],
+                        "request_timeout_seconds": 31,
+                    },
+                    PHASE_TIMEOUT_CONTRACT["connector_grants"][1],
+                ],
+            },
+        },
+    ),
+    ids=("dependency-digest", "grant-order", "coherent-timeout-rewrite"),
+)
+def test_r05_evaluator_rejects_rewritten_producer_contract(
+    payload: dict[str, object],
+) -> None:
+    result = dual_live_evaluator_module._check_r05_runtime_chain(
+        _r05_evaluator_context(payload)
+    )
+
+    assert (result.status, result.code) == (
+        "FAIL",
+        "r05_runtime_chain_invalid",
+    )
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -724,6 +3449,7 @@ def test_r05_runtime_event_phase_matrix_rejects_cross_phase_records() -> None:
         ("wrapper_nonce_sha256", "A" * 64),
         ("code_revision", "2" * 39),
         ("wrapper_image_sha256", "3" * 63),
+        ("dependency_set_sha256", "8" * 63),
     ],
 )
 def test_r05_runtime_identity_requires_canonical_uuid_and_hashes(
@@ -736,6 +3462,7 @@ def test_r05_runtime_identity_requires_canonical_uuid_and_hashes(
         "code_revision": "2" * 40,
         "wrapper_image_sha256": "3" * 64,
         "interpreter_image_sha256": "4" * 64,
+        "dependency_set_sha256": "8" * 64,
         "root_mutex_identity_sha256": "5" * 64,
         "campaign_mutex_identity_sha256": "6" * 64,
     }
@@ -929,7 +3656,7 @@ def test_controller_budget_is_shared_across_wrapper_and_both_phase_pumps(
 
     def pump(payload: bytes) -> FourStreamPumpGroup:
         readers = {stream: io.BytesIO() for stream in PIPE_STREAM_CLASSES}
-        readers["stdout"] = io.BytesIO(encode_pipe_frame(payload))
+        readers["stderr"] = io.BytesIO(encode_pipe_frame(payload))
         return FourStreamPumpGroup(
             readers=readers,
             writers=writers,
@@ -1364,10 +4091,28 @@ def test_four_stream_pumps_intercept_status_and_write_owned_streams() -> None:
     http = canonical_json_bytes(
         {"schema_id": "project6.connector_http_counter.v2", "ordinal": 1}
     )
+    proof_frame = dual_live_runtime_module.encode_child_proof_frame(
+        phase="A",
+        event="acquisition_boundary",
+        process_boot_id=STATUS_PROCESS_BOOT_ID,
+        status_nonce_sha256=STATUS_NONCE_SHA256,
+        ordinal=1,
+        previous_record_sha256=None,
+        payload={
+            "boot_frame_sha256": "1" * 64,
+            "connector_acquisitions": [],
+            "control_frame_sha256": "2" * 64,
+            "control_nonce_sha256": "3" * 64,
+            "downstream_action_count": 0,
+            "exit_status_frame_sha256": "4" * 64,
+            "pre_activity_status_frame_sha256": "5" * 64,
+            "proof_scope": "mechanical",
+        },
+    )
     readers = {
         "app": io.BytesIO(status_frame + encode_pipe_frame(app)),
         "http": io.BytesIO(encode_pipe_frame(http)),
-        "stdout": io.BytesIO(encode_pipe_frame(b"out")),
+        "stdout": io.BytesIO(proof_frame),
         "stderr": io.BytesIO(encode_pipe_frame(b"err")),
     }
     writers = {stream: MemorySink() for stream in readers}
@@ -1405,7 +4150,7 @@ def test_four_stream_pumps_intercept_status_and_write_owned_streams() -> None:
     assert validated_http == [http]
     assert writers["app"].bytes() == app + b"\n"
     assert writers["http"].bytes() == http + b"\n"
-    assert writers["stdout"].bytes() == b"out"
+    assert writers["stdout"].bytes() == proof_frame[4:] + b"\n"
     assert writers["stderr"].bytes() == b"err"
 
 
@@ -2479,8 +5224,8 @@ def test_each_pump_boundary_failure_latches_and_surfaces_exact_cause(
         )
         status_result = False
     elif case == "short_writer":
-        readers["stdout"] = io.BytesIO(encode_pipe_frame(b"output"))
-        writers["stdout"] = ShortWriter()
+        readers["stderr"] = io.BytesIO(encode_pipe_frame(b"output"))
+        writers["stderr"] = ShortWriter()
     else:
         readers["app"] = io.BytesIO(
             encode_child_control_frame(
@@ -3318,20 +6063,67 @@ def _controller_child(
     readers = {stream: factory() for stream in PIPE_STREAM_CLASSES}
     if app_reader is not None:
         readers["app"] = app_reader
-    readers["app"].feed(
-        encode_child_status_frame(
-            phase=phase,
-            event="logger_census",
+    boot_payload = canonical_json_bytes(
+        {
+            "control_nonce": control_nonce,
+            "phase": phase,
+            "process_boot_id": process_boot_id,
+            "schema_id": dual_live_runtime_module.CHILD_BOOT_SCHEMA_ID,
+            "status_nonce_sha256": status_nonce_sha256,
+        }
+    )
+    boot_frame = encode_pipe_frame(boot_payload)
+    pre_status_frame = encode_child_status_frame(
+        phase=phase,
+        event="logger_census",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce_sha256,
+        ordinal=1,
+        payload={
+            "census_point": "pre_activity",
+            "handler_count": 1,
+            "topology_sha256": "1" * 64,
+        },
+    )
+    readers["app"].feed(boot_frame)
+    readers["app"].feed(pre_status_frame)
+    proof_common = {
+        "boot_frame_sha256": hashlib.sha256(boot_frame).hexdigest(),
+        "control_nonce_sha256": hashlib.sha256(
+            control_nonce.encode("ascii")
+        ).hexdigest(),
+        "pre_activity_status_frame_sha256": hashlib.sha256(
+            pre_status_frame
+        ).hexdigest(),
+        "proof_scope": "mechanical",
+    }
+    previous_proof_sha256: str | None = None
+    if phase == "B":
+        preproof = dual_live_runtime_module.encode_child_proof_frame(
+            phase="B",
+            event="guard",
             process_boot_id=process_boot_id,
             status_nonce_sha256=status_nonce_sha256,
             ordinal=1,
+            previous_record_sha256=None,
             payload={
-                "census_point": "pre_activity",
-                "handler_count": 1,
-                "topology_sha256": "1" * 64,
+                **proof_common,
+                "denied_routes": [
+                    "dns",
+                    "http",
+                    "socket",
+                    "subprocess",
+                    "connector_transport",
+                ],
+                "network_enable_attempt_count": 0,
+                "original_implementation_call_count": 0,
+                "proof_point": "pre_go",
             },
         )
-    )
+        previous_proof_sha256 = json.loads(
+            preproof[4:].decode("utf-8")
+        )["record_sha256"]
+        readers["stdout"].feed(preproof)
     wait_error_raised = False
 
     def send_control(frame: bytes) -> None:
@@ -3353,20 +6145,19 @@ def _controller_child(
                 )
             )
         )
-        readers["app"].feed(
-            encode_child_status_frame(
-                phase=phase,
-                event="logger_census",
-                process_boot_id=process_boot_id,
-                status_nonce_sha256=status_nonce_sha256,
-                ordinal=2,
-                payload={
-                    "census_point": "exit",
-                    "handler_count": 1,
-                    "topology_sha256": "1" * 64,
-                },
-            )
+        exit_status_frame = encode_child_status_frame(
+            phase=phase,
+            event="logger_census",
+            process_boot_id=process_boot_id,
+            status_nonce_sha256=status_nonce_sha256,
+            ordinal=2,
+            payload={
+                "census_point": "exit",
+                "handler_count": 1,
+                "topology_sha256": "1" * 64,
+            },
         )
+        readers["app"].feed(exit_status_frame)
         readers["http"].feed(
             encode_pipe_frame(
                 canonical_json_bytes(
@@ -3377,7 +6168,72 @@ def _controller_child(
                 )
             )
         )
-        readers["stdout"].feed(encode_pipe_frame(f"out-{phase}".encode()))
+        terminal_common = {
+            **proof_common,
+            "control_frame_sha256": hashlib.sha256(frame).hexdigest(),
+            "exit_status_frame_sha256": hashlib.sha256(
+                exit_status_frame
+            ).hexdigest(),
+        }
+        if phase == "A":
+            readers["stdout"].feed(
+                dual_live_runtime_module.encode_child_proof_frame(
+                    phase="A",
+                    event="acquisition_boundary",
+                    process_boot_id=process_boot_id,
+                    status_nonce_sha256=status_nonce_sha256,
+                    ordinal=1,
+                    previous_record_sha256=None,
+                    payload={
+                        **terminal_common,
+                        "connector_acquisitions": [],
+                        "downstream_action_count": 0,
+                    },
+                )
+            )
+        else:
+            assert isinstance(previous_proof_sha256, str)
+            downstream = dual_live_runtime_module.encode_child_proof_frame(
+                phase="B",
+                event="downstream_chain",
+                process_boot_id=process_boot_id,
+                status_nonce_sha256=status_nonce_sha256,
+                ordinal=2,
+                previous_record_sha256=previous_proof_sha256,
+                payload={
+                    **terminal_common,
+                    "downstream_actions": [],
+                    "source_bindings": [],
+                    "terminal_boundary": "mechanical_complete",
+                },
+            )
+            downstream_sha256 = json.loads(
+                downstream[4:].decode("utf-8")
+            )["record_sha256"]
+            readers["stdout"].feed(downstream)
+            readers["stdout"].feed(
+                dual_live_runtime_module.encode_child_proof_frame(
+                    phase="B",
+                    event="guard",
+                    process_boot_id=process_boot_id,
+                    status_nonce_sha256=status_nonce_sha256,
+                    ordinal=3,
+                    previous_record_sha256=downstream_sha256,
+                    payload={
+                        **terminal_common,
+                        "denied_routes": [
+                            "dns",
+                            "http",
+                            "socket",
+                            "subprocess",
+                            "connector_transport",
+                        ],
+                        "network_enable_attempt_count": 0,
+                        "original_implementation_call_count": 0,
+                        "proof_point": "exit",
+                    },
+                )
+            )
         readers["stderr"].feed(encode_pipe_frame(f"err-{phase}".encode()))
         if finish_readers:
             for reader in readers.values():
@@ -3419,6 +6275,76 @@ def _controller_child(
         send_control=send_control,
         wait=wait,
         stop=stop,
+    )
+
+
+def _mechanical_phase_a_proof_frame() -> bytes:
+    process_boot_id = "a" * 64
+    status_nonce_sha256 = "c" * 64
+    control_nonce = "e" * 64
+    boot_frame = encode_pipe_frame(
+        canonical_json_bytes(
+            {
+                "control_nonce": control_nonce,
+                "phase": "A",
+                "process_boot_id": process_boot_id,
+                "schema_id": dual_live_runtime_module.CHILD_BOOT_SCHEMA_ID,
+                "status_nonce_sha256": status_nonce_sha256,
+            }
+        )
+    )
+    pre_status_frame = encode_child_status_frame(
+        phase="A",
+        event="logger_census",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce_sha256,
+        ordinal=1,
+        payload={
+            "census_point": "pre_activity",
+            "handler_count": 1,
+            "topology_sha256": "1" * 64,
+        },
+    )
+    exit_status_frame = encode_child_status_frame(
+        phase="A",
+        event="logger_census",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce_sha256,
+        ordinal=2,
+        payload={
+            "census_point": "exit",
+            "handler_count": 1,
+            "topology_sha256": "1" * 64,
+        },
+    )
+    control_frame = encode_child_control_frame(
+        phase="A",
+        command="GO",
+        control_nonce=control_nonce,
+    )
+    return dual_live_runtime_module.encode_child_proof_frame(
+        phase="A",
+        event="acquisition_boundary",
+        process_boot_id=process_boot_id,
+        status_nonce_sha256=status_nonce_sha256,
+        ordinal=1,
+        previous_record_sha256=None,
+        payload={
+            "boot_frame_sha256": hashlib.sha256(boot_frame).hexdigest(),
+            "connector_acquisitions": [],
+            "control_frame_sha256": hashlib.sha256(control_frame).hexdigest(),
+            "control_nonce_sha256": hashlib.sha256(
+                control_nonce.encode("ascii")
+            ).hexdigest(),
+            "downstream_action_count": 0,
+            "exit_status_frame_sha256": hashlib.sha256(
+                exit_status_frame
+            ).hexdigest(),
+            "pre_activity_status_frame_sha256": hashlib.sha256(
+                pre_status_frame
+            ).hexdigest(),
+            "proof_scope": "mechanical",
+        },
     )
 
 
@@ -3783,7 +6709,7 @@ def test_controller_publishes_stop_during_one_in_flight_go_dispatch(
     ) -> None:
         events.append("send-start-A")
         send_active.set()
-        readers["stdout"].feed(encode_pipe_frame(b"race"))
+        readers["stdout"].feed(_mechanical_phase_a_proof_frame())
         assert latch_attempted.wait(timeout=2)
         published_during_send.append(captured_latch[0].is_set)
         assert captured_latch[0].reason_code == "writer_failure"
@@ -4152,7 +7078,7 @@ def test_in_flight_writer_failure_precedes_unproven_child_exit(
 
     def fail_writer_during_go(readers: dict[str, _ControllerReader]) -> None:
         send_active.set()
-        readers["stdout"].feed(encode_pipe_frame(b"race"))
+        readers["stdout"].feed(_mechanical_phase_a_proof_frame())
         assert writer_failed.wait(timeout=2)
 
     with pytest.raises(
@@ -4248,8 +7174,8 @@ def test_controller_writer_failure_during_wait_stops_before_real_exit() -> None:
     assert events.index("wait-active-A") < events.index("writer-fail-stdout")
     assert events.index("writer-fail-stdout") < events.index("stop-A")
     assert events.index("stop-A") < events.index("wait-release-A")
-    assert events.index("wait-release-A") < events.index("authority-A")
-    assert events.index("authority-A") < events.index("quiesce-A")
+    assert events.index("wait-release-A") < events.index("quiesce-A")
+    assert events.index("quiesce-A") < events.index("authority-A")
     assert events.count("stop-A") == 1
     assert "create-B" not in events
     assert "seal" not in events
@@ -4258,11 +7184,7 @@ def test_controller_writer_failure_during_wait_stops_before_real_exit() -> None:
         for record in read_runtime_records(writers["app"].getvalue())
         if record["event"] == "phase_complete"
     ]
-    assert len(completions) == 1
-    assert completions[0]["payload"] == {
-        "terminal_state": "failed",
-        "exit_code": 0,
-    }
+    assert completions == []
 
 
 def test_controller_wait_raises_then_stop_repolls_real_exit() -> None:
@@ -4303,8 +7225,8 @@ def test_controller_wait_raises_then_stop_repolls_real_exit() -> None:
     assert isinstance(exc.value.__cause__, RuntimeError)
     assert events.index("wait-raise-A") < events.index("stop-A")
     assert events.index("stop-A") < events.index("wait-release-A")
-    assert events.index("wait-release-A") < events.index("authority-A")
-    assert events.index("authority-A") < events.index("quiesce-A")
+    assert events.index("wait-release-A") < events.index("quiesce-A")
+    assert events.index("quiesce-A") < events.index("authority-A")
     assert events.count("stop-A") == 1
     assert "create-B" not in events
     assert "seal" not in events
@@ -4629,12 +7551,12 @@ def test_partial_cancel_start_closes_only_unassigned_readers_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     events: list[str] = []
-    captured_pumps: list[FourStreamPumpGroup] = []
+    captured_pumps: list[_RuntimeFourStreamPumpGroup] = []
     captured_readers: list[_CountingCloseControllerReader] = []
     started_cancel_threads: list[threading.Thread] = []
     cancel_start_count = 0
     original_thread_start = threading.Thread.start
-    original_pump_start = FourStreamPumpGroup.start
+    original_pump_start = _RuntimeFourStreamPumpGroup.start
     writers = {
         stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
     }
@@ -4644,7 +7566,7 @@ def test_partial_cancel_start_closes_only_unassigned_readers_once(
         captured_readers.append(reader)
         return reader
 
-    def capture_pumps_start(pumps: FourStreamPumpGroup) -> None:
+    def capture_pumps_start(pumps: _RuntimeFourStreamPumpGroup) -> None:
         captured_pumps.append(pumps)
         original_pump_start(pumps)
 
@@ -4673,7 +7595,11 @@ def test_partial_cancel_start_closes_only_unassigned_readers_once(
         ):
             started_cancel_threads.append(thread)
 
-    monkeypatch.setattr(FourStreamPumpGroup, "start", capture_pumps_start)
+    monkeypatch.setattr(
+        _RuntimeFourStreamPumpGroup,
+        "start",
+        capture_pumps_start,
+    )
     monkeypatch.setattr(threading.Thread, "start", fail_second_cancel_start)
     try:
         with pytest.raises(DualLiveRuntimeError, match="dual_live_pump_failed") as exc:
@@ -4735,14 +7661,14 @@ def test_completed_pump_error_closes_each_controller_owned_reader_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     events: list[str] = []
-    captured_pumps: list[FourStreamPumpGroup] = []
+    captured_pumps: list[_RuntimeFourStreamPumpGroup] = []
     captured_readers: list[dict[str, _ControllerReader]] = []
-    original_start = FourStreamPumpGroup.start
+    original_start = _RuntimeFourStreamPumpGroup.start
     writers = {
         stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
     }
 
-    def capture_start(pumps: FourStreamPumpGroup) -> None:
+    def capture_start(pumps: _RuntimeFourStreamPumpGroup) -> None:
         captured_pumps.append(pumps)
         original_start(pumps)
 
@@ -4750,7 +7676,7 @@ def test_completed_pump_error_closes_each_controller_owned_reader_once(
         captured_readers.append(readers)
         readers["stdout"].feed(b"\x00\x00\x00\x00")
 
-    monkeypatch.setattr(FourStreamPumpGroup, "start", capture_start)
+    monkeypatch.setattr(_RuntimeFourStreamPumpGroup, "start", capture_start)
     try:
         with pytest.raises(DualLiveRuntimeError):
             dual_live_runtime_module._run_two_phase_controller(
@@ -4904,7 +7830,7 @@ def test_controller_wait_baseexception_has_no_fabricated_completion() -> None:
     assert "phase_complete" not in runtime_events
 
 
-def test_task5_controller_clears_phase_a_authority_before_quiescence_and_b() -> None:
+def test_task5_controller_quiesces_and_clears_phase_a_authority_before_b() -> None:
     events: list[str] = []
     writers = {
         stream: _ControllerWriter(stream, events) for stream in PIPE_STREAM_CLASSES
@@ -4942,15 +7868,26 @@ def test_task5_controller_clears_phase_a_authority_before_quiescence_and_b() -> 
     )
 
     assert result == "sealed"
-    assert events.index("stop-A") < events.index("authority-A")
-    assert events.index("authority-A") < events.index("quiesce-A")
-    assert events.index("quiesce-A") < events.index("create-B")
+    assert events.index("stop-A") < events.index("quiesce-A")
+    assert events.index("quiesce-A") < events.index("authority-A")
+    assert events.index("authority-A") < events.index("create-B")
     assert events[-1] == "seal"
     assert events.index("stop-B") < events.index("flush-app")
     assert events.count("stop-A") == 1
     assert events.count("stop-B") == 1
     assert all(writer.closed_clean for writer in writers.values())
-    assert b"out-Aout-B" == writers["stdout"].getvalue()
+    proof_records = [
+        json.loads(line) for line in writers["stdout"].getvalue().splitlines()
+    ]
+    assert [
+        (record["phase"], record["event"]) for record in proof_records
+    ] == [
+        ("A", "acquisition_boundary"),
+        ("B", "guard"),
+        ("B", "downstream_chain"),
+        ("B", "guard"),
+    ]
+    assert all(record["payload"]["proof_scope"] == "mechanical" for record in proof_records)
     assert b"err-Aerr-B" == writers["stderr"].getvalue()
     assert writers["http"].getvalue().count(b"\n") == 2
     runtime_events = [
@@ -5013,8 +7950,8 @@ def test_phase_a_authority_failure_still_quiesces_before_suppressing_b() -> None
         )
 
     assert isinstance(exc.value.__cause__, RuntimeError)
-    assert events.index("stop-A") < events.index("authority-A")
-    assert events.index("authority-A") < events.index("quiesce-A")
+    assert events.index("stop-A") < events.index("quiesce-A")
+    assert events.index("quiesce-A") < events.index("authority-A")
     assert "create-B" not in events
     assert "seal" not in events
     assert all(writer.closed_clean for writer in writers.values())
@@ -5261,20 +8198,70 @@ class _FakeOwnedPhaseProcess:
         self._go_sent = False
         self._closed = False
         self.close_calls = 0
-        self.readers["app"].feed(
-            encode_child_status_frame(
-                phase=phase,
-                event="logger_census",
+        self._boot_frame = encode_pipe_frame(
+            canonical_json_bytes(
+                {
+                    "control_nonce": self.control_nonce,
+                    "phase": phase,
+                    "process_boot_id": self.process_boot_id,
+                    "schema_id": dual_live_runtime_module.CHILD_BOOT_SCHEMA_ID,
+                    "status_nonce_sha256": self.status_nonce_sha256,
+                }
+            )
+        )
+        self._pre_status_frame = encode_child_status_frame(
+            phase=phase,
+            event="logger_census",
+            process_boot_id=self.process_boot_id,
+            status_nonce_sha256=self.status_nonce_sha256,
+            ordinal=1,
+            payload={
+                "census_point": "pre_activity",
+                "handler_count": 1,
+                "topology_sha256": "1" * 64,
+            },
+        )
+        self.readers["app"].feed(self._boot_frame)
+        self.readers["app"].feed(self._pre_status_frame)
+        self._previous_proof_sha256: str | None = None
+        if phase == "B":
+            preproof = dual_live_runtime_module.encode_child_proof_frame(
+                phase="B",
+                event="guard",
                 process_boot_id=self.process_boot_id,
                 status_nonce_sha256=self.status_nonce_sha256,
                 ordinal=1,
+                previous_record_sha256=None,
                 payload={
-                    "census_point": "pre_activity",
-                    "handler_count": 1,
-                    "topology_sha256": "1" * 64,
+                    **self._proof_common(),
+                    "denied_routes": [
+                        "dns",
+                        "http",
+                        "socket",
+                        "subprocess",
+                        "connector_transport",
+                    ],
+                    "network_enable_attempt_count": 0,
+                    "original_implementation_call_count": 0,
+                    "proof_point": "pre_go",
                 },
             )
-        )
+            self._previous_proof_sha256 = json.loads(
+                preproof[4:].decode("utf-8")
+            )["record_sha256"]
+            self.readers["stdout"].feed(preproof)
+
+    def _proof_common(self) -> dict[str, object]:
+        return {
+            "boot_frame_sha256": hashlib.sha256(self._boot_frame).hexdigest(),
+            "control_nonce_sha256": hashlib.sha256(
+                self.control_nonce.encode("ascii")
+            ).hexdigest(),
+            "pre_activity_status_frame_sha256": hashlib.sha256(
+                self._pre_status_frame
+            ).hexdigest(),
+            "proof_scope": "mechanical",
+        }
 
     def send_control(self, frame: bytes) -> None:
         assert frame == encode_child_control_frame(
@@ -5284,20 +8271,85 @@ class _FakeOwnedPhaseProcess:
         )
         self.events.append(f"go-{self.phase}")
         self._go_sent = True
-        self.readers["app"].feed(
-            encode_child_status_frame(
-                phase=self.phase,
-                event="logger_census",
+        exit_status_frame = encode_child_status_frame(
+            phase=self.phase,
+            event="logger_census",
+            process_boot_id=self.process_boot_id,
+            status_nonce_sha256=self.status_nonce_sha256,
+            ordinal=2,
+            payload={
+                "census_point": "exit",
+                "handler_count": 1,
+                "topology_sha256": "1" * 64,
+            },
+        )
+        self.readers["app"].feed(exit_status_frame)
+        terminal_common = {
+            **self._proof_common(),
+            "control_frame_sha256": hashlib.sha256(frame).hexdigest(),
+            "exit_status_frame_sha256": hashlib.sha256(
+                exit_status_frame
+            ).hexdigest(),
+        }
+        if self.phase == "A":
+            self.readers["stdout"].feed(
+                dual_live_runtime_module.encode_child_proof_frame(
+                    phase="A",
+                    event="acquisition_boundary",
+                    process_boot_id=self.process_boot_id,
+                    status_nonce_sha256=self.status_nonce_sha256,
+                    ordinal=1,
+                    previous_record_sha256=None,
+                    payload={
+                        **terminal_common,
+                        "connector_acquisitions": [],
+                        "downstream_action_count": 0,
+                    },
+                )
+            )
+        else:
+            assert isinstance(self._previous_proof_sha256, str)
+            downstream = dual_live_runtime_module.encode_child_proof_frame(
+                phase="B",
+                event="downstream_chain",
                 process_boot_id=self.process_boot_id,
                 status_nonce_sha256=self.status_nonce_sha256,
                 ordinal=2,
+                previous_record_sha256=self._previous_proof_sha256,
                 payload={
-                    "census_point": "exit",
-                    "handler_count": 1,
-                    "topology_sha256": "1" * 64,
+                    **terminal_common,
+                    "downstream_actions": [],
+                    "source_bindings": [],
+                    "terminal_boundary": "mechanical_complete",
                 },
             )
-        )
+            downstream_sha256 = json.loads(
+                downstream[4:].decode("utf-8")
+            )["record_sha256"]
+            self.readers["stdout"].feed(downstream)
+            self.readers["stdout"].feed(
+                dual_live_runtime_module.encode_child_proof_frame(
+                    phase="B",
+                    event="guard",
+                    process_boot_id=self.process_boot_id,
+                    status_nonce_sha256=self.status_nonce_sha256,
+                    ordinal=3,
+                    previous_record_sha256=downstream_sha256,
+                    payload={
+                        **terminal_common,
+                        "denied_routes": [
+                            "dns",
+                            "http",
+                            "socket",
+                            "subprocess",
+                            "connector_transport",
+                        ],
+                        "network_enable_attempt_count": 0,
+                        "original_implementation_call_count": 0,
+                        "proof_point": "exit",
+                    },
+                )
+            )
         if not self._leave_readers_open:
             for reader in self.readers.values():
                 reader.finish()
@@ -5778,6 +8830,7 @@ def run_once(runtime_instance_id):
         code_revision={'2' * 40!r},
         wrapper_image_sha256={'3' * 64!r},
         interpreter_image_sha256={'4' * 64!r},
+        dependency_set_sha256={'8' * 64!r},
         root_mutex_identity_sha256={'5' * 64!r},
         campaign_mutex_identity_sha256={'6' * 64!r},
     )
@@ -6187,3 +9240,36 @@ def test_writer_failure_precedes_secondary_cancel_start_failure(
         assert stop.reason_code == "writer_failure"
     finally:
         blocker.release.set()
+
+
+# Canonical V4 collection surface. Bind acceptance nodes last because strict NRC
+# parsing installs the production process-lifetime spawn guard by design.
+sealed_campaign_template = dual_live_acceptance.sealed_campaign_template
+matrix_campaign = dual_live_acceptance.matrix_campaign
+test_all_69_checks_have_positive_and_named_negative_evidence = (
+    dual_live_acceptance.test_all_69_checks_have_positive_and_named_negative_evidence
+)
+test_real_constructor_campaign_evaluates_all_69_checks_pass_once = (
+    dual_live_acceptance.test_real_constructor_campaign_evaluates_all_69_checks_pass_once
+)
+test_public_nrc_path_proves_integrity_through_handoff_and_reporting = (
+    dual_live_acceptance.test_public_nrc_path_proves_integrity_through_handoff_and_reporting
+)
+test_public_sciencebase_path_proves_strict_origin_through_handoff = (
+    dual_live_acceptance.test_public_sciencebase_path_proves_strict_origin_through_handoff
+)
+test_real_gate_process_runs_g01_g02_then_all_69_checks_pass = (
+    dual_live_acceptance.test_real_gate_process_runs_g01_g02_then_all_69_checks_pass
+)
+test_writable_caller_session_fails_closed_without_mutation = (
+    dual_live_acceptance.test_writable_caller_session_fails_closed_without_mutation
+)
+test_one_log_byte_and_rebuilt_manifest_preserve_exact_seal_taxonomy = (
+    dual_live_acceptance.test_one_log_byte_and_rebuilt_manifest_preserve_exact_seal_taxonomy
+)
+test_one_log_byte_rebuilt_manifest_and_seal_exposes_database_witness = (
+    dual_live_acceptance.test_one_log_byte_rebuilt_manifest_and_seal_exposes_database_witness
+)
+test_database_seal_event_rewrite_cannot_rewrite_original_files = (
+    dual_live_acceptance.test_database_seal_event_rewrite_cannot_rewrite_original_files
+)
