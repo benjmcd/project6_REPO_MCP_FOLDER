@@ -29,7 +29,7 @@ Outcome: COMPLETE for the owner-authorized offline G2 PREP subset.
 
 ## Authority and final state
 
-- Worktree: C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\dual-live-plan
+- Worktree: C:\Users\<operator>\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\dual-live-plan
 - Branch: codex/dual-live-plan
 - Starting authority: dbb87740d418a34bc519a54c9befbca83a53d1ff
 - Final HEAD: 13b75253ac38cdd2d532b791276d1f41044f4986

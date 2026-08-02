@@ -2,7 +2,7 @@
 
 Date: 2026-08-02. Fix range d4159ff8..402bd173 (4 commits). Replaces the mtime/ctime file fingerprint
 with content-based (bounded SHA-256) stability in layer3_execution_output.py + layer3_origin_continuity.py
-(downstream snapshot guard + publication comparison). REPRODUCED on host DESKTOP-I0THJK0 py3.12.10:
+(downstream snapshot guard + publication comparison). REPRODUCED on host <operator-host> py3.12.10:
 test_dual_eval.py 401/401 green x2 (290s/291s exit 0); 3 tamper campaigns 5 passed exit 0 (satisfies
 condition 1 + condition-4 tamper-execution half); gate 356 green; V4 806 green; affected-module 126 green;
 Ruff clean; git diff --check clean. Independent Sol review of exact delta: APPROVE 0 findings (C/H/M/L=0).
@@ -51,7 +51,7 @@ No frozen/fenced files were touched. The only remaining worktree residue is the 
 
 ## Reproduced evidence
 
-Host: `DESKTOP-I0THJK0`, Alienware Aurora ACT1250, Windows 11 Home 10.0.26200 64-bit, Python 3.12.10.
+Host: `<operator-host>`, Alienware Aurora ACT1250, Windows 11 Home 10.0.26200 64-bit, Python 3.12.10.
 
 - Standalone dual evaluator run 1: `401 passed, 1 warning in 290.63s`, exit 0.
 - Standalone dual evaluator run 2: `401 passed, 1 warning in 291.31s`, exit 0.

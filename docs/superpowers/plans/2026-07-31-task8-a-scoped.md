@@ -1188,7 +1188,7 @@ Expected: small coherent commits, no automated-tool attribution or trailers, no 
 After every self-verification and no further repo/tool action is needed, create exactly:
 
 ```text
-C:/Users/benny/.claude/ipc/91b270df-110e-4a84-915d-d187bcf9589e/019faabd-31a1-7293-a3e7-d49087b95bcf/1785519952-490-2bfe6d4f188b9f32.reply.md
+C:/Users/<operator>/.claude/ipc/91b270df-110e-4a84-915d-d187bcf9589e/019faabd-31a1-7293-a3e7-d49087b95bcf/1785519952-490-2bfe6d4f188b9f32.reply.md
 ```
 
 The reply contains: session ID if available; per-item done criteria; commits; exact V1-V8/root/progress/integrity commands, exits, and counts; PASS-capable fake campaign evidence; three rewrite-case evidence; unchanged B1a seal; changed-file scope; `REPO-CONFIRMED`/`TEST-MEASURED`/`INFERENCE`/`UNVERIFIED` labels; nonclaims; no live/acquisition/deployment/push claim.

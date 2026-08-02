@@ -24,7 +24,7 @@ Those are mechanism defects, not editorial polish. `FREEZE-WITH-CONDITIONS` is t
 
 ## Scope and identity
 
-- **REPO-CONFIRMED:** reviewed worktree is `C:/Users/benny/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/dual-live-plan`, branch `codex/dual-live-plan`, clean HEAD `c8b367a63099a823167984cae43fa01dc6f077be`.
+- **REPO-CONFIRMED:** reviewed worktree is `C:/Users/<operator>/OneDrive/Desktop/project6_REPO_MCP_FOLDER/worktrees/dual-live-plan`, branch `codex/dual-live-plan`, clean HEAD `c8b367a63099a823167984cae43fa01dc6f077be`.
 - **REPO-CONFIRMED:** local `refs/remotes/project6-origin/main` is the stipulated `c1fcd840b421ceafb560266858a75808207f4540`. No fetch or other Git-state mutation was performed; the unrelated `origin` remote was not used.
 - **REPO-CONFIRMED:** `356eff2e..c8b367a6` is a six-commit linear range:
   `78eb3146`, `3ed5589`, `a0cefbd6`, `1bfce554`, `468252c5`, `c8b367a6`.

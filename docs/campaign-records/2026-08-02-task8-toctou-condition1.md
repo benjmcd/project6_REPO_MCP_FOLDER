@@ -15,10 +15,10 @@ Implementation tree tested: `42e01ff3f45ec37f0ff9a6644a0c79fd139700fb`
 
 ## Host binding
 
-- Computer: `DESKTOP-I0THJK0`
+- Computer: `<operator-host>`
 - Manufacturer/model: `Alienware / Alienware Aurora ACT1250`
 - OS: `Microsoft Windows 11 Home`, version/build `10.0.26200`, 64-bit
-- Interpreter: `C:\Users\benny\AppData\Local\Programs\Python\Python312\python.exe`, Python `3.12.10`
+- Interpreter: `C:\Users\<operator>\AppData\Local\Programs\Python\Python312\python.exe`, Python `3.12.10`
 - Execution posture: offline; no egress or credentials used
 - Python emitted `RequestsDependencyWarning`: installed `urllib3 2.6.3` and `chardet 7.1.0` / `charset_normalizer 3.4.4` do not match the installed Requests support declaration. This correction does not make the host dependency-eligible for a real/live run.
 
@@ -67,7 +67,7 @@ All pytest commands used `-p no:cacheprovider`; no test artifacts were intention
 Working directory: `backend`
 
 ```text
-C:\Users\benny\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_dual_eval.py -q -p no:cacheprovider
+C:\Users\<operator>\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_dual_eval.py -q -p no:cacheprovider
 401 passed, 1 warning in 290.63s
 exit 0
 ```
@@ -77,7 +77,7 @@ exit 0
 Working directory: `backend`
 
 ```text
-C:\Users\benny\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_dual_eval.py -q -p no:cacheprovider
+C:\Users\<operator>\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_dual_eval.py -q -p no:cacheprovider
 401 passed, 1 warning in 291.31s
 exit 0
 ```
@@ -89,7 +89,7 @@ Both standalone census runs were made on production HEAD `5f76f949`. Final HEAD 
 Working directory: `backend`
 
 ```text
-C:\Users\benny\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_dual_eval.py::test_one_log_byte_and_rebuilt_manifest_preserve_exact_seal_taxonomy tests/test_dual_eval.py::test_one_log_byte_rebuilt_manifest_and_seal_exposes_database_witness tests/test_dual_eval.py::test_database_seal_event_rewrite_cannot_rewrite_original_files -q -p no:cacheprovider
+C:\Users\<operator>\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_dual_eval.py::test_one_log_byte_and_rebuilt_manifest_preserve_exact_seal_taxonomy tests/test_dual_eval.py::test_one_log_byte_rebuilt_manifest_and_seal_exposes_database_witness tests/test_dual_eval.py::test_database_seal_event_rewrite_cannot_rewrite_original_files -q -p no:cacheprovider
 5 passed, 1 warning in 69.53s
 exit 0
 ```
@@ -101,7 +101,7 @@ The direct acceptance module is intentionally non-collected; these are its colle
 Working directory: repository root
 
 ```text
-C:\Users\benny\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_dual_gate.py -q -p no:cacheprovider
+C:\Users\<operator>\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_dual_gate.py -q -p no:cacheprovider
 356 passed, 1 warning in 98.02s
 exit 0
 ```
@@ -113,7 +113,7 @@ Before the one-path allowlist correction, the gate result was `355 passed, 1 fai
 Working directory: `backend`
 
 ```text
-C:\Users\benny\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_layer3_origin.py tests/test_layer3_connector_source_intake_pilot.py tests/test_layer3_connector_vertical_loop.py tests/test_layer3_qual_aps_execution.py tests/test_layer3_execution_output.py tests/test_layer3_execution_review.py tests/test_layer3_package_entry.py tests/test_layer3_handoff_export_response.py tests/test_campaign_log_capture.py tests/test_dual_eval.py -q -p no:cacheprovider
+C:\Users\<operator>\AppData\Local\Programs\Python\Python312\python.exe -m pytest tests/test_layer3_origin.py tests/test_layer3_connector_source_intake_pilot.py tests/test_layer3_connector_vertical_loop.py tests/test_layer3_qual_aps_execution.py tests/test_layer3_execution_output.py tests/test_layer3_execution_review.py tests/test_layer3_package_entry.py tests/test_layer3_handoff_export_response.py tests/test_campaign_log_capture.py tests/test_dual_eval.py -q -p no:cacheprovider
 806 passed, 3 warnings in 335.05s
 exit 0
 ```
