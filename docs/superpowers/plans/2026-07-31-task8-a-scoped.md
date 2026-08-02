@@ -89,6 +89,42 @@
 - `tests/test_dual_gate.py`
   - Gate posture, read-only SQLite, stable reread, PowerShell run/validate behavior, fake Job/socket integration, and no-effect refusal.
 
+### Final surface reconciliation (2026-08-02)
+
+The map above was exhaustive for the production and test surfaces predicted by
+this Task-8 plan, not an exhaustive repository manifest. Mechanical comparison
+of base `6aa98ecafb7ce3fddfc37e1e859b2ef7c8e77e50` with reviewed completion HEAD
+`dbb87740d418a34bc519a54c9befbca83a53d1ff` (tree
+`1543524230e78dacb62c81de4dc0b9f81f85825a`) confirms that all 20 predicted
+files landed. The final non-document implementation surface contains 38 files:
+the 20 predicted files plus these 18 implementation-emergent files:
+
+- `backend/app/services/connector_egress_evidence.py`
+- `backend/app/services/dual_live_dependencies.py`
+- `backend/app/services/layer3_connector_source_intake.py`
+- `backend/app/services/layer3_execution_output.py`
+- `backend/app/services/layer3_gate_b_state.py`
+- `backend/app/services/layer3_origin_continuity.py`
+- `backend/app/services/layer3_pass_entry.py`
+- `backend/app/services/layer3_typing_entry.py`
+- `backend/app/services/layer3_workbench.py`
+- `config/support_matrix.yaml`
+- `backend/tests/test_dual_eval_acceptance.py`
+- `backend/tests/test_dual_live_dependencies.py`
+- `backend/tests/test_egress_auth.py`
+- `backend/tests/test_layer3_connector_vertical_loop.py`
+- `backend/tests/test_layer3_execution_output.py`
+- `backend/tests/test_layer3_intake_successor.py`
+- `backend/tests/test_layer3_origin.py`
+- `backend/tests/test_layer3_qual_aps_execution.py`
+
+These additions are reconciled as Task-8 production/test/support surfaces, not
+as permission for future edits and not as a claim that unrelated repository
+files belong to Task 8. Five documentation files in the same historical range
+remain intentionally outside the production/test map. In particular,
+`backend/tests/test_egress_auth.py`, already named by Tasks 5 and 7 below, is
+now also represented in the top-level reconciled map.
+
 ## Stable Interfaces
 
 ```text
@@ -295,6 +331,17 @@ The three frozen coordinated-rewrite cases are not a new check family. They are 
 - any extant-run DB event rewrite fails `R04`, `L02`, or `L04` parity.
 
 The implementation does not claim detection of a coherent rewrite of every filesystem and DB domain; that class is outside the frozen local-experiment threat model.
+
+The gate selects its database, storage root, evidence root, evidence index,
+index SHA-256, and evidence-key locations from its process environment. Those
+configured locations are trusted selection inputs. The evaluator proves the
+internal consistency and content-hash bindings of the selected bundle; it does
+not independently authenticate that the environment selected the intended
+root. Forging PASS therefore requires a fully coherent bundle that also hashes
+to the configured index SHA-256, which is the intended local-experiment proof
+burden. If the threat model expands beyond trusted local operator selection,
+an owner-signed pinned location manifest is a separate future authority change,
+not an implied part of this implementation.
 
 An unsealed capture detected by the gate before evaluator entry is `REFUSED`. A selected protected capture that becomes missing, unreadable, or mismatched after evaluator entry is `INDETERMINATE`. A within-allowance byte crossing with the correct oversized/budget terminal classification passes `L07_BYTE_ALLOWANCE` as an accounting check, but the non-completed connector outcome still makes the combined campaign `FAIL`.
 
@@ -1062,7 +1109,7 @@ git diff --name-only 6aa98ecafb7ce3fddfc37e1e859b2ef7c8e77e50..HEAD
 git diff --check
 ```
 
-Expected: only plan-listed production/tests plus this non-frozen implementation plan; pre-existing `.omc/state/sessions/` remains untouched; no forbidden authority file, attestation/index/issuer/env surface, B1a seal, or unrelated file.
+Expected: only the reconciled Task-8 production/test/support map above plus this non-frozen implementation plan and committed completion/review records; pre-existing `.omc/state/sessions/` remains untouched; no forbidden authority file, attestation/index/issuer/env surface, B1a seal, or unrelated file.
 
 - [ ] **Step 2: Run V1 from `backend`**
 
