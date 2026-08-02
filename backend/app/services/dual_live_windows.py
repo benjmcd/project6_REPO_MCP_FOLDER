@@ -27,6 +27,12 @@ except ImportError:  # pragma: no cover - non-Windows import path
     _msvcrt = None
 
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
+_LOCAL_DRIVE_ABSOLUTE = re.compile(r"[A-Za-z]:[\\/]")
+_DOS_DEVICE_BASENAMES = frozenset(
+    {"aux", "con", "nul", "prn"}
+    | {f"com{index}" for index in range(1, 10)}
+    | {f"lpt{index}" for index in range(1, 10)}
+)
 _WAIT_OBJECT_0 = 0
 _WAIT_ABANDONED_0 = 0x80
 _WAIT_TIMEOUT = 0x102
@@ -96,6 +102,62 @@ _OBJECT_TYPE_INFORMATION_CLASS = 2
 _STATUS_INFO_LENGTH_MISMATCH = 0xC0000004
 _PERMITTED_INHERITED_HANDLE_TYPES = frozenset(("Event", "File"))
 _OWNED_CHILD_SCHEMA_ID = "project6.dual_live_owned_child.v1"
+_OWNED_PHASE_SHARED_ENVIRONMENT = frozenset(
+    (
+        "AUTH_OWNER",
+        "DATABASE_URL",
+        "DEPLOYMENT_MODE",
+        "DUAL_LIVE_CAMPAIGN_FINGERPRINT",
+        "DUAL_LIVE_CAMPAIGN_ID",
+        "DUAL_LIVE_CODE_REVISION",
+        "DUAL_LIVE_DEPENDENCY_SET_SHA256",
+        "STORAGE_DIR",
+        "TRUSTED_PROXY_MODE",
+    )
+)
+_OWNED_PHASE_A_ENVIRONMENT = _OWNED_PHASE_SHARED_ENVIRONMENT | frozenset(
+    (
+        "CONNECTOR_CAMPAIGN_DEFINITION_PATH",
+        "CONNECTOR_CAMPAIGN_DEFINITION_SHA256",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_SHA256",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT",
+        "CONNECTOR_LIVE_EGRESS_ENABLED",
+        "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE",
+        "CONNECTOR_NRC_APS_GRANT_PATH",
+        "CONNECTOR_NRC_APS_GRANT_SHA256",
+        "CONNECTOR_SCIENCEBASE_GRANT_PATH",
+        "CONNECTOR_SCIENCEBASE_GRANT_SHA256",
+        "NRC_ADAMS_APS_SUBSCRIPTION_KEY",
+    )
+)
+OWNED_PHASE_A_AUTHORITY_ENVIRONMENT_NAMES = tuple(
+    sorted(
+        (
+            "CONNECTOR_CAMPAIGN_DEFINITION_PATH",
+            "CONNECTOR_CAMPAIGN_DEFINITION_SHA256",
+            "CONNECTOR_LIVE_EGRESS_ENABLED",
+            "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE",
+            "CONNECTOR_NRC_APS_GRANT_PATH",
+            "CONNECTOR_NRC_APS_GRANT_SHA256",
+            "CONNECTOR_SCIENCEBASE_GRANT_PATH",
+            "CONNECTOR_SCIENCEBASE_GRANT_SHA256",
+            "NRC_ADAMS_APS_SUBSCRIPTION_KEY",
+        )
+    )
+)
+_OWNED_PHASE_A_AUTHORITY_ENVIRONMENT = frozenset(
+    OWNED_PHASE_A_AUTHORITY_ENVIRONMENT_NAMES
+)
+_OWNED_PHASE_B_ENVIRONMENT = _OWNED_PHASE_SHARED_ENVIRONMENT | frozenset(
+    (
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_SHA256",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT",
+        "CONNECTOR_LIVE_EGRESS_ENABLED",
+        "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE",
+    )
+)
 _OWNED_BOOT_SCHEMA_ID = "project6.dual_live_owned_boot.v1"
 _OWNED_IO_TIMEOUT_SECONDS = 5.0
 _STANDARD_POPEN = subprocess.Popen
@@ -152,6 +214,121 @@ class DualLiveWindowsError(ValueError):
 
 def _fail(code: str) -> NoReturn:
     raise DualLiveWindowsError(code)
+
+
+def _local_drive_path_text(value: object, *, code: str) -> tuple[str, str]:
+    """Lexically admit only ordinary absolute drive-letter paths.
+
+    This must stay free of path resolution and filesystem metadata calls. It is
+    the first guard for every owner/config supplied path.
+    """
+
+    raw = os.fspath(value) if isinstance(value, os.PathLike) else str(value)
+    normalized = raw.replace("/", "\\")
+    folded = normalized.casefold()
+    tail = normalized[3:] if len(normalized) >= 3 else ""
+    components = tail.split("\\") if tail else []
+    if components and components[-1] == "":
+        components.pop()
+    invalid_component = any(
+        not component
+        or component in {".", ".."}
+        or component.endswith((".", " "))
+        or any(character in component for character in ':*?"<>|')
+        or component.split(".", 1)[0].casefold() in _DOS_DEVICE_BASENAMES
+        for component in components
+    )
+    if (
+        not raw
+        or "\x00" in raw
+        or any(ord(character) < 32 for character in raw)
+        or folded.startswith(
+            (
+                "\\\\",
+                "\\??\\",
+                "\\device\\",
+                "\\global??\\",
+            )
+        )
+        or _LOCAL_DRIVE_ABSOLUTE.match(normalized) is None
+        or invalid_component
+    ):
+        _fail(code)
+    return raw, normalized[:3]
+
+
+def assert_local_fixed_path_before_touch(
+    value: object,
+    *,
+    code: str,
+) -> Path:
+    """Reject remote/device/mapped paths before stat, resolve, or open."""
+
+    if os.name != "nt" or _kernel32 is None:
+        _fail(code)
+    raw, drive_root = _local_drive_path_text(value, code=code)
+    if int(_kernel32.GetDriveTypeW(drive_root)) != _DRIVE_FIXED:
+        _fail(code)
+    return Path(raw)
+
+
+def assert_fixed_local_no_reparse_path_before_open(
+    value: object,
+    *,
+    code: str,
+    reparse_code: str | None = None,
+) -> Path:
+    """Require every path component to exist without any reparse point."""
+
+    path = assert_local_fixed_path_before_touch(value, code=code)
+    assert _kernel32 is not None
+    current = Path(path.anchor)
+    components = (current,) + tuple(
+        current.joinpath(*path.parts[1:index])
+        for index in range(2, len(path.parts) + 1)
+    )
+    for component in components:
+        attributes = int(_kernel32.GetFileAttributesW(str(component)))
+        if attributes == 0xFFFFFFFF:
+            _fail(code)
+        if attributes & _FILE_ATTRIBUTE_REPARSE_POINT:
+            _fail(code if reparse_code is None else reparse_code)
+    return path
+
+
+def _final_path_name_from_handle(handle: int, *, code: str) -> str:
+    assert _kernel32 is not None
+    required = int(_kernel32.GetFinalPathNameByHandleW(handle, None, 0, 0))
+    if required == 0:
+        _fail(code)
+    buffer = ctypes.create_unicode_buffer(required + 1)
+    written = int(
+        _kernel32.GetFinalPathNameByHandleW(handle, buffer, len(buffer), 0)
+    )
+    if written == 0 or written >= len(buffer):
+        _fail(code)
+    return buffer.value
+
+
+def assert_open_handle_local_fixed(
+    handle: int,
+    *,
+    expected_path: Path,
+    code: str,
+) -> Path:
+    """Bind an opened object to the expected fixed-local DOS path."""
+
+    raw_final = _final_path_name_from_handle(handle, code=code)
+    normalized = raw_final.replace("/", "\\")
+    if normalized.casefold().startswith("\\\\?\\"):
+        normalized = normalized[4:]
+    final_path = assert_local_fixed_path_before_touch(normalized, code=code)
+    expected = assert_local_fixed_path_before_touch(expected_path, code=code)
+    if os.path.normcase(os.path.normpath(str(final_path))) != os.path.normcase(
+        os.path.normpath(str(expected))
+    ):
+        _fail(code)
+    return final_path
 
 
 class _FILE_ATTRIBUTE_TAG_INFO(ctypes.Structure):
@@ -376,6 +553,8 @@ if os.name == "nt":
     _kernel32.GetFinalPathNameByHandleW.restype = wintypes.DWORD
     _kernel32.GetFileType.argtypes = (wintypes.HANDLE,)
     _kernel32.GetFileType.restype = wintypes.DWORD
+    _kernel32.GetFileAttributesW.argtypes = (wintypes.LPCWSTR,)
+    _kernel32.GetFileAttributesW.restype = wintypes.DWORD
     _kernel32.GetDriveTypeW.argtypes = (wintypes.LPCWSTR,)
     _kernel32.GetDriveTypeW.restype = wintypes.UINT
     _kernel32.GetFileSizeEx.argtypes = (
@@ -897,8 +1076,13 @@ def _evidence_root_identity_from_handle(handle: int) -> str:
 
 def _open_evidence_root(path: Path) -> tuple[int, str]:
     assert _kernel32 is not None
+    expected_path = assert_fixed_local_no_reparse_path_before_open(
+        path,
+        code="dual_live_evidence_root_invalid",
+        reparse_code="dual_live_evidence_root_reparse",
+    )
     handle = _kernel32.CreateFileW(
-        str(path),
+        str(expected_path),
         _READ_CONTROL | _FILE_READ_ATTRIBUTES,
         _FILE_SHARE_READ | _FILE_SHARE_WRITE,
         None,
@@ -909,6 +1093,11 @@ def _open_evidence_root(path: Path) -> tuple[int, str]:
     if handle in (None, ctypes.c_void_p(-1).value):
         _fail("dual_live_evidence_root_invalid")
     try:
+        assert_open_handle_local_fixed(
+            int(handle),
+            expected_path=expected_path,
+            code="dual_live_evidence_root_invalid",
+        )
         return int(handle), _evidence_root_identity_from_handle(int(handle))
     except BaseException:
         _close_handle(handle)
@@ -1647,6 +1836,7 @@ _PHASE_WRAPPER_PIPE_ROLES = (
 _PHASE_WRAPPER_EVENT_ROLES = (
     "wrapper_revocation_event_handle",
     "wrapper_send_idle_event_handle",
+    "wrapper_counter_ack_event_handle",
 )
 _PHASE_CHILD_PIPE_ROLES = (
     "child_control_read_handle",
@@ -1661,6 +1851,7 @@ _PHASE_CHILD_PIPE_ROLES = (
 _PHASE_CHILD_EVENT_ROLES = (
     "child_revocation_event_handle",
     "child_send_idle_event_handle",
+    "child_counter_ack_event_handle",
 )
 _PHASE_WRAPPER_STREAM_PIPE_ROLES = _PHASE_WRAPPER_PIPE_ROLES[1:]
 _PHASE_CHILD_STREAM_PIPE_ROLES = _PHASE_CHILD_PIPE_ROLES[1:]
@@ -1783,7 +1974,10 @@ def _owned_child_argv(capsule: str) -> tuple[str, ...]:
     )
 
 
-def _owned_child_environment() -> Mapping[str, str]:
+def _owned_child_environment(
+    phase: str | None = None,
+    supplied: Mapping[str, str] | None = None,
+) -> Mapping[str, str]:
     environment = {
         "PYTHONIOENCODING": "utf-8",
         "PYTHONUTF8": "1",
@@ -1792,6 +1986,28 @@ def _owned_child_environment() -> Mapping[str, str]:
         value = os.environ.get(name)
         if value:
             environment[name] = value
+    if supplied is not None:
+        validated_phase = _require_phase(phase or "")
+        allowed = (
+            _OWNED_PHASE_A_ENVIRONMENT
+            if validated_phase == "A"
+            else _OWNED_PHASE_B_ENVIRONMENT
+        )
+        canonical_names = tuple(name.upper() for name in supplied)
+        if (
+            len(canonical_names) != len(set(canonical_names))
+            or set(canonical_names) != allowed
+            or any(
+                not isinstance(name, str)
+                or name != name.upper()
+                or not isinstance(value, str)
+                or not value
+                or "\x00" in value
+                for name, value in supplied.items()
+            )
+        ):
+            _fail("dual_live_owned_environment_invalid")
+        environment.update(supplied)
     return MappingProxyType(environment)
 
 
@@ -1986,10 +2202,14 @@ def _validated_phase_handles(
         child_revocation = copied["child_revocation_event_handle"]
         wrapper_send_idle = copied["wrapper_send_idle_event_handle"]
         child_send_idle = copied["child_send_idle_event_handle"]
+        wrapper_counter_ack = copied["wrapper_counter_ack_event_handle"]
+        child_counter_ack = copied["child_counter_ack_event_handle"]
         assert isinstance(wrapper_revocation, int)
         assert isinstance(child_revocation, int)
         assert isinstance(wrapper_send_idle, int)
         assert isinstance(child_send_idle, int)
+        assert isinstance(wrapper_counter_ack, int)
+        assert isinstance(child_counter_ack, int)
         revocation = (
             wrapper_revocation,
             child_revocation,
@@ -1997,6 +2217,10 @@ def _validated_phase_handles(
         send_idle = (
             wrapper_send_idle,
             child_send_idle,
+        )
+        counter_ack = (
+            wrapper_counter_ack,
+            child_counter_ack,
         )
         if not _kernel_objects_same(
             revocation[0],
@@ -2008,11 +2232,36 @@ def _validated_phase_handles(
             indeterminate_code="dual_live_phase_capability_identity_indeterminate",
         ):
             _fail("dual_live_phase_channels_invalid")
+        if not _kernel_objects_same(
+            counter_ack[0],
+            counter_ack[1],
+            indeterminate_code="dual_live_phase_capability_identity_indeterminate",
+        ):
+            _fail("dual_live_phase_channels_invalid")
         for revocation_handle in revocation:
             for send_idle_handle in send_idle:
                 if _kernel_objects_same(
                     revocation_handle,
                     send_idle_handle,
+                    indeterminate_code=(
+                        "dual_live_phase_capability_identity_indeterminate"
+                    ),
+                ):
+                    _fail("dual_live_phase_channels_invalid")
+            for counter_ack_handle in counter_ack:
+                if _kernel_objects_same(
+                    revocation_handle,
+                    counter_ack_handle,
+                    indeterminate_code=(
+                        "dual_live_phase_capability_identity_indeterminate"
+                    ),
+                ):
+                    _fail("dual_live_phase_channels_invalid")
+        for send_idle_handle in send_idle:
+            for counter_ack_handle in counter_ack:
+                if _kernel_objects_same(
+                    send_idle_handle,
+                    counter_ack_handle,
                     indeterminate_code=(
                         "dual_live_phase_capability_identity_indeterminate"
                     ),
@@ -2228,6 +2477,7 @@ class PhaseChannels:
         *,
         runtime_instance_id: str,
         wrapper_nonce_sha256: str,
+        environment: Mapping[str, str] | None = None,
     ) -> JobChild:
         """Create the exact inert owned child inside one atomic inherit window."""
 
@@ -2248,7 +2498,10 @@ class PhaseChannels:
                     )
                     child = create_child_in_job(
                         argv=_owned_child_argv(capsule),
-                        environment=_owned_child_environment(),
+                        environment=_owned_child_environment(
+                            self._phase,
+                            environment,
+                        ),
                         inherited_handles=tuple(child_handles.values()),
                         runtime_instance_id=runtime_instance_id,
                         wrapper_nonce_sha256=wrapper_nonce_sha256,
@@ -2608,6 +2861,11 @@ def _create_phase_channels_locked(phase: str) -> PhaseChannels:
                 "wrapper_send_idle_event_handle",
                 "child_send_idle_event_handle",
                 initially_signaled=True,
+            )
+            create_event(
+                "wrapper_counter_ack_event_handle",
+                "child_counter_ack_event_handle",
+                initially_signaled=False,
             )
         channels = PhaseChannels._from_factory(
             _PHASE_CHANNELS_FACTORY_TOKEN,
@@ -4368,11 +4626,15 @@ def _owner_table_rows(
     if protocol == "tcp":
         function = _iphlpapi.GetExtendedTcpTable
         table_class = _TCP_TABLE_OWNER_PID_ALL
-        row_type = _MIB_TCPROW_OWNER_PID if family == _AF_INET else _MIB_TCP6ROW_OWNER_PID
+        row_type: type[Any] = (
+            _MIB_TCPROW_OWNER_PID if family == _AF_INET else _MIB_TCP6ROW_OWNER_PID
+        )
     elif protocol == "udp":
         function = _iphlpapi.GetExtendedUdpTable
         table_class = _UDP_TABLE_OWNER_PID
-        row_type = _MIB_UDPROW_OWNER_PID if family == _AF_INET else _MIB_UDP6ROW_OWNER_PID
+        row_type = (
+            _MIB_UDPROW_OWNER_PID if family == _AF_INET else _MIB_UDP6ROW_OWNER_PID
+        )
     else:  # pragma: no cover - private closed call set
         _fail("dual_live_quiescence_indeterminate")
     required = wintypes.ULONG()
@@ -5172,8 +5434,10 @@ _OWNED_PROCESS_FACTORY_TOKEN = object()
 
 class OwnedPhaseProcess:
     __slots__ = (
+        "_authority_environment_names",
         "_authority_revoked",
         "_child",
+        "_counter_ack_event_handle",
         "_control_consumed",
         "_control_writer",
         "_control_write_handle",
@@ -5192,8 +5456,10 @@ class OwnedPhaseProcess:
         "status_nonce_sha256",
     )
 
+    _authority_environment_names: frozenset[str]
     _authority_revoked: bool
     _child: JobChild | None
+    _counter_ack_event_handle: int | None
     _control_consumed: bool
     _control_writer: _OwnedControlWriter | None
     _control_write_handle: int | None
@@ -5225,8 +5491,18 @@ class OwnedPhaseProcess:
         handles: Mapping[str, int],
         boot: Mapping[str, str],
         readers: Mapping[str, _OwnedPipeReader],
+        authority_environment_names: frozenset[str],
     ) -> OwnedPhaseProcess:
-        if factory_token is not _OWNED_PROCESS_FACTORY_TOKEN:
+        if (
+            factory_token is not _OWNED_PROCESS_FACTORY_TOKEN
+            or type(authority_environment_names) is not frozenset
+            or any(
+                type(name) is not str
+                or name not in _OWNED_PHASE_A_AUTHORITY_ENVIRONMENT
+                for name in authority_environment_names
+            )
+            or (phase == "B" and authority_environment_names)
+        ):
             _fail("dual_live_owned_process_factory_only")
         evidence = child.start_evidence
         instance: OwnedPhaseProcess = object.__new__(cls)
@@ -5242,8 +5518,12 @@ class OwnedPhaseProcess:
         instance._send_idle_event_handle = handles.get(
             "wrapper_send_idle_event_handle"
         )
+        instance._counter_ack_event_handle = handles.get(
+            "wrapper_counter_ack_event_handle"
+        )
         instance._readers = MappingProxyType(dict(readers))
         instance._control_consumed = False
+        instance._authority_environment_names = authority_environment_names
         instance._authority_revoked = False
         instance._stopped = False
         instance._job_payloads = None
@@ -5326,6 +5606,16 @@ class OwnedPhaseProcess:
             _fail("dual_live_owned_process_closed")
         return child.poll_exit(timeout)
 
+    def ack_http_frame(self) -> None:
+        with self._lock:
+            if self._phase != "A":
+                _fail("dual_live_owned_counter_ack_invalid")
+            handle = self._counter_ack_event_handle
+            if handle is None or self._stopped:
+                _fail("dual_live_owned_process_closed")
+            if not _kernel32.SetEvent(handle):
+                _fail("dual_live_owned_counter_ack_failed")
+
     def revoke_before_stop(self, reason: str) -> None:
         if not isinstance(reason, str) or not reason or len(reason) > 64:
             _fail("dual_live_owned_revocation_invalid")
@@ -5382,21 +5672,68 @@ class OwnedPhaseProcess:
         if primary_failure is not None:
             raise primary_failure
 
-    def authority_cleared_payload(self) -> Mapping[str, Any]:
+    def clear_authority_coordinates(self) -> None:
         with self._lock:
-            if self._phase != "A" or not self._authority_revoked:
+            if (
+                self._phase != "A"
+                or not self._authority_revoked
+                or not self._stopped
+                or self._child is not None
+                or self._job_payloads is None
+            ):
                 _fail("dual_live_owned_authority_not_cleared")
+            self._authority_environment_names = frozenset()
+
+    def discard_authority_coordinates(self) -> None:
+        with self._lock:
+            self._authority_environment_names = frozenset()
+
+    def authority_coordinate_posture(self) -> Mapping[str, Any]:
+        with self._lock:
+            return MappingProxyType(
+                {
+                    "retained_environment_names": tuple(
+                        sorted(self._authority_environment_names)
+                    ),
+                    "revoked": self._authority_revoked,
+                    "stopped": (
+                        self._stopped
+                        and self._child is None
+                        and self._job_payloads is not None
+                    ),
+                }
+            )
+
+    def authority_cleared_payload(self) -> Mapping[str, Any]:
+        self.clear_authority_coordinates()
+        posture_state = self.authority_coordinate_posture()
+        parent_remaining = sum(
+            name.upper() in _OWNED_PHASE_A_AUTHORITY_ENVIRONMENT
+            for name in os.environ
+        )
         posture = {
-            "phase": "A",
-            "revocation_set": True,
-            "runtime_surface": "inert",
+            "required_environment_names": list(
+                OWNED_PHASE_A_AUTHORITY_ENVIRONMENT_NAMES
+            ),
+            "parent_remaining_count": parent_remaining,
+            "retained_phase_a_environment_count": len(
+                posture_state["retained_environment_names"]
+            ),
+            "child_revoked": posture_state["revoked"],
+            "child_stopped": posture_state["stopped"],
         }
+        all_required_absent = (
+            posture["parent_remaining_count"] == 0
+            and posture["retained_phase_a_environment_count"] == 0
+            and posture["child_revoked"] is True
+            and posture["child_stopped"] is True
+        )
         return MappingProxyType(
             {
                 "authority_posture_sha256": hashlib.sha256(
                     _canonical_json_bytes(posture)
                 ).hexdigest(),
-                "all_required_absent": True,
+                "all_required_absent": all_required_absent,
             }
         )
 
@@ -5463,6 +5800,7 @@ class OwnedPhaseProcess:
         with self._lock:
             handles = (
                 "_control_write_handle",
+                "_counter_ack_event_handle",
                 "_revocation_event_handle",
                 "_send_idle_event_handle",
             )
@@ -5606,6 +5944,7 @@ def _create_owned_phase_process_locked(
     phase: str,
     runtime_instance_id: str,
     wrapper_nonce_sha256: str,
+    environment: Mapping[str, str] | None = None,
 ) -> OwnedPhaseProcess:
     validated_phase = _require_phase(phase)
     runtime_instance_id = _require_uuid4(runtime_instance_id)
@@ -5621,6 +5960,7 @@ def _create_owned_phase_process_locked(
             _PHASE_CHANNELS_FACTORY_TOKEN,
             runtime_instance_id=runtime_instance_id,
             wrapper_nonce_sha256=wrapper_nonce_sha256,
+            environment=environment,
         )
         with channels._lease_wrapper_handles(
             _PHASE_CHANNELS_FACTORY_TOKEN
@@ -5662,6 +6002,15 @@ def _create_owned_phase_process_locked(
             handles=owned_handles,
             boot=boot,
             readers=readers,
+            authority_environment_names=frozenset(
+                name.upper()
+                for name in (
+                    ()
+                    if environment is None or validated_phase != "A"
+                    else environment
+                )
+                if name.upper() in _OWNED_PHASE_A_AUTHORITY_ENVIRONMENT
+            ),
         )
     except BaseException as primary_failure:
         custody = _OwnedCleanupCustody(
@@ -5689,6 +6038,7 @@ def _create_owned_phase_process(
     phase: str,
     runtime_instance_id: str,
     wrapper_nonce_sha256: str,
+    environment: Mapping[str, str] | None = None,
 ) -> OwnedPhaseProcess:
     with _native_custody_gate:
         _drain_native_custody()
@@ -5700,6 +6050,7 @@ def _create_owned_phase_process(
                 phase,
                 runtime_instance_id,
                 wrapper_nonce_sha256,
+                environment,
             )
         finally:
             _owned_factory_window_active.clear()
