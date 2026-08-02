@@ -2135,6 +2135,103 @@ def test_owned_control_race_cannot_create_phase_b_or_seal(
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+@pytest.mark.parametrize(
+    ("carried_boot_sha256", "inner_failure"),
+    (
+        (None, "dual_live_child_proof_incomplete"),
+        ("0" * 64, "dual_live_child_proof_binding_invalid"),
+    ),
+    ids=("missing", "tampered"),
+)
+def test_consumed_boot_carry_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    carried_boot_sha256: str | None,
+    inner_failure: str,
+) -> None:
+    from app.services import dual_live_runtime
+
+    identity = dual_live_runtime.RuntimeIdentity(
+        runtime_instance_id=RUNTIME_INSTANCE_ID,
+        wrapper_nonce_sha256=WRAPPER_NONCE_SHA,
+        code_revision="2" * 40,
+        wrapper_image_sha256="3" * 64,
+        interpreter_image_sha256="4" * 64,
+        dependency_set_sha256="8" * 64,
+        root_mutex_identity_sha256="5" * 64,
+        campaign_mutex_identity_sha256="6" * 64,
+    )
+    context = dual_live_runtime._make_nonproduction_owned_controller_context(
+        identity=identity,
+        runtime_start_payload={
+            "code_revision": identity.code_revision,
+            "wrapper_image_sha256": identity.wrapper_image_sha256,
+            "interpreter_image_sha256": identity.interpreter_image_sha256,
+            "dependency_set_sha256": identity.dependency_set_sha256,
+            "phase_timeout_contract": {
+                "schema_id": "project6.dual_live_phase_timeout.v1",
+                "phase_a_timeout_ms": 205_750,
+                "phase_b_timeout_ms": 30_000,
+                "fixed_non_egress_overhead_ms": 30_000,
+                "counter_ack_timeout_ms": 5_000,
+                "connector_grants": [
+                    {
+                        "connector_key": "nrc_adams_aps",
+                        "max_physical_requests": 2,
+                        "request_timeout_seconds": 30,
+                        "min_request_interval_ms": 250,
+                    },
+                    {
+                        "connector_key": "sciencebase_mcs",
+                        "max_physical_requests": 3,
+                        "request_timeout_seconds": 30,
+                        "min_request_interval_ms": 250,
+                    },
+                ],
+            },
+            "mutex_identity_sha256": "7" * 64,
+        },
+        app_writer=io.BytesIO(),
+        http_writer=io.BytesIO(),
+        stdout_writer=io.BytesIO(),
+        stderr_writer=io.BytesIO(),
+        timeout_seconds=10,
+    )
+    original_create = dual_live_windows._create_owned_phase_process
+
+    def create_with_invalid_carry(
+        phase: str,
+        runtime_instance_id: str,
+        wrapper_nonce_sha256: str,
+    ) -> dual_live_windows.OwnedPhaseProcess:
+        process = original_create(
+            phase,
+            runtime_instance_id,
+            wrapper_nonce_sha256,
+        )
+        process.boot_frame_sha256 = carried_boot_sha256  # type: ignore[assignment]
+        return process
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_create_owned_phase_process",
+        create_with_invalid_carry,
+    )
+
+    with pytest.raises(
+        dual_live_runtime.DualLiveRuntimeError,
+        match="dual_live_phase_proof_failed",
+    ) as error:
+        dual_live_runtime._run_owned_two_phase_controller(context)
+
+    assert dual_live_runtime._exception_chain_has_runtime_code(
+        error.value,
+        inner_failure,
+    )
+    assert context.sealed is False
+    assert context._owned_processes == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
 def test_owned_stop_terminates_job_even_when_revocation_publish_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -8336,6 +8433,28 @@ def test_gate_registry_is_exact_frozen_and_immutable() -> None:
         gate.GateCheckResult(check_id="G99_UNKNOWN", status="PASS", code="valid_code")
 
 
+def test_gate_allowlist_covers_every_evaluator_pass_evidence_keyword() -> None:
+    gate = _load_gate_contract_module()
+    evaluator_tree = ast.parse(
+        (BACKEND / "app" / "services" / "dual_live_evaluator.py").read_text(
+            encoding="utf-8"
+        )
+    )
+    emitted_keys = {
+        keyword.arg
+        for node in ast.walk(evaluator_tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "_pass"
+        for keyword in node.keywords
+        if keyword.arg is not None
+    }
+
+    assert emitted_keys <= (
+        gate._SAFE_EVIDENCE_KEYS | set(gate._RUNTIME_START_EVIDENCE_KEYS)
+    )
+
+
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof custody only")
 def test_read_only_database_custody_is_query_only_and_byte_stable(
     tmp_path: Path,
@@ -8529,6 +8648,131 @@ def test_report_contract_accepts_exact_runtime_start_contract_evidence() -> None
             campaign_id=CAMPAIGN_ID,
             campaign_fingerprint=CAMPAIGN_FINGERPRINT,
         )
+
+
+def test_report_contract_accepts_f06_inspected_count_only_by_exact_key() -> None:
+    gate = _load_gate_contract_module()
+    report = _evaluation_report(status="PASS")
+    f06_index = EVALUATOR_CHECK_ORDER.index("F06_NO_EGRESS_DEPENDENCY")
+    report["checks"][f06_index]["evidence"] = {
+        "forbidden_dependency_count": 0,
+        "inspected_module_count": 45,
+    }
+
+    assert gate._report_is_exact(
+        report,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
+
+    unknown_key = json.loads(json.dumps(report))
+    unknown_key["checks"][f06_index]["evidence"]["inspected_module_total"] = 45
+    assert not gate._report_is_exact(
+        unknown_key,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
+
+
+def test_report_contract_accepts_full_new_pass_evidence_shape_only() -> None:
+    from app.services import dual_live_evaluator, dual_live_runtime
+
+    gate = _load_gate_contract_module()
+    action_count = len(dual_live_evaluator._PHASE_B_DOWNSTREAM_ACTIONS)
+    evidence_by_check = {
+        "F06_NO_EGRESS_DEPENDENCY": {
+            "forbidden_dependency_count": 0,
+            "inspected_module_count": 45,
+        },
+        "R11_AUTHORITY_CLEARED": {
+            "all_required_absent": True,
+            "authority_posture_sha256": (
+                dual_live_runtime.AUTHORITY_CLEARED_POSTURE_SHA256
+            ),
+        },
+        "R12_PHASE_B_GUARDS": {
+            "pre_import_guarded": True,
+            "denied_route_count": len(
+                dual_live_evaluator._CHILD_PROOF_DENIED_ROUTES
+            ),
+            "guard_proof_count": 2,
+        },
+        "R14_RUNTIME_TERMINAL": {
+            "terminal_state": "completed",
+            "child_proof_count": 4,
+        },
+        "R15_WRAPPER_NETWORK_INERT": {
+            "wrapper_send_records": 0,
+            "phase_b_network_enable_attempt_count": 0,
+        },
+        "R16_PHASE_A_RAW_ONLY": {
+            "acquisition_only": True,
+            "connector_acquisition_count": 2,
+            "downstream_action_count": 0,
+        },
+        "R17_PHASE_B_STRICT_FLOW": {
+            "action_receipt_count": action_count,
+            "boundary_count": 14,
+            "connector_count": 2,
+            "downstream_action_count": action_count,
+            "source_binding_count": 2,
+            "terminal_boundary": "handoff_prepared",
+        },
+        "R18_PHASE_A_TERMINAL_ONCE": {
+            "terminal_run_count": 2,
+            "raw_blob_count": 2,
+            "terminal_transition_count": 2,
+        },
+        "R19_A_TO_B_ORDER": {
+            "phase_a_terminal_ordinal": 9,
+            "phase_b_start_ordinal": 10,
+            "proof_stream_phase_order": "A_then_B",
+        },
+    }
+    results = tuple(
+        dual_live_evaluator.CheckResult(
+            check_id=check_id,
+            status="PASS",
+            code=f"{check_id.lower()}_pass",
+            evidence=evidence_by_check.get(check_id, {}),
+        )
+        for check_id in EVALUATOR_CHECK_ORDER
+    )
+    report = dual_live_evaluator._evaluation_report(
+        campaign_id=CAMPAIGN_ID,
+        expected_campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        results=results,
+    )
+
+    assert gate._report_is_exact(
+        report,
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+    )
+
+    adversaries = []
+    for check_id, key, invalid in (
+        ("F06_NO_EGRESS_DEPENDENCY", "unexpected_count", 1),
+        ("F06_NO_EGRESS_DEPENDENCY", "inspected_module_count", True),
+        ("R11_AUTHORITY_CLEARED", "authority_posture_sha256", "not-a-hash"),
+        ("R17_PHASE_B_STRICT_FLOW", "terminal_boundary", "external_delivered"),
+        ("R19_A_TO_B_ORDER", "proof_stream_phase_order", "B_then_A"),
+        ("R19_A_TO_B_ORDER", "phase_a_terminal_ordinal", -1),
+    ):
+        candidate = json.loads(json.dumps(report))
+        candidate["checks"][EVALUATOR_CHECK_ORDER.index(check_id)]["evidence"][
+            key
+        ] = invalid
+        adversaries.append(candidate)
+
+    assert all(
+        not gate._report_is_exact(
+            candidate,
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        )
+        for candidate in adversaries
+    )
 
 
 def test_report_contract_accepts_real_evaluator_f09_pass_shape_only() -> None:

@@ -2620,6 +2620,7 @@ class _ControllerChild:
     send_control: Callable[[bytes], None]
     wait: Callable[[float], int | None]
     stop: Callable[[], None]
+    boot_frame_sha256: str | None = None
     ack_http_frame: Callable[[], None] = _noop_http_frame_ack
 
     def __post_init__(self) -> None:
@@ -2633,6 +2634,8 @@ class _ControllerChild:
             self.control_nonce,
         ):
             _require_sha256(value, code)
+        if self.boot_frame_sha256 is not None:
+            _require_sha256(self.boot_frame_sha256, code)
         if not isinstance(self.readers, Mapping):
             _fail(code)
         readers = dict(self.readers)
@@ -3017,6 +3020,7 @@ def _run_two_phase_controller(
             if type(candidate) is not _ControllerChild:
                 _fail("dual_live_controller_child_invalid")
             child = candidate
+            boot_frame_sha256 = child.boot_frame_sha256
             control = PhaseControlState(
                 phase=phase,
                 control_nonce_sha256=hashlib.sha256(
@@ -3570,6 +3574,7 @@ _OWNED_CONTEXT_TOKEN = object()
 
 
 class _OwnedProcessProjection(Protocol):
+    boot_frame_sha256: str
     process_boot_id: str
     process_creation_identity_sha256: str
     executable_sha256: str
@@ -4806,6 +4811,7 @@ def _run_bound_owned_two_phase_controller(
             send_control=process.send_control,
             wait=process.poll_exit,
             stop=process.stop,
+            boot_frame_sha256=getattr(process, "boot_frame_sha256", None),
             ack_http_frame=getattr(
                 process,
                 "ack_http_frame",

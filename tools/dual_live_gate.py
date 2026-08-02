@@ -122,11 +122,13 @@ _EXPECTED_EVALUATOR_NONCLAIMS = (
 _SAFE_EVIDENCE_KEYS = frozenset(
     {
         "acquisition_only",
+        "action_receipt_count",
         "active_process_count",
         "admitted_raw_response_count",
         "alias_count",
         "all_required_absent",
         "archive_count",
+        "authority_posture_sha256",
         "bound_review_count",
         "boundary_count",
         "cadence_verified",
@@ -134,11 +136,13 @@ _SAFE_EVIDENCE_KEYS = frozenset(
         "canonical",
         "captures",
         "census_count",
+        "child_proof_count",
         "closed_stream_count",
         "code_revision",
         "combined_result_count",
         "combined_result",
         "completed_run_count",
+        "connector_acquisition_count",
         "connector_count",
         "connector_result_count",
         "connector_results",
@@ -147,8 +151,10 @@ _SAFE_EVIDENCE_KEYS = frozenset(
         "decoded_form_count",
         "decoded_sink_count",
         "definitions",
+        "denied_route_count",
         "delivery_claim_count",
         "domain",
+        "downstream_action_count",
         "encoding",
         "exact_source_exemption_count",
         "execution_result_count",
@@ -158,9 +164,11 @@ _SAFE_EVIDENCE_KEYS = frozenset(
         "first_hit_digest",
         "forbidden_dependency_count",
         "grants",
+        "guard_proof_count",
         "half_open",
         "head_revision",
         "hit_count",
+        "inspected_module_count",
         "introduction_revision",
         "introduction_sha256",
         "ledger_count",
@@ -173,6 +181,8 @@ _SAFE_EVIDENCE_KEYS = frozenset(
         "parent_run_id",
         "parent_terminal_hash",
         "pending_write_count",
+        "phase_a_terminal_ordinal",
+        "phase_b_network_enable_attempt_count",
         "phase_b_start_ordinal",
         "pre_import_guarded",
         "prepared_internal_handoff_count",
@@ -182,6 +192,7 @@ _SAFE_EVIDENCE_KEYS = frozenset(
         "proof_class",
         "protected_object_count",
         "protected_snapshot_count",
+        "proof_stream_phase_order",
         "provenance_count",
         "public_parameter_count",
         "raw_blob_count",
@@ -202,14 +213,17 @@ _SAFE_EVIDENCE_KEYS = frozenset(
         "selected_grants",
         "semantic_snapshot_count",
         "shared_stream_count",
+        "source_binding_count",
         "stream_count",
         "submit_receipt_count",
         "target_count",
+        "terminal_boundary",
         "terminal_event_count",
         "terminal_hashes",
         "terminal_record_sha256",
         "terminal_run_count",
         "terminal_state",
+        "terminal_transition_count",
         "unchanged",
         "unresolved_reservation_count",
         "wrapper_send_records",
@@ -218,6 +232,7 @@ _SAFE_EVIDENCE_KEYS = frozenset(
 _EXPECTED_CONNECTOR_KEYS = ("nrc_adams_aps", "sciencebase_mcs")
 _HASH_EVIDENCE_KEYS = frozenset(
     {
+        "authority_posture_sha256",
         "campaign_fingerprint",
         "file_set_hash",
         "first_hit_digest",
@@ -225,6 +240,21 @@ _HASH_EVIDENCE_KEYS = frozenset(
         "parent_terminal_hash",
         "seal_sha256",
         "terminal_record_sha256",
+    }
+)
+_NONNEGATIVE_INTEGER_EVIDENCE_KEYS = frozenset(
+    {
+        "action_receipt_count",
+        "child_proof_count",
+        "connector_acquisition_count",
+        "denied_route_count",
+        "downstream_action_count",
+        "guard_proof_count",
+        "inspected_module_count",
+        "phase_a_terminal_ordinal",
+        "phase_b_network_enable_attempt_count",
+        "source_binding_count",
+        "terminal_transition_count",
     }
 )
 _SAFE_EVIDENCE_DOMAINS = frozenset(
@@ -1413,6 +1443,15 @@ def _evidence_is_safe(
                 return False
         elif key == "encoding":
             if item != "utf-8":
+                return False
+        elif key == "proof_stream_phase_order":
+            if item != "A_then_B":
+                return False
+        elif key == "terminal_boundary":
+            if item != "handoff_prepared":
+                return False
+        elif key in _NONNEGATIVE_INTEGER_EVIDENCE_KEYS:
+            if type(item) is not int or not 0 <= item <= (2**63) - 1:
                 return False
         elif type(item) is bool:
             continue

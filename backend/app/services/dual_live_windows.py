@@ -5472,6 +5472,7 @@ class OwnedPhaseProcess:
         "_revocation_event_handle",
         "_send_idle_event_handle",
         "_stopped",
+        "boot_frame_sha256",
         "control_nonce",
         "executable_sha256",
         "job_policy_sha256",
@@ -5494,6 +5495,7 @@ class OwnedPhaseProcess:
     _revocation_event_handle: int | None
     _send_idle_event_handle: int | None
     _stopped: bool
+    boot_frame_sha256: str
     control_nonce: str
     executable_sha256: str
     job_policy_sha256: str
@@ -5515,6 +5517,7 @@ class OwnedPhaseProcess:
         handles: Mapping[str, int],
         boot: Mapping[str, str],
         readers: Mapping[str, _OwnedPipeReader],
+        boot_frame_sha256: str,
         authority_environment_names: frozenset[str],
     ) -> OwnedPhaseProcess:
         if (
@@ -5552,6 +5555,7 @@ class OwnedPhaseProcess:
         instance._stopped = False
         instance._job_payloads = None
         instance._lock = threading.RLock()
+        instance.boot_frame_sha256 = _require_sha256(boot_frame_sha256)
         instance.process_boot_id = _require_sha256(boot["process_boot_id"])
         instance.process_creation_identity_sha256 = (
             evidence.process_creation_identity_sha256
@@ -6001,6 +6005,10 @@ def _create_owned_phase_process_locked(
             readers[stream] = reader
             owned_handles.pop(role)
         boot = _read_owned_boot(readers["app"])
+        boot_payload = _canonical_json_bytes(boot)
+        boot_frame_sha256 = hashlib.sha256(
+            len(boot_payload).to_bytes(4, "big") + boot_payload
+        ).hexdigest()
         evidence = child.start_evidence
         expected_status_nonce = _owned_domain_nonce(
             "status",
@@ -6026,6 +6034,7 @@ def _create_owned_phase_process_locked(
             handles=owned_handles,
             boot=boot,
             readers=readers,
+            boot_frame_sha256=boot_frame_sha256,
             authority_environment_names=frozenset(
                 name.upper()
                 for name in (
