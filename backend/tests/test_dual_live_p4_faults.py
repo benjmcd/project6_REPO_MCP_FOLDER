@@ -132,6 +132,14 @@ def test_actual_killed_cell_is_poisoned_inspected_and_archived(
         "evidence_root": str(recovery_input.evidence_root),
         "environ": {"CONNECTOR_LIVE_EGRESS_ENABLED": "false"},
     }
+    network_calls: list[str] = []
+
+    def deny_network(*_args: object, **_kwargs: object) -> None:
+        network_calls.append("attempted")
+        raise AssertionError("recovery network seam reached")
+
+    monkeypatch.setattr(socket, "create_connection", deny_network)
+    monkeypatch.setattr(socket, "getaddrinfo", deny_network)
     poisoned = recovery.poison_campaign(
         **arguments,
         reason_code="phase_b_killed_after_commit",
@@ -151,14 +159,6 @@ def test_actual_killed_cell_is_poisoned_inspected_and_archived(
         ),
     ]
     source_hashes = {path: _file_sha256(path) for path in source_paths}
-    network_calls: list[str] = []
-
-    def deny_network(*_args: object, **_kwargs: object) -> None:
-        network_calls.append("attempted")
-        raise AssertionError("recovery network seam reached")
-
-    monkeypatch.setattr(socket, "create_connection", deny_network)
-    monkeypatch.setattr(socket, "getaddrinfo", deny_network)
     inspected = recovery.inspect_campaign(**arguments)
     assert inspected["status"] == "POISONED_UNSEALED"
     assert inspected["capture"]["marker_kinds"] == ["poison"]

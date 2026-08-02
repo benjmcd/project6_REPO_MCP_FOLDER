@@ -240,6 +240,28 @@ def test_poison_checks_lexical_path_before_resolution(
         )
 
 
+def test_poison_refuses_real_symlinked_source_when_host_supports_it(
+    tmp_path: Path,
+) -> None:
+    recovery = _load_recovery()
+    database, storage, evidence, _archive = _fixture(tmp_path, poisoned=False)
+    storage_link = tmp_path / "storage-link"
+    try:
+        storage_link.symlink_to(storage, target_is_directory=True)
+    except OSError as exc:
+        pytest.skip(f"host cannot create a test directory symlink: {exc}")
+    with pytest.raises(recovery.RecoveryRefusal, match="storage_path_invalid"):
+        recovery.poison_campaign(
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=FINGERPRINT,
+            database_path=str(database),
+            storage_root=str(storage_link),
+            evidence_root=str(evidence),
+            reason_code="phase_b_interrupted",
+            environ=OFFLINE_ENV,
+        )
+
+
 def test_poison_retains_marker_and_refuses_source_drift(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
