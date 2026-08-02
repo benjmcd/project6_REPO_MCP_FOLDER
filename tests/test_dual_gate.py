@@ -81,12 +81,17 @@ ALLOWED_NEW_PRODUCTION_PATHS = (
     "backend/app/services/dual_live_windows.py",
     "tools/dual_live_run.py",
 )
+G2_PREP_ALLOWED_CHANGED_PRODUCTION_PATHS = (
+    "backend/app/api/router.py",
+    "tools/dual_live_recovery.py",
+)
 FIRST_TRANCHE_REQUIRED_PRODUCTION_PATHS = (
     "backend/app/services/dual_live_runtime.py",
 )
 ALLOWED_CHANGED_PRODUCTION_PATHS = frozenset(
     (
         *ALLOWED_NEW_PRODUCTION_PATHS,
+        *G2_PREP_ALLOWED_CHANGED_PRODUCTION_PATHS,
         "backend/app/core/config.py",
         "backend/app/services/connector_egress_authorization.py",
         "backend/app/services/connector_egress_evidence.py",
