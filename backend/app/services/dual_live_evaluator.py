@@ -1181,7 +1181,7 @@ def _materialize_dependency_errors(errors: dict[str, str]) -> None:
         ("ledger", ("authority", "capture", "counter")),
         ("origin", ("ledger",)),
         ("phase_b_sources", ("origin",)),
-        ("downstream", ("origin",)),
+        ("downstream", ("origin", "phase_b_sources")),
         ("execution", ("downstream",)),
         ("review", ("execution",)),
         ("package_set", ("downstream",)),
@@ -4438,6 +4438,7 @@ def _check_r17_phase_b_strict_flow(context: _EvidenceContext) -> CheckResult:
             result
             for domain in (
                 "runtime",
+                "downstream",
                 "phase_b_sources",
                 "execution",
                 "review",

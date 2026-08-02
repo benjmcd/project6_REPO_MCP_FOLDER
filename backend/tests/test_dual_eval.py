@@ -669,7 +669,47 @@ def test_origin_failure_structurally_blocks_phase_b_sources_for_r17() -> None:
     assert result.status == "INDETERMINATE"
     assert result.code == "r17_phase_b_strict_flow_evidence_unavailable"
     assert result.evidence == {
-        "domain": "phase_b_sources",
+        "domain": "downstream",
+        "reason_code": reason_code,
+    }
+
+
+@pytest.mark.parametrize(
+    "reason_code",
+    (
+        "dual_live_phase_b_source_missing",
+        "dual_live_phase_b_source_invalid",
+    ),
+)
+def test_phase_b_source_failure_structurally_blocks_downstream_for_r17(
+    reason_code: str,
+) -> None:
+    errors = {"phase_b_sources": reason_code}
+    dual_live_evaluator_module._materialize_dependency_errors(errors)
+
+    assert errors["downstream"] == reason_code
+    assert errors["execution"] == reason_code
+    assert errors["review"] == reason_code
+    assert errors["package_set"] == reason_code
+    assert errors["submit"] == reason_code
+    assert errors["handoff"] == reason_code
+    assert errors["custody"] == reason_code
+
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        domain_errors=errors,
+    )
+    result = dual_live_evaluator_module._check_r17_phase_b_strict_flow(
+        context
+    )
+
+    assert result.status == "INDETERMINATE"
+    assert result.code == "r17_phase_b_strict_flow_evidence_unavailable"
+    assert result.evidence == {
+        "domain": "downstream",
         "reason_code": reason_code,
     }
 
