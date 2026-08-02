@@ -102,3 +102,101 @@ document the env-driven evidence trust boundary. CVE audit (pip-audit) = G2-P3 a
 
 **G1 IS NOW FULLY CERTIFIED — the security pillar is independent (not compensated). G1-PASS stands with C1
 discharged; C2/C3/C4 remain governing; the G2 prerequisite gate (P1-P8) is unchanged.**
+
+## G2-P2 ACCEPTANCE RESTATED — census reconciliation 401 -> 404 (dated amendment, 2026-08-02)
+
+Append-only amendment. The G2-P2 bullet at lines 45-46 is **unedited**; this section
+supersedes only the census figure inside it. It does **not** discharge G2-P2. The
+closing sentence at lines 103-104 ("the G2 prerequisite gate (P1-P8) is unchanged")
+remains true as to the set, order, and blocking status of the prerequisites: this
+amendment adds no prerequisite, removes none, and reorders none.
+
+Why this is needed. `401/401` was the evaluator census when this verdict was written.
+The evaluator test surface has since grown by exactly three collected items, so a
+future host run compared against `401` would either fail spuriously or be silently
+narrowed to a subset. The acceptance target is restated as the then-current FULL
+census, re-derived at run time.
+
+### Restated G2-P2 acceptance bar
+
+1. `backend/tests/test_dual_eval.py` — the FULL collected census green, exit 0, with
+   the expected count **re-derived at run time on the eligible host** by
+   `--collect-only -q`, never typed in from a record. Current expected value:
+   **404 (was 401, +3 phase_b_sources structural tests)**.
+2. The three named tamper campaigns green, executed on the same eligible host:
+   - `tests/test_dual_eval.py::test_one_log_byte_and_rebuilt_manifest_preserve_exact_seal_taxonomy`
+   - `tests/test_dual_eval.py::test_one_log_byte_rebuilt_manifest_and_seal_exposes_database_witness`
+   - `tests/test_dual_eval.py::test_database_seal_event_rewrite_cannot_rewrite_original_files`
+
+   The third is parametrized `delete` / `duplicate` / `rewrite`, so pytest reports
+   **5 collected cases** for the 3 campaigns.
+3. Both BEFORE any credential exists — unchanged from the original bullet.
+
+### Census provenance
+
+**MEASURED**: `404 passed`, 1 dependency warning, 292.02s, at
+`590a04c25b32b1ee58ef185f45359001c21ce1f0`
+(`docs/campaign-records/2026-08-02-g2-prep-report.md:5` and `:111`;
+`docs/campaign-records/2026-08-02-g2-prep.md:321`).
+
+**REPO-CONFIRMED** carried forward unchanged to
+`d1b2be2794e670488ae0617240540a26b0dadcbd`: `git diff` over
+`backend/tests/test_dual_eval.py`, `backend/tests/test_dual_eval_acceptance.py` and
+`backend/app/services/dual_live_evaluator.py` from `590a04c2` to `d1b2be27` is empty.
+No pytest run was performed for this amendment; the current host is not the eligible
+host and a re-run here would produce nothing citable.
+
+### The +3, attributed
+
+**REPO-CONFIRMED** by commit diff, not by an independent collection run:
+
+- `8260c66c988f3ddb5febb331db2a75feef301cf7` ("bind Phase B sources to origin") adds
+  one unparametrized test, `test_origin_failure_structurally_blocks_phase_b_sources_for_r17`
+  (+1 collected case).
+- `6bf4e6bfc1a41b61202ac890d0c8e31d09bff4e2` ("propagate Phase B source failures")
+  edits that test's assertion in place and adds one test parametrized over
+  `dual_live_phase_b_source_missing` / `dual_live_phase_b_source_invalid`,
+  `test_phase_b_source_failure_structurally_blocks_downstream_for_r17`
+  (+2 collected cases).
+
+Total +3, reconciling 401 -> 404. Neither commit adds, removes, or alters a tamper
+campaign.
+
+### Tamper half — prior evidence does NOT carry
+
+Claim form for the records cited below: Task-8 A-scoped is
+**ACCEPT-WITH-CONDITIONS at `d4159ff8`**
+(`docs/campaign-records/2026-07-31-task8-ascoped-review-and-completion.md:8`), with
+conditions 1-3 discharged and condition 4 live as G2-P2. It is never a bare PASS, and
+no record cited here is G2 authority.
+
+The only executed tamper evidence on disk is
+`docs/campaign-records/2026-08-02-task8-condition1-fix-report.md:58`
+(`5 passed, 1 warning in 69.53s`, exit 0). That run was performed on what its own
+record calls an "ordinary Windows py3.12.10 host" (`:117`). The interpreter version
+was correct; the host is nonetheless **not** the eligible host, because the installed
+dependency set does not match the six pins — recorded as a `RequestsDependencyWarning`
+for `urllib3 2.6.3` and `chardet 7.1.0` / `charset_normalizer 3.4.4`, with the explicit
+statement "This correction does not make the host dependency-eligible for a real/live
+run" (`docs/campaign-records/2026-08-02-task8-toctou-condition1.md:23`). The companion
+evidence record from that same fix range states directly that it "must not be used as
+G2 authority" (`…-task8-toctou-condition1.md:134`). It is cited here solely to NAME the
+three campaigns.
+
+G2-P2 is by construction a host-reproduction gate. All three campaigns must execute
+green ON the eligible host at P2 time regardless of any prior run. This amendment
+neither carries that evidence forward nor drops the requirement.
+
+### Not part of P2
+
+The gate suite (`356 passed`, 1 dependency warning, 99.78s —
+`docs/campaign-records/2026-08-02-g2-prep-report.md:112`) is separate G2-prep evidence
+from `tests/test_dual_gate.py`. The original P2 bullet names only `test_dual_eval.py`
+plus the three tamper campaigns; this amendment does not widen it.
+
+### Standing
+
+G2-P2 remains **OPEN and BLOCKING**. G2-P1 is also OPEN
+(`docs/campaign-records/2026-08-02-g2-p1-host-provisioning.md`), so no eligible host
+exists yet. Nothing in this amendment is a host provisioning, a reproduction, or a
+live-run authorization.

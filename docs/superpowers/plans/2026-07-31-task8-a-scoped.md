@@ -6,7 +6,7 @@
 
 **Architecture:** A Windows-only controller owns the four existing campaign log files and pumps bounded child frames into them. It runs acquisition and downstream phases as separate Job-contained processes, records logger and quiescence evidence in the sealed `app.jsonl` stream, and seals through the existing capture service. A fixed check registry reuses the existing evidence-index, ledger, origin, package, and capture contracts; the gate acquires ordered evidence-root and campaign locks, opens an existing SQLite database read-only, and proves DB/filesystem stability before emitting one secret-safe verdict.
 
-**Tech Stack:** Python 3.11, FastAPI/Pydantic v2, SQLAlchemy 2, SQLite read-only URI mode, Windows Job Objects/private namespaces/owner-PID TCP and UDP tables through `ctypes`, pytest, PowerShell.
+**Tech Stack:** Python 3.12, FastAPI/Pydantic v2, SQLAlchemy 2, SQLite read-only URI mode, Windows Job Objects/private namespaces/owner-PID TCP and UDP tables through `ctypes`, pytest, PowerShell. [Interpreter corrected 2026-08-02 per the G2-P1 doc-drift disposition; the enforced requirement is exactly 3.12 — see docs/campaign-records/2026-08-02-g2-p1-host-provisioning.md.]
 
 ## Global Constraints
 
