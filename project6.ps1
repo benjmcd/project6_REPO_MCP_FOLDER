@@ -403,28 +403,43 @@ switch ($Action) {
     }
     "run-dual-live-proof" {
         if ($ActionArgs.Count -gt 0) {
-            Write-Output '{"code":"dual_live_arguments_invalid","fresh_live":false,"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED"}'
-            exit 2
-        }
-        Write-Output '{"action":"run-dual-live-proof","code":"tracked_s3_clearance_and_privileged_runner_required","fresh_live":false,"schema_id":"project6.dual_live_run_refusal.v1","status":"REFUSED"}'
-        exit 2
-    }
-    "validate-dual-live-proof" {
-        if ($ActionArgs.Count -gt 0) {
-            Write-Output '{"code":"dual_live_arguments_invalid","fresh_live":false,"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED"}'
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_arguments_invalid"}'
             exit 2
         }
         if ([string]::IsNullOrEmpty($env:DUAL_LIVE_CAMPAIGN_ID)) {
-            Write-Output '{"code":"dual_live_campaign_id_missing","fresh_live":false,"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED"}'
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_campaign_id_missing"}'
             exit 2
         }
         if ([string]::IsNullOrEmpty($env:DUAL_LIVE_CAMPAIGN_FINGERPRINT)) {
-            Write-Output '{"code":"dual_live_campaign_fingerprint_missing","fresh_live":false,"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED"}'
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_campaign_fingerprint_missing"}'
             exit 2
         }
         Push-Location $RepoRoot
         try {
-            & py "-$PythonVersion" -B .\tools\dual_live_gate.py --campaign-id $env:DUAL_LIVE_CAMPAIGN_ID --campaign-fingerprint $env:DUAL_LIVE_CAMPAIGN_FINGERPRINT
+            & py "-$PythonVersion" -I -B .\tools\dual_live_run.py --campaign-id $env:DUAL_LIVE_CAMPAIGN_ID --campaign-fingerprint $env:DUAL_LIVE_CAMPAIGN_FINGERPRINT
+            $DualLiveRunExitCode = $LASTEXITCODE
+        }
+        finally {
+            Pop-Location
+        }
+        exit $DualLiveRunExitCode
+    }
+    "validate-dual-live-proof" {
+        if ($ActionArgs.Count -gt 0) {
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_arguments_invalid"}'
+            exit 2
+        }
+        if ([string]::IsNullOrEmpty($env:DUAL_LIVE_CAMPAIGN_ID)) {
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_campaign_id_missing"}'
+            exit 2
+        }
+        if ([string]::IsNullOrEmpty($env:DUAL_LIVE_CAMPAIGN_FINGERPRINT)) {
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_campaign_fingerprint_missing"}'
+            exit 2
+        }
+        Push-Location $RepoRoot
+        try {
+            & py "-$PythonVersion" -I -B .\tools\dual_live_gate.py --campaign-id $env:DUAL_LIVE_CAMPAIGN_ID --campaign-fingerprint $env:DUAL_LIVE_CAMPAIGN_FINGERPRINT
             $DualLiveGateExitCode = $LASTEXITCODE
         }
         finally {
