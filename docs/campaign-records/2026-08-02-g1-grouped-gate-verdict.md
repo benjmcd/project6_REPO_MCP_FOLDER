@@ -63,3 +63,42 @@ appended). This removes the need for an owner coverage decision.
 - G2-P9 NON-BLOCKING hygiene (explicitly NOT a gate): reconcile impl-plan/file-map (P2 #2); clear/waive
   ~15 dual_live_windows.py ctypes mypy diagnostics (P2 #3); optional runtime-block consolidation. None
   may be promoted to a blocker.
+
+## C1 CLOSED — dedicated consolidated security sweep (security-reviewer/opus, 2026-08-02)
+VERDICT: SECURITY-SOUND-FOR-G1-GATE, risk LOW. 0 critical, 0 high, 1 medium (design-inherent), 6 low/info.
+Independently re-verified all 4 adjudicator linchpins + extended across the whole surface; found nothing
+the compensating lanes missed, nothing new at critical/high. The adjudicator's compensated-coverage
+acceptance is JUSTIFIED. This DISCHARGES condition C1 / prerequisite G2-P7. No new binding condition.
+
+Negative results (couldn't break it — load-bearing for a security gate):
+- NO reachable egress offline/default-off: the single real socket (connector_egress_transport.py:1671-1687,
+  allow_redirects=False, verify=True) is reachable only after both flags true + full grant/definition/index
+  revalidation + exact host/path/query/method preflight + public-address SSRF assertion (_assert_all_addresses_public
+  :1517). All 3 HTTP entries + the CLI fail closed; generic routes blocked in exclusive-proof mode.
+- NO Phase-A/Phase-B credential coexistence window: authority-clear (dual_live_runtime.py:4321-4398) refuses
+  unless the Phase-A child is quiesced+closed, then clears os.environ + settings authority, asserts
+  all_required_absent; Phase-B env secret-free by construction (CONNECTOR_LIVE_EGRESS_ENABLED="false").
+- NO false-PASS/verdict-downgrade: INDETERMINATE>FAIL>PASS exact-registry (dual_live_evaluator.py:6659-6673),
+  status a constrained Literal, exceptions→INDETERMINATE, DB mode=ro + query_only + deny-authorizer; gate
+  re-derives the aggregate, exit 0 only on structurally-exact all-PASS.
+- NO cross-tranche forgery within the disclosed model: re-derivation at every seam, no-overwrite seals,
+  cross-domain DB↔file parity. A fully coordinated cross-domain rewrite is the disclosed non-claim.
+- NO hardcoded secrets; dependency provenance hard-gated (RECORD-hash verifier fail-closed).
+
+Residual upgrade: C4-iii (shared-executor HTTP credential seam) found MORE contained than "acceptance-only"
+— the subscription key is cryptographically pinned to adams-api.nrc.gov:443 at PHYSICAL send via a header
+allow-list (connector_egress_evidence.py:466-503, rejects the key under credential_audience="none") + audience
+equality (connector_egress_transport.py:421); the strict builder attaches the key only to ordinal-1/adams-api
+and sends empty headers to www.nrc.gov. G2-P5's route-disable stays as belt-and-suspenders. C4-i (Phase-B
+durability) reconfirmed an AVAILABILITY concern only (partial commit → evaluator FAIL/INDETERMINATE, never
+PASS). C4-ii (hostile-PDF) + buffered-evidence residuals honest, correctly bounded.
+
+M1 (MEDIUM, non-blocking): the gate trusts env-supplied evidence locations (tools/dual_live_gate.py:341-354);
+integrity rests on the 69-check evaluator + read-only DB custody + backend content-hash chain — forging a PASS
+requires a fully self-consistent bundle hashing to the configured INDEX_SHA256 = the intended proof burden.
+Document in the threat model; optional owner-signed pinned manifest if the threat model expands. G1-non-blocking.
+Two hardening suggestions → G2-P9 hygiene: structural phase_b_sources fail-closed wiring (dual_live_evaluator.py:3161);
+document the env-driven evidence trust boundary. CVE audit (pip-audit) = G2-P3 as already planned.
+
+**G1 IS NOW FULLY CERTIFIED — the security pillar is independent (not compensated). G1-PASS stands with C1
+discharged; C2/C3/C4 remain governing; the G2 prerequisite gate (P1-P8) is unchanged.**
