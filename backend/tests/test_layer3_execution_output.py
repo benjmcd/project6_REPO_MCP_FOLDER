@@ -888,6 +888,95 @@ def test_output_manifest_hash_rejects_a_changing_file(
     assert excinfo.value.code == "layer3_output_file_changed"
 
 
+def test_stable_managed_file_ignores_timestamp_only_churn(
+    managed_artifact_root: Path,
+) -> None:
+    root = managed_artifact_root / "layer3"
+    manifest_path = root / "timestamp-churn.json"
+    payload = b'{"stable":true}'
+    manifest_path.write_bytes(payload)
+    initial = execution_output._managed_regular_file(root, manifest_path)
+
+    os.utime(
+        manifest_path,
+        ns=(initial.st_atime_ns, initial.st_mtime_ns + 1_000_000_000),
+    )
+    assert manifest_path.stat().st_mtime_ns != initial.st_mtime_ns
+
+    assert execution_output._stable_managed_file(
+        root,
+        manifest_path,
+        initial=initial,
+        read_bytes=True,
+    ) == (len(payload), hashlib.sha256(payload).hexdigest(), payload)
+
+
+def test_stable_managed_file_rejects_same_size_content_change_between_hashes(
+    managed_artifact_root: Path,
+    monkeypatch,
+) -> None:
+    root = managed_artifact_root / "layer3"
+    manifest_path = root / "content-churn.json"
+    manifest_path.write_bytes(b"before")
+    original_hash_stream = execution_output._bounded_hash_stream
+    hash_count = 0
+
+    def mutate_after_first_hash(*args, **kwargs):
+        nonlocal hash_count
+        result = original_hash_stream(*args, **kwargs)
+        hash_count += 1
+        if hash_count == 1:
+            manifest_path.write_bytes(b"after!")
+        return result
+
+    monkeypatch.setattr(
+        execution_output,
+        "_bounded_hash_stream",
+        mutate_after_first_hash,
+    )
+
+    with pytest.raises(
+        execution_output.Layer3ExecutionOutputIntegrityError
+    ) as excinfo:
+        execution_output._stable_managed_file(root, manifest_path)
+
+    assert excinfo.value.code == "layer3_output_file_changed"
+    assert hash_count == 2
+
+
+def test_stable_managed_file_rejects_same_size_content_change_after_hashes(
+    managed_artifact_root: Path,
+    monkeypatch,
+) -> None:
+    root = managed_artifact_root / "layer3"
+    manifest_path = root / "late-content-churn.json"
+    manifest_path.write_bytes(b"before")
+    original_hash_stream = execution_output._bounded_hash_stream
+    hash_count = 0
+
+    def mutate_after_second_hash(*args, **kwargs):
+        nonlocal hash_count
+        result = original_hash_stream(*args, **kwargs)
+        hash_count += 1
+        if hash_count == 2:
+            manifest_path.write_bytes(b"after!")
+        return result
+
+    monkeypatch.setattr(
+        execution_output,
+        "_bounded_hash_stream",
+        mutate_after_second_hash,
+    )
+
+    with pytest.raises(
+        execution_output.Layer3ExecutionOutputIntegrityError
+    ) as excinfo:
+        execution_output._stable_managed_file(root, manifest_path)
+
+    assert excinfo.value.code == "layer3_output_file_changed"
+    assert hash_count == 3
+
+
 def test_output_integrity_rejects_unreadable_and_over_cap_files(
     managed_artifact_root: Path,
     monkeypatch,

@@ -217,6 +217,10 @@ def _file_fingerprint(info: os.stat_result) -> tuple[int, int, int, int, int, in
     )
 
 
+def _file_identity(info: os.stat_result) -> tuple[int, int, int, int]:
+    return _file_fingerprint(info)[:4]
+
+
 def _bounded_hash_stream(
     handle: BinaryIO,
     *,
@@ -256,12 +260,12 @@ def _stable_managed_file(
     read_bytes: bool = False,
 ) -> tuple[int, str, bytes | None]:
     initial = initial or _managed_regular_file(root, path)
-    expected_fingerprint = _file_fingerprint(initial)
+    expected_identity = _file_identity(initial)
     try:
         with path.open("rb") as handle:
             opened_before = os.fstat(handle.fileno())
             if (
-                _file_fingerprint(opened_before) != expected_fingerprint
+                _file_identity(opened_before) != expected_identity
                 or not stat.S_ISREG(opened_before.st_mode)
             ):
                 _integrity_fail(
@@ -290,14 +294,48 @@ def _stable_managed_file(
             opened_after = os.fstat(handle.fileno())
         final = _managed_regular_file(root, path)
         if (
-            _file_fingerprint(opened_after) != expected_fingerprint
-            or _file_fingerprint(final) != expected_fingerprint
+            _file_identity(opened_after) != expected_identity
+            or _file_identity(final) != expected_identity
             or first[:2] != second[:2]
             or first[0] != initial.st_size
         ):
             _integrity_fail(
                 "layer3_output_file_changed",
                 "The authoritative output file changed during reading.",
+            )
+        with path.open("rb") as final_handle:
+            final_opened_before = os.fstat(final_handle.fileno())
+            if (
+                _file_identity(final_opened_before) != expected_identity
+                or not stat.S_ISREG(final_opened_before.st_mode)
+            ):
+                _integrity_fail(
+                    "layer3_output_file_changed",
+                    "The authoritative output file changed after reading.",
+                )
+            try:
+                final_content = _bounded_hash_stream(
+                    final_handle,
+                    max_bytes=initial.st_size,
+                    capture_bytes=False,
+                )
+            except Layer3ExecutionOutputIntegrityError as exc:
+                if exc.code == "layer3_output_file_invalid":
+                    _integrity_fail(
+                        "layer3_output_file_changed",
+                        "The authoritative output file changed after reading.",
+                    )
+                raise
+            final_opened_after = os.fstat(final_handle.fileno())
+        final_after = _managed_regular_file(root, path)
+        if (
+            _file_identity(final_opened_after) != expected_identity
+            or _file_identity(final_after) != expected_identity
+            or first[:2] != final_content[:2]
+        ):
+            _integrity_fail(
+                "layer3_output_file_changed",
+                "The authoritative output file changed after reading.",
             )
     except Layer3ExecutionOutputIntegrityError:
         raise
