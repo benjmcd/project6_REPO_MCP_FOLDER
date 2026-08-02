@@ -1041,56 +1041,6 @@ def _evaluate_partial(root: Path, fixture: PhaseAFixture) -> str:
         engine.dispose()
 
 
-def poison_killed_campaign(
-    recovery_input: KilledCampaignRecoveryInput,
-    *,
-    reason_code: str = "phase_b_killed_after_commit",
-) -> Path:
-    if (
-        not reason_code
-        or any(
-            character not in "abcdefghijklmnopqrstuvwxyz0123456789_"
-            for character in reason_code
-        )
-    ):
-        raise ValueError("reason_code must be a lowercase alphanumeric token")
-    campaign_dir = (
-        recovery_input.evidence_root
-        / "logs"
-        / recovery_input.campaign_fingerprint
-    )
-    assert campaign_dir.is_dir()
-    assert not (campaign_dir / "manifest.json").exists()
-    assert not (
-        recovery_input.evidence_root
-        / "log-seals"
-        / f"{recovery_input.campaign_fingerprint}.json"
-    ).exists()
-    marker_path = campaign_dir / "poison.json"
-    marker_bytes = (
-        json.dumps(
-            {
-                "campaign_fingerprint": recovery_input.campaign_fingerprint,
-                "campaign_id": recovery_input.campaign_id,
-                "marker_kind": "poison",
-                "reason_code": reason_code,
-                "schema_id": "project6.dual_live_recovery_marker.v1",
-            },
-            ensure_ascii=False,
-            allow_nan=False,
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode("utf-8")
-        + b"\n"
-    )
-    with marker_path.open("xb") as stream:
-        stream.write(marker_bytes)
-        stream.flush()
-        os.fsync(stream.fileno())
-    assert marker_path.read_bytes() == marker_bytes
-    return marker_path
-
-
 def run_fault_cell(
     fixture: PhaseAFixture,
     *,

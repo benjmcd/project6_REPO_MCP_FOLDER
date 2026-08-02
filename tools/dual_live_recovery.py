@@ -41,6 +41,7 @@ _SQLITE_SIDECARS = ("-journal", "-shm", "-wal")
 _MAX_FILES = 100_000
 _MAX_MATCHES = 10_000
 _MAX_ORPHANS = 10_000
+_MAX_REASON_CODE_LENGTH = 128
 _REPARSE_POINT = 0x400
 _NONCLAIMS = [
     "archive_is_preservation_not_database_repair",
@@ -239,6 +240,7 @@ def _read_marker(
         or marker.get("marker_kind") != marker_kind
         or not isinstance(marker.get("reason_code"), str)
         or _SAFE_CODE.fullmatch(str(marker["reason_code"])) is None
+        or len(str(marker["reason_code"])) > _MAX_REASON_CODE_LENGTH
     ):
         _fail("poison_marker_invalid")
     return _hash_file(path)
@@ -462,6 +464,91 @@ def _recovery_sources(
         _collect_root_files(storage),
         _collect_root_files(evidence),
     )
+
+
+def poison_campaign(
+    *,
+    campaign_id: str,
+    campaign_fingerprint: str,
+    database_path: str,
+    storage_root: str,
+    evidence_root: str,
+    reason_code: str,
+    environ: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    environment = os.environ if environ is None else environ
+    _validate_identity(campaign_id, campaign_fingerprint)
+    _offline_environment(environment)
+    if (
+        _SAFE_CODE.fullmatch(reason_code) is None
+        or len(reason_code) > _MAX_REASON_CODE_LENGTH
+    ):
+        _fail("poison_reason_invalid")
+    database = _existing_path(database_path, kind="file", code="database_path_invalid")
+    storage = _existing_path(storage_root, kind="directory", code="storage_path_invalid")
+    evidence = _existing_path(evidence_root, kind="directory", code="evidence_path_invalid")
+    if len({database, storage, evidence}) != 3:
+        _fail("source_paths_overlap")
+    campaign_dir = _existing_path(
+        str(evidence / "logs" / campaign_fingerprint),
+        kind="directory",
+        code="capture_directory_missing",
+    )
+    seal_path = evidence / "log-seals" / f"{campaign_fingerprint}.json"
+    if (campaign_dir / "manifest.json").exists() or seal_path.exists():
+        _fail("campaign_already_sealed")
+    marker_path = campaign_dir / "poison.json"
+    if marker_path.exists() or (campaign_dir / "tombstone.json").exists():
+        _fail("poison_marker_exists")
+
+    database_before = _database_files(database)
+    storage_before = _collect_root_files(storage)
+    evidence_before = _collect_root_files(evidence)
+    marker_bytes = _canonical_json_bytes(
+        {
+            "campaign_fingerprint": campaign_fingerprint,
+            "campaign_id": campaign_id,
+            "marker_kind": "poison",
+            "reason_code": reason_code,
+            "schema_id": _MARKER_SCHEMA,
+        }
+    )
+    try:
+        with marker_path.open("xb") as stream:
+            stream.write(marker_bytes)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except (FileExistsError, OSError):
+        _fail("poison_marker_write_failed")
+    marker_hash = _read_marker(
+        marker_path,
+        marker_kind="poison",
+        campaign_id=campaign_id,
+        campaign_fingerprint=campaign_fingerprint,
+    )
+    marker_relative = marker_path.relative_to(evidence).as_posix()
+    evidence_after = [
+        entry
+        for entry in _collect_root_files(evidence)
+        if entry["relative_path"] != marker_relative
+    ]
+    if (
+        _database_files(database) != database_before
+        or _collect_root_files(storage) != storage_before
+        or evidence_after != evidence_before
+    ):
+        _fail("source_changed_during_poison")
+    return {
+        "action": "poison",
+        "campaign_fingerprint": campaign_fingerprint,
+        "campaign_id": campaign_id,
+        "marker_path": str(marker_path),
+        "marker_sha256": marker_hash["sha256"],
+        "nonclaims": list(_NONCLAIMS),
+        "reason_code": reason_code,
+        "schema_id": _REPORT_SCHEMA,
+        "status": "POISONED_UNSEALED",
+    }
 
 
 def inspect_campaign(
@@ -712,13 +799,14 @@ def archive_campaign(
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="dual_live_recovery")
-    parser.add_argument("action", choices=("inspect", "archive"))
+    parser.add_argument("action", choices=("poison", "inspect", "archive"))
     parser.add_argument("--campaign-id", required=True)
     parser.add_argument("--campaign-fingerprint", required=True)
     parser.add_argument("--database-path", required=True)
     parser.add_argument("--storage-root", required=True)
     parser.add_argument("--evidence-root", required=True)
     parser.add_argument("--archive-root")
+    parser.add_argument("--reason-code")
     return parser
 
 
@@ -742,10 +830,20 @@ def main(
         if arguments.action == "archive":
             if arguments.archive_root is None:
                 _fail("archive_path_missing")
+            if arguments.reason_code is not None:
+                _fail("poison_reason_unexpected")
             result = archive_campaign(archive_root=arguments.archive_root, **values)
+        elif arguments.action == "poison":
+            if arguments.archive_root is not None:
+                _fail("archive_path_unexpected")
+            if arguments.reason_code is None:
+                _fail("poison_reason_missing")
+            result = poison_campaign(reason_code=arguments.reason_code, **values)
         else:
             if arguments.archive_root is not None:
                 _fail("archive_path_unexpected")
+            if arguments.reason_code is not None:
+                _fail("poison_reason_unexpected")
             result = inspect_campaign(**values)
         os.write(1, _canonical_json_bytes(result))
         return 0

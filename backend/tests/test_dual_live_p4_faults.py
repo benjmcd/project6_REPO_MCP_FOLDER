@@ -121,9 +121,22 @@ def test_actual_killed_cell_is_poisoned_inspected_and_archived(
         boundary=boundary,
     )
     recovery_input = result.recovery_input
-    poison_path = p4.poison_killed_campaign(recovery_input)
     assert result.durable_prefix[-1] == boundary.name
     assert result.phase_a_before == result.phase_a_after
+
+    arguments = {
+        "campaign_id": recovery_input.campaign_id,
+        "campaign_fingerprint": recovery_input.campaign_fingerprint,
+        "database_path": str(recovery_input.database_path),
+        "storage_root": str(recovery_input.storage_root),
+        "evidence_root": str(recovery_input.evidence_root),
+        "environ": {"CONNECTOR_LIVE_EGRESS_ENABLED": "false"},
+    }
+    poisoned = recovery.poison_campaign(
+        **arguments,
+        reason_code="phase_b_killed_after_commit",
+    )
+    poison_path = Path(poisoned["marker_path"])
 
     source_paths = [
         recovery_input.database_path,
@@ -146,14 +159,6 @@ def test_actual_killed_cell_is_poisoned_inspected_and_archived(
 
     monkeypatch.setattr(socket, "create_connection", deny_network)
     monkeypatch.setattr(socket, "getaddrinfo", deny_network)
-    arguments = {
-        "campaign_id": recovery_input.campaign_id,
-        "campaign_fingerprint": recovery_input.campaign_fingerprint,
-        "database_path": str(recovery_input.database_path),
-        "storage_root": str(recovery_input.storage_root),
-        "evidence_root": str(recovery_input.evidence_root),
-        "environ": {"CONNECTOR_LIVE_EGRESS_ENABLED": "false"},
-    }
     inspected = recovery.inspect_campaign(**arguments)
     assert inspected["status"] == "POISONED_UNSEALED"
     assert inspected["capture"]["marker_kinds"] == ["poison"]

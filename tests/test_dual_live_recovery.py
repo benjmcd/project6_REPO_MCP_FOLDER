@@ -3,8 +3,11 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import socket
 import sqlite3
+import subprocess
+import sys
 from pathlib import Path
 from types import ModuleType
 
@@ -39,7 +42,11 @@ def _canonical(value: object) -> bytes:
     )
 
 
-def _fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
+def _fixture(
+    tmp_path: Path,
+    *,
+    poisoned: bool = True,
+) -> tuple[Path, Path, Path, Path]:
     database = tmp_path / "campaign.db"
     storage = tmp_path / "storage"
     evidence = tmp_path / "evidence"
@@ -57,12 +64,13 @@ def _fixture(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
         "reason_code": "phase_b_interrupted",
         "schema_id": "project6.dual_live_recovery_marker.v1",
     }
-    (campaign_dir / "poison.json").write_bytes(
-        _canonical({**marker_base, "marker_kind": "poison"})
-    )
-    (campaign_dir / "tombstone.json").write_bytes(
-        _canonical({**marker_base, "marker_kind": "tombstone"})
-    )
+    if poisoned:
+        (campaign_dir / "poison.json").write_bytes(
+            _canonical({**marker_base, "marker_kind": "poison"})
+        )
+        (campaign_dir / "tombstone.json").write_bytes(
+            _canonical({**marker_base, "marker_kind": "tombstone"})
+        )
 
     connection = sqlite3.connect(database)
     try:
@@ -111,6 +119,98 @@ def _paths(database: Path, storage: Path, evidence: Path) -> dict[str, str]:
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def test_operator_poison_cli_creates_canonical_marker_once(
+    tmp_path: Path,
+) -> None:
+    recovery = _load_recovery()
+    database, storage, evidence, _archive = _fixture(
+        tmp_path,
+        poisoned=False,
+    )
+    arguments = {
+        "campaign_id": CAMPAIGN_ID,
+        "campaign_fingerprint": FINGERPRINT,
+        **_paths(database, storage, evidence),
+        "environ": OFFLINE_ENV,
+    }
+
+    child_environment = {
+        name: value
+        for name, value in os.environ.items()
+        if name.upper()
+        in {
+            "COMSPEC",
+            "PATH",
+            "PATHEXT",
+            "SYSTEMROOT",
+            "TEMP",
+            "TMP",
+            "WINDIR",
+        }
+    }
+    child_environment["CONNECTOR_LIVE_EGRESS_ENABLED"] = "false"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-B",
+            str(RECOVERY),
+            "poison",
+            "--campaign-id",
+            CAMPAIGN_ID,
+            "--campaign-fingerprint",
+            FINGERPRINT,
+            "--database-path",
+            arguments["database_path"],
+            "--storage-root",
+            arguments["storage_root"],
+            "--evidence-root",
+            arguments["evidence_root"],
+            "--reason-code",
+            "phase_b_interrupted",
+        ],
+        check=False,
+        capture_output=True,
+        env=child_environment,
+    )
+    assert completed.returncode == 0, completed.stderr.decode("utf-8")
+    assert completed.stderr == b""
+    result = json.loads(completed.stdout)
+    assert completed.stdout == _canonical(result)
+
+    marker = evidence / "logs" / FINGERPRINT / "poison.json"
+    assert result["status"] == "POISONED_UNSEALED"
+    assert result["marker_sha256"] == _sha256(marker)
+    assert json.loads(marker.read_bytes()) == {
+        "campaign_fingerprint": FINGERPRINT,
+        "campaign_id": CAMPAIGN_ID,
+        "marker_kind": "poison",
+        "reason_code": "phase_b_interrupted",
+        "schema_id": "project6.dual_live_recovery_marker.v1",
+    }
+    assert recovery.inspect_campaign(**arguments)["status"] == "POISONED_UNSEALED"
+    with pytest.raises(recovery.RecoveryRefusal, match="poison_marker_exists"):
+        recovery.poison_campaign(
+            **arguments,
+            reason_code="phase_b_interrupted",
+        )
+
+    long_reason_root = tmp_path / "long-reason"
+    long_reason_root.mkdir()
+    long_reason_db, long_reason_storage, long_reason_evidence, _ = _fixture(
+        long_reason_root,
+        poisoned=False,
+    )
+    with pytest.raises(recovery.RecoveryRefusal, match="poison_reason_invalid"):
+        recovery.poison_campaign(
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=FINGERPRINT,
+            **_paths(long_reason_db, long_reason_storage, long_reason_evidence),
+            environ=OFFLINE_ENV,
+            reason_code="a" * 129,
+        )
 
 
 def test_inspect_then_archive_preserves_poisoned_campaign_end_to_end(
