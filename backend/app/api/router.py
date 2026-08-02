@@ -578,8 +578,17 @@ def get_connector_egress_arming_route(
 
 @api_router.post(
     "/connectors/egress-armings/{connector_run_id}/execute",
-    status_code=status.HTTP_202_ACCEPTED,
-    response_model=ConnectorRunSubmitOut,
+    status_code=status.HTTP_409_CONFLICT,
+    response_model=None,
+    deprecated=True,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "description": (
+                "Strict egress execution is disabled over HTTP; use the "
+                "owned CLI acquisition child."
+            ),
+        },
+    },
 )
 def execute_connector_egress_arming_route(
     connector_run_id: str,
@@ -591,7 +600,7 @@ def execute_connector_egress_arming_route(
     try:
         _route_level_operator_identity(request, access="write")
         raise HTTPException(
-            status_code=409,
+            status_code=status.HTTP_409_CONFLICT,
             detail={
                 "code": "connector_strict_egress_http_execute_disabled",
                 "message": (

@@ -275,6 +275,21 @@ def test_execute_route_refuses_http_before_strict_service_seams(
     }
 
 
+def test_execute_http_route_advertises_only_disabled_contract(api_client) -> None:
+    client, _factory = api_client
+
+    operation = client.get("/openapi.json").json()["paths"][
+        "/api/v1/connectors/egress-armings/{connector_run_id}/execute"
+    ]["post"]
+
+    assert operation["deprecated"] is True
+    assert "202" not in operation["responses"]
+    assert operation["responses"]["409"]["description"] == (
+        "Strict egress execution is disabled over HTTP; use the owned CLI "
+        "acquisition child."
+    )
+
+
 def test_execute_http_refusal_does_not_read_route_clock_or_authority(
     api_client,
     monkeypatch,
@@ -514,7 +529,7 @@ def test_malformed_reserved_run_fails_closed_on_all_state_routes(
         assert current.cancellation_requested_at is None
 
 
-def test_execute_preselects_only_admitted_strict_executor_before_claim(
+def test_execute_http_refuses_before_strict_executor_selection(
     api_client,
     monkeypatch,
 ) -> None:
