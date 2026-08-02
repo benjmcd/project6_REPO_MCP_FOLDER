@@ -173,6 +173,41 @@ _ACQUISITION_TABLES = (
     "dataset_version",
     "l3_connector_source_intake_record",
 )
+_CHILD_ENVIRONMENT_ALLOWLIST = frozenset(
+    (
+        "APPDATA",
+        "COMSPEC",
+        "LOCALAPPDATA",
+        "PATH",
+        "PATHEXT",
+        "PYTHONIOENCODING",
+        "PYTHONUTF8",
+        "SYSTEMROOT",
+        "TEMP",
+        "TMP",
+        "USERPROFILE",
+        "WINDIR",
+    )
+)
+
+
+def phase_b_child_environment(
+    source: dict[str, str] | None = None,
+) -> dict[str, str]:
+    inherited = os.environ if source is None else source
+    child = {
+        name.upper(): value
+        for name, value in inherited.items()
+        if name.upper() in _CHILD_ENVIRONMENT_ALLOWLIST
+    }
+    child.update(
+        {
+            "CONNECTOR_LIVE_EGRESS_ENABLED": "false",
+            "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE": "false",
+            "TRUSTED_PROXY_MODE": "false",
+        }
+    )
+    return child
 
 
 def _sha256(payload: bytes) -> str:
@@ -798,6 +833,9 @@ def _install_fault_wrappers(
 def _fault_child(root: Path, target_name: str, signal_path: Path) -> None:
     fixture = _fixture_from_root(root)
     _configure_phase_b(root, fixture)
+    dual_live_runtime._install_phase_b_connector_guards()
+    dual_live_runtime.exercise_owned_phase_b_connector_guard()
+    dual_live_runtime._assert_phase_b_connector_guards()
     engine = create_engine(
         f"sqlite:///{(root / 'campaign.db').as_posix()}",
         connect_args={"check_same_thread": False},
@@ -1077,6 +1115,7 @@ def run_fault_cell(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        env=phase_b_child_environment(),
     )
     deadline = time.monotonic() + 90
     while not signal_path.exists() and process.poll() is None:

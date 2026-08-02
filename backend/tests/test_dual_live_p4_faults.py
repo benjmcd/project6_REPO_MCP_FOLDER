@@ -49,6 +49,27 @@ def test_phase_b_fault_census_declares_exact_commit_boundaries() -> None:
     )
 
 
+def test_fault_child_environment_is_secret_free_and_default_off() -> None:
+    child_environment = p4.phase_b_child_environment(
+        {
+            "PATH": "fixture-path",
+            "SYSTEMROOT": "C:\\Windows",
+            "CONNECTOR_LIVE_EGRESS_ENABLED": "true",
+            "CONNECTOR_NRC_APS_GRANT_PATH": "C:\\authority.json",
+            "NRC_API_SUBSCRIPTION_KEY": "not-a-real-key",
+            "UNRELATED_SECRET": "must-not-inherit",
+        }
+    )
+
+    assert child_environment == {
+        "CONNECTOR_LIVE_EGRESS_ENABLED": "false",
+        "CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE": "false",
+        "PATH": "fixture-path",
+        "SYSTEMROOT": "C:\\Windows",
+        "TRUSTED_PROXY_MODE": "false",
+    }
+
+
 def test_phase_a_fixture_is_complete_and_phase_b_clean(tmp_path) -> None:
     fixture = p4.build_phase_a_fixture(tmp_path / "phase-a")
 
