@@ -472,7 +472,7 @@ def persist_output_manifest(
             canonical_root,
             output_path,
         )
-        if _file_fingerprint(initial) != _file_fingerprint(opened):
+        if _file_identity(initial) != _file_identity(opened):
             _integrity_fail(
                 "layer3_output_file_changed",
                 "The new output manifest changed during publication.",

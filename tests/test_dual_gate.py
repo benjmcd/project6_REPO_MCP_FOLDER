@@ -98,6 +98,7 @@ ALLOWED_CHANGED_PRODUCTION_PATHS = frozenset(
         "backend/app/services/dual_live_evaluator.py",
         "backend/app/services/layer3_gate_b_state.py",
         "backend/app/services/layer3_connector_source_intake.py",
+        "backend/app/services/layer3_execution_output.py",
         "backend/app/services/layer3_origin_continuity.py",
         "backend/app/services/layer3_pass_entry.py",
         "backend/app/services/layer3_typing_entry.py",

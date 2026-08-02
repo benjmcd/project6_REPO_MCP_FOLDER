@@ -494,6 +494,40 @@ def test_output_manifest_publication_does_not_follow_hardlink(
     assert victim.read_bytes() == b"preserve-me"
 
 
+def test_output_manifest_publication_ignores_timestamp_only_churn(
+    managed_artifact_root: Path,
+    monkeypatch,
+) -> None:
+    original_managed_file = execution_output._managed_regular_file
+    churned = False
+
+    def churn_before_publication_stat(root: Path, path: Path):
+        nonlocal churned
+        if not churned and path.name == "l3_pass_run_pass-run-timestamp.json":
+            info = path.stat()
+            os.utime(
+                path,
+                ns=(info.st_atime_ns, info.st_mtime_ns + 1_000_000_000),
+            )
+            assert path.stat().st_mtime_ns != info.st_mtime_ns
+            churned = True
+        return original_managed_file(root, path)
+
+    monkeypatch.setattr(
+        execution_output,
+        "_managed_regular_file",
+        churn_before_publication_stat,
+    )
+
+    output_ref = execution_output.persist_output_manifest(
+        pass_run_id="pass-run-timestamp",
+        payload={"analysis_run_id": "analysis-run-timestamp"},
+    )
+
+    assert churned is True
+    assert Path(output_ref).is_file()
+
+
 def test_bounded_hash_stream_rejects_growth_after_one_overread() -> None:
     stream = io.BytesIO(b"123456789")
 
