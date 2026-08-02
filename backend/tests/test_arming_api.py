@@ -177,34 +177,35 @@ def test_create_arming_resolves_owner_authority_and_never_enqueues(
     assert "lease" not in response.text.lower()
 
 
-def test_execute_enqueues_exactly_when_claim_wins(
+def test_execute_never_claims_or_enqueues_over_http(
     api_client,
     monkeypatch,
 ) -> None:
     client, factory = api_client
     _seed_strict_run(factory)
-    claimed = _seeded_run(factory)
-    claim_results = iter([(claimed, True), (claimed, False)])
-    queued: list[str] = []
+
+    def forbidden(*_args, **_kwargs):
+        pytest.fail("disabled HTTP execution reached a claim or executor seam")
+
     monkeypatch.setattr(
         api_router_module.connector_egress_arming,
         "resolve_current_egress_authority",
-        lambda *_args, **_kwargs: object(),
+        forbidden,
     )
     monkeypatch.setattr(
         api_router_module.connector_egress_authorization,
         "authorize_connector_egress_owner",
-        lambda *_, **__: _fake_receipt(),
+        forbidden,
     )
     monkeypatch.setattr(
         api_router_module.connector_egress_arming,
         "claim_connector_egress_arming",
-        lambda *_, **__: next(claim_results),
+        forbidden,
     )
     monkeypatch.setattr(
         api_router_module,
         "_strict_egress_executor",
-        lambda _run: lambda run_id: queued.append(run_id),
+        forbidden,
     )
     payload = {
         "execution_idempotency_key": "execute-1",
@@ -220,36 +221,78 @@ def test_execute_enqueues_exactly_when_claim_wins(
         json=payload,
     )
 
-    assert first.status_code == 202, first.text
-    assert second.status_code == 202, second.text
-    assert first.json()["created"] is True
-    assert second.json()["created"] is False
-    assert queued == ["strict-api-run"]
+    assert first.status_code == 409, first.text
+    assert second.status_code == 409, second.text
+    assert first.json() == second.json()
 
 
-def test_execute_refreshes_claim_time_after_route_authorization(
+def test_execute_route_refuses_http_before_strict_service_seams(
     api_client,
     monkeypatch,
 ) -> None:
     client, factory = api_client
     _seed_strict_run(factory)
-    resolution_now = datetime(2026, 7, 30, 1, 0, tzinfo=UTC)
-    claim_now = resolution_now + timedelta(seconds=2)
-    clock_values = iter((resolution_now, claim_now))
-    observed: dict[str, datetime] = {}
+
+    def forbidden(*_args, **_kwargs):
+        pytest.fail("disabled HTTP execution reached a strict service seam")
+
+    monkeypatch.setattr(
+        api_router_module.connector_egress_arming,
+        "resolve_current_egress_authority",
+        forbidden,
+    )
+    monkeypatch.setattr(
+        api_router_module.connector_egress_authorization,
+        "authorize_connector_egress_owner",
+        forbidden,
+    )
+    monkeypatch.setattr(
+        api_router_module.connector_egress_arming,
+        "claim_connector_egress_arming",
+        forbidden,
+    )
+    monkeypatch.setattr(
+        api_router_module,
+        "_strict_egress_executor",
+        forbidden,
+    )
+
+    response = client.post(
+        "/api/v1/connectors/egress-armings/strict-api-run/execute",
+        json={
+            "execution_idempotency_key": "http-disabled",
+            "arming_fingerprint": ARMING_FINGERPRINT,
+        },
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["detail"] == {
+        "code": "connector_strict_egress_http_execute_disabled",
+        "message": (
+            "Strict egress execution is available only through the owned CLI "
+            "acquisition child."
+        ),
+    }
+
+
+def test_execute_http_refusal_does_not_read_route_clock_or_authority(
+    api_client,
+    monkeypatch,
+) -> None:
+    client, factory = api_client
+    _seed_strict_run(factory)
 
     class RouteClock:
         @classmethod
         def now(cls, tz):
-            assert tz is UTC
-            return next(clock_values)
+            pytest.fail(f"disabled HTTP execution read the route clock for {tz}")
 
     monkeypatch.setattr(api_router_module, "datetime", RouteClock)
     monkeypatch.setattr(
         api_router_module.connector_egress_arming,
         "resolve_current_egress_authority",
-        lambda *_args, **kwargs: observed.setdefault(
-            "resolution_now", kwargs["now"]
+        lambda *_args, **_kwargs: pytest.fail(
+            "disabled HTTP execution resolved protected authority"
         ),
     )
     monkeypatch.setattr(
@@ -258,14 +301,12 @@ def test_execute_refreshes_claim_time_after_route_authorization(
         lambda *_, **__: _fake_receipt(),
     )
 
-    def claim(*_args, **kwargs):
-        observed["claim_now"] = kwargs["now"]
-        return _seeded_run(factory), False
-
     monkeypatch.setattr(
         api_router_module.connector_egress_arming,
         "claim_connector_egress_arming",
-        claim,
+        lambda *_args, **_kwargs: pytest.fail(
+            "disabled HTTP execution reached claim"
+        ),
     )
     monkeypatch.setattr(
         api_router_module,
@@ -281,11 +322,11 @@ def test_execute_refreshes_claim_time_after_route_authorization(
         },
     )
 
-    assert response.status_code == 202, response.text
-    assert observed == {
-        "resolution_now": resolution_now,
-        "claim_now": claim_now,
-    }
+    assert response.status_code == 409, response.text
+    assert (
+        response.json()["detail"]["code"]
+        == "connector_strict_egress_http_execute_disabled"
+    )
 
 
 def _seeded_run(factory) -> ConnectorRun:
@@ -517,7 +558,7 @@ def test_execute_preselects_only_admitted_strict_executor_before_claim(
     assert response.status_code == 409, response.text
     assert (
         response.json()["detail"]["code"]
-        == "connector_strict_executor_not_configured"
+        == "connector_strict_egress_http_execute_disabled"
     )
     with factory() as db:
         current = db.get(ConnectorRun, "unadmitted-strict-run")

@@ -590,52 +590,18 @@ def execute_connector_egress_arming_route(
 ) -> ConnectorRunSubmitOut:
     try:
         _route_level_operator_identity(request, access="write")
-        run = db.get(ConnectorRun, connector_run_id)
-        if run is None:
-            raise HTTPException(status_code=404, detail="egress arming not found")
-        _strict_arming_envelope_for_route(run)
-        now = datetime.now(UTC)
-        verified_grant = (
-            connector_egress_arming.resolve_current_egress_authority(
-                db,
-                connector_run_id=connector_run_id,
-                now=now,
-            )
-        )
-        executor = _strict_egress_executor(run)
-        connector_egress_authorization.authorize_connector_egress_owner(
-            request,
-            verified_grant=verified_grant,
-            access="write",
-        )
-        claim_now = datetime.now(UTC)
-        claimed, claimed_now = (
-            connector_egress_arming.claim_connector_egress_arming(
-                db,
-                connector_run_id=connector_run_id,
-                execution_idempotency_key=(
-                    payload.execution_idempotency_key
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "connector_strict_egress_http_execute_disabled",
+                "message": (
+                    "Strict egress execution is available only through the "
+                    "owned CLI acquisition child."
                 ),
-                expected_arming_fingerprint=payload.arming_fingerprint,
-                now=claim_now,
-            )
-        )
-        if claimed_now:
-            background_tasks.add_task(
-                executor,
-                claimed.connector_run_id,
-            )
-        return _safe_egress_arming_projection(
-            claimed,
-            created=claimed_now,
+            },
         )
     except SecXbrlInAppAuthPolicyError as exc:
         return _legacy_api_auth_policy_error_response(exc)
-    except (
-        connector_egress_authorization.ConnectorEgressAuthorizationError,
-        connector_egress_arming.ConnectorEgressArmingError,
-    ) as exc:
-        raise _egress_service_http_error(exc) from exc
 
 
 @api_router.post("/connectors/sciencebase-public/runs", status_code=status.HTTP_202_ACCEPTED, response_model=ConnectorRunSubmitOut)
