@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import hashlib
 import json
 import os
@@ -32,6 +33,8 @@ from app.services import (  # noqa: E402
     layer3_connector_source_intake as connector_intake,
 )
 from app.services.layer3_connector_source_intake import (  # noqa: E402
+    CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+    STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
     ConnectorSourceIntakeError,
     connector_source_intake_material_preview,
     record_connector_produced_source_intake,
@@ -136,6 +139,133 @@ def _decision_basis(candidate: dict) -> dict:
         "payload": candidate["payload"],
         "load_summary": candidate["load_summary"],
     }
+
+
+def _seed_generic_sciencebase_target(
+    db,
+) -> tuple[ConnectorRun, ConnectorRunTarget, bytes]:
+    blob = b"site_id,value\nSB-001,42\nSB-002,43\n"
+    digest = hashlib.sha256(blob).hexdigest()
+    raw_dir = Path(settings.connector_raw_dir) / "generic"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    raw_path = raw_dir / "water-quality.csv"
+    raw_path.write_bytes(blob)
+    run = ConnectorRun(
+        connector_run_id="sciencebase-generic-successor-run",
+        connector_key="sciencebase-public",
+        source_system="sciencebase",
+        source_mode="public_api",
+        status="running",
+    )
+    target = ConnectorRunTarget(
+        connector_run_target_id="sciencebase-generic-successor-target",
+        connector_run_id=run.connector_run_id,
+        ordinal=1,
+        sciencebase_item_id="sb-item-successor",
+        sciencebase_item_url=(
+            "https://www.sciencebase.gov/catalog/item/sb-item-successor"
+        ),
+        sciencebase_file_name="water-quality.csv",
+        sciencebase_download_uri=(
+            "https://www.sciencebase.gov/catalog/file/get/sb-item-successor"
+        ),
+        artifact_surface="files",
+        artifact_locator_type="download_uri",
+        source_artifact_key=(
+            "sciencebase://sb-item-successor/water-quality.csv"
+        ),
+        downloaded_sha256=digest,
+        raw_storage_ref=str(raw_path),
+        public_read_confirmed=True,
+        status="downloaded",
+    )
+    db.add_all([run, target])
+    db.commit()
+    return run, target, blob
+
+
+def test_generic_sciencebase_cannot_spoof_strict_gate_c_authority(client):
+    db = client.layer3_session_factory()
+    try:
+        run, target, _ = _seed_generic_sciencebase_target(db)
+        record = record_connector_produced_source_intake(
+            db,
+            client_request_id="sciencebase-generic-successor-record",
+            connector_key=run.connector_key,
+            connector_run_id=run.connector_run_id,
+            connector_run_target_id=target.connector_run_target_id,
+            source_label="ScienceBase generic successor CSV",
+            source_description="Generic public ScienceBase successor coverage.",
+            media_type="text/csv",
+        )
+        preview = connector_source_intake_material_preview(
+            db,
+            connector_source_intake_record_id=(
+                record["connector_source_intake_record_id"]
+            ),
+        )
+        candidate = preview["material_candidate"]
+        decision_basis = deepcopy(_decision_basis(candidate))
+        decision_basis["connector_target"] = {
+            "connector_run_target_id": target.connector_run_target_id,
+            "connector_key": run.connector_key,
+        }
+        assert (
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=candidate["candidate_id"],
+                decision_basis=decision_basis,
+            )
+            == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+        )
+
+        spoofed_basis = deepcopy(decision_basis)
+        spoofed_basis["payload"]["source_class"] = (
+            STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+        )
+        with pytest.raises(ConnectorSourceIntakeError) as spoofed:
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=candidate["candidate_id"],
+                decision_basis=spoofed_basis,
+            )
+        assert (
+            spoofed.value.code
+            == "connector_source_intake_gate_b_payload_mismatch"
+        )
+
+        gate_b = client.post(
+            "/api/v1/layer3/gate-b/decision",
+            json={
+                "client_request_id": "sciencebase-generic-successor-gate-b",
+                "preflight_id": "sciencebase-generic-successor-preflight",
+                "source_set_id": "sciencebase-generic-successor-source-set",
+                "material_preview_id": preview["material_preview_id"],
+                "material_preview_hash": preview["material_preview_hash"],
+                "candidate_decisions": [
+                    {
+                        "candidate_id": candidate["candidate_id"],
+                        "decision": "approved",
+                        "decision_basis": decision_basis,
+                    }
+                ],
+            },
+        )
+        assert gate_b.status_code == 200, gate_b.text
+        body = gate_b.json()
+        assert body["next_state"] == "connector_source_intake_gate_b_admitted"
+        blocked_gate_c = client.post(
+            "/api/v1/layer3/gate-c/preview",
+            json={
+                "client_request_id": "sciencebase-generic-successor-gate-c",
+                "session_id": body["session_id"],
+                "commit_typing": True,
+            },
+        )
+        assert blocked_gate_c.status_code == 409, blocked_gate_c.text
+        assert blocked_gate_c.json()["error_code"] == "typing_not_ready"
+    finally:
+        db.close()
 
 
 def test_private_strict_intake_stager_flushes_without_committing(client):
