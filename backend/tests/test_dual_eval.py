@@ -77,6 +77,30 @@ STATUS_PROCESS_BOOT_ID = "b" * 64
 STATUS_NONCE_SHA256 = "c" * 64
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _restore_spawn_primitives_after_dual_eval_module():
+    primitives: list[tuple[Any, str, Any]] = [
+        (subprocess, "Popen", subprocess.Popen)
+    ]
+    primitives.extend(
+        (os, name, getattr(os, name))
+        for name in sorted(dir(os))
+        if (
+            name == "system"
+            or name == "startfile"
+            or name.startswith("spawn")
+            or name.startswith("exec")
+            or name.startswith("posix_spawn")
+        )
+        and callable(getattr(os, name, None))
+    )
+    try:
+        yield
+    finally:
+        for owner, name, original in primitives:
+            setattr(owner, name, original)
+
+
 class FourStreamPumpGroup(_RuntimeFourStreamPumpGroup):
     def __init__(self, **kwargs: Any) -> None:
         status_callback = kwargs.get("status_callback")
