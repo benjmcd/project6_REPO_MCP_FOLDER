@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 import hashlib
 import inspect
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 from typing import cast
@@ -4610,3 +4611,117 @@ def test_actual_phase_b_mint_calls_committed_verifier_around_target_cas(
         witness_target.source_reference_json or {}
     )
     outer.rollback()
+
+
+def _downstream_snapshot_fixture(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[dict[str, str], str, Path]:
+    storage = tmp_path / "storage"
+    root = storage / "artifacts"
+    session_id = "session-content-stability"
+    payload = b'{"source":"stable"}'
+    payload_hash = hashlib.sha256(payload).hexdigest()
+    payload_path = root / "layer3" / session_id / f"{payload_hash}.json"
+    payload_path.parent.mkdir(parents=True)
+    payload_path.write_bytes(payload)
+    monkeypatch.setattr(settings, "storage_dir", str(storage))
+    return (
+        {
+            "payload_hash": payload_hash,
+            "payload_ref": str(payload_path),
+        },
+        session_id,
+        payload_path,
+    )
+
+
+def test_downstream_snapshot_accepts_timestamp_only_churn(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot, session_id, payload_path = _downstream_snapshot_fixture(
+        tmp_path,
+        monkeypatch,
+    )
+    original_managed_file = origin._downstream_managed_regular_file
+    preflight_count = 0
+
+    def churn_after_initial_stat(root: Path, path: Path):
+        nonlocal preflight_count
+        info = original_managed_file(root, path)
+        preflight_count += 1
+        if preflight_count == 1:
+            os.utime(
+                payload_path,
+                ns=(info.st_atime_ns, info.st_mtime_ns + 1_000_000_000),
+            )
+            assert payload_path.stat().st_mtime_ns != info.st_mtime_ns
+        return info
+
+    monkeypatch.setattr(
+        origin,
+        "_downstream_managed_regular_file",
+        churn_after_initial_stat,
+    )
+
+    assert origin._read_downstream_snapshot_payload(
+        snapshot,
+        session_id=session_id,
+    ) == {"source": "stable"}
+
+
+def test_downstream_snapshot_rejects_same_size_change_between_hashes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot, session_id, payload_path = _downstream_snapshot_fixture(
+        tmp_path,
+        monkeypatch,
+    )
+    original_hash_stream = origin._downstream_hash_stream
+    hash_count = 0
+
+    def mutate_after_first_hash(*args, **kwargs):
+        nonlocal hash_count
+        result = original_hash_stream(*args, **kwargs)
+        hash_count += 1
+        if hash_count == 1:
+            payload_path.write_bytes(b'{"source":"change"}')
+        return result
+
+    monkeypatch.setattr(origin, "_downstream_hash_stream", mutate_after_first_hash)
+
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin._read_downstream_snapshot_payload(snapshot, session_id=session_id)
+
+    assert excinfo.value.code == "layer3_downstream_origin_authority_invalid"
+    assert hash_count == 3
+
+
+def test_downstream_snapshot_rejects_same_size_change_after_hashes(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    snapshot, session_id, payload_path = _downstream_snapshot_fixture(
+        tmp_path,
+        monkeypatch,
+    )
+    original_hash_stream = origin._downstream_hash_stream
+    hash_count = 0
+
+    def mutate_after_second_hash(*args, **kwargs):
+        nonlocal hash_count
+        result = original_hash_stream(*args, **kwargs)
+        hash_count += 1
+        if hash_count == 2:
+            payload_path.write_bytes(b'{"source":"change"}')
+        return result
+
+    monkeypatch.setattr(origin, "_downstream_hash_stream", mutate_after_second_hash)
+
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin._read_downstream_snapshot_payload(snapshot, session_id=session_id)
+
+    assert excinfo.value.code == "layer3_downstream_origin_authority_invalid"
+    assert hash_count == 3

@@ -3855,6 +3855,12 @@ def _downstream_file_fingerprint(
     )
 
 
+def _downstream_file_identity(
+    value: os.stat_result,
+) -> tuple[int, int, int, int]:
+    return _downstream_file_fingerprint(value)[:4]
+
+
 def _downstream_hash_stream(
     handle: Any,
     *,
@@ -4046,13 +4052,13 @@ def _read_downstream_snapshot_payload(
             field="material snapshot payload_ref",
         )
     initial = _downstream_managed_regular_file(root, candidate)
-    initial_fingerprint = _downstream_file_fingerprint(initial)
+    initial_identity = _downstream_file_identity(initial)
     try:
         with candidate.open("rb") as handle:
             opened_before = os.fstat(handle.fileno())
             if (
-                _downstream_file_fingerprint(opened_before)
-                != initial_fingerprint
+                _downstream_file_identity(opened_before)
+                != initial_identity
                 or not stat.S_ISREG(opened_before.st_mode)
             ):
                 _downstream_authority_invalid(
@@ -4071,6 +4077,23 @@ def _read_downstream_snapshot_payload(
             )
             opened_after = os.fstat(handle.fileno())
         final = _downstream_managed_regular_file(root, candidate)
+        with candidate.open("rb") as final_handle:
+            final_opened_before = os.fstat(final_handle.fileno())
+            if (
+                _downstream_file_identity(final_opened_before)
+                != initial_identity
+                or not stat.S_ISREG(final_opened_before.st_mode)
+            ):
+                _downstream_authority_invalid(
+                    "Material snapshot bytes changed after verification."
+                )
+            final_content = _downstream_hash_stream(
+                final_handle,
+                max_bytes=initial.st_size,
+                capture_bytes=False,
+            )
+            final_opened_after = os.fstat(final_handle.fileno())
+        final_after = _downstream_managed_regular_file(root, candidate)
     except Layer3OriginContinuityError:
         raise
     except OSError as exc:
@@ -4078,15 +4101,19 @@ def _read_downstream_snapshot_payload(
             "layer3_downstream_origin_authority_invalid",
             "Material snapshot bytes are unreadable or unstable.",
         ) from exc
-    fingerprints = {
-        initial_fingerprint,
-        _downstream_file_fingerprint(opened_before),
-        _downstream_file_fingerprint(opened_after),
-        _downstream_file_fingerprint(final),
+    identities = {
+        initial_identity,
+        _downstream_file_identity(opened_before),
+        _downstream_file_identity(opened_after),
+        _downstream_file_identity(final),
+        _downstream_file_identity(final_opened_before),
+        _downstream_file_identity(final_opened_after),
+        _downstream_file_identity(final_after),
     }
     if (
-        len(fingerprints) != 1
+        len(identities) != 1
         or first[:2] != second[:2]
+        or first[:2] != final_content[:2]
         or first[0] != initial.st_size
         or first[1] != payload_hash
         or first[2] is None
