@@ -88,3 +88,35 @@ It confirmed the six-file scope, identity plus three bounded SHA-256 observation
 - Condition 1 and the tamper-execution half of condition 4 are now evidenced. G2/live acquisition remains blocked by the other governing prerequisites, explicit authorization, and live-run dependency eligibility.
 
 Goal usage: 428,700 tokens over approximately 1 hour 14 minutes.
+
+## Adversarial verification (Fable, 2026-08-02) — TOCTOU-FIX-SOUND (ACCEPT, no critical/major)
+Scope expanded beyond the diff to all 14 _stable_managed_file call sites across 3 modules + the
+evaluator's own fingerprint + gate semantics. Independently REPRODUCED at final HEAD 402bd173: census
+401/401 green (a THIRD run, 317.74s exit 0), gate 356, affected-module 126, package_entry 15 (the
+formerly-failing V4 node) — zero new failures. GUARANTEE PRESERVED: content-hash fail-closes on real byte
+mutation incl. SAME-SIZE (test-proven b"before"->b"after!"); mid-pass/between-pass/after-pass-2 all
+rejected (3rd observation, hash_count==3); growth trips remaining+1 overread, shrink trips size!=initial,
+symlink/rename trips dev/ino, reparse rejected by _managed_regular_file walk; no new TOCTOU (callers
+consume captured pass-1 bytes, never a post-guard re-read). Downstream snapshot guard got STRONGER
+(anchored to DB-bound payload_hash, layer3_origin_continuity.py:4118). Frozen 68f740af + B1a seal +
+completion-record blob 8d5e9daf + tree 42e01ff3 all byte-verified; no push. Sol 0-findings confirmed
+sound (Fable adds 2 recorded minors).
+TWO MINORS (non-blocking, optional one-line fixes):
+1. The pre-first-read unobservable window is marginally wider than the old code for ONE class (same-size
+   mtime-visible rewrite between preflight-stat and first read, in the artifact-receipt path) because
+   identity dropped mtime. MITIGATED: mtime was never adversarial (forgeable via os.utime), every
+   ground-truth consumer (DB-bound payload_hash) still fail-closes, and keeping any mtime reintroduces the
+   false-trip — effectively the irreducible userspace minimum under the no-false-positive requirement.
+   OPTIONAL: add one disclosure sentence acknowledging the comparative loss (recorded here in lieu of
+   editing Codex's evidence doc).
+2. Gate allowlist widening (test_dual_gate.py:101 adds execution_output.py to
+   ALLOWED_CHANGED_PRODUCTION_PATHS) is permanent + file-level vs range-scoped — same kind as existing
+   entries (origin_continuity already listed), disclosed. OPTIONAL future hardening: content-hash-pinned
+   allowlist. Not actionable now.
+
+## CONDITION-1 CERTIFICATION
+Census reproduces GREEN (3 independent runs: 2 Codex + 1 Fable, ordinary Windows py3.12.10 host);
+guarantee-sound + no regression, adversarially confirmed. **Review condition 1 SATISFIED. Condition-4
+tamper-execution half SATISFIED (3 campaigns execute green).** The Task-8 A-scoped OFFLINE BAR is now
+CERTIFIED PASS. Remaining G2 prerequisites (unchanged): py3.12 dependency provisioning + explicit owner
+live-run authorization + the full governing gate.
