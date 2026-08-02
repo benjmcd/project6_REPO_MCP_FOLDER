@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 import re
@@ -42,6 +43,7 @@ _MAX_FILES = 100_000
 _MAX_MATCHES = 10_000
 _MAX_ORPHANS = 10_000
 _MAX_REASON_CODE_LENGTH = 128
+_MAX_MARKER_BYTES = 1024
 _REPARSE_POINT = 0x400
 _NONCLAIMS = [
     "archive_is_preservation_not_database_repair",
@@ -129,6 +131,8 @@ def _existing_path(raw: str, *, kind: str, code: str) -> Path:
     candidate = Path(raw)
     if not candidate.is_absolute() or raw.startswith(("\\\\", "//")):
         _fail(code)
+    if _has_reparse_component(candidate):
+        _fail(code)
     try:
         resolved = candidate.resolve(strict=True)
     except OSError:
@@ -147,6 +151,8 @@ def _destination_root(raw: str) -> Path:
         _fail("archive_path_invalid")
     candidate = Path(raw)
     if not candidate.is_absolute() or raw.startswith(("\\\\", "//")):
+        _fail("archive_path_invalid")
+    if _has_reparse_component(candidate.parent):
         _fail("archive_path_invalid")
     try:
         resolved = candidate.resolve(strict=False)
@@ -167,6 +173,79 @@ def _identity(path: Path) -> tuple[int, int, int, int]:
     if not stat.S_ISREG(value.st_mode):
         _fail("source_file_invalid")
     return value.st_mode, value.st_dev, value.st_ino, value.st_size
+
+
+def _directory_identity(path: Path) -> tuple[int, int]:
+    try:
+        value = path.lstat()
+    except OSError:
+        _fail("capture_directory_changed")
+    attributes = int(getattr(value, "st_file_attributes", 0))
+    if (
+        not stat.S_ISDIR(value.st_mode)
+        or stat.S_ISLNK(value.st_mode)
+        or attributes & _REPARSE_POINT
+    ):
+        _fail("capture_directory_changed")
+    return int(value.st_dev), int(value.st_ino)
+
+
+def _publish_marker_atomic(
+    campaign_dir: Path,
+    marker_path: Path,
+    marker_bytes: bytes,
+) -> dict[str, object]:
+    backend_path = (
+        Path(__file__).resolve().parents[1]
+        / "backend"
+        / "app"
+        / "services"
+        / "raw_storage_handles.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "project6_dual_live_recovery_raw_storage",
+        backend_path,
+    )
+    if spec is None or spec.loader is None:
+        _fail("poison_marker_backend_unavailable")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(spec.name, None)
+        _fail("poison_marker_backend_unavailable")
+    try:
+        if module._windows_backend_available():
+            handle, raw_identity = module._open_windows_directory_handle(campaign_dir)
+            try:
+                parent_identity = module.StableRawFileIdentity(
+                    device_id=raw_identity[0],
+                    file_id=raw_identity[1],
+                )
+            finally:
+                module._close_windows_handle(handle)
+        else:
+            parent_stat = campaign_dir.lstat()
+            parent_identity = module.StableRawFileIdentity(
+                device_id=int(parent_stat.st_dev),
+                file_id=int(parent_stat.st_ino),
+            )
+        snapshot = module.publish_atomic_strict_new_locked_raw_file(
+            campaign_dir,
+            marker_path,
+            marker_bytes,
+            max_bytes=_MAX_MARKER_BYTES,
+            expected_parent_identity=parent_identity,
+        )
+    except (module.StableRawStorageError, OSError):
+        _fail("poison_marker_write_failed")
+    finally:
+        sys.modules.pop(spec.name, None)
+    return {
+        "sha256": str(snapshot.sha256),
+        "size": int(snapshot.size),
+    }
 
 
 def _hash_file(path: Path) -> dict[str, object]:
@@ -500,6 +579,7 @@ def poison_campaign(
     marker_path = campaign_dir / "poison.json"
     if marker_path.exists() or (campaign_dir / "tombstone.json").exists():
         _fail("poison_marker_exists")
+    campaign_identity = _directory_identity(campaign_dir)
 
     database_before = _database_files(database)
     storage_before = _collect_root_files(storage)
@@ -513,19 +593,26 @@ def poison_campaign(
             "schema_id": _MARKER_SCHEMA,
         }
     )
-    try:
-        with marker_path.open("xb") as stream:
-            stream.write(marker_bytes)
-            stream.flush()
-            os.fsync(stream.fileno())
-    except (FileExistsError, OSError):
-        _fail("poison_marker_write_failed")
+    if (campaign_dir / "manifest.json").exists() or seal_path.exists():
+        _fail("campaign_already_sealed")
+    published = _publish_marker_atomic(
+        campaign_dir,
+        marker_path,
+        marker_bytes,
+    )
     marker_hash = _read_marker(
         marker_path,
         marker_kind="poison",
         campaign_id=campaign_id,
         campaign_fingerprint=campaign_fingerprint,
     )
+    if (
+        marker_hash["sha256"] != published["sha256"]
+        or marker_hash["size"] != published["size"]
+    ):
+        _fail("poison_marker_write_failed")
+    if (campaign_dir / "manifest.json").exists() or seal_path.exists():
+        _fail("campaign_already_sealed")
     marker_relative = marker_path.relative_to(evidence).as_posix()
     evidence_after = [
         entry
@@ -536,8 +623,11 @@ def poison_campaign(
         _database_files(database) != database_before
         or _collect_root_files(storage) != storage_before
         or evidence_after != evidence_before
+        or _directory_identity(campaign_dir) != campaign_identity
     ):
         _fail("source_changed_during_poison")
+    if (campaign_dir / "manifest.json").exists() or seal_path.exists():
+        _fail("campaign_already_sealed")
     return {
         "action": "poison",
         "campaign_fingerprint": campaign_fingerprint,

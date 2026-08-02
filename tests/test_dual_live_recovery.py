@@ -213,6 +213,148 @@ def test_operator_poison_cli_creates_canonical_marker_once(
         )
 
 
+def test_poison_checks_lexical_path_before_resolution(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recovery = _load_recovery()
+    database, storage, evidence, _archive = _fixture(tmp_path, poisoned=False)
+    detour = tmp_path / "detour"
+    detour.mkdir()
+    lexical_storage = detour / ".." / storage.name
+    real_has_reparse = recovery._has_reparse_component
+
+    def detect_lexical(path: Path) -> bool:
+        return path == lexical_storage or real_has_reparse(path)
+
+    monkeypatch.setattr(recovery, "_has_reparse_component", detect_lexical)
+    with pytest.raises(recovery.RecoveryRefusal, match="storage_path_invalid"):
+        recovery.poison_campaign(
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=FINGERPRINT,
+            database_path=str(database),
+            storage_root=str(lexical_storage),
+            evidence_root=str(evidence),
+            reason_code="phase_b_interrupted",
+            environ=OFFLINE_ENV,
+        )
+
+
+def test_poison_retains_marker_and_refuses_source_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recovery = _load_recovery()
+    database, storage, evidence, _archive = _fixture(tmp_path, poisoned=False)
+    real_collect = recovery._collect_root_files
+    storage_calls = 0
+
+    def drift_on_second_storage_read(root: Path) -> list[dict[str, object]]:
+        nonlocal storage_calls
+        if root == storage:
+            storage_calls += 1
+            if storage_calls == 2:
+                (storage / "concurrent.bin").write_bytes(b"drift\n")
+        return real_collect(root)
+
+    monkeypatch.setattr(recovery, "_collect_root_files", drift_on_second_storage_read)
+    with pytest.raises(recovery.RecoveryRefusal, match="source_changed_during_poison"):
+        recovery.poison_campaign(
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=FINGERPRINT,
+            **_paths(database, storage, evidence),
+            reason_code="phase_b_interrupted",
+            environ=OFFLINE_ENV,
+        )
+    marker = evidence / "logs" / FINGERPRINT / "poison.json"
+    assert marker.is_file()
+
+
+@pytest.mark.parametrize(
+    ("environ", "code"),
+    [
+        ({"CONNECTOR_LIVE_EGRESS_ENABLED": "true"}, "egress_enabled"),
+        (
+            {
+                "CONNECTOR_LIVE_EGRESS_ENABLED": "false",
+                "NRC_ADAMS_APS_SUBSCRIPTION_KEY": "credential",
+            },
+            "credential_environment_present",
+        ),
+    ],
+)
+def test_poison_refuses_live_or_credential_environment_before_write(
+    tmp_path: Path,
+    environ: dict[str, str],
+    code: str,
+) -> None:
+    recovery = _load_recovery()
+    database, storage, evidence, _archive = _fixture(tmp_path, poisoned=False)
+    with pytest.raises(recovery.RecoveryRefusal, match=code):
+        recovery.poison_campaign(
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=FINGERPRINT,
+            **_paths(database, storage, evidence),
+            reason_code="phase_b_interrupted",
+            environ=environ,
+        )
+    assert not (evidence / "logs" / FINGERPRINT / "poison.json").exists()
+
+
+def test_poison_atomic_publication_never_exposes_final_on_fsync_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recovery = _load_recovery()
+    database, storage, evidence, _archive = _fixture(tmp_path, poisoned=False)
+
+    def fail_fsync(_fd: int) -> None:
+        raise OSError("injected fsync failure")
+
+    monkeypatch.setattr(os, "fsync", fail_fsync)
+    with pytest.raises(recovery.RecoveryRefusal, match="poison_marker_write_failed"):
+        recovery.poison_campaign(
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=FINGERPRINT,
+            **_paths(database, storage, evidence),
+            reason_code="phase_b_interrupted",
+            environ=OFFLINE_ENV,
+        )
+    campaign_dir = evidence / "logs" / FINGERPRINT
+    assert not (campaign_dir / "poison.json").exists()
+    assert (campaign_dir / ".poison.json.stage").is_file()
+
+
+def test_poison_refuses_seal_race_after_atomic_publication(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    recovery = _load_recovery()
+    database, storage, evidence, _archive = _fixture(tmp_path, poisoned=False)
+    real_publish = recovery._publish_marker_atomic
+
+    def publish_then_seal(
+        campaign_dir: Path,
+        marker_path: Path,
+        marker_bytes: bytes,
+    ) -> dict[str, object]:
+        published = real_publish(campaign_dir, marker_path, marker_bytes)
+        seal_dir = evidence / "log-seals"
+        (seal_dir / f"{FINGERPRINT}.json").write_bytes(b"seal-race\n")
+        return published
+
+    monkeypatch.setattr(recovery, "_publish_marker_atomic", publish_then_seal)
+    with pytest.raises(recovery.RecoveryRefusal, match="campaign_already_sealed"):
+        recovery.poison_campaign(
+            campaign_id=CAMPAIGN_ID,
+            campaign_fingerprint=FINGERPRINT,
+            **_paths(database, storage, evidence),
+            reason_code="phase_b_interrupted",
+            environ=OFFLINE_ENV,
+        )
+    assert (evidence / "logs" / FINGERPRINT / "poison.json").is_file()
+
+
 def test_inspect_then_archive_preserves_poisoned_campaign_end_to_end(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
