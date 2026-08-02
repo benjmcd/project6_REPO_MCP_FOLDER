@@ -5,8 +5,10 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import math
-from pathlib import Path
+import os
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
+import stat
 from types import MappingProxyType
 from typing import Any, Literal, Mapping, NoReturn, Sequence
 from uuid import NAMESPACE_URL, UUID, uuid5
@@ -128,6 +130,26 @@ COUNTER_V2_EXTRA_KEYS = frozenset(("runtime_instance_id", "process_boot_id"))
 COUNTER_V2_KEYS = COUNTER_V1_KEYS | COUNTER_V2_EXTRA_KEYS
 _LOWERCASE_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
+MAX_PROTECTED_JSON_BYTES = 64 * 1024
+MAX_EVIDENCE_INDEX_REVISIONS = 128
+MAX_CAPTURE_STREAM_BYTES = 16 * 1024 * 1024
+MAX_CAPTURE_AGGREGATE_BYTES = 32 * 1024 * 1024
+MAX_STREAM_BYTES = MAX_CAPTURE_STREAM_BYTES
+MAX_AGGREGATE_BYTES = MAX_CAPTURE_AGGREGATE_BYTES
+_EXPECTED_CONNECTORS = frozenset(("nrc_adams_aps", "sciencebase_mcs"))
+_EXPECTED_CAPTURE_FILES = ("app.jsonl", "http.jsonl", "stdout.log", "stderr.log")
+_DRIVE_FIXED = 3
+_WINDOWS_RESERVED_COMPONENTS = frozenset(
+    {
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        *(f"COM{index}" for index in range(1, 10)),
+        *(f"LPT{index}" for index in range(1, 10)),
+    }
+)
+
 
 class ConnectorEgressTransportError(RuntimeError):
     def __init__(self, code: str, message: str | None = None) -> None:
@@ -140,6 +162,68 @@ class CounterEvidenceError(ValueError):
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__(code)
+
+
+class ConnectorEvidenceError(ValueError):
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedEvidenceIndexRevision:
+    model: Any
+    raw_bytes: bytes
+    raw_sha256: str
+    path: Path
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedEvidenceIndexChain:
+    evidence_root: Path
+    head: Any
+    head_raw_sha256: str
+    head_path: Path
+    revisions: tuple[VerifiedEvidenceIndexRevision, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedHistoricalGrantEvidence:
+    definition_model: Any
+    model: Any
+    raw_definition_sha256: str
+    canonical_campaign_fingerprint: str
+    raw_sha256: str
+    canonical_fingerprint: str
+    introduction_index_revision: int
+    introduction_index_sha256: str
+    definition_archive_path: Path
+    grant_archive_path: Path
+    marker_model: Any
+    consumption_marker_path: Path
+    consumption_marker_sha256: str
+    index_chain: VerifiedEvidenceIndexChain
+
+
+@dataclass(frozen=True, slots=True)
+class VerifiedCampaignLogCapture:
+    manifest_bytes: bytes
+    manifest_sha256: str
+    file_set_hash: str
+    seal_bytes: bytes
+    seal_sha256: str
+    stream_bytes: Mapping[str, bytes]
+    seal_event_ids: tuple[str, ...]
+    stable_snapshot: tuple[tuple[str, int, str], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _EvidenceFileSnapshot:
+    relative_path: str
+    data: bytes
+    size: int
+    sha256: str
+    identity: tuple[int, int, int, int]
 
 
 @dataclass(frozen=True)
@@ -195,6 +279,9 @@ def _parse_utc(value: Any, *, code: str) -> datetime:
 
 
 def _canonical_value(value: Any) -> Any:
+    model_dump = getattr(value, "model_dump", None)
+    if callable(model_dump):
+        return _canonical_value(model_dump(mode="python"))
     if is_dataclass(value) and not isinstance(value, type):
         return _canonical_value(asdict(value))
     if isinstance(value, datetime):
@@ -233,6 +320,9 @@ def _canonical_json_bytes(value: Any) -> bytes:
     ).encode("utf-8")
 
 
+canonical_json_bytes = _canonical_json_bytes
+
+
 def _strict_json_loads(value: bytes | str) -> Any:
     if isinstance(value, bytes):
         try:
@@ -263,6 +353,9 @@ def _strict_json_loads(value: bytes | str) -> Any:
         )
     except json.JSONDecodeError as exc:
         raise ValueError(f"malformed protected JSON: {exc.msg}") from exc
+
+
+strict_json_loads = _strict_json_loads
 
 
 def _counter_schema(record: Mapping[str, Any]) -> Literal["v1", "v2"]:
@@ -1327,3 +1420,881 @@ def derive_terminal_request_ledger(
         validation_errors=tuple(dict.fromkeys(errors)),
         canonical_projection=projection,
     )
+
+
+def _evidence_fail(code: str) -> NoReturn:
+    raise ConnectorEvidenceError(code)
+
+
+def _safe_evidence_relative(value: object) -> str:
+    raw = str(value or "").replace("\\", "/")
+    if (
+        not raw
+        or raw.startswith("/")
+        or raw.endswith("/")
+        or "//" in raw
+        or ":" in raw
+        or "\x00" in raw
+        or any(ord(character) < 32 for character in raw)
+    ):
+        _evidence_fail("connector_evidence_path_invalid")
+    parts = PurePosixPath(raw).parts
+    if any(part in {"", ".", ".."} for part in parts):
+        _evidence_fail("connector_evidence_path_invalid")
+    return "/".join(parts)
+
+
+def _lexical_fixed_local_evidence_path(value: object) -> Path:
+    if not isinstance(value, (str, os.PathLike)):
+        _evidence_fail("connector_evidence_path_invalid")
+    text = os.fspath(value)
+    if not isinstance(text, str) or not text or text != text.strip() or "\x00" in text:
+        _evidence_fail("connector_evidence_path_invalid")
+    if os.name != "nt":
+        path = Path(text)
+        if not path.is_absolute() or text.startswith("//"):
+            _evidence_fail("connector_evidence_path_invalid")
+        posix_path = PurePosixPath(text)
+        if any(part in {"", ".", ".."} for part in posix_path.parts[1:]):
+            _evidence_fail("connector_evidence_path_invalid")
+        return path
+    normalized = text.replace("/", "\\")
+    folded = normalized.casefold()
+    if (
+        folded.startswith(("\\\\", "\\??\\", "globalroot\\"))
+        or re.fullmatch(r"[A-Za-z]:\\.*", normalized) is None
+        or ":" in normalized[2:]
+    ):
+        _evidence_fail("connector_evidence_path_invalid")
+    windows_path = PureWindowsPath(normalized)
+    if not windows_path.is_absolute() or len(windows_path.drive) != 2:
+        _evidence_fail("connector_evidence_path_invalid")
+    for component in windows_path.parts[1:]:
+        if (
+            component in {"", ".", ".."}
+            or component.endswith((" ", "."))
+            or any(character in component for character in '*?"<>|')
+            or component.split(".", 1)[0].upper() in _WINDOWS_RESERVED_COMPONENTS
+        ):
+            _evidence_fail("connector_evidence_path_invalid")
+    import ctypes
+    from ctypes import wintypes
+
+    get_drive_type = ctypes.windll.kernel32.GetDriveTypeW
+    get_drive_type.argtypes = (wintypes.LPCWSTR,)
+    get_drive_type.restype = wintypes.UINT
+    if get_drive_type(f"{windows_path.drive}\\") != _DRIVE_FIXED:
+        _evidence_fail("connector_evidence_path_invalid")
+    return Path(normalized)
+
+
+def _reparse(info: os.stat_result) -> bool:
+    return bool(
+        getattr(info, "st_file_attributes", 0)
+        & getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+    )
+
+
+def _assert_existing_path_chain(path: Path) -> Path:
+    path = _lexical_fixed_local_evidence_path(path)
+    ordered = [Path(path.anchor)]
+    ordered.extend(reversed(path.parents[:-1]))
+    ordered.append(path)
+    for component in ordered:
+        try:
+            info = component.lstat()
+        except OSError as exc:
+            raise ConnectorEvidenceError("connector_evidence_path_invalid") from exc
+        if stat.S_ISLNK(info.st_mode) or _reparse(info):
+            _evidence_fail("connector_evidence_path_invalid")
+    return path
+
+
+def _path_identity(value: Path) -> str:
+    return os.path.normcase(os.path.normpath(str(value)))
+
+
+def _opened_fixed_local_evidence_path(handle: Any) -> Path:
+    if os.name != "nt":
+        return _lexical_fixed_local_evidence_path(handle.name)
+    import ctypes
+    from ctypes import wintypes
+    import msvcrt
+
+    get_final_path = ctypes.windll.kernel32.GetFinalPathNameByHandleW
+    get_final_path.argtypes = (
+        wintypes.HANDLE,
+        wintypes.LPWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+    )
+    get_final_path.restype = wintypes.DWORD
+    native_handle = msvcrt.get_osfhandle(handle.fileno())
+    capacity = 512
+    while True:
+        buffer = ctypes.create_unicode_buffer(capacity)
+        length = get_final_path(
+            wintypes.HANDLE(native_handle),
+            buffer,
+            capacity,
+            0,
+        )
+        if length == 0:
+            _evidence_fail("connector_evidence_path_invalid")
+        if length < capacity:
+            final = buffer.value
+            break
+        capacity = int(length) + 1
+        if capacity > 32_768:
+            _evidence_fail("connector_evidence_path_invalid")
+    if final.casefold().startswith("\\\\?\\unc\\"):
+        _evidence_fail("connector_evidence_path_invalid")
+    if final.startswith("\\\\?\\"):
+        final = final[4:]
+    return _lexical_fixed_local_evidence_path(final)
+
+
+def _assert_opened_evidence_path(handle: Any, expected_path: Path) -> None:
+    opened = _opened_fixed_local_evidence_path(handle)
+    if _path_identity(opened) != _path_identity(expected_path):
+        _evidence_fail("connector_evidence_path_invalid")
+
+
+def _evidence_root(settings: Any) -> Path:
+    root = _assert_existing_path_chain(
+        Path(settings.connector_campaign_evidence_root)
+    )
+    if not root.is_dir():
+        _evidence_fail("connector_evidence_root_invalid")
+    return root
+
+
+def _evidence_path(root: Path, relative: object) -> tuple[Path, str]:
+    normalized = _safe_evidence_relative(relative)
+    path = root.joinpath(*PurePosixPath(normalized).parts)
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ConnectorEvidenceError("connector_evidence_path_escape") from exc
+    path = _assert_existing_path_chain(path)
+    return path, normalized
+
+
+def _file_identity(value: os.stat_result) -> tuple[int, int, int, int]:
+    return value.st_dev, value.st_ino, value.st_size, value.st_mtime_ns
+
+
+def _read_evidence_file(
+    root: Path,
+    relative: object,
+    *,
+    max_bytes: int,
+) -> _EvidenceFileSnapshot:
+    path, normalized = _evidence_path(root, relative)
+    before = path.lstat()
+    if _reparse(before) or not stat.S_ISREG(before.st_mode):
+        _evidence_fail("connector_evidence_file_invalid")
+    if before.st_size < 0 or before.st_size > max_bytes:
+        _evidence_fail("connector_evidence_file_oversized")
+    with path.open("rb") as handle:
+        opened = os.fstat(handle.fileno())
+        _assert_opened_evidence_path(handle, path)
+        if _file_identity(opened) != _file_identity(before):
+            _evidence_fail("connector_evidence_file_changed")
+        data = handle.read(max_bytes + 1)
+        after = os.fstat(handle.fileno())
+    final = path.lstat()
+    if (
+        len(data) > max_bytes
+        or _file_identity(before) != _file_identity(after)
+        or _file_identity(after) != _file_identity(final)
+    ):
+        _evidence_fail("connector_evidence_file_changed")
+    return _EvidenceFileSnapshot(
+        relative_path=normalized,
+        data=data,
+        size=len(data),
+        sha256=hashlib.sha256(data).hexdigest(),
+        identity=_file_identity(final),
+    )
+
+
+def _parse_evidence_model(snapshot: _EvidenceFileSnapshot, model_type: Any) -> Any:
+    try:
+        payload = _strict_json_loads(snapshot.data)
+        if not isinstance(payload, dict):
+            raise ValueError("root")
+        model = model_type.model_validate(payload)
+    except (TypeError, ValueError) as exc:
+        raise ConnectorEvidenceError("connector_evidence_json_invalid") from exc
+    if snapshot.data != _canonical_json_bytes(model):
+        _evidence_fail("connector_evidence_json_noncanonical")
+    return model
+
+
+def _campaign_key(value: Any) -> tuple[str, str]:
+    return str(value.campaign_id), str(value.campaign_fingerprint)
+
+
+def _validate_slice(index: Any) -> None:
+    definitions = list(index.campaigns)
+    entries = list(index.entries)
+    captures = list(index.log_captures)
+    keys = [_campaign_key(item) for item in definitions]
+    if not keys or len(keys) != len(set(keys)):
+        _evidence_fail("connector_evidence_index_slice_invalid")
+    referenced: list[str] = []
+    for definition in definitions:
+        key = _campaign_key(definition)
+        matched_entries = [item for item in entries if _campaign_key(item) == key]
+        matched_captures = [item for item in captures if _campaign_key(item) == key]
+        if (
+            len(matched_entries) != 2
+            or {item.connector_key for item in matched_entries} != _EXPECTED_CONNECTORS
+            or len(matched_captures) != 1
+        ):
+            _evidence_fail("connector_evidence_index_slice_invalid")
+        definition_path = _safe_evidence_relative(definition.definition_relative_path)
+        if definition_path != f"campaigns/{definition.raw_definition_sha256}.json":
+            _evidence_fail("connector_evidence_index_slice_invalid")
+        referenced.append(definition_path)
+        for entry in matched_entries:
+            grant_path = _safe_evidence_relative(entry.grant_relative_path)
+            marker_path = _safe_evidence_relative(entry.consumption_marker_relative_path)
+            if (
+                entry.campaign_definition_sha256 != definition.raw_definition_sha256
+                or entry.code_revision != definition.code_revision
+                or grant_path != f"grants/{entry.raw_grant_sha256}.json"
+                or marker_path != f"consumed/{entry.raw_grant_sha256}.json"
+            ):
+                _evidence_fail("connector_evidence_index_slice_invalid")
+            referenced.extend((grant_path, marker_path))
+        capture = matched_captures[0]
+        expected_log = f"logs/{definition.campaign_fingerprint}"
+        if (
+            capture.campaign_definition_sha256 != definition.raw_definition_sha256
+            or capture.code_revision != definition.code_revision
+            or _safe_evidence_relative(capture.log_dir_relative_path) != expected_log
+            or _safe_evidence_relative(capture.manifest_relative_path)
+            != f"{expected_log}/manifest.json"
+            or _safe_evidence_relative(capture.seal_relative_path)
+            != f"log-seals/{definition.campaign_fingerprint}.json"
+        ):
+            _evidence_fail("connector_evidence_index_slice_invalid")
+        referenced.extend(
+            (
+                capture.log_dir_relative_path,
+                capture.manifest_relative_path,
+                capture.seal_relative_path,
+            )
+        )
+    if (
+        any(_campaign_key(item) not in set(keys) for item in entries + captures)
+        or len({item.casefold() for item in referenced}) != len(referenced)
+    ):
+        _evidence_fail("connector_evidence_index_slice_invalid")
+
+
+def _validate_successor(
+    predecessor: VerifiedEvidenceIndexRevision,
+    successor: VerifiedEvidenceIndexRevision,
+) -> None:
+    previous = predecessor.model
+    current = successor.model
+    if (
+        current.revision != previous.revision + 1
+        or current.predecessor_index_sha256 != predecessor.raw_sha256
+        or _safe_evidence_relative(current.predecessor_index_relative_path)
+        != f"indexes/{predecessor.raw_sha256}.json"
+        or current.campaigns[:-1] != previous.campaigns
+        or current.entries[:-2] != previous.entries
+        or current.log_captures[:-1] != previous.log_captures
+        or len(current.campaigns) != len(previous.campaigns) + 1
+        or len(current.entries) != len(previous.entries) + 2
+        or len(current.log_captures) != len(previous.log_captures) + 1
+    ):
+        _evidence_fail("connector_evidence_index_not_linear")
+
+
+def load_evidence_index_chain_read_only(settings: Any) -> VerifiedEvidenceIndexChain:
+    from app.schemas.api import ConnectorCampaignEvidenceIndexV1
+
+    root = _evidence_root(settings)
+    head_sha256 = str(settings.connector_campaign_evidence_index_sha256 or "")
+    if not _LOWERCASE_SHA256.fullmatch(head_sha256):
+        _evidence_fail("connector_evidence_index_head_invalid")
+    configured = Path(settings.connector_campaign_evidence_index_path)
+    expected = root / "indexes" / f"{head_sha256}.json"
+    if not configured.is_absolute() or os.path.normcase(str(configured)) != os.path.normcase(
+        str(expected)
+    ):
+        _evidence_fail("connector_evidence_index_head_invalid")
+    indexes = root / "indexes"
+    _assert_existing_path_chain(indexes)
+    children = tuple(indexes.iterdir())
+    if not children or len(children) > MAX_EVIDENCE_INDEX_REVISIONS:
+        _evidence_fail("connector_evidence_index_count_invalid")
+    if len({child.name.casefold() for child in children}) != len(children):
+        _evidence_fail("connector_evidence_index_name_invalid")
+    objects: dict[str, VerifiedEvidenceIndexRevision] = {}
+    revisions: dict[int, str] = {}
+    for child in children:
+        digest = child.name[:-5] if child.name.endswith(".json") else ""
+        if not _LOWERCASE_SHA256.fullmatch(digest):
+            _evidence_fail("connector_evidence_index_name_invalid")
+        snapshot = _read_evidence_file(
+            root,
+            f"indexes/{child.name}",
+            max_bytes=MAX_PROTECTED_JSON_BYTES,
+        )
+        if snapshot.sha256 != digest:
+            _evidence_fail("connector_evidence_index_digest_invalid")
+        model = _parse_evidence_model(snapshot, ConnectorCampaignEvidenceIndexV1)
+        _validate_slice(model)
+        if digest in objects or int(model.revision) in revisions:
+            _evidence_fail("connector_evidence_index_revision_invalid")
+        item = VerifiedEvidenceIndexRevision(
+            model=model,
+            raw_bytes=snapshot.data,
+            raw_sha256=digest,
+            path=child,
+        )
+        objects[digest] = item
+        revisions[int(model.revision)] = digest
+    head = objects.get(head_sha256)
+    if head is None or int(head.model.revision) != max(revisions):
+        _evidence_fail("connector_evidence_index_head_invalid")
+    descending: list[VerifiedEvidenceIndexRevision] = []
+    seen: set[str] = set()
+    current = head
+    while True:
+        if current.raw_sha256 in seen:
+            _evidence_fail("connector_evidence_index_not_linear")
+        descending.append(current)
+        seen.add(current.raw_sha256)
+        if int(current.model.revision) == 1:
+            if (
+                current.model.predecessor_index_sha256 is not None
+                or current.model.predecessor_index_relative_path is not None
+            ):
+                _evidence_fail("connector_evidence_index_not_linear")
+            break
+        predecessor = objects.get(str(current.model.predecessor_index_sha256))
+        if predecessor is None:
+            _evidence_fail("connector_evidence_index_not_linear")
+        current = predecessor
+    if seen != set(objects):
+        _evidence_fail("connector_evidence_index_not_linear")
+    ascending = tuple(reversed(descending))
+    if tuple(int(item.model.revision) for item in ascending) != tuple(
+        range(1, len(ascending) + 1)
+    ):
+        _evidence_fail("connector_evidence_index_not_linear")
+    if (
+        len(ascending[0].model.campaigns) != 1
+        or len(ascending[0].model.entries) != 2
+        or len(ascending[0].model.log_captures) != 1
+    ):
+        _evidence_fail("connector_evidence_index_not_linear")
+    for index in range(1, len(ascending)):
+        _validate_successor(ascending[index - 1], ascending[index])
+    return VerifiedEvidenceIndexChain(
+        evidence_root=root,
+        head=head.model,
+        head_raw_sha256=head_sha256,
+        head_path=head.path,
+        revisions=ascending,
+    )
+
+
+def _find_campaign_refs(
+    chain: VerifiedEvidenceIndexChain,
+    campaign_id: str,
+    campaign_fingerprint: str,
+) -> tuple[Any, tuple[Any, ...], Any]:
+    key = (campaign_id, campaign_fingerprint)
+    definitions = [item for item in chain.head.campaigns if _campaign_key(item) == key]
+    entries = [item for item in chain.head.entries if _campaign_key(item) == key]
+    captures = [item for item in chain.head.log_captures if _campaign_key(item) == key]
+    if (
+        len(definitions) != 1
+        or len(entries) != 2
+        or {item.connector_key for item in entries} != _EXPECTED_CONNECTORS
+        or len(captures) != 1
+    ):
+        _evidence_fail("connector_evidence_campaign_slice_missing")
+    return definitions[0], tuple(entries), captures[0]
+
+
+def _introduction(
+    chain: VerifiedEvidenceIndexChain,
+    campaign_id: str,
+    campaign_fingerprint: str,
+) -> VerifiedEvidenceIndexRevision:
+    key = (campaign_id, campaign_fingerprint)
+    for revision in chain.revisions:
+        if any(_campaign_key(item) == key for item in revision.model.campaigns):
+            _find_campaign_refs(
+                VerifiedEvidenceIndexChain(
+                    evidence_root=chain.evidence_root,
+                    head=revision.model,
+                    head_raw_sha256=revision.raw_sha256,
+                    head_path=revision.path,
+                    revisions=chain.revisions[: int(revision.model.revision)],
+                ),
+                campaign_id,
+                campaign_fingerprint,
+            )
+            return revision
+    _evidence_fail("connector_evidence_campaign_introduction_missing")
+
+
+def _archived_model(
+    chain: VerifiedEvidenceIndexChain,
+    relative_path: object,
+    expected_sha256: str,
+    model_type: Any,
+) -> tuple[Path, bytes, Any, str]:
+    snapshot = _read_evidence_file(
+        chain.evidence_root,
+        relative_path,
+        max_bytes=MAX_PROTECTED_JSON_BYTES,
+    )
+    if snapshot.sha256 != expected_sha256:
+        _evidence_fail("connector_evidence_archive_digest_invalid")
+    model = _parse_evidence_model(snapshot, model_type)
+    canonical_hash = hashlib.sha256(_canonical_json_bytes(model)).hexdigest()
+    return (
+        chain.evidence_root.joinpath(*PurePosixPath(snapshot.relative_path).parts),
+        snapshot.data,
+        model,
+        canonical_hash,
+    )
+
+
+def resolve_historical_connector_grant_evidence_read_only(
+    settings: Any,
+    *,
+    connector_key: str,
+    campaign_id: str,
+    expected_campaign_fingerprint: str,
+    expected_grant_sha256: str,
+) -> VerifiedHistoricalGrantEvidence:
+    from app.schemas.api import (
+        ConnectorEgressGrantV1,
+        ConnectorGrantConsumptionMarkerV1,
+        DualLiveCampaignDefinitionV1,
+        expected_grant_rule_payloads,
+    )
+
+    if (
+        connector_key not in _EXPECTED_CONNECTORS
+        or not _LOWERCASE_SHA256.fullmatch(expected_campaign_fingerprint)
+        or not _LOWERCASE_SHA256.fullmatch(expected_grant_sha256)
+    ):
+        _evidence_fail("connector_evidence_historical_input_invalid")
+    chain = load_evidence_index_chain_read_only(settings)
+    definition_ref, entries, _capture_ref = _find_campaign_refs(
+        chain,
+        campaign_id,
+        expected_campaign_fingerprint,
+    )
+    matches = [
+        item
+        for item in entries
+        if item.connector_key == connector_key
+        and item.raw_grant_sha256 == expected_grant_sha256
+    ]
+    if len(matches) != 1:
+        _evidence_fail("connector_evidence_historical_grant_missing")
+    entry = matches[0]
+    definition_path, definition_bytes, definition, campaign_hash = _archived_model(
+        chain,
+        definition_ref.definition_relative_path,
+        definition_ref.raw_definition_sha256,
+        DualLiveCampaignDefinitionV1,
+    )
+    if (
+        str(definition.campaign_id) != campaign_id
+        or campaign_hash != expected_campaign_fingerprint
+        or definition.code_revision != definition_ref.code_revision
+    ):
+        _evidence_fail("connector_evidence_definition_invalid")
+    grant_path, grant_bytes, grant, grant_hash = _archived_model(
+        chain,
+        entry.grant_relative_path,
+        expected_grant_sha256,
+        ConnectorEgressGrantV1,
+    )
+    expected_rules = expected_grant_rule_payloads(connector_key)
+    actual_rules = tuple(item.model_dump(mode="python") for item in grant.request_rules)
+    expected_target = (
+        definition.sciencebase_target
+        if connector_key == "sciencebase_mcs"
+        else definition.nrc_target
+    )
+    if (
+        grant.connector_key != connector_key
+        or grant.campaign_id != campaign_id
+        or grant.campaign_fingerprint != expected_campaign_fingerprint
+        or grant.campaign_definition_sha256 != definition_ref.raw_definition_sha256
+        or grant.code_revision != definition.code_revision
+        or grant_hash != entry.canonical_grant_fingerprint
+        or grant.target != expected_target
+        or actual_rules != expected_rules
+        or grant.issued_at < definition.not_before
+        or grant.expires_at > definition.expires_at
+    ):
+        _evidence_fail("connector_evidence_grant_invalid")
+    marker_path, marker_bytes, marker, _marker_hash = _archived_model(
+        chain,
+        entry.consumption_marker_relative_path,
+        entry.consumption_marker_sha256,
+        ConnectorGrantConsumptionMarkerV1,
+    )
+    if marker_bytes != _canonical_json_bytes(marker) or any(
+        (
+            marker.connector_key != connector_key,
+            marker.campaign_id != campaign_id,
+            marker.campaign_fingerprint != expected_campaign_fingerprint,
+            marker.campaign_definition_sha256 != definition_ref.raw_definition_sha256,
+            marker.raw_grant_sha256 != expected_grant_sha256,
+            marker.canonical_grant_fingerprint != entry.canonical_grant_fingerprint,
+            marker.arming_nonce != grant.arming_nonce,
+            marker.max_armings != 1,
+        )
+    ):
+        _evidence_fail("connector_evidence_marker_invalid")
+    introduction = _introduction(chain, campaign_id, expected_campaign_fingerprint)
+    return VerifiedHistoricalGrantEvidence(
+        definition_model=definition,
+        model=grant,
+        raw_definition_sha256=definition_ref.raw_definition_sha256,
+        canonical_campaign_fingerprint=campaign_hash,
+        raw_sha256=expected_grant_sha256,
+        canonical_fingerprint=grant_hash,
+        introduction_index_revision=int(introduction.model.revision),
+        introduction_index_sha256=introduction.raw_sha256,
+        definition_archive_path=definition_path,
+        grant_archive_path=grant_path,
+        marker_model=marker,
+        consumption_marker_path=marker_path,
+        consumption_marker_sha256=entry.consumption_marker_sha256,
+        index_chain=chain,
+    )
+
+
+def _validate_log_capture_paths(ref: Any) -> tuple[str, str, str]:
+    log_dir = _safe_evidence_relative(ref.log_dir_relative_path)
+    manifest = _safe_evidence_relative(ref.manifest_relative_path)
+    seal = _safe_evidence_relative(ref.seal_relative_path)
+    fingerprint = str(ref.campaign_fingerprint)
+    if (
+        log_dir != f"logs/{fingerprint}"
+        or manifest != f"logs/{fingerprint}/manifest.json"
+        or seal != f"log-seals/{fingerprint}.json"
+    ):
+        _evidence_fail("connector_evidence_capture_path_invalid")
+    return log_dir, manifest, seal
+
+
+def _read_stable_capture_bytes(
+    root: Path,
+    relative_path: str,
+    *,
+    max_bytes: int,
+) -> _EvidenceFileSnapshot:
+    return _read_evidence_file(root, relative_path, max_bytes=max_bytes)
+
+
+def _parse_canonical_capture_model(
+    snapshot: _EvidenceFileSnapshot,
+    model_type: Any,
+    *,
+    label: str,
+) -> Any:
+    del label
+    return _parse_evidence_model(snapshot, model_type)
+
+
+def verify_connector_campaign_log_capture_read_only(
+    db: Any,
+    chain: VerifiedEvidenceIndexChain,
+    campaign_id: str,
+    expected_campaign_fingerprint: str,
+) -> VerifiedCampaignLogCapture:
+    from sqlalchemy import select
+
+    from app.models.models import ConnectorRunEvent
+    from app.schemas.api import (
+        ConnectorCampaignLogManifestV1,
+        ConnectorCampaignLogSealV1,
+    )
+
+    definition_ref, _entries, capture_ref = _find_campaign_refs(
+        chain,
+        campaign_id,
+        expected_campaign_fingerprint,
+    )
+    introduction = _introduction(chain, campaign_id, expected_campaign_fingerprint)
+    _log_dir, manifest_relative, seal_relative = _validate_log_capture_paths(capture_ref)
+    manifest_snapshot = _read_evidence_file(
+        chain.evidence_root,
+        manifest_relative,
+        max_bytes=MAX_PROTECTED_JSON_BYTES,
+    )
+    seal_snapshot = _read_evidence_file(
+        chain.evidence_root,
+        seal_relative,
+        max_bytes=MAX_PROTECTED_JSON_BYTES,
+    )
+    manifest = _parse_evidence_model(
+        manifest_snapshot,
+        ConnectorCampaignLogManifestV1,
+    )
+    seal = _parse_evidence_model(seal_snapshot, ConnectorCampaignLogSealV1)
+    identity = (
+        campaign_id,
+        expected_campaign_fingerprint,
+        definition_ref.raw_definition_sha256,
+        definition_ref.code_revision,
+    )
+    if (
+        (
+            manifest.campaign_id,
+            manifest.campaign_fingerprint,
+            manifest.campaign_definition_sha256,
+            manifest.code_revision,
+        )
+        != identity
+        or (
+            seal.campaign_id,
+            seal.campaign_fingerprint,
+            seal.campaign_definition_sha256,
+            seal.code_revision,
+        )
+        != identity
+        or seal.campaign_introduction_index_revision != introduction.model.revision
+        or seal.campaign_introduction_index_sha256 != introduction.raw_sha256
+        or seal.manifest_relative_path != manifest_relative
+        or seal.sealed_at < manifest.runtime_stopped_at
+    ):
+        _evidence_fail("connector_evidence_capture_identity_invalid")
+    if tuple(Path(item.relative_path).name for item in manifest.files) != _EXPECTED_CAPTURE_FILES:
+        _evidence_fail("connector_evidence_capture_membership_invalid")
+    file_set_hash = hashlib.sha256(
+        _canonical_json_bytes(
+            {
+                "schema_id": "project6.connector_campaign_log_file_set.v1",
+                "files": [item.model_dump(mode="python") for item in manifest.files],
+            }
+        )
+    ).hexdigest()
+    if (
+        seal.manifest_sha256 != manifest_snapshot.sha256
+        or seal.file_set_hash != file_set_hash
+    ):
+        _evidence_fail("connector_evidence_capture_seal_invalid")
+    aggregate = 0
+    stream_snapshots: list[_EvidenceFileSnapshot] = []
+    stream_bytes: dict[str, bytes] = {}
+    for item in manifest.files:
+        snapshot = _read_evidence_file(
+            chain.evidence_root,
+            item.relative_path,
+            max_bytes=MAX_CAPTURE_STREAM_BYTES,
+        )
+        aggregate += snapshot.size
+        if (
+            aggregate > MAX_CAPTURE_AGGREGATE_BYTES
+            or snapshot.size != item.byte_count
+            or snapshot.sha256 != item.sha256
+        ):
+            _evidence_fail("connector_evidence_capture_stream_invalid")
+        stream_snapshots.append(snapshot)
+        stream_bytes[item.relative_path] = snapshot.data
+    run_ids = tuple(str(value) for value in seal.connector_run_ids)
+    events = tuple(
+        db.scalars(
+            select(ConnectorRunEvent)
+            .where(
+                ConnectorRunEvent.event_type == "campaign_log_capture_sealed",
+                ConnectorRunEvent.connector_run_id.in_(run_ids),
+            )
+            .order_by(
+                ConnectorRunEvent.connector_run_id.asc(),
+                ConnectorRunEvent.connector_run_event_id.asc(),
+            )
+            .limit(len(run_ids) + 1)
+        )
+    )
+    if (
+        len(run_ids) != 2
+        or len(set(run_ids)) != 2
+        or len(events) != 2
+        or {str(event.connector_run_id) for event in events} != set(run_ids)
+    ):
+        _evidence_fail("connector_evidence_capture_event_invalid")
+    first = tuple(
+        stream_snapshots
+        + [manifest_snapshot, seal_snapshot]
+    )
+    second = tuple(
+        _read_evidence_file(
+            chain.evidence_root,
+            item.relative_path,
+            max_bytes=(
+                MAX_CAPTURE_STREAM_BYTES
+                if index < len(stream_snapshots)
+                else MAX_PROTECTED_JSON_BYTES
+            ),
+        )
+        for index, item in enumerate(first)
+    )
+    if first != second:
+        _evidence_fail("connector_evidence_capture_changed")
+    return VerifiedCampaignLogCapture(
+        manifest_bytes=manifest_snapshot.data,
+        manifest_sha256=manifest_snapshot.sha256,
+        file_set_hash=file_set_hash,
+        seal_bytes=seal_snapshot.data,
+        seal_sha256=seal_snapshot.sha256,
+        stream_bytes=MappingProxyType(stream_bytes),
+        seal_event_ids=tuple(str(event.connector_run_event_id) for event in events),
+        stable_snapshot=tuple(
+            (item.relative_path, item.size, item.sha256) for item in first
+        ),
+    )
+
+
+_RUNTIME_RECORD_KEYS = (
+    "schema_id",
+    "ordinal",
+    "runtime_instance_id",
+    "phase",
+    "event",
+    "process_boot_id",
+    "previous_record_sha256",
+    "payload",
+    "record_sha256",
+)
+_RUNTIME_SCHEMA_ID = "project6.dual_live_runtime_record.v1"
+_RUNTIME_EVENT_PHASES = {
+    "runtime_start": frozenset(("wrapper",)),
+    "phase_child_start": frozenset(("A", "B")),
+    "logger_census": frozenset(("A", "B")),
+    "phase_go": frozenset(("A", "B")),
+    "stop_latched": frozenset(("wrapper",)),
+    "socket_census": frozenset(("A", "B")),
+    "job_zero": frozenset(("A", "B")),
+    "authority_cleared": frozenset(("A", "B")),
+    "phase_complete": frozenset(("A", "B")),
+    "runtime_complete": frozenset(("wrapper",)),
+}
+_RUNTIME_PAYLOAD_KEYS = {
+    "runtime_start": frozenset(
+        (
+            "code_revision",
+            "wrapper_image_sha256",
+            "interpreter_image_sha256",
+            "dependency_set_sha256",
+            "phase_timeout_contract",
+            "mutex_identity_sha256",
+        )
+    ),
+    "phase_child_start": frozenset(
+        ("process_creation_identity_sha256", "executable_sha256", "job_policy_sha256")
+    ),
+    "logger_census": frozenset(
+        (
+            "census_point",
+            "topology_sha256",
+            "handler_count",
+            "guard_state",
+            "topology_matches_initial",
+        )
+    ),
+    "phase_go": frozenset(("prior_state", "next_state", "control_nonce_sha256")),
+    "stop_latched": frozenset(("reason_code", "monotonic_tick_ns")),
+    "socket_census": frozenset(
+        (
+            "tcp4_state_counts",
+            "tcp6_state_counts",
+            "udp4_count",
+            "udp6_count",
+            "process_identity_sha256",
+            "stable",
+        )
+    ),
+    "job_zero": frozenset(("active_process_count", "process_list_sha256")),
+    "authority_cleared": frozenset(
+        ("authority_posture_sha256", "all_required_absent")
+    ),
+    "phase_complete": frozenset(("terminal_state", "exit_code")),
+    "runtime_complete": frozenset(
+        ("phase_a_result_sha256", "phase_b_result_sha256", "terminal_state")
+    ),
+}
+
+
+def _runtime_record_hash(record: Mapping[str, Any]) -> str:
+    return hashlib.sha256(
+        _canonical_json_bytes(
+            {key: record[key] for key in _RUNTIME_RECORD_KEYS if key != "record_sha256"}
+        )
+    ).hexdigest()
+
+
+def read_runtime_records(app_log: bytes) -> tuple[dict[str, Any], ...]:
+    if not isinstance(app_log, bytes) or (app_log and not app_log.endswith(b"\n")):
+        _evidence_fail("dual_live_runtime_log_invalid")
+    records: list[dict[str, Any]] = []
+    runtime_id: str | None = None
+    predecessor: str | None = None
+    for line in app_log.splitlines():
+        if not line:
+            _evidence_fail("dual_live_runtime_log_invalid")
+        try:
+            value = _strict_json_loads(line)
+        except (TypeError, ValueError) as exc:
+            raise ConnectorEvidenceError("dual_live_runtime_log_invalid") from exc
+        if not isinstance(value, dict) or value.get("schema_id") != _RUNTIME_SCHEMA_ID:
+            continue
+        if _canonical_json_bytes(value) != line or set(value) != set(_RUNTIME_RECORD_KEYS):
+            _evidence_fail("dual_live_runtime_record_invalid")
+        ordinal = value.get("ordinal")
+        phase = value.get("phase")
+        event = value.get("event")
+        payload = value.get("payload")
+        try:
+            parsed_runtime_id = UUID(str(value.get("runtime_instance_id")))
+        except (TypeError, ValueError) as exc:
+            raise ConnectorEvidenceError("dual_live_runtime_record_invalid") from exc
+        if (
+            type(ordinal) is not int
+            or ordinal != len(records) + 1
+            or parsed_runtime_id.version != 4
+            or str(parsed_runtime_id) != value.get("runtime_instance_id")
+            or phase not in {"wrapper", "A", "B"}
+            or event not in _RUNTIME_EVENT_PHASES
+            or phase not in _RUNTIME_EVENT_PHASES[event]
+            or not isinstance(payload, dict)
+            or set(payload) != _RUNTIME_PAYLOAD_KEYS[event]
+            or value.get("previous_record_sha256") != predecessor
+            or not _LOWERCASE_SHA256.fullmatch(str(value.get("record_sha256") or ""))
+            or _runtime_record_hash(value) != value.get("record_sha256")
+        ):
+            _evidence_fail("dual_live_runtime_record_invalid")
+        boot = value.get("process_boot_id")
+        if (phase == "wrapper" and boot is not None) or (
+            phase != "wrapper" and not _LOWERCASE_SHA256.fullmatch(str(boot or ""))
+        ):
+            _evidence_fail("dual_live_runtime_record_invalid")
+        if runtime_id is None:
+            runtime_id = str(parsed_runtime_id)
+        elif runtime_id != str(parsed_runtime_id):
+            _evidence_fail("dual_live_runtime_record_invalid")
+        normalized = {key: value[key] for key in _RUNTIME_RECORD_KEYS}
+        records.append(normalized)
+        predecessor = normalized["record_sha256"]
+    return tuple(records)
