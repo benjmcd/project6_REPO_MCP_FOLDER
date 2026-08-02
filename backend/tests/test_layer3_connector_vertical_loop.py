@@ -3714,7 +3714,7 @@ def _sciencebase_origin_session(
     }
     payload = {
         "connector_source_intake_record_id": record_id,
-        "source_class": "connector_produced_single_source",
+        "source_class": connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
         "content_sha256": FIXTURE_SHA256,
         "metadata_hash": strict_values["metadata_hash"],
         "authority_basis_hash": strict_values["authority_basis_hash"],
@@ -3749,7 +3749,7 @@ def _sciencebase_origin_session(
     }
     decision_item = {
         "candidate_id": f"mat-connector_source_intake_record-{record_id}",
-        "source_class": "connector_produced_single_source",
+        "source_class": connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
         "decision": "approved",
         "decision_basis": copy.deepcopy(decision_basis),
         "source_identity": copy.deepcopy(source_identity),
@@ -3762,11 +3762,11 @@ def _sciencebase_origin_session(
         db,
         runtime,
         session_id=session_id,
-        source_class="connector_produced_single_source",
+        source_class=connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
         decision_item=decision_item,
         snapshot_identity={
             "candidate_id": decision_item["candidate_id"],
-            "source_class": "connector_produced_single_source",
+            "source_class": connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
             **source_identity,
         },
         snapshot_provenance=source_provenance,
