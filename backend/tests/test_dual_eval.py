@@ -648,6 +648,32 @@ def test_origin_absence_returns_exact_69_ordered_results(
     assert all(isinstance(result, CheckResult) for result in results)
 
 
+def test_origin_failure_structurally_blocks_phase_b_sources_for_r17() -> None:
+    reason_code = "dual_live_origin_receipt_unavailable"
+    errors = {"origin": reason_code}
+    dual_live_evaluator_module._materialize_dependency_errors(errors)
+
+    assert errors["phase_b_sources"] == reason_code
+
+    context = dual_live_evaluator_module._EvidenceContext(
+        campaign_id=CAMPAIGN_ID,
+        campaign_fingerprint=CAMPAIGN_FINGERPRINT,
+        settings=NoAccess(),
+        db=NoAccess(),
+        domain_errors=errors,
+    )
+    result = dual_live_evaluator_module._check_r17_phase_b_strict_flow(
+        context
+    )
+
+    assert result.status == "INDETERMINATE"
+    assert result.code == "r17_phase_b_strict_flow_evidence_unavailable"
+    assert result.evidence == {
+        "domain": "phase_b_sources",
+        "reason_code": reason_code,
+    }
+
+
 def test_domain_error_preserves_secret_safe_reason_code() -> None:
     context = dual_live_evaluator_module._EvidenceContext(
         campaign_id=CAMPAIGN_ID,

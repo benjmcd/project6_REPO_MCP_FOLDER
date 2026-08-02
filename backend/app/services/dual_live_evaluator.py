@@ -1180,6 +1180,7 @@ def _materialize_dependency_errors(errors: dict[str, str]) -> None:
         ("counter", ("capture",)),
         ("ledger", ("authority", "capture", "counter")),
         ("origin", ("ledger",)),
+        ("phase_b_sources", ("origin",)),
         ("downstream", ("origin",)),
         ("execution", ("downstream",)),
         ("review", ("execution",)),
