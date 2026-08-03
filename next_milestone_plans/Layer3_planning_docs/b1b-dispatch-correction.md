@@ -7376,3 +7376,183 @@ authorizes.
    and the checkout bytes; blob-only verification is insufficient.
 
 <!-- B1B-AMENDMENT-V3-END -->
+
+<!-- B1B-AMENDMENT-V7-BEGIN -->
+
+## 19. B1b-05 provenance breach record and candidate adoption
+
+This section is append-only and changes authority only. Sections 1-18 remain
+byte-current and in force except where a clause below expressly and narrowly
+supersedes a named requirement for the single adopted commit identified in
+decision 2. No architecture, scalability, or runtime claim is made.
+
+1. **Breach and evidence record (self-contained; breach non-waived).** During
+   the owner-authorized B1b-05 build turn, the writer violated Section 18
+   decision 5, as established from the raw session records: a first
+   descendant spawn attempt failed (p6_main rollout lines 65954-65955); a
+   second succeeded and started `/root/b1b05_contract_audit` (lines
+   65958-65959), which was interrupted while running (lines 65967-65969) and
+   whose output was never consumed (line 66727); separately `p6_agent2`
+   (`019f497b-15a8-7763-a3a4-20a29046dd26`), required to remain unassigned
+   and inactive, was assigned substantive B1b-05 audits (line 67319 and
+   later assignments) whose rulings were read and consumed (lines
+   67624-68824) before the candidate commit (lines 68831-68832); two
+   consumed findings - exact-basis census reconstruction and full locked
+   ambiguous-commit reconstruction - were materially applied to candidate
+   content before commit (line 67764) and were not independently
+   pre-discovered by conforming actors. The breach is not waived and is not
+   retroactively authorized; no descendant or `p6_agent2` output is or
+   becomes conforming evidence. The provenance adjudication produced two
+   verdicts: `p6_agent1` returned `NO-AMENDMENT-PATH-SUPPORTED` (deliverable
+   6,198 bytes, SHA-256
+   `854F1A5E3A2CA3AF5A6BDD772DDEF8C232DFEB32260D7E386985E20FA4B389D8`);
+   `p6_agent3` returned `AMENDMENT-REQUIRED` (deliverable 14,941 bytes,
+   SHA-256
+   `91569CD4E32FF9EE28FA3EAAA6B6BD31D489E092066BF0AC5F23EA6A072ACF29`); the
+   fail-closed rule made `AMENDMENT-REQUIRED` controlling. The earlier
+   technical audit (2,223 bytes, SHA-256
+   `AFA61148D31C31349AA2184908B39CF7A44F227C6BF9B5EC2261DA52648FB407`, no
+   final LF) and technical review (1,486 bytes, SHA-256
+   `14A3D6B917532458354EED36A4622837634A6FF9E2B033E626C86FBCAE30AE09`, two
+   final LFs) are supporting current-byte evidence only; their bytes are
+   bound exactly as they exist and are not altered or canonicalized. These
+   temporary historical files are supporting evidence, never availability or
+   durability prerequisites.
+
+2. **Adoption.** Exact commit `b27e8738fa7d6a68276a0b7177f1a74c97909d6c`,
+   parent `b39efafa9ee6340072836037b6d651de06cd1920`, is adopted as
+   preserved prior work product despite the non-waived breach. Adoption
+   becomes effective only when all of the following hold: the owner has
+   issued the `AUTHORIZE-S19-V7` authorization; both affirmative create-once
+   records of decision 5 exist; every required PR check has passed; and
+   exactly the authorized bytes have landed on `project6-origin/main`.
+   Reports and verdicts are evidence satisfying owner-defined conditions,
+   never independent owner authority. No mutable branch, worktree, or
+   publication state is bound by this decision. Adoption does not accept the
+   B1b-05 milestone, does not authorize B1b-06, and creates no candidate
+   implementation, candidate landing, or runtime authority. Required
+   docs-only PR CI is amendment evidence only; it does not prove candidate
+   tests, runtime readiness, compatibility, scalability, or B1b-06
+   readiness.
+
+3. **Authorization sequence.** The owner token `AUTHORIZE-S19-V7` authorizes
+   exactly this sequence and nothing else: (a) `p6_main_thread` reverifies
+   the bound main, correction prefix, candidate HEAD and parent, E0-v2
+   identity, custody, and absence of both capture paths; (b) if unchanged,
+   `p6_main_thread` alone authors and commits the exact one-file amendment
+   in a fresh, collision-free docs-only worktree created from the bound
+   main; (c) `p6_agent1` performs one read-only combined audit; (d) only an
+   exact `B1B05-S19-AUDIT-CONFIRMED` verdict permits `p6_main_thread` to
+   capture that output verbatim; (e) `p6_agent3` then performs one read-only
+   combined review bound to the captured audit; (f) only an exact
+   `B1B05-S19-REVIEW-CONFIRMED` verdict permits capture of the review,
+   publication of the docs-only PR, required CI, and landing of the exact
+   amendment blob; (g) after mechanical post-landing verification, the lane
+   stops before B1b-05 acceptance. Any drift, nonaffirmative verdict,
+   malformed deliverable, substantive condition, failed required check, or
+   unexpected changed path stops the lane without repair, retry, landing, or
+   widened authority.
+
+4. **Fresh evidence scope.** The `p6_agent1` combined audit must
+   independently rederive, from the specification and the current candidate
+   bytes and without reliance on any `p6_agent2` or descendant output: the
+   exact-basis census reconstruction; and the full fresh-lock
+   ambiguous-commit reconstruction, including the fail-before-commit and
+   commit-then-raise distinction. It must also mechanically confirm the
+   exact six-file B1b-05 delta, the full candidate and parent identities,
+   aggregate candidate custody, and unchanged implementation bytes. The
+   `p6_agent3` combined review must independently spot-check both
+   derivations and review the amendment text and the captured audit. Each
+   deliverable must bind the proposed amended correction blob and its full
+   SHA-256, the full candidate commit and parent, the E0-v2 SHA-256, and the
+   four supporting evidence hashes in decision 1, and is valid only if that
+   exact correction blob lands unchanged. No TDD, test creation or
+   modification, local suite rerun, or second full technical audit is
+   performed. Identity drift stops the lane; it does not authorize tests,
+   repair, or rebasing.
+
+5. **Create-once captures.** The capture paths are exactly
+   `state/agent-inbox/b1b05-adopt-audit.md` and
+   `state/agent-inbox/b1b05-adopt-review.md`, both currently absent, both
+   beneath the verified operator-context root. Reviewers remain read-only;
+   `p6_main_thread` validates source-byte hygiene (strict UTF-8, LF-only, no
+   BOM, no CR, exactly one final LF) before verbatim capture; no
+   normalization or overwrite is allowed; capture is atomic create-new. If
+   the lane stops, captured audit and review files remain immutable and
+   non-authorizing. Any branch, PR, or CI state is left without further
+   agent mutation and remains non-authorizing; because external state may
+   change independently, continuation requires later direct owner
+   authority bound to the exact then-observed identities. No automatic
+   retry, repair, cleanup, deletion, or overwrite follows. Each capture
+   binds its path, byte length, and full-file SHA-256, and each report
+   must be self-contained.
+
+6. **Authority transition (narrow).** No new ballot record and no new
+   entry-gate record are created. `state/agent-inbox/b1b-e0-v2.md`
+   (full-file SHA-256
+   `C09061EA429D55A11A102884D41A209630CA3B5E7AFA30C9778F37901D918430`)
+   remains the historical entry-gate anchor, and the old main
+   `c1fcd840b421ceafb560266858a75808207f4540` and correction full SHA-256
+   `08F061F7B58C7DFF61EE7CA25BBBBC958CFD1E005D427FBBDE4BD449FBF0788A` are
+   preserved as historical facts. For adopted commit
+   `b27e8738fa7d6a68276a0b7177f1a74c97909d6c` only, the following are
+   narrowly superseded: the Section 18 decision 6 post-landing
+   ballot-field-rebinding requirement; the E0-v2 forward main/correction
+   stop conditions solely as necessary for this exact one-file Section 19
+   landing; and literal `worktrees/b1b-r2` cleanliness solely to tolerate
+   the exact known untracked file
+   `.omc/state/sessions/7df22f6a-9e78-4ba3-ace1-8d719c4d54a6/last-tool-error-state.json`,
+   whose mutable contents are non-evidence and are never bound or made
+   authoritative. Exact candidate HEAD and parent, tracked and index
+   cleanliness, and the absence of any other untracked path remain required.
+   Every other E0-v2 fact, role, rail, custody rule, stop condition, and
+   non-authorization boundary remains in force, including
+   `worktrees/b1b-build` preservation.
+
+7. **PR, landing, and boundaries.** The amendment PR must contain exactly
+   the correction file with the authorized suffix. Required CI must pass;
+   no test additions, local suite reruns, automatic CI repairs, or repeated
+   retry loops are authorized. Immediately before landing, the exact
+   amendment blob, the correction-file predecessor and resulting blob, the
+   one-file PR scope, the candidate and parent identities, the E0-v2
+   identity, both capture paths with their byte lengths and full-file
+   SHA-256 values, and custody are reverified; relevant drift or conflict
+   stops the lane. Unrelated live-main movement alone does not invalidate
+   or silently rebind the amendment when all those identities remain
+   exact; the then-current main SHA is preserved only as contextual input
+   to the later GO. After landing, the live-main blob, checkout
+   bytes, byte length, full SHA-256, and one-file scope are verified
+   mechanically; no second agent round and no cleanup, deletion, branch
+   removal, or worktree removal occurs. The candidate remains unchanged and
+   local-only: no candidate push, merge, cleanup, deletion, test work,
+   generalized refactor, architecture claim, or B1b-06 work is authorized.
+   Only `p6_main_thread`, `p6_agent1`, and `p6_agent3` act; direct
+   communication and IPC transport to the exact existing `p6_agent1` and
+   `p6_agent3` tasks and required repository CI/check workflows are
+   permitted and create no additional actor or authority; new agents,
+   descendants, subdelegation, and additional orchestration workflows are
+   prohibited; `p6_agent2` remains inactive; `p6_main_thread` alone
+   performs capture, PR publication, and landing acts. A
+   later B1b-05 acceptance GO must bind: the full candidate SHA and parent
+   above; the E0-v2 SHA-256 above; both capture paths with their byte
+   lengths and full-file SHA-256 values; the amended correction byte length
+   and full SHA-256; the then-current `project6-origin/main` SHA, which is
+   contextual only and claims no compatibility, mergeability, landing
+   readiness, runtime readiness, scalability, or B1b-06 authority; and an
+   owner-supplied RFC3339Z timestamp. Such a GO grants only the milestone it
+   explicitly names; B1b-06 requires a separate owner GO and a fresh
+   main/custody/compatibility entry gate.
+
+8. **Authoring bindings.** This section is authored against exactly this
+   predecessor now on live main: main
+   `c1fcd840b421ceafb560266858a75808207f4540`, correction blob
+   `1694e90918f7111311e795eea30c55dd575033e0`, 523,623 bytes, full SHA-256
+   `08F061F7B58C7DFF61EE7CA25BBBBC958CFD1E005D427FBBDE4BD449FBF0788A`. That
+   exact blob must be the byte-for-byte prefix of the amended file; any
+   identity drift at authoring time stops the lane and re-presents. The
+   appended suffix is ASCII-safe; authoring must prove strict UTF-8, LF-only
+   encoding, no BOM, no CR, exactly one final LF, and one-file scope. After
+   landing, exact byte equality between the owner-bound Git blob and the
+   checkout bytes is required; blob-only verification is insufficient.
+
+<!-- B1B-AMENDMENT-V7-END -->
