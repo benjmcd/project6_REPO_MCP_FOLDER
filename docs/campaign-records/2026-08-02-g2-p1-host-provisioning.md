@@ -149,3 +149,74 @@ rows and erased the governing clause in the fourth. It was not performed.
 This record is the designated append target for that provisioning evidence. Until such
 a section exists, G2-P1 is OPEN and every downstream prerequisite — G2-P2 in
 particular, which requires reproduction **on that host** — is unreachable.
+
+## G2-P1 closure — owner acceptance of the eligibility evidence (dated appended section, 2026-08-04)
+
+> Appended per this record's §5 item 7 and its own append-target designation (":147 / :149-151" above:
+> evidence "appended to this record as a dated section"). Append-only: no existing line of this record is
+> edited. Redaction posture: operator-identifying details as neutral placeholders (omission only, never
+> false). Issued under a Fable adversarial pre-check returning GO-WITH-CONDITIONS (2026-08-04); every
+> condition is discharged inside this section.
+
+### 1. Acceptance
+
+The owner accepts `docs/campaign-records/2026-08-03-g2-p1-host-eligibility.md` (eligibility digest
+`1c24c9820e3a001e89748d7795180b68fa99e48f1d7d42fdb554049c7885217d`), incorporated by reference as the
+evidence body discharging §5 items 1–4 on the elected host. This appended section itself satisfies §5
+item 7. **G2-P1: CLOSED-WITH-NAMED-CARRIAGE.**
+
+Carriage rationale, stated rather than implied: §5 items 5 (file-interference quietness on the live-run
+evidence roots) and 6 (child-env extras confirmation) are run-window properties — item 6 requires an
+acquisition child that cannot exist before the live run. Read at maximum strictness, P1 could never close
+before the run, which would make G2-P8's "confirm P1-P7 closed" unsatisfiable — a deadlock, not a
+discipline. The coherent closure is: items 1–4 accepted now on landed evidence; items 5–6 carried by
+name to the P8/run-window checklist (§4 below), never silently dropped.
+
+### 2. Provenance ruling
+
+An earlier draft of the eligibility record was written into the working tree by a read-only-instructed
+verification subagent under an inaccurate landing header. It was never committed — the eligibility
+file's repository history is a single commit (`7d6d3e72`) — and was preserved off-repository, removed
+from the worktree, and the record re-authored by the orchestrating session under owner authorization
+with accurate provenance and strictly narrower claims. The "adversarial re-derivation" party in the
+eligibility record's two-party determinism claim was that same subagent; the digest is independently
+corroborated by the 2026-08-04 re-run (PASS ×2, byte-identical), recorded on-disk in
+`docs/campaign-records/2026-08-04-g2-p6-residual-acceptance.md` (DECISION CONTEXT). With that incident
+and that corroboration disclosed here, the owner rules the eligibility record **CITABLE at G2-P8**.
+
+### 3. Host election, restated in the P1 chain
+
+- **HOST = (a):** the elected operator workstation (identity redacted), CPython 3.12.10, eligibility
+  measured through the curated non-OneDrive scratch venv. Mandatory mitigations: the campaign runs from
+  a non-OneDrive detached checkout of the then-authorized commit (re-fixed by G2-P8's drift check at
+  authorization time); OneDrive/AV quiesced for the run window (that trade is accepted at the P6
+  instrument, residual 1).
+- **D6 = (a):** digest acceptance semantics = host-local determinism + match-to-landed-record,
+  re-derived at P8 (P8 checklist item 2).
+- Cross-reference for both elections: `2026-08-04-g2-p6-residual-acceptance.md`, DECISION CONTEXT.
+
+### 4. Named carriage (re-homed explicitly)
+
+1. **Live-run evidence-root quietness** (§5 item 5, eligibility record "open items") → P8 / run-window
+   procedure.
+2. **Child-env extras confirmation** (the advisory-sweep extras sub-clause, child-environment half;
+   §5 item 6) → P8 / run-window, verified inside the acquisition child.
+3. **Install-provenance non-claim** incl. the RECORD console-script shim-line stripping → carried under
+   the verifier's `DEPENDENCY_PROVENANCE_NONCLAIM`; not cured by this closure.
+4. **Actual run-environment provisioning + digest match** → P8 checklist item 2. Launch-time fail-closed
+   backstop: `tools/dual_live_run.py` re-runs the verifier inside the actual run environment and refuses
+   on digest mismatch (`dual_live_dependency_provenance_invalid`), with a second invocation on the
+   runtime path.
+
+### 5. Consequence for G2-P2
+
+`docs/campaign-records/2026-08-03-g2-p2-offline-evaluator-bar.md` holds G2-P2 "formally OPEN pending
+owner acceptance of the P1 eligibility record." That sole pendency is resolved by §1 above; the landed
+P2 measurement (census 404/404 exit 0; five tamper campaigns PASS) now stands as reproduced on the
+eligible host. **G2-P2: CLOSED by this same acceptance.**
+
+### 6. Non-claims
+
+This section does not close G2-P3 or G2-P5; does not authorize G2-P8 or any live run; creates, requests,
+and handles no credential; arms no egress (C3 PREP-ONLY holds until P8); does not edit the frozen plan
+blob `68f740af…` or the B1a seal `b8a89df2…`; and edits no existing line of this record.
