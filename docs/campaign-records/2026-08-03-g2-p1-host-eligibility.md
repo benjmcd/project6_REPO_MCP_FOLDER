@@ -95,3 +95,34 @@ no network acquisition or connector run occurred. This is the offline eligibilit
 `1c24c982…7885217d`. G2-P1 as a whole remains **OPEN**: actual connector provisioning, egress
 arming, live-run evidence-root quietness, and the acquisition-child extras check are
 owner/infra-gated and out of scope for this offline measurement.
+
+## Scope clarification — measurement vs run environment (append-only, 2026-08-04)
+
+> Append-only: no existing line above is edited. This record's measurement remains true as written; this
+> section clarifies its scope in light of a 2026-08-04 finding about the live-run interpreter.
+
+This record measured the dependency-digest **value** (`1c24c982…7885217d`) in a **curated venv**. That is a
+valid measurement of the value, but the venv is **not** the live-run interpreter and structurally cannot be:
+the dual-live owned child is spawned as the parent's **kernel image** and runs **`-I` (isolated)**, so it
+resolves the *genuine interpreter's own* `site-packages` and **bypasses any venv** (a Windows venv
+`python.exe` is a launcher/redirector whose kernel image is the base interpreter). The digest is therefore
+**portable** across any environment carrying identical six import-root bytes, but **run-eligibility is
+discharged by the genuine direct run interpreter**, not by this venv.
+
+Two clarifications to this record's wording:
+
+1. **"`pip freeze` = exactly those six":** that described the minimal **measurement** venv snapshot at the
+   time of writing. The run-prep venv actually in use (`dl-run-venv`) is a **fuller** environment (the six
+   pins plus the full application/test stack) and served as the zero-egress **graft source** for the run
+   interpreter's correct-version bytes. The digest is unaffected — the verifier inspects only the six pinned
+   distributions relative to the import root.
+
+2. **Run environment of record:** the live run uses the qualified **genuine direct copy interpreter**
+   provisioned and attested in the G2-P1 host-provisioning record's dated run-environment section
+   (2026-08-04), which **reproduced this exact digest** (`1c24c982…7885217d`) twice under the production
+   child flags `-I -B -X pycache_prefix=NUL`, with the full 356-test gate green. HOST = (a) remains the
+   elected workstation; the "curated … venv" phrasing in the host election described the
+   **eligibility-measurement** configuration, not the run mechanism.
+
+This clarification closes G2-P1 for nothing new, authorizes nothing, touches no credential and no egress,
+and edits no existing line, frozen blob `68f740af…`, or seal `b8a89df2…`.

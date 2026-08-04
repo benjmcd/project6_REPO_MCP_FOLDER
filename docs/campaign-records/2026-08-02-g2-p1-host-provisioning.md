@@ -220,3 +220,88 @@ eligible host. **G2-P2: CLOSED by this same acceptance.**
 This section does not close G2-P3 or G2-P5; does not authorize G2-P8 or any live run; creates, requests,
 and handles no credential; arms no egress (C3 PREP-ONLY holds until P8); does not edit the frozen plan
 blob `68f740af…` or the B1a seal `b8a89df2…`; and edits no existing line of this record.
+
+## G2-P1 run-environment provisioning + attestation (dated appended section, 2026-08-04)
+
+> Appended per §5 item 7 / the designated-append-target designation above. Append-only: no existing line
+> edited. Still C3 PREP-ONLY — no credential, no egress, no connector, no live run. Redaction posture:
+> operator-identifying absolute paths / hostname as neutral placeholders (omission only, never false).
+> Frozen plan blob `68f740af…` and B1a seal `b8a89df2…` not touched. Produced under a dual-lane design
+> (external Codex review + an in-session opus-heavy→Fable workflow, both GO-WITH-CONDITIONS) after a
+> measured finding that the eligibility venv cannot serve as the run interpreter (below).
+
+### Why a distinct run interpreter (the measured finding)
+
+The eligibility digest was measured in a **curated venv**. The dual-live owned child, however, is spawned
+as the parent process's **kernel image** (`QueryFullProcessImageNameW(GetCurrentProcess())`) and runs
+**`-I` (isolated)**, so it resolves the *genuine interpreter's own* `site-packages`, **bypassing any venv**.
+On Windows a venv `python.exe` is a launcher/redirector (`Python Launcher`/`py.exe`), whose kernel image is
+the base interpreter — which carries the six pins at the **wrong** versions and PyMuPDF 1.27.1. So a
+venv-launched run fails closed at the child dependency re-verify. The venv is therefore an
+**eligibility-measurement environment only**; the live run requires a **genuine direct interpreter** whose
+own `site-packages` carry the exact six pins.
+
+### The provisioned run interpreter
+
+- **Run interpreter root:** an isolated, non-OneDrive directory **outside the repository tree**
+  (operator path redacted). Reversal is directory removal; no global install, PATH, launcher-association,
+  or registry state was changed.
+- **Mechanism (zero egress):** the already-trusted, already-running base CPython 3.12.10 x64 install was
+  **copied** to the isolated root, then the six transport pins and PyMuPDF were corrected in place by
+  **grafting bytes already present on disk** in the eligibility-prep venv — no download, no new binary
+  executed, no new trust root. Ordering honored: the base's wrong-version distributions (and PyMuPDF
+  1.27.1) were **removed before** the correct trees were grafted (a second distribution per name
+  fail-closes the verifier).
+- **Genuine-direct identity:** `python.exe` SHA-256 `4d6f5f81a4bca11191c4c7c6b43632694d0a4ce74e068619d8fdc161d469859a`
+  (byte-identical to the base interpreter); `python312.dll` SHA-256
+  `9a0e3435aaa680d868150f87ab3e388ad2eebc22f87e036155c7b4eda8cd2120`; **no `pyvenv.cfg`**; PE VersionInfo
+  `InternalName=Python Console` / `OriginalFilename=python.exe` (contrast a venv redirector's
+  `Python Launcher`/`py.exe`); `sys.prefix == sys.base_prefix ==` the run root; CPython **3.12.10** win_amd64.
+- **Corrected dependency set (the six exact pins):** certifi 2026.6.17; chardet 7.4.3;
+  charset-normalizer 3.4.7; idna 3.18; requests 2.34.2; urllib3 2.7.0 — plus **PyMuPDF 1.27.2.3** (the base
+  carried 1.27.1; this is a real correction, satisfying the G2-P8 installed-PyMuPDF assertion). Exactly one
+  distribution per pinned name. The six `.dist-info/RECORD` manifests carry **zero `..` components**
+  (the console-script shim rows were already stripped in the graft source). PyMuPDF's RECORD carries one
+  `../../Scripts/pymupdf.exe` row; it is **digest-irrelevant** (PyMuPDF is not among the six the verifier
+  inspects) and was intentionally left as-is.
+
+### Attestation (measured in the run interpreter)
+
+- **Dependency digest reproduced, not re-attested.** `verify_dual_live_dependencies()` run **inside the run
+  interpreter** under the exact production child flags (`-I -B -X pycache_prefix=NUL`) returned
+  **`1c24c9820e3a001e89748d7795180b68fa99e48f1d7d42fdb554049c7885217d`** on **two** independent
+  invocations — byte-identical to the landed eligibility digest. `purelib` resolved **only** into the run
+  root (no base-`site-packages` leak). Owner election **D6 = (a)** (determinism + match-to-landed-record)
+  therefore holds with **no fresh attestation and no D6 re-anchor**.
+- **Quiescence / gate green by measurement.** The full `tests/test_dual_gate.py` gate — including the 15
+  `test_job_*` job-object quiescence tests — ran **356 passed, exit 0** under the run interpreter. (Those
+  15 tests fail only under a venv redirector, whose extra launcher process inflates the job-object
+  `TotalProcesses`; under the genuine direct interpreter they pass.)
+- **Custody / frozen state intact.** No tracked repository file was changed by provisioning (the run
+  interpreter lives outside the repo tree); frozen plan blob `68f740af…`, B1a seal `b8a89df2…`, and
+  `backend/requirements.lock.txt` (SHA-256 `bfbe4722…`) are byte-unchanged.
+
+### Host-election ruling (D-iii)
+
+**Same host, no restatement.** HOST = (a) is the elected operator **workstation**, not a specific
+interpreter path; provisioning a copy interpreter on the same workstation is **not** a change of host, so
+G2-P1/G2-P2 are **not** reopened and residual-1's accepted consequence bound (an account/host property,
+identical for the base or the copy on the same box) is **not** restated. The HOST=(a) election's phrase
+"through the curated … venv" described the **eligibility-measurement** configuration; the **run mechanism**
+is the qualified copy interpreter recorded here.
+
+### Launch-wiring contract (mandatory at G2-P8)
+
+The live-run public controller **must** be launched by the run interpreter's **absolute path**
+(`<run-root>\python.exe -I -B -X pycache_prefix=NUL tools\dual_live_run.py …`) — **never** via a venv
+redirector, `py`, PATH, or launcher selection. A redirector launch re-points the `-I` child at the base's
+wrong pins (fail-closed, but defeats provisioning).
+
+### Standing / carried
+
+This section discharges §5 item 7's run-environment provisioning + digest-match element on the elected
+host; it does **not** close G2-P5's live-host half, does **not** authorize G2-P8 or any live run, creates
+and handles **no** credential, and arms **no** egress. §5 items 5 (live-run evidence-root quietness) and 6
+(acquisition-child extras confirmation) remain run-window carriage. The launch-time re-verify preflight
+(`tools/dual_live_run.py` two-call digest check) executes only inside a real owned-child bootstrap and is
+carried to the G2-P8 run window; the first credentialed run must not be its first exercise.
