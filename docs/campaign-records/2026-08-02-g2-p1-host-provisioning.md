@@ -305,3 +305,32 @@ and handles **no** credential, and arms **no** egress. §5 items 5 (live-run evi
 (acquisition-child extras confirmation) remain run-window carriage. The launch-time re-verify preflight
 (`tools/dual_live_run.py` two-call digest check) executes only inside a real owned-child bootstrap and is
 carried to the G2-P8 run window; the first credentialed run must not be its first exercise.
+
+### Post-provisioning adversarial-check remediation (append-only, 2026-08-04)
+
+> Appended after a read-only adversarial check (3-scout → Opus → Fable, GO-WITH-CONDITIONS) that confirmed
+> every technical claim above independently and found the added record content accurate, faithful,
+> append-only, non-overreaching, and leak-free. Three conditions are recorded/discharged here; the fourth
+> (launch conformance) is a G2-P8 run-window act. Append-only; no existing line edited; frozen blob
+> `68f740af…` and seal `b8a89df2…` untouched; still C3 PREP-ONLY.
+
+- **Stale `Scripts/` launcher tree — REMEDIATED + FENCED.** The copy inherited the base install's
+  `Scripts/*.exe` console-script launchers (e.g. `pymupdf.exe`), whose embedded shebangs point at the
+  **base** interpreter (its wrong-version pins), not this run interpreter. The launchers are off the
+  designed run path (no code in `backend/`, `tools/`, or `tests/` invokes a `Scripts/*.exe`; the owned
+  child spawns via the `python.exe` kernel image; PyMuPDF is consumed via `import`). As defense-in-depth
+  the 62 `Scripts/*.exe` launchers were **removed** from the run interpreter (digest re-verified unchanged
+  at `1c24c982…7885217d` afterward). **Fence:** all run-path tool use goes through
+  `<run-root>\python.exe -I -B` (`-m` / `import`); `Scripts/*.exe` is out of scope for the run and must
+  not be invoked.
+- **Lock-file CRLF portability — CARRIED CAVEAT (pre-existing, not introduced here).** The pinned
+  `_LOCK_SHA256` (`bfbe4722…`) is the SHA-256 of the **CRLF working-tree** form of
+  `backend/requirements.lock.txt` on this Windows host (`core.autocrlf=true`); the LF git blob hashes
+  differently and `.gitattributes` has no `eol` rule for that path. The lock is byte-unchanged on this
+  host (custody claim holds), but a Linux/CI checkout would hash differently and fail-close the verifier.
+  Do not silently re-pin the constant mid-campaign; treat as a named portability caveat before any
+  non-Windows exercise of `verify_dual_live_dependencies()`.
+- **External review attribution — CLARIFIED.** The "external Codex review" referenced above was a
+  conversational IPC handoff (Codex Desktop), **not** a repository-archived artifact. Both design lanes
+  (the Codex review and the in-session opus-heavy→Fable workflow) returned GO-WITH-CONDITIONS; neither is
+  a landed in-repo document. Treat the attribution as process framing, not in-repo evidence.
