@@ -261,3 +261,32 @@ Source: `backend/app/services/nrc_aps_strict_parse.py`, `dual_live_windows.py`, 
 `tools/dual_live_run.py`. All git usage read-only (`log`, `rev-parse`, `rev-list`, `merge-base
 --is-ancestor`, `show`, `diff --name-only`, `for-each-ref`); no scripts run; no file written or edited by
 this adjudication.
+
+## Dated append — 2026-08-05: code landing at e53955d2 (residuals unaffected)
+
+This section is append-only; no line above is edited.
+
+**Why appended.** The owned-child logger-topology-freeze defect was found and fixed at commit
+`e53955d29c9ff3efcf17316d499f1aa6a64b58ae`. Two consequences bear on this record.
+
+**1. The three accepted residuals are untouched by that fix.** The patch adds a module-preload call
+before the logger freeze and changes nothing else. It does not touch the PDF parser, the fsync/
+buffered-evidence path, or the pymupdf pin. Residual 1 (hostile-native-PDF in-process parse),
+residual 2 (single-fsync buffered-evidence window), and residual 3 (pymupdf / MuPDF-core advisory
+mapping, accepted as INDETERMINATE) therefore stand exactly as accepted on 2026-08-04, with the same
+bounds and the same lapse trigger. This append re-affirms them; it does not re-adjudicate them.
+
+**2. The "docs-only" statement in DECISION CONTEXT is now non-exhaustive.** That paragraph enumerated
+four named commits since the C2 delta review and observed they were all docs-only. Those four commits
+remain docs-only and the sentence stays true of them; it is no longer an exhaustive account of the
+branch, because `e53955d2` is a **code** change. It was reviewed under a C2 targeted delta review
+(verdict `C2-DELTA-SOUND`, recorded at `2026-08-05-c2-targeted-delta-review.md`), read under owner
+ruling D6=(a) as inside the G2-prereq carve-out. A P8 reader must take the drift disclosure from that
+record, not from the enumeration above.
+
+**Authority note.** The authority set in force when this record was written has been retired and
+regenerated against the landed revision (`2026-08-05-authority-regeneration.md`). The pymupdf residual
+disposition at P6 is unaffected: the pin did not change.
+
+**Still not authorized.** G2-P8 remains a separate explicit owner act; it cannot be inherited, and the
+drift check it requires now has a real, non-docs delta to disclose.
