@@ -361,6 +361,8 @@ class _RuntimeModule(Protocol):
 
     def _install_phase_b_connector_guards(self) -> None: ...
 
+    def _preload_owned_workload_modules(self) -> None: ...
+
     def exercise_owned_phase_b_connector_guard(self) -> None: ...
 
 
@@ -876,9 +878,10 @@ def _run_owned_child(capsule: _OwnedCapsule, kernel32: ctypes.WinDLL) -> int:
     boot_frame = runtime.encode_pipe_frame(boot)
     app_writer.write(boot_frame)
     boot_frame_sha256 = hashlib.sha256(boot_frame).hexdigest()
+    runtime._preload_owned_workload_modules()
     if phase == "B":
         runtime._install_phase_b_connector_guards()
-        guards.assert_intact()
+    guards.assert_intact()
 
     recheck, census = _configure_logger_topology(
         runtime,

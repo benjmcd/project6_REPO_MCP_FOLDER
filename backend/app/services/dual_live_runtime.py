@@ -5329,6 +5329,34 @@ def _producer_phase_environments(
     return MappingProxyType(phase_a), MappingProxyType(phase_b)
 
 
+def _preload_owned_workload_modules() -> None:
+    """Materialize workload modules, and their loggers, before the freeze.
+
+    run_owned_phase_a_workload imports these lazily at :5373-5381 and, via
+    _phase_a_acquisition_projection, at :5543-5544 - all after
+    tools/dual_live_run.py:432 has frozen the logger topology. SQLAlchemy
+    creates loggers at import (sqlalchemy/log.py:53, :77) and per Engine and
+    Pool instance (sqlalchemy/log.py:248); app/db/session.py:18 runs
+    create_engine at module scope. Importing here keeps every getLogger call
+    ahead of the freeze and lets tools/dual_live_run.py:424-430 normalize the
+    resulting loggers before the census. This set also covers
+    run_owned_phase_b_workload (:6526, :6556-6557, :6261-6266, :5739), whose
+    own materialization is otherwise only an incidental side effect of
+    _install_phase_b_connector_guards.
+    """
+    from app.db import session  # noqa: F401
+    from app.models import models  # noqa: F401
+    from app.schemas.api import ConnectorEgressArmingIn  # noqa: F401
+    from app.services import (  # noqa: F401
+        connector_egress_arming,
+        connector_egress_authorization,
+        connector_egress_evidence,
+        connector_egress_transport,
+        connectors_nrc_adams,
+        connectors_sciencebase,
+    )
+
+
 def run_owned_phase_a_workload(
     *,
     runtime_instance_id: str,
