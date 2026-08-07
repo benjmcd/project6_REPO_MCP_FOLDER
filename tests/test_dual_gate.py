@@ -97,6 +97,7 @@ ALLOWED_CHANGED_PRODUCTION_PATHS = frozenset(
         "backend/app/services/connector_egress_evidence.py",
         "backend/app/services/connector_egress_transport.py",
         "backend/app/services/connectors_nrc_adams.py",
+        "backend/app/services/connectors_sciencebase.py",
         "backend/app/services/connector_egress_arming.py",
         "backend/app/services/connector_campaign_log_capture.py",
         "backend/app/services/dual_live_dependencies.py",

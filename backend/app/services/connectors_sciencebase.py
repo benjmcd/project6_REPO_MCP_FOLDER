@@ -103,6 +103,12 @@ SCIENCEBASE_FRESH_FILE_PATH = (
     f"/catalog/file/get/{SCIENCEBASE_FRESH_ITEM_ID}"
 )
 SCIENCEBASE_FRESH_FILE_QUERY = f"f={SCIENCEBASE_FRESH_FILE_NAME}"
+SCIENCEBASE_FRESH_FILE_STORAGE_KEY = (
+    "__disk__7e/49/e8/7e49e8a4a53eb2219837f97defb22a25a286cdbc"
+)
+SCIENCEBASE_FRESH_FILE_STORAGE_QUERY = (
+    "f=" + SCIENCEBASE_FRESH_FILE_STORAGE_KEY.replace("/", "%2F")
+)
 SCIENCEBASE_FRESH_HYDRATION_CAP = 5 * 1024 * 1024
 SCIENCEBASE_FRESH_ARTIFACT_CAP = 64 * 1024 * 1024
 SCIENCEBASE_FRESH_HOSTS = frozenset(
@@ -169,8 +175,17 @@ def _validate_fresh_sciencebase_url(raw_url: str) -> dict[str, Any]:
         or "@" in parsed.netloc
         or parsed.fragment
         or parsed.path != SCIENCEBASE_FRESH_FILE_PATH
-        or parsed.query != SCIENCEBASE_FRESH_FILE_QUERY
     ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_url_invalid"
+        )
+    if parsed.query == SCIENCEBASE_FRESH_FILE_QUERY:
+        expected_locator = SCIENCEBASE_FRESH_FILE_NAME
+        query_class = "exact_single_f_expected_filename"
+    elif parsed.query == SCIENCEBASE_FRESH_FILE_STORAGE_QUERY:
+        expected_locator = SCIENCEBASE_FRESH_FILE_STORAGE_KEY
+        query_class = "exact_single_f_pinned_storage_key"
+    else:
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_artifact_url_invalid"
         )
@@ -187,7 +202,7 @@ def _validate_fresh_sciencebase_url(raw_url: str) -> dict[str, Any]:
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_artifact_url_invalid"
         ) from exc
-    if pairs != [("f", SCIENCEBASE_FRESH_FILE_NAME)]:
+    if pairs != [("f", expected_locator)]:
         raise ScienceBaseFreshAcquisitionError(
             "sciencebase_artifact_url_invalid"
         )
@@ -197,7 +212,7 @@ def _validate_fresh_sciencebase_url(raw_url: str) -> dict[str, Any]:
         "host": parsed.hostname,
         "port": 443,
         "path_rule_id": "sciencebase_file_exact_v1",
-        "query_class": "exact_single_f_expected_filename",
+        "query_class": query_class,
     }
 
 
@@ -279,7 +294,6 @@ def _parse_fresh_sciencebase_hydration(
     if (
         not isinstance(file_entry.get("name"), str)
         or file_entry["name"] != SCIENCEBASE_FRESH_FILE_NAME
-        or "url" in file_entry
         or "downloadUri" not in file_entry
         or not isinstance(file_entry["downloadUri"], str)
     ):
@@ -287,6 +301,13 @@ def _parse_fresh_sciencebase_hydration(
             "sciencebase_exact_file_locator_invalid"
         )
     raw_url = file_entry["downloadUri"]
+    url_alias = file_entry.get("url")
+    if "url" in file_entry and (
+        not isinstance(url_alias, str) or url_alias != raw_url
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_exact_file_locator_invalid"
+        )
     if (
         not raw_url
         or raw_url != raw_url.strip()

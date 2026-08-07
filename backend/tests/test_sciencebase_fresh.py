@@ -740,7 +740,7 @@ def test_one_admitted_redirect_uses_ordinal_three_once(
         _hydration_body(download_uri=""),
         _hydration_body(download_uri=" " + ARTIFACT_URL),
         _hydration_body(download_uri=7),
-        _hydration_body(extra={"url": ARTIFACT_URL}),
+        _hydration_body(extra={"url": REDIRECT_URL}),
         b'{"files":[],"files":[]}',
         (
             b'{"files":[{"name":"'
