@@ -248,7 +248,12 @@ class _CountingRawReadPath:
         return getattr(self._raw, name)
 
 
-def _set_raw_socket_timeout(raw: Any, timeout_seconds: float) -> bool:
+_RAW_TIMEOUT_ARMED = "armed"
+_RAW_TIMEOUT_NO_SOCKET = "no_socket"
+_RAW_TIMEOUT_FAILED = "failed"
+
+
+def _arm_raw_socket_timeout(raw: Any, timeout_seconds: float) -> str:
     target = raw._raw if isinstance(raw, _CountingRawReadPath) else raw
     candidates: list[Any] = [target]
     connection = getattr(target, "_connection", None)
@@ -258,16 +263,19 @@ def _set_raw_socket_timeout(raw: Any, timeout_seconds: float) -> bool:
     buffered = getattr(http_response, "fp", None)
     socket_io = getattr(buffered, "raw", None)
     candidates.append(getattr(socket_io, "_sock", None))
+    attempted = False
     for candidate in candidates:
         setter = getattr(candidate, "settimeout", None)
         if not callable(setter):
             continue
+        attempted = True
         try:
             setter(max(0.001, float(timeout_seconds)))
         except (OSError, ValueError):
-            return False
-        return True
-    return False
+            # A rejected candidate must not short-circuit the remaining ones.
+            continue
+        return _RAW_TIMEOUT_ARMED
+    return _RAW_TIMEOUT_FAILED if attempted else _RAW_TIMEOUT_NO_SOCKET
 
 
 class CountingHTTPAdapter(HTTPAdapter):
@@ -1662,6 +1670,7 @@ class BoundedConnectorTransport:
         safe_headers: dict[str, str] = {}
         location_values: tuple[str, ...] = ()
         physical_send_started = False
+        post_release_unarmed_data = False
 
         try:
             remaining = max(0.001, deadline - self._monotonic_clock())
@@ -1712,17 +1721,30 @@ class BoundedConnectorTransport:
                 outcome_class = "timeout"
                 error_class = "timeout"
             else:
+                unarmed_read_spent = False
                 while True:
                     remaining = deadline - self._monotonic_clock()
                     if remaining <= 0:
                         outcome_class = "timeout"
                         error_class = "timeout"
                         break
-                    timeout_applied = _set_raw_socket_timeout(response.raw, remaining)
-                    if self._send_callable is None and not timeout_applied:
-                        outcome_class = "transport_error"
-                        error_class = "transport_error"
-                        break
+                    arming = _arm_raw_socket_timeout(response.raw, remaining)
+                    unarmed_read = False
+                    if self._send_callable is None and arming != _RAW_TIMEOUT_ARMED:
+                        # urllib3 releases the connection once the declared body
+                        # is delivered (response.py:787-792, :949-952), so no
+                        # socket is left to arm. http/client.py:463-466 then
+                        # returns b"" from the released reader (_close_conn at
+                        # :483/:487 inside :475-488), which the clean break below
+                        # consumes. Exactly one such read is bounded; a second is
+                        # not, and a candidate that refused arming is not this
+                        # case at all.
+                        if arming == _RAW_TIMEOUT_FAILED or unarmed_read_spent:
+                            outcome_class = "transport_error"
+                            error_class = "transport_error"
+                            break
+                        unarmed_read_spent = True
+                        unarmed_read = True
                     chunk = response.raw.read(
                         STREAM_READ_CHUNK_BYTES,
                         decode_content=False,
@@ -1730,6 +1752,15 @@ class BoundedConnectorTransport:
                     if not chunk:
                         break
                     body.extend(chunk)
+                    if unarmed_read:
+                        # Bytes delivered on a socket that could not be bounded.
+                        # Evidence classes are closed
+                        # (connector_egress_evidence.py:31-41, :887, :1234-1241),
+                        # so the distinct code is raised at the terminal below.
+                        outcome_class = "transport_error"
+                        error_class = "transport_error"
+                        post_release_unarmed_data = True
+                        break
                     if len(
                         body
                     ) > reservation.effective_streaming_cap or aggregate_budget_crossed(
@@ -1812,7 +1843,11 @@ class BoundedConnectorTransport:
         if counter_write_error is not None:
             raise counter_write_error
         if outcome_class == "transport_error":
-            _fail("connector_egress_transport_failed")
+            _fail(
+                "connector_egress_transport_post_release_unarmed_data"
+                if post_release_unarmed_data
+                else "connector_egress_transport_failed"
+            )
         if outcome_class == "timeout":
             _fail("connector_egress_transport_timeout")
         body_bytes = bytes(body)
