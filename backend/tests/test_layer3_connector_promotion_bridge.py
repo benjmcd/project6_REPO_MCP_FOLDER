@@ -5554,19 +5554,15 @@ _B1B05_AUTHORITY = {
 
 
 def _extract_frozen_b1b05_construction_vector() -> bytes:
-    spec = subprocess.check_output(
-        [
-            "git",
-            "show",
-            "c1fcd840:next_milestone_plans/Layer3_planning_docs/b1b-dispatch-correction.md",
-        ],
-        cwd=BACKEND.parent,
-        text=True,
-        encoding="utf-8",
-    )
-    marker = "The normative construction-basis golden vector is 1,447 bytes"
-    fenced = spec.split(marker, 1)[1].split("```json", 1)[1].split("```", 1)[0]
-    return fenced.strip().encode("utf-8")
+    spec = (
+        BACKEND.parent
+        / "next_milestone_plans"
+        / "Layer3_planning_docs"
+        / "b1b-dispatch-correction.md"
+    ).read_bytes()
+    marker = b"The normative construction-basis golden vector is 1,447 bytes"
+    fenced = spec.split(marker, 1)[1].split(b"```json", 1)[1].split(b"```", 1)[0]
+    return fenced.strip()
 
 
 def _b1b05_preview_payload(
@@ -5898,6 +5894,21 @@ def test_b1b_05_unmapped_route_faults_remain_generic_and_zero_delta(
         assert _all_storage_files(b1b_step3_runtime) == files_before
     finally:
         main.app.dependency_overrides.pop(get_db, None)
+
+
+def test_b1b_05_golden_vector_extraction_does_not_require_git_history(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unavailable(*_args, **_kwargs):
+        raise subprocess.CalledProcessError(128, ["git", "show"])
+
+    monkeypatch.setattr(subprocess, "check_output", unavailable)
+
+    frozen_bytes = _extract_frozen_b1b05_construction_vector()
+    assert len(frozen_bytes) == 1447
+    assert hashlib.sha256(frozen_bytes).hexdigest() == (
+        "2c3bca8c8b3e40b625c8a70878e57a37e4e97a5d3a7c6ab28f07c921bfbf7aa9"
+    )
 
 
 def test_b1b_05_construction_basis_matches_mechanically_extracted_golden_vector() -> None:

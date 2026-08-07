@@ -60,7 +60,7 @@ _EXPECTED_FILE_COUNTS = {
     "handoff.py": {"routes": 24, "gated": 24, "public": 0},
     "package.py": {"routes": 16, "gated": 16, "public": 0},
     "operator_identity.py": {"routes": 1, "gated": 1, "public": 0},
-    "source_ingestion.py": {"routes": 88, "gated": 88, "public": 0},
+    "source_ingestion.py": {"routes": 89, "gated": 89, "public": 0},
     "review_nrc_aps.py": {"routes": 23, "gated": 23, "public": 0},
 }
 
@@ -172,7 +172,7 @@ def _assert_not_auth_blocked(response) -> None:
 def test_nonsec_route_identity_audit_inventory_matches_current_authority() -> None:
     records = _collect_nonsec_routes()
 
-    assert len(records) == 182
+    assert len(records) == 183
     by_file = Counter(record.file_name for record in records)
     gated_by_file = Counter(record.file_name for record in records if record.access is not None)
     public_by_file = Counter(record.file_name for record in records if record.access is None)
@@ -189,7 +189,24 @@ def test_nonsec_route_identity_audit_inventory_matches_current_authority() -> No
     assert public_handlers == _PUBLIC_METADATA_HANDLERS
 
     access_counts = Counter(record.access for record in records if record.access is not None)
-    assert access_counts == {"read": 62, "write": 117}
+    assert access_counts == {"read": 62, "write": 118}
+
+    promotion_resolve = [
+        record
+        for record in records
+        if record.function_name == "post_connector_promotion_resolve"
+    ]
+    assert [
+        (record.file_name, record.method, record.path, record.access)
+        for record in promotion_resolve
+    ] == [
+        (
+            "source_ingestion.py",
+            "POST",
+            "/api/v1/layer3/source/connector/promotion/resolve",
+            "write",
+        )
+    ]
 
     nrc_aps = [record for record in records if record.file_name == "review_nrc_aps.py"]
     assert len(nrc_aps) == 23

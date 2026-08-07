@@ -18,6 +18,7 @@ PRODUCERS = frozenset(
 
 KNOWN_WRAPPERS = frozenset(
     {
+        "app.services.layer3_connector_promotion:_verify_receipt_gate_b_spine",
         "app.services.layer3_sec_edgar_material_bridge:prepare_sec_edgar_text_table_material_authority_bridge",
         "app.services.layer3_sec_edgar_html_inline_xbrl_material_bridge:prepare_sec_edgar_html_inline_xbrl_material_bridge",
         "app.services.layer3_sec_edgar_html_inline_xbrl_fact_material_bridge:prepare_sec_edgar_html_inline_xbrl_fact_material_bridge",
@@ -168,10 +169,12 @@ def _is_hash_persisting_site(
 def _production_gate_b_hash_persistence_chain_is_intact() -> bool:
     from app.services import layer3_gate_b_state, layer3_workbench
 
-    workbench_source = inspect.getsource(layer3_workbench.gate_b_decision)
+    entry_source = inspect.getsource(layer3_workbench.gate_b_decision)
+    workbench_source = inspect.getsource(layer3_workbench._gate_b_decision_impl)
     claim_source = inspect.getsource(layer3_gate_b_state.claim_gate_b_idempotency)
     return (
-        _module_source_has_call(workbench_source, "compute_material_preview_hash")
+        _module_source_has_call(entry_source, "_gate_b_decision_impl")
+        and _module_source_has_call(workbench_source, "compute_material_preview_hash")
         and _module_source_has_keyworded_call(
             workbench_source,
             "gate_b_idempotency_claim_matches",
@@ -344,7 +347,10 @@ def test_material_preview_guard_scans_split_layer3_api_modules() -> None:
 def test_gate_b_decision_reads_production_boundary_not_test_helper() -> None:
     from app.services import layer3_source_boundary, layer3_workbench
 
-    source = inspect.getsource(layer3_workbench.gate_b_decision)
+    entry_source = inspect.getsource(layer3_workbench.gate_b_decision)
+    source = inspect.getsource(layer3_workbench._gate_b_decision_impl)
+    assert _module_source_has_call(entry_source, "_gate_b_decision_impl")
+    assert "test_layer3_bounded_e2e" not in entry_source
     assert "test_layer3_bounded_e2e" not in source
     assert "CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY" in source
 

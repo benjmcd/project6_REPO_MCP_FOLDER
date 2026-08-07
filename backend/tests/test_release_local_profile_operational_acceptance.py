@@ -5,11 +5,34 @@ import subprocess
 import sys
 from pathlib import Path
 
+from scripts import local_profile_acceptance as acceptance
+
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "local_profile_acceptance.py"
 RUNBOOK = ROOT / "docs" / "local-profile-ops.md"
 ACCEPTANCE_TIMEOUT_SECONDS = 520
+
+
+def test_local_profile_child_json_tolerates_dependency_stdout_warning(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    result = subprocess.CompletedProcess(
+        args=[sys.executable],
+        returncode=0,
+        stdout='warning: dependency notice\n{"ok": true}\n',
+        stderr="",
+    )
+    monkeypatch.setattr(acceptance.subprocess, "run", lambda *_args, **_kwargs: result)
+
+    payload = acceptance._run_child(
+        "seed",
+        tmp_path / "local-profile.db",
+        tmp_path / "storage",
+    )
+
+    assert payload == {"ok": True}
 
 
 def test_local_profile_acceptance_script_proves_install_restart_and_restore(tmp_path: Path) -> None:

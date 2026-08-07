@@ -2733,11 +2733,11 @@ def post_connector_promotion_resolve(
     payload: ConnectorPromotionResolveRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request, access="write")
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
     if not getattr(request.state, "b1b_prevalidation_authorized", False):
-        try:
-            _route_level_operator_identity(request, access="write")
-        except SecXbrlInAppAuthPolicyError as exc:
-            return _sec_xbrl_auth_policy_error_response(exc)
         if not layer3_connector_promotion.bridge_precondition_available():
             error_code = "connector_promotion_bridge_unavailable"
             return JSONResponse(
