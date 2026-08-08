@@ -1,9 +1,13 @@
-# G2-P8 live4 owner-decision packet — HOLD UNTIL OWNER
+# G2-P8 live4 owner-decision packet — PACKET AUDIT HOLD
 
 > **FORM ONLY / OWNER FIELDS BLANK / NOT ISSUED / NOT RUN-READY / NOT MERGE-READY**
 >
 > Packet ceiling: `B_OWNER_PACKET_READY` only. This packet does not establish
 > `B_OWNER_AUTHORIZED`, issue a lease, authorize a run, or clear any residual.
+>
+> Current attained state: `B_PACKET_AUDIT / AUDIT_HOLD`.
+> `LEASE_STATE_OBSERVATION: NO LEASE EXISTS`; no terminal `NO_LEASE_ISSUED` receipt or
+> `B_CLEARANCE_RECORDED` exists. `B_OWNER_PACKET_READY` is not attained, and Lane A remains locked.
 
 ## 1. Purpose and evidence discipline
 
@@ -18,7 +22,7 @@ Evidence labels used here:
   was not reopened for this packet.
 - **LOCAL-STRUCTURE-CHECKED**: bounded local filesystem structure was read at the stated time; this
   is not proof of global non-use, non-tampering, or absence of concurrent activity.
-- **UNVERIFIED NOW / RECHECK REQUIRED**: stale PASS is prohibited; a fresh pre-issuance result is
+- **UNVERIFIED NOW / RECHECK REQUIRED**: stale PASS is prohibited; a fresh packet-readiness result is
   mandatory and must fail closed.
 
 ## 2. Bound subject and time limits
@@ -30,8 +34,8 @@ owner-packet issuance or later action.
 | Binding | Exact value | Evidence class |
 |---|---|---|
 | Verification-base `main` | `0b65b4f0b06fdbd1e34460800ef8251cebbb9307` | CURRENT-REF-CHECKED; rederive before action |
-| Records tip | `e32da9925ca52ba0391ccedb4f81a7548a2ca429` | CURRENT-REF-CHECKED |
-| Records tree | `50843c56a2c374426919f509c66611cca4f5c0d2` | CURRENT-REF-CHECKED |
+| Pre-packet evidence-base tip | `e32da9925ca52ba0391ccedb4f81a7548a2ca429` | CURRENT-REF-CHECKED; not corrected-packet identity |
+| Pre-packet evidence-base tree | `50843c56a2c374426919f509c66611cca4f5c0d2` | CURRENT-REF-CHECKED; not corrected-packet identity |
 | Runtime correction and live4-bound revision | `d781adfcaab2eb880456aef7ac49ee589105bbbe` | CURRENT-REF-CHECKED; runtime checkout RECHECK REQUIRED |
 | Runtime revision tree | `da21ee59890e03c0245ff12f2bec5ae3ce1730a0` | CURRENT-REF-CHECKED; checkout tree RECHECK REQUIRED |
 | Frozen plan blob | `68f740af86dc7d1ac2227f81a6ea28e7e2c7458f` | CURRENT-REF-CHECKED; byte identity RECHECK REQUIRED |
@@ -39,13 +43,23 @@ owner-packet issuance or later action.
 | Campaign ID | `ff1af01b-785e-4c12-98d1-3f278039b4ea` | BRANCH-RECORD-ASSERTED; local structure checked once |
 | Campaign fingerprint | `3c415b6fe717810c47c506c9de8ce9c0ec5b78e9a633db080cdce91f16915e01` | BRANCH-RECORD-ASSERTED; local structure checked once |
 | Authority expiry | `2026-08-14T14:06:52.580652Z` | exact bound; current validity recheck required |
-| Owner-packet/latest-launch cutoff | `2026-08-13T14:06:52.580652Z` | no issuance or launch after cutoff |
-| Minimum TTL at final preflight | `>= 86400` seconds | fresh computation required |
+| Owner-packet/latest-launch cutoff | `2026-08-13T14:06:52.580652Z` | issuance and launch require trusted UTC strictly before this instant; equality is HOLD |
+| Minimum TTL at packet-readiness and launch-final preflights | `>= 86400` seconds | fresh computation at each preflight |
 
-The packet, any owner decision, and any possible launch remain on HOLD unless the final preflight
-time is no later than the cutoff, expiry is still future, and the computed remaining TTL is at least
-86,400 seconds. A revision, tree, plan, seal, campaign, grant, or time-binding change requires a new
-packet; authority is not inheritable.
+The pre-packet evidence-base tuple predates this packet and does not bind these packet bytes. Any
+readiness receipt, owner act, or future lease must additionally bind the corrected packet's exact
+path, containing commit/tree, blob, and raw SHA-256, plus the containing commit/tree, path, and blob
+of `docs/campaign-records/2026-08-08-g2-p8-live4-owner-packet-custody.md`. Those identities are
+derived after the relevant commits; embedding a same-file self-hash here is prohibited because it
+would change the subject being bound. The companion record is custody evidence only; it supplies no
+owner act, lease, credential, egress, launch, retry, landing, or merge authority.
+
+The packet, any owner decision, and any possible launch remain on HOLD unless the packet-readiness
+preflight records trusted UTC strictly earlier than the cutoff, expiry still future, and at least
+86,400 seconds remaining. Any later launch requires a fresh launch-final preflight with those same
+time conditions immediately before launch. Neither preflight substitutes for the other. A revision,
+tree, packet, custody record, plan, seal, campaign, grant, or time-binding change requires a new bound
+subject; authority is not inheritable.
 
 ## 3. Run #2 and grant posture
 
@@ -101,9 +115,9 @@ claims about `C:\p6-scratch\dl-sbfix` do not substitute for that check.
 ## 5. CI completeness — corrected exhaustive disclosure
 
 The earlier branch-record three-file CI disclosure is **SUPERSEDED, stale, and incomplete**. Static
-exhaustive accounting at records tip is:
+exhaustive accounting at the pre-packet evidence-base tip is:
 
-`296 tracked backend test files = 272 shard-matched + 8 justified exclusions + 16 uncovered`.
+`296 tracked backend test files = 272 shard-matched + 8 justified allowlisted exclusions + 16 uncovered`.
 
 The 16 uncovered basenames are:
 
@@ -125,10 +139,14 @@ The 16 uncovered basenames are:
 16. `test_sciencebase_locator_live_shape.py`
 
 `backend/tests/test_ci_coverage_completeness.py` requires the uncovered set to be exactly zero; that
-guard is itself shard-matched. Therefore branch CI completeness, a green exact-branch CI state, PR
-readiness, and merge readiness are not proven. This debt does not itself prevent placing this
-corrected form before the owner, but it must remain fully disclosed and blocks any CI-complete or
-merge-ready claim.
+guard is itself shard-matched and would fail with the present 16. Exact-branch CI is therefore not
+green; PR readiness and merge readiness are not proven. `B_OWNER_PACKET_READY` requires exact
+disclosure, not debt payment. This debt does not itself prevent placing the corrected form before the
+owner, but it blocks any CI-complete or merge-ready claim.
+
+Before any transition beyond `B_OWNER_PACKET_READY`, this exact 16-file debt must be resolved or
+explicitly contained by a separately authorized policy decision bound to this exact uncovered set.
+Disclosure alone is insufficient.
 
 ## 6. Residuals carried, not cleared
 
@@ -149,7 +167,7 @@ All previously accepted or named residuals remain governing:
    root rather than directly from the upstream remote. Current checkout source and reviewed-source
    identity must be rederived; the historical hop is not current proof.
 7. **Staging order:** prep must remain credential-free and egress-disabled; direct owner fields come
-   first; credential placement, egress arming, final preflight, and one launch are later distinct
+   first; credential placement, egress arming, launch-final preflight, and one launch are later distinct
    owner acts. No step may be collapsed, reordered, inherited, or pre-recorded.
 8. **Quiescence and CI:** actual producer quiescence must be freshly established externally, and the
    16-file CI debt remains open.
@@ -159,7 +177,8 @@ No statement above is a waiver, closure, compatibility claim, or prediction of s
 ## 7. Owner acts — all BLANK, direct, separate, and ordered
 
 The owner must personally issue the following exact acts, in this order, only after receiving the
-fresh pre-issuance evidence. Relayed, inferred, inherited, agent-written, or draft text fills no field.
+fresh packet-readiness evidence. Relayed, inferred, inherited, agent-written, or draft text fills no
+field.
 
 | Order | Exact owner act | Current status |
 |---:|---|---|
@@ -176,15 +195,18 @@ also **BLANK / UNPERFORMED**:
 | Arm egress only for the exact campaign/grants after authorization | **BLANK / UNPERFORMED** |
 | Perform exactly one absolute-interpreter launch | **BLANK / UNPERFORMED** |
 
-## 8. Fresh pre-issuance checklist
+## 8. Fresh packet-readiness preflight checklist
 
 Every row is **UNVERIFIED NOW / RECHECK REQUIRED**. No historical PASS may be copied forward.
 Validate-only probes must fail closed on empty state and must not seed or generate artifacts.
+`B_OWNER_PACKET_READY` is not attained until every packet-readiness row passes and is bound to the
+corrected packet plus its companion custody record.
 
 1. **Time, cutoff, and TTL — UNVERIFIED NOW / RECHECK REQUIRED.** Record trusted UTC; require packet
-   issuance and any launch no later than `2026-08-13T14:06:52.580652Z`; require expiry
-   `2026-08-14T14:06:52.580652Z` still future; compute and record at least 86,400 seconds remaining at
-   final preflight.
+   issuance and any later launch strictly before `2026-08-13T14:06:52.580652Z`; equality or a later
+   instant is HOLD. Require expiry `2026-08-14T14:06:52.580652Z` still future; compute and record at
+   least 86,400 seconds remaining at packet-readiness, then recompute immediately before any launch
+   in the distinct launch-final preflight.
 2. **Revision, tree, and checkout — UNVERIFIED NOW / RECHECK REQUIRED.** Record one designated runtime
    checkout's absolute path; require `HEAD=d781adfcaab2eb880456aef7ac49ee589105bbbe`,
    tree `da21ee59890e03c0245ff12f2bec5ae3ce1730a0`, no extra/different worktree registration or
@@ -217,20 +239,26 @@ Validate-only probes must fail closed on empty state and must not seed or genera
    checkout and live4 subject; require the prep output to state no P8 and egress false. Close and
    discard on any drift. Do not place a credential, arm egress, or launch during packet preflight.
 9. **Quiescence and residual acceptance — UNVERIFIED NOW / RECHECK REQUIRED.** Establish actual
-   producer quiescence externally at decision time. Present every C4, enumeration-drift, L2
-   live-frontier, clone-source, staging-order, quiescence, and corrected CI residual to the owner.
-   Only direct owner acts in §7 can proceed; silence or prior acceptance cannot be reused.
+   producer quiescence externally before `B_OWNER_PACKET_READY`, then freshly rebind it at owner
+   decision and launch-final preflight because an earlier result is not inheritable. Present every C4,
+   enumeration-drift, L2 live-frontier, clone-source, staging-order, quiescence, and corrected CI
+   residual to the owner. Only direct owner acts in §7 can proceed; silence or prior acceptance cannot
+   be reused.
 
 ## 9. Global lease and clearance boundary
 
-This packet stops at `B_OWNER_PACKET_READY`. It does not reach `B_OWNER_AUTHORIZED`.
+The task-scope ceiling is `B_OWNER_PACKET_READY`. This packet currently remains within
+`B_PACKET_AUDIT` and establishes neither `B_OWNER_PACKET_READY` nor `B_OWNER_AUTHORIZED`.
 
-Current disposition: **NO_LEASE_ISSUED.** This is a no-lease disposition, not an owner act,
-containment assertion, or release receipt. If a future lease is considered, it must be separately
-created and must bind:
+Current lease observation: **NO LEASE EXISTS.** This is not the terminal `NO_LEASE_ISSUED` receipt,
+an owner act, containment assertion, release receipt, terminal disposition, or
+`B_CLEARANCE_RECORDED`. Correction and re-audit remain active inside `B_PACKET_AUDIT`. If a future
+lease is considered, it must be separately created and must bind:
 
 - one unique lease ID, explicit lease state, issue time, expiry, and lane;
-- the exact records revision/tree and runtime revision/tree from §2;
+- the exact pre-packet evidence-base revision/tree and runtime revision/tree from §2;
+- the corrected owner packet's exact path, containing commit/tree, blob, and raw SHA-256;
+- the companion custody record's exact path, containing commit/tree, and blob;
 - one designated checkout's absolute path, exact `HEAD`, Git registration or standalone state, and
   literal cleanliness receipt;
 - the exact live4 campaign ID/fingerprint/expiry and both grant IDs, raw hashes, canonical
@@ -239,13 +267,13 @@ created and must bind:
   owner-packet/latest-launch cutoff, and minimum TTL;
 - immutable references to each of the three direct owner-act receipts in §7, without relayed,
   inferred, inherited, or draft substitution;
-- exactly one permitted command class, without supplying an operational command in this packet, and
-  an action count fixed to exactly one;
+- exactly one permitted run command class with action count fixed to one, plus separate bounded
+  containment command classes; no operational command is supplied in this packet;
 - distinct run and containment phases;
 - distinct named run and containment operators;
 - separate operator ACKs for both phases;
 - `B_RUN_READY` only after credential-placement, egress-arming, one-launch-authority,
-  final-preflight, minimum-TTL, and containment-readiness receipts all exist;
+  launch-final preflight, minimum-TTL, and containment-readiness receipts all exist;
 - a containment-readiness receipt that binds the named containment operator and covers these duties:
   - credential removal and verified absence;
   - egress disarm;
@@ -272,18 +300,23 @@ field left blank.
 
 ## 10. Fail-closed conditions
 
-Remain on HOLD and issue nothing on any cutoff miss, expiry, TTL below 86,400 seconds, identity or
-byte drift, consumed marker, nonempty evidence/log/seal state, ambiguous source/custody/lease state,
-failed or missing check, inferred or relayed owner field, incomplete CI disclosure, or producer
-quiescence failure. Also stop on any mismatch in revision, tree, plan, seal, campaign, grant,
-dependency, interpreter, wrapper, DB, resolver, network-denial, secret-free, or checkout-state proof.
+Before terminal disposition, remain in `B_PACKET_AUDIT / AUDIT_HOLD` and issue nothing on TTL below
+86,400 seconds, identity or byte drift, consumed marker, nonempty evidence/log/seal state, ambiguous
+source/custody/lease state, failed or missing check, inferred or relayed owner field, incomplete CI
+disclosure, producer quiescence failure, or any mismatch in revision, tree, plan, seal, campaign,
+grant, dependency, interpreter, wrapper, DB, resolver, network-denial, secret-free, or checkout-state
+proof.
+
+When trusted UTC is at or after the cutoff, or authority expires, take the applicable terminal
+`HOLD` / `EXPIRED` path in §9. If no lease existed, record terminal `NO_LEASE_ISSUED` and then
+`B_CLEARANCE_RECORDED`; do not preserve an active audit HOLD beyond the terminal boundary.
 
 ## 11. Explicit nonclaims
 
-This form claims no P8; credential placement; egress authority; run, retry, or second launch; dual
-PASS; current runtime compatibility; CI completeness or green branch CI; PR readiness; merge
-authority; main landing; production readiness; or Lane A authority. It does not execute, authorize,
-waive, clear, or predict anything.
+This form claims no current `B_OWNER_PACKET_READY` attainment; P8; credential placement; egress
+authority; run, retry, or second launch; dual PASS; current runtime compatibility; CI completeness or
+green branch CI; PR readiness; merge authority; main landing; production readiness; or Lane A
+authority. It does not execute, authorize, waive, clear, or predict anything.
 
 ## 12. Committed evidence paths
 
