@@ -9002,7 +9002,9 @@ print(json.dumps({{
         cwd=BACKEND.parent,
         capture_output=True,
         text=True,
-        timeout=30,
+        # Four real child lifecycles retain their own bounded boot and phase
+        # deadlines; this outer watchdog must not preempt those diagnostics.
+        timeout=90,
         check=False,
     )
 
