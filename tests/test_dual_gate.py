@@ -410,9 +410,84 @@ def test_factory_boot_reader_bypass_refuses_outside_native_custody_window() -> N
 
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
+def test_owned_boot_timeout_remains_fail_closed_and_releases_reader(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class BlockingBootReader:
+        def __init__(self) -> None:
+            self.entered = threading.Event()
+            self.release = threading.Event()
+
+        def _read_in_native_custody_window(
+            self,
+            size: int,
+            token: object,
+        ) -> bytes:
+            assert size == 4
+            assert token is dual_live_windows._OWNED_PROCESS_FACTORY_TOKEN
+            self.entered.set()
+            assert self.release.wait(5)
+            return b""
+
+        def close(self) -> None:
+            self.release.set()
+
+    assert dual_live_windows._OWNED_IO_TIMEOUT_SECONDS == 5.0
+    reader = BlockingBootReader()
+    original_thread_start = threading.Thread.start
+    original_thread_join = threading.Thread.join
+    timeout_forced = False
+
+    def start_and_wait_for_reader(thread: threading.Thread) -> None:
+        original_thread_start(thread)
+        if thread.name == "dual-live-owned-boot":
+            assert reader.entered.wait(5)
+
+    def join_with_forced_first_timeout(
+        thread: threading.Thread,
+        timeout: float | None = None,
+    ) -> None:
+        nonlocal timeout_forced
+        if (
+            not timeout_forced
+            and thread.name == "dual-live-owned-boot"
+            and timeout == dual_live_windows._OWNED_IO_TIMEOUT_SECONDS
+        ):
+            timeout_forced = True
+            original_thread_join(thread, 0.05)
+            return
+        original_thread_join(thread, timeout)
+
+    with monkeypatch.context() as timeout_patch:
+        timeout_patch.setattr(threading.Thread, "start", start_and_wait_for_reader)
+        timeout_patch.setattr(
+            threading.Thread,
+            "join",
+            join_with_forced_first_timeout,
+        )
+        with pytest.raises(
+            DualLiveWindowsError,
+            match="dual_live_owned_boot_timeout",
+        ):
+            dual_live_windows._read_owned_boot(
+                cast(dual_live_windows._OwnedPipeReader, reader)
+            )
+
+    assert dual_live_windows._OWNED_IO_TIMEOUT_SECONDS == 5.0
+    assert timeout_forced
+    assert reader.entered.is_set()
+    assert reader.release.is_set()
+    assert all(
+        thread.name != "dual-live-owned-boot" or not thread.is_alive()
+        for thread in threading.enumerate()
+    )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Windows proof containment only")
 @pytest.mark.parametrize("phase", ("A", "B"))
 def test_owned_child_boot_go_exit_job_and_inert_authority_contract(
     phase: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from app.services.dual_live_runtime import (
         CHILD_PROOF_SCHEMA_ID,
@@ -424,11 +499,46 @@ def test_owned_child_boot_go_exit_job_and_inert_authority_contract(
         read_pipe_frame,
     )
 
+    original_read_owned_boot = dual_live_windows._read_owned_boot
+    original_thread_join = threading.Thread.join
+
+    def read_owned_boot_with_cold_start_budget(
+        reader: dual_live_windows._OwnedPipeReader,
+    ) -> dict[str, str]:
+        cold_start_wait_consumed = False
+
+        def join_with_cold_start_budget(
+            thread: threading.Thread,
+            timeout: float | None = None,
+        ) -> None:
+            nonlocal cold_start_wait_consumed
+            if (
+                not cold_start_wait_consumed
+                and thread.name == "dual-live-owned-boot"
+                and timeout == dual_live_windows._OWNED_IO_TIMEOUT_SECONDS
+            ):
+                cold_start_wait_consumed = True
+                original_thread_join(thread, 30.0)
+                return
+            original_thread_join(thread, timeout)
+
+        with monkeypatch.context() as boot_wait:
+            boot_wait.setattr(threading.Thread, "join", join_with_cold_start_budget)
+            result = original_read_owned_boot(reader)
+        assert cold_start_wait_consumed
+        return result
+
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_read_owned_boot",
+        read_owned_boot_with_cold_start_budget,
+    )
     child = dual_live_windows._create_owned_phase_process(
         phase,
         RUNTIME_INSTANCE_ID,
         WRAPPER_NONCE_SHA,
     )
+    assert dual_live_windows._OWNED_IO_TIMEOUT_SECONDS == 5.0
     assert isinstance(child, dual_live_windows.OwnedPhaseProcess)
     assert all(
         isinstance(value, str) and len(value) == 64
