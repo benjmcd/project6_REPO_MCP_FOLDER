@@ -226,6 +226,14 @@ def client(tmp_path, monkeypatch, _pg_schema_built):
 # ---------------------------------------------------------------------------
 
 
+def _build_managed_quant_ready_session(db, tmp_path: Path):
+    return _build_quant_ready_session(
+        db,
+        tmp_path,
+        snapshot_storage_root=Path(settings.artifact_storage_dir) / "layer3",
+    )
+
+
 def _make_grounded_product_for_session(db, *, session_id: str, client_request_id: str):
     """Author a grounded 'finding' product whose evidence ref points to the
     first real L3MaterialSnapshot in the given session."""
@@ -311,7 +319,7 @@ def _build_session_with_package_eligible_product(
     # 1. Build the quant-ready session (typed, pass-ready) via direct DB call.
     db = client.layer3_session_factory()
     try:
-        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        session_id, _, _ = _build_managed_quant_ready_session(db, tmp_path)
     finally:
         db.close()
 
@@ -888,7 +896,7 @@ def _build_session_with_working_set_eligible_product(
     # 1. Build the quant-ready session via direct DB call.
     db = client.layer3_session_factory()
     try:
-        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        session_id, _, _ = _build_managed_quant_ready_session(db, tmp_path)
     finally:
         db.close()
 
@@ -1191,7 +1199,7 @@ def _build_session_with_deterministic_eligible_product(
     # 1. Build the quant-ready session via direct DB call.
     db = client.layer3_session_factory()
     try:
-        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        session_id, _, _ = _build_managed_quant_ready_session(db, tmp_path)
     finally:
         db.close()
 
@@ -1525,7 +1533,7 @@ def _build_session_with_mixed_products(
     # 1. Build the quant-ready session via direct DB call.
     db = client.layer3_session_factory()
     try:
-        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        session_id, _, _ = _build_managed_quant_ready_session(db, tmp_path)
     finally:
         db.close()
 
@@ -2123,7 +2131,7 @@ def _build_session_with_two_package_eligible_products(
     # 1. Build the quant-ready session via direct DB call.
     db = client.layer3_session_factory()
     try:
-        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        session_id, _, _ = _build_managed_quant_ready_session(db, tmp_path)
     finally:
         db.close()
 
@@ -2857,7 +2865,7 @@ def test_3c_staleness_diagnostic_provenance_survives_package_commit(
     # Build quant-ready session.
     db = client.layer3_session_factory()
     try:
-        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        session_id, _, _ = _build_managed_quant_ready_session(db, tmp_path)
     finally:
         db.close()
 
@@ -3115,7 +3123,7 @@ def test_3c_generated_product_supersession_stale_basis(client, tmp_path, monkeyp
     # Build session and generate a deterministic product, promote to package_eligible.
     db = client.layer3_session_factory()
     try:
-        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        session_id, _, _ = _build_managed_quant_ready_session(db, tmp_path)
     finally:
         db.close()
 

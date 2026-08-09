@@ -8927,6 +8927,7 @@ def test_database_close_attempts_retained_handle_after_engine_dispose_failure() 
     assert custody_closed is True
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
 def test_g01_g02_pass_before_evaluator_and_final_reread_follows_snapshot_two(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -9076,6 +9077,7 @@ def test_g01_g02_pass_before_evaluator_and_final_reread_follows_snapshot_two(
     assert events.index("database_closed") < events.index("locks_released")
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
 def test_g01_refuses_unsealed_capture_before_evaluator_entry(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -9321,6 +9323,7 @@ def test_gate_rejects_send_authority_before_settings_construction(
     assert settings_calls == 0
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume proof only")
 @pytest.mark.parametrize(
     ("database_url", "code"),
     [
@@ -9626,7 +9629,15 @@ def _clean_env() -> dict[str, str]:
     env.pop("DUAL_LIVE_CAMPAIGN_ID", None)
     env.pop("DUAL_LIVE_CAMPAIGN_FINGERPRINT", None)
     env.pop("PYTHONPATH", None)
-    for name in AUTHORITY_VARIABLES:
+    for name in (
+        *AUTHORITY_VARIABLES,
+        "DATABASE_URL",
+        "STORAGE_DIR",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_ROOT",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH",
+        "CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_SHA256",
+        "NRC_ADAMS_APS_SUBSCRIPTION_KEY",
+    ):
         env.pop(name, None)
     return env
 
@@ -10432,6 +10443,7 @@ def test_powershell_actions_reject_remaining_arguments(
     assert list(tmp_path.iterdir()) == []
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows py-launcher proof only")
 def test_validate_action_directly_preserves_gate_output_exit_and_cwd(
     tmp_path: Path,
 ) -> None:

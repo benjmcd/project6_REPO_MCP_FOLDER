@@ -111,6 +111,7 @@ RELEASE_GATE_AGGREGATED_JOBS = (
     "backend-migrations-postgres",
     "sec-xbrl-arelle-provisioning",
     "root-tests",
+    "dual-gate-windows",
     "nrc-aps-ocr",
     "test",
 )

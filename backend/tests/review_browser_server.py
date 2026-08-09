@@ -493,7 +493,17 @@ def _install_layer3_browser_patches(temp_path: Path) -> None:
             },
         }
 
-    def _run_analysis(db, *, dataset_version_id, method_name, goal_type=None, parameters=None, annotation_window_id=None):
+    def _run_analysis(
+        db,
+        *,
+        dataset_version_id,
+        method_name,
+        goal_type=None,
+        parameters=None,
+        annotation_window_id=None,
+        commit=True,
+        connector_origin_integrity=None,
+    ):
         # Faithfully mirror production run_analysis, which loads the dataset
         # dataframe first and raises if the storage is unreadable. The harness
         # output itself stays deterministic, but this preserves the real

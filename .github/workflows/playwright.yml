@@ -253,6 +253,8 @@ jobs:
         shard: [1, 2, 3, 4]
     steps:
     - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
     - uses: actions/setup-python@v6
       with:
         python-version: "3.12"
@@ -338,6 +340,51 @@ jobs:
           exit 1
         fi
         echo "All repo-root pytest shards passed."
+
+  dual-gate-windows:
+    name: dual-gate-windows
+    timeout-minutes: 30
+    runs-on: windows-latest
+    env:
+      CONNECTOR_LIVE_EGRESS_ENABLED: "false"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: ./backend/tests/requirements-layer3-api.txt
+    - name: Install dual-live gate test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r ./backend/tests/requirements-layer3-api.txt
+    - name: Run complete dual-live gate suite serially
+      shell: pwsh
+      run: |
+        $forbidden = @(
+          "CONNECTOR_LIVE_EGRESS_ENABLED",
+          "CONNECTOR_CAMPAIGN_DEFINITION_PATH",
+          "CONNECTOR_CAMPAIGN_DEFINITION_SHA256",
+          "CONNECTOR_SCIENCEBASE_GRANT_PATH",
+          "CONNECTOR_SCIENCEBASE_GRANT_SHA256",
+          "CONNECTOR_NRC_APS_GRANT_PATH",
+          "CONNECTOR_NRC_APS_GRANT_SHA256",
+          "NRC_ADAMS_APS_SUBSCRIPTION_KEY",
+          "GH_TOKEN",
+          "GITHUB_TOKEN"
+        )
+        foreach ($name in $forbidden) {
+          Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+        }
+        $present = @($forbidden | Where-Object { Test-Path "Env:$_" })
+        if ($present.Count -ne 0) {
+          throw "Dual-live Windows CI authority environment must be absent."
+        }
+        python -m pytest ./tests/test_dual_gate.py -p no:cacheprovider -p no:xdist -ra --tb=short -q
 
   sec-xbrl-arelle-provisioning:
     name: sec-xbrl-arelle-provisioning
@@ -665,6 +712,7 @@ jobs:
       - backend-migrations-postgres
       - sec-xbrl-arelle-provisioning
       - root-tests
+      - dual-gate-windows
       - nrc-aps-ocr
       - test
     if: ${{ always() }}
@@ -690,6 +738,7 @@ jobs:
           "backend-migrations-postgres:${{ needs['backend-migrations-postgres'].result }}" \
           "sec-xbrl-arelle-provisioning:${{ needs['sec-xbrl-arelle-provisioning'].result }}" \
           "root-tests:${{ needs['root-tests'].result }}" \
+          "dual-gate-windows:${{ needs['dual-gate-windows'].result }}" \
           "nrc-aps-ocr:${{ needs['nrc-aps-ocr'].result }}" \
           "test:${{ needs['test'].result }}"
         do

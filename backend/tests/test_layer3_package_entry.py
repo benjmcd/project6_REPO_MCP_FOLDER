@@ -475,7 +475,7 @@ def test_verify_package_payload_bytes_rejects_single_axis_corruption(
         payload_path.write_bytes(stable_json_text_bytes(payload))
         target.payload_hash = hashlib.sha256(payload_path.read_bytes()).hexdigest()
     elif mutation == "noncanonical":
-        payload_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        payload_path.write_bytes((json.dumps(payload, indent=2) + "\n").encode("utf-8"))
         target.payload_hash = hashlib.sha256(payload_path.read_bytes()).hexdigest()
     elif mutation == "duplicate_key":
         payload_path.write_text(

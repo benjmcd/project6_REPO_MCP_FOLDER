@@ -2,3 +2,6 @@ patches/*.patch -text
 # Deploy files are consumed inside Linux containers (nginx config, htpasswd,
 # compose YAML); keep them LF on every checkout regardless of core.autocrlf.
 deploy/** text eol=lf
+
+# The dual-live dependency verifier binds the reviewed lockfile's exact CRLF bytes.
+backend/requirements.lock.txt text eol=crlf

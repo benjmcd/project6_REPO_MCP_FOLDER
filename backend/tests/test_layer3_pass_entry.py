@@ -228,7 +228,12 @@ def _seed_non_timeseries_dataset_version(db, tmp_path: Path, *, dataset_id: str,
     db.flush()
 
 
-def _build_quant_ready_session(db, tmp_path: Path) -> tuple[str, str, datetime]:
+def _build_quant_ready_session(
+    db,
+    tmp_path: Path,
+    *,
+    snapshot_storage_root: Path | None = None,
+) -> tuple[str, str, datetime]:
     dataset_version_id = "dv-pass-001"
     _seed_dataset_version(db, tmp_path, dataset_id="ds-pass-001", dataset_version_id=dataset_version_id)
 
@@ -266,7 +271,11 @@ def _build_quant_ready_session(db, tmp_path: Path) -> tuple[str, str, datetime]:
                 load_summary={"loaded_records": 1, "failed_records": 0},
             )
         ],
-        storage_root=tmp_path,
+        storage_root=(
+            tmp_path
+            if snapshot_storage_root is None
+            else snapshot_storage_root
+        ),
     )
     finalize_session(db, session=session)
     phase1a_status = session.status

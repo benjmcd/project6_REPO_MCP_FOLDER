@@ -4785,11 +4785,13 @@ def test_producer_local_state_rejects_reparse_database(
         connection.execute("CREATE TABLE fixture (id INTEGER PRIMARY KEY)")
     storage_path.mkdir()
     real_lstat = os.lstat
+    reparse_mode = real_lstat(reparse_root).st_mode
 
     def lstat(path: str | os.PathLike[str]) -> os.stat_result | object:
         if Path(path) == reparse_root:
             return SimpleNamespace(
                 st_file_attributes=0x400,
+                st_mode=reparse_mode,
                 st_size=0,
             )
         return real_lstat(path)
