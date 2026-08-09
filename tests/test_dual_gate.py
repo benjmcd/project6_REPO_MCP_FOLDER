@@ -2073,14 +2073,24 @@ def test_owned_control_race_cannot_create_phase_b_or_seal(
         http_writer=writers["http"],
         stdout_writer=writers["stdout"],
         stderr_writer=writers["stderr"],
-        timeout_seconds=5,
+        timeout_seconds=30,
     )
     phases: list[str] = []
     run_errors: list[BaseException] = []
     write_entered = threading.Event()
     release_write = threading.Event()
     original_create = dual_live_windows._create_owned_phase_process
+    original_duplicate_thread_handle = (
+        dual_live_windows._duplicate_current_thread_handle
+    )
     original_write = dual_live_windows._kernel32.WriteFile
+    original_write_owned_control_once = (
+        dual_live_windows._write_owned_control_once
+    )
+
+    def delayed_duplicate_thread_handle() -> int:
+        time.sleep(0.1)
+        return int(original_duplicate_thread_handle())
 
     def record_create(
         phase: str,
@@ -2093,7 +2103,6 @@ def test_owned_control_race_cannot_create_phase_b_or_seal(
             runtime_instance_id,
             wrapper_nonce_sha256,
         )
-        monkeypatch.setattr(dual_live_windows, "_OWNED_IO_TIMEOUT_SECONDS", 0.05)
         return process
 
     def blocked_write(*arguments: object) -> int:
@@ -2101,10 +2110,27 @@ def test_owned_control_race_cannot_create_phase_b_or_seal(
         assert release_write.wait(5)
         return int(original_write(*arguments))
 
+    def await_blocked_write(
+        writer: dual_live_windows._OwnedControlWriter,
+    ) -> None:
+        assert write_entered.wait(30)
+        monkeypatch.setattr(dual_live_windows, "_OWNED_IO_TIMEOUT_SECONDS", 0.05)
+        original_write_owned_control_once(writer)
+
     monkeypatch.setattr(
         dual_live_windows,
         "_create_owned_phase_process",
         record_create,
+    )
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_duplicate_current_thread_handle",
+        delayed_duplicate_thread_handle,
+    )
+    monkeypatch.setattr(
+        dual_live_windows,
+        "_write_owned_control_once",
+        await_blocked_write,
     )
     monkeypatch.setattr(dual_live_windows._kernel32, "WriteFile", blocked_write)
 
@@ -2116,7 +2142,7 @@ def test_owned_control_race_cannot_create_phase_b_or_seal(
 
     try:
         run_controller()
-        assert write_entered.is_set()
+        assert write_entered.is_set(), run_errors
         assert len(run_errors) == 1
         assert phases == ["A"]
         assert context.sealed is False
@@ -9701,7 +9727,7 @@ def _run_powershell(
             "-Action",
             action,
             "-PythonVersion",
-            "3.11",
+            "3.12",
             *(action_args or []),
         ],
         cwd=tmp_path,

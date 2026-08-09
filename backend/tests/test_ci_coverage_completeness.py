@@ -57,7 +57,7 @@ BACKEND_SHARD_PATTERNS = (
 )
 
 BACKEND_SERIAL_TESTS = {
-    "test_dual_eval.py": "backend-layer3-api",
+    "test_dual_eval.py": ("dual-gate-windows", "windows-latest", 30),
 }
 
 BACKEND_SERIAL_SUPPORT = {
@@ -233,10 +233,11 @@ def test_backend_serial_lane_is_explicit_and_support_bound() -> None:
     assert serial_files.isdisjoint(excluded_files)
     assert support_files.isdisjoint(excluded_files)
 
-    for file_name, job_id in BACKEND_SERIAL_TESTS.items():
+    for file_name, (job_id, runner, timeout_minutes) in BACKEND_SERIAL_TESTS.items():
         assert not _covered_by_backend_shard(file_name), file_name
         job_block = _workflow_job_block(job_id)
-        assert "timeout-minutes: 20" in job_block
+        assert f"runs-on: {runner}" in job_block
+        assert f"timeout-minutes: {timeout_minutes}" in job_block
         assert f"python -m pytest tests/{file_name}" in job_block
         assert "-p no:cacheprovider -p no:xdist" in job_block
         assert "requirements-layer3-api.txt" in job_block
@@ -322,6 +323,8 @@ def test_dual_gate_windows_job_recovers_platform_bound_proofs() -> None:
     for setting in checkout_environment:
         assert job_block.count(setting) == 1
     assert "python -m pytest ./tests/test_dual_gate.py" in job_block
+    assert job_block.count("python -m pytest tests/test_dual_eval.py") == 1
+    assert "tests/test_dual_eval.py" not in _workflow_job_block("backend-layer3-api")
     assert (
         "./backend/tests/test_campaign_log_capture.py::"
         "test_strict_runner_public_mode_is_reachable_under_reviewed_posture"

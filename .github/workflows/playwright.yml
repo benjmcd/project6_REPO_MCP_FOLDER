@@ -224,24 +224,6 @@ jobs:
           exit 1
         fi
         echo "All Layer 3 backend pytest shards passed."
-    - uses: actions/checkout@v6
-    - uses: actions/setup-python@v6
-      with:
-        python-version: "3.12"
-        cache: pip
-        cache-dependency-path: ./backend/tests/requirements-layer3-api.txt
-    - name: Install Layer 3 API test dependencies
-      run: |
-        python -m pip install --upgrade pip
-        python -m pip install -r ./backend/tests/requirements-layer3-api.txt
-    - name: Run serial dual-live evaluator census
-      env:
-        CONNECTOR_LIVE_EGRESS_ENABLED: "false"
-        PYTHONDONTWRITEBYTECODE: "1"
-        PYTHONPYCACHEPREFIX: ${{ runner.temp }}/project6-pycache
-      run: |
-        cd backend
-        python -m pytest tests/test_dual_eval.py -p no:cacheprovider -p no:xdist -ra --tb=short -q
 
   root-tests-shard:
     name: root-tests-shard-${{ matrix.shard }}/4
@@ -366,7 +348,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install -r ./backend/tests/requirements-layer3-api.txt
-    - name: Run Windows-bound dual-live proof suite serially
+    - name: Run Windows-bound dual-live proof and evaluator suites serially
       shell: pwsh
       run: |
         $forbidden = @(
@@ -391,6 +373,20 @@ jobs:
         python -m pytest ./tests/test_dual_gate.py `
           ./backend/tests/test_campaign_log_capture.py::test_strict_runner_public_mode_is_reachable_under_reviewed_posture `
           -p no:cacheprovider -p no:xdist -ra --tb=short -q
+        $dualGateExitCode = $LASTEXITCODE
+        if ($dualGateExitCode -ne 0) {
+          exit $dualGateExitCode
+        }
+        Push-Location ./backend
+        try {
+          python -m pytest tests/test_dual_eval.py `
+            -p no:cacheprovider -p no:xdist -ra --tb=short -q
+          $dualEvalExitCode = $LASTEXITCODE
+        }
+        finally {
+          Pop-Location
+        }
+        exit $dualEvalExitCode
 
   sec-xbrl-arelle-provisioning:
     name: sec-xbrl-arelle-provisioning
