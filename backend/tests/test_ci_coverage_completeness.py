@@ -40,7 +40,29 @@ BACKEND_SHARD_PATTERNS = (
     "test_sec_xbrl_*.py",
     "test_support_matrix.py",
     "test_visual_artifact_*.py",
+    "test_arming_api.py",
+    "test_campaign_log_capture.py",
+    "test_connector_transport_loopback.py",
+    "test_dual_live_dependencies.py",
+    "test_dual_live_p4_faults.py",
+    "test_egress_arming.py",
+    "test_egress_auth.py",
+    "test_egress_crash.py",
+    "test_egress_schema.py",
+    "test_egress_transport.py",
+    "test_nrc_fresh.py",
+    "test_nrc_strict_parse.py",
+    "test_sciencebase_fresh.py",
+    "test_sciencebase_locator_live_shape.py",
 )
+
+BACKEND_SERIAL_TESTS = {
+    "test_dual_eval.py": "backend-layer3-api",
+}
+
+BACKEND_SERIAL_SUPPORT = {
+    "test_dual_eval_acceptance.py": "test_dual_eval.py",
+}
 
 RUNTIME_REQUIRED_REASON = (
     "requires-prebuilt-nrc-aps-local-corpus-runtime: tests depend on an existing "
@@ -168,14 +190,18 @@ def test_backend_test_files_are_ci_covered_or_allowlisted() -> None:
     all_files = _backend_test_files()
     assert all_files, "backend/tests/test_*.py inventory is empty"
 
+    classified_nonshard = (
+        set(EXCLUDED_BACKEND_TESTS)
+        | set(BACKEND_SERIAL_TESTS)
+        | set(BACKEND_SERIAL_SUPPORT)
+    )
     missing_allowlist_entries = [
-        file_name for file_name in EXCLUDED_BACKEND_TESTS if file_name not in all_files
+        file_name for file_name in classified_nonshard if file_name not in all_files
     ]
     assert missing_allowlist_entries == []
 
     covered = {file_name for file_name in all_files if _covered_by_backend_shard(file_name)}
-    excluded = set(EXCLUDED_BACKEND_TESTS)
-    uncovered = sorted(set(all_files) - covered - excluded)
+    uncovered = sorted(set(all_files) - covered - classified_nonshard)
     assert uncovered == []
 
 
@@ -192,6 +218,36 @@ def test_backend_shard_pattern_mirror_matches_workflow() -> None:
     workflow_text = WORKFLOW_PATH.read_text(encoding="utf-8")
     for pattern in BACKEND_SHARD_PATTERNS:
         assert f'"{pattern}"' in workflow_text
+
+
+def test_backend_serial_lane_is_explicit_and_support_bound() -> None:
+    all_files = set(_backend_test_files())
+    serial_files = set(BACKEND_SERIAL_TESTS)
+    support_files = set(BACKEND_SERIAL_SUPPORT)
+    excluded_files = set(EXCLUDED_BACKEND_TESTS)
+
+    assert serial_files <= all_files
+    assert support_files <= all_files
+    assert serial_files.isdisjoint(support_files)
+    assert serial_files.isdisjoint(excluded_files)
+    assert support_files.isdisjoint(excluded_files)
+
+    for file_name, job_id in BACKEND_SERIAL_TESTS.items():
+        assert not _covered_by_backend_shard(file_name), file_name
+        job_block = _workflow_job_block(job_id)
+        assert "timeout-minutes: 20" in job_block
+        assert f"python -m pytest tests/{file_name}" in job_block
+        assert "-p no:cacheprovider -p no:xdist" in job_block
+        assert "requirements-layer3-api.txt" in job_block
+
+    for support_file, serial_file in BACKEND_SERIAL_SUPPORT.items():
+        assert serial_file in BACKEND_SERIAL_TESTS
+        assert not _covered_by_backend_shard(support_file), support_file
+        support_text = (BACKEND_TESTS_ROOT / support_file).read_text(encoding="utf-8")
+        serial_text = (BACKEND_TESTS_ROOT / serial_file).read_text(encoding="utf-8")
+        support_module = Path(support_file).stem
+        assert "__test__ = False" in support_text
+        assert f"import {support_module} as " in serial_text
 
 
 def test_release_readiness_manifest_gates_map_to_ci_jobs_or_collected_tests() -> None:

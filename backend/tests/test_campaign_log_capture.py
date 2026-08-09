@@ -5073,7 +5073,7 @@ def test_strict_runner_redirects_repo_bytecode_before_public_import(
         timeout=10,
     )
     assert baseline.returncode == 0
-    assert baseline.stdout == b"evil\r\n"
+    assert baseline.stdout == b"evil" + os.linesep.encode("ascii")
 
     probe = "\n".join(
         (
@@ -5101,7 +5101,7 @@ def test_strict_runner_redirects_repo_bytecode_before_public_import(
     )
 
     assert completed.returncode == 0
-    assert completed.stdout == b"safe\r\n"
+    assert completed.stdout == b"safe" + os.linesep.encode("ascii")
     assert completed.stderr == b""
 
 

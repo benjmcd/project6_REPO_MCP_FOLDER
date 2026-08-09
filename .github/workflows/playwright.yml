@@ -151,6 +151,20 @@ jobs:
             "test_sec_xbrl_*.py",
             "test_support_matrix.py",
             "test_visual_artifact_*.py",
+            "test_arming_api.py",
+            "test_campaign_log_capture.py",
+            "test_connector_transport_loopback.py",
+            "test_dual_live_dependencies.py",
+            "test_dual_live_p4_faults.py",
+            "test_egress_arming.py",
+            "test_egress_auth.py",
+            "test_egress_crash.py",
+            "test_egress_schema.py",
+            "test_egress_transport.py",
+            "test_nrc_fresh.py",
+            "test_nrc_strict_parse.py",
+            "test_sciencebase_fresh.py",
+            "test_sciencebase_locator_live_shape.py",
         )
         files = sorted({
             f for pat in patterns for f in glob.glob(f"./backend/tests/{pat}")
@@ -198,7 +212,7 @@ jobs:
 
   backend-layer3-api:
     name: backend-layer3-api
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     needs: backend-layer3-api-shard
     if: ${{ always() }}
@@ -210,6 +224,24 @@ jobs:
           exit 1
         fi
         echo "All Layer 3 backend pytest shards passed."
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: ./backend/tests/requirements-layer3-api.txt
+    - name: Install Layer 3 API test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r ./backend/tests/requirements-layer3-api.txt
+    - name: Run serial dual-live evaluator census
+      env:
+        CONNECTOR_LIVE_EGRESS_ENABLED: "false"
+        PYTHONDONTWRITEBYTECODE: "1"
+        PYTHONPYCACHEPREFIX: ${{ runner.temp }}/project6-pycache
+      run: |
+        cd backend
+        python -m pytest tests/test_dual_eval.py -p no:cacheprovider -p no:xdist -ra --tb=short -q
 
   root-tests-shard:
     name: root-tests-shard-${{ matrix.shard }}/4

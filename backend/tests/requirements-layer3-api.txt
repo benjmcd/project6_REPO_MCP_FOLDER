@@ -21,5 +21,6 @@ matplotlib>=3.8
 statsmodels>=0.14
 ruptures>=1.1.10
 requests>=2.31
+urllib3==2.7.0
 PyMuPDF>=1.24
 camelot-py[cv]>=0.11.0
