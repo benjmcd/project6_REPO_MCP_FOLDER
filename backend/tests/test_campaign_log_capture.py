@@ -4950,6 +4950,7 @@ def test_strict_runner_public_mode_reaches_runtime_and_emits_canonical_json(
     assert calls == [(str(CAMPAIGN_ID), FINGERPRINT)]
 
 
+@pytest.mark.skipif(os.name != "nt", reason="Windows fixed-volume public-path proof only")
 def test_strict_runner_public_mode_is_reachable_under_reviewed_posture(
     tmp_path: Path,
 ) -> None:

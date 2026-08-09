@@ -297,6 +297,47 @@ def test_release_gate_job_runs_manifest_runner_after_manifest_ci_jobs() -> None:
         assert f"needs['{job_id}'].result" in gate_block
 
 
+def test_dual_gate_windows_job_recovers_platform_bound_proofs() -> None:
+    job_block = _workflow_job_block("dual-gate-windows")
+    assert "runs-on: windows-latest" in job_block
+    assert 'python-version: "3.12"' in job_block
+    checkout_start = job_block.index("    - uses: actions/checkout@v6")
+    checkout_end = job_block.find("\n    - ", checkout_start + 1)
+    assert checkout_end != -1
+    checkout_block = job_block[checkout_start:checkout_end]
+    expected_checkout_block = """    - uses: actions/checkout@v6
+      env:
+        GIT_CONFIG_COUNT: "1"
+        GIT_CONFIG_KEY_0: core.longpaths
+        GIT_CONFIG_VALUE_0: "true"
+      with:
+        fetch-depth: 0
+        persist-credentials: false"""
+    assert checkout_block == expected_checkout_block
+    checkout_environment = (
+        "GIT_CONFIG_COUNT",
+        "GIT_CONFIG_KEY_0",
+        "GIT_CONFIG_VALUE_0",
+    )
+    for setting in checkout_environment:
+        assert job_block.count(setting) == 1
+    assert "python -m pytest ./tests/test_dual_gate.py" in job_block
+    assert (
+        "./backend/tests/test_campaign_log_capture.py::"
+        "test_strict_runner_public_mode_is_reachable_under_reviewed_posture"
+        in job_block
+    )
+    strict_runner_source = (
+        BACKEND_TESTS_ROOT / "test_campaign_log_capture.py"
+    ).read_text(encoding="utf-8")
+    assert (
+        '@pytest.mark.skipif(os.name != "nt", '
+        'reason="Windows fixed-volume public-path proof only")\n'
+        "def test_strict_runner_public_mode_is_reachable_under_reviewed_posture"
+        in strict_runner_source
+    )
+
+
 def test_backend_coverage_comment_matches_enforced_floor() -> None:
     coverage_block = _workflow_job_block("backend-coverage")
     assert "--cov-fail-under=90" in coverage_block

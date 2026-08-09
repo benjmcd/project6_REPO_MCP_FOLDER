@@ -350,6 +350,10 @@ jobs:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
     - uses: actions/checkout@v6
+      env:
+        GIT_CONFIG_COUNT: "1"
+        GIT_CONFIG_KEY_0: core.longpaths
+        GIT_CONFIG_VALUE_0: "true"
       with:
         fetch-depth: 0
         persist-credentials: false
@@ -362,7 +366,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install -r ./backend/tests/requirements-layer3-api.txt
-    - name: Run complete dual-live gate suite serially
+    - name: Run Windows-bound dual-live proof suite serially
       shell: pwsh
       run: |
         $forbidden = @(
@@ -384,7 +388,9 @@ jobs:
         if ($present.Count -ne 0) {
           throw "Dual-live Windows CI authority environment must be absent."
         }
-        python -m pytest ./tests/test_dual_gate.py -p no:cacheprovider -p no:xdist -ra --tb=short -q
+        python -m pytest ./tests/test_dual_gate.py `
+          ./backend/tests/test_campaign_log_capture.py::test_strict_runner_public_mode_is_reachable_under_reviewed_posture `
+          -p no:cacheprovider -p no:xdist -ra --tb=short -q
 
   sec-xbrl-arelle-provisioning:
     name: sec-xbrl-arelle-provisioning
