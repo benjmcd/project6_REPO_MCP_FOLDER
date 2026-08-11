@@ -274,7 +274,7 @@ print(json.dumps({
         capture_output=True,
         check=True,
     )
-    body = json.loads(result.stdout)
+    body = json.loads(result.stdout.strip().splitlines()[-1])
 
     assert body == {
         "allow_origins": ["https://review.example.com"],
