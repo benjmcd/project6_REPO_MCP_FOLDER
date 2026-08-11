@@ -229,6 +229,10 @@ class Settings(BaseSettings):
     proxy_roles_header: str = Field(default="X-Forwarded-Roles", alias="PROXY_ROLES_HEADER")
     layer3_owner_role_tokens: str = Field(default="owner", alias="LAYER3_OWNER_ROLE_TOKENS")
     layer3_auditor_role_tokens: str = Field(default="auditor", alias="LAYER3_AUDITOR_ROLE_TOKENS")
+    layer3_connector_promotion_identity_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_CONNECTOR_PROMOTION_IDENTITY_ENABLED",
+    )
 
     model_config = SettingsConfigDict(env_file=str(BACKEND_ENV_FILE), env_file_encoding="utf-8", extra="ignore")
 

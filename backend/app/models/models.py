@@ -2304,7 +2304,19 @@ class L3ConnectorSourceIntakeRecord(Base):
             "status IN ('recorded', 'already_recorded')",
             name="ck_l3_connector_source_intake_status",
         ),
+        CheckConstraint(
+            "(identity_metadata_hash_version IS NULL AND identity_metadata_hash IS NULL)"
+            " OR (identity_metadata_hash_version IS NOT NULL AND identity_metadata_hash IS NOT NULL)",
+            name="ck_l3_connector_source_intake_identity_metadata_joint_null",
+        ),
         Index("ix_l3_connector_source_intake_content_sha256", "content_sha256"),
+        Index(
+            "ix_l3_connector_intake_material_identity",
+            "identity_metadata_hash_version",
+            "source_family",
+            "content_sha256",
+            "identity_metadata_hash",
+        ),
         Index("ix_l3_connector_source_intake_source_family", "source_family"),
         Index("ix_l3_connector_source_intake_status", "status"),
         Index("ix_l3_connector_source_intake_run_target", "connector_run_target_id"),
@@ -2320,6 +2332,8 @@ class L3ConnectorSourceIntakeRecord(Base):
     media_type: Mapped[str | None] = mapped_column(String(128))
     content_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
     content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    identity_metadata_hash_version: Mapped[str | None] = mapped_column(String(64))
+    identity_metadata_hash: Mapped[str | None] = mapped_column(String(64))
     metadata_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     storage_ref: Mapped[str] = mapped_column(String(1024), nullable=False)
@@ -2333,6 +2347,63 @@ class L3ConnectorSourceIntakeRecord(Base):
     connector_key: Mapped[str] = mapped_column(String(100), nullable=False)
     connector_run_id: Mapped[str] = mapped_column(String(36), nullable=False)
     connector_run_target_id: Mapped[str] = mapped_column(String(36), nullable=False)
+
+
+class L3ConnectorPromotionReceipt(Base):
+    __tablename__ = "l3_connector_promotion_receipt"
+    __table_args__ = (
+        UniqueConstraint(
+            "identity_metadata_hash_version",
+            "source_family",
+            "content_sha256",
+            "identity_metadata_hash",
+            name="uq_l3_connector_promotion_identity_tuple",
+        ),
+        UniqueConstraint(
+            "canonical_identity_key_hash",
+            name="uq_l3_connector_promotion_canonical_identity",
+        ),
+        CheckConstraint(
+            "receipt_schema_version = 'layer3.connector_promotion_receipt.v1'",
+            name="ck_l3_connector_promotion_receipt_schema",
+        ),
+        Index("ix_l3_connector_promotion_intake", "connector_source_intake_record_id"),
+        Index("ix_l3_connector_promotion_gate_b_session", "gate_b_session_id"),
+        Index("ix_l3_connector_promotion_selection_manifest", "gate_b_selection_manifest_id"),
+        Index("ix_l3_connector_promotion_material_snapshot", "gate_b_material_snapshot_id"),
+    )
+
+    connector_promotion_receipt_id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
+    receipt_schema_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    identity_metadata_hash_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_family: Mapped[str] = mapped_column(String(64), nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    identity_metadata_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    canonical_identity_key_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    connector_source_intake_record_id: Mapped[str] = mapped_column(
+        ForeignKey(
+            "l3_connector_source_intake_record.connector_source_intake_record_id",
+            ondelete="RESTRICT",
+        ),
+        nullable=False,
+    )
+    gate_b_session_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_session.session_id", ondelete="RESTRICT"), nullable=False
+    )
+    gate_b_selection_manifest_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_selection_manifest.selection_manifest_id", ondelete="RESTRICT"), nullable=False
+    )
+    gate_b_material_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_material_snapshot.material_snapshot_id", ondelete="RESTRICT"), nullable=False
+    )
+    gate_b_decision_manifest_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    gate_b_decision_manifest_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    material_preview_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    approval_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    promotion_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
 
 
 class L3SourceDirectoryIngestionBatch(Base):

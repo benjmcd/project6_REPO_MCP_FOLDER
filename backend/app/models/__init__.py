@@ -29,6 +29,7 @@ from app.models.models import (
     L3AnalysisPlan,
     L3AnalysisSet,
     L3AnalysisUnit,
+    L3ConnectorPromotionReceipt,
     L3CorrectedPackageArtifactSet,
     L3Descriptor,
     L3GateBIdempotencyKey,
