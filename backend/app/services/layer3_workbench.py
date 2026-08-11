@@ -8,8 +8,9 @@ import json
 import os
 import time
 from datetime import datetime, timezone
+from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import DBAPIError, IntegrityError
@@ -2207,7 +2208,49 @@ def _connector_promotion_workbench_error(
     )
 
 
-def _gate_b_decision_impl(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+GateBDecisionFunction = Callable[[Session, dict[str, Any]], dict[str, Any]]
+
+
+def _guard_connector_promotion_gate_b_errors(function: GateBDecisionFunction) -> GateBDecisionFunction:
+    @wraps(function)
+    def guarded(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+        try:
+            return function(db, payload)
+        except IntegrityError as exc:
+            if not connector_promotion_identity.identity_lock_active(db):
+                raise
+            db.rollback()
+            connector_promotion_identity.release_identity_lock_marker(db)
+            raise Layer3WorkbenchError(
+                "connector_promotion_identity_conflict",
+                "Connector promotion identity conflicts with durable state.",
+                status="conflict",
+                http_status=409,
+                recoverable=False,
+            ) from exc
+        except DBAPIError as exc:
+            if not connector_promotion_identity.identity_lock_active(db):
+                raise
+            db.rollback()
+            connector_promotion_identity.release_identity_lock_marker(db)
+            raise Layer3WorkbenchError(
+                "connector_promotion_identity_lock_unavailable",
+                "Connector promotion identity lock is unavailable.",
+                status="conflict",
+                http_status=409,
+                recoverable=False,
+            ) from exc
+        except Exception:
+            if settings.layer3_connector_promotion_identity_enabled:
+                db.rollback()
+                connector_promotion_identity.release_identity_lock_marker(db)
+            raise
+
+    return guarded
+
+
+@_guard_connector_promotion_gate_b_errors
+def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
         raise Layer3WorkbenchError(
@@ -2693,40 +2736,6 @@ def _gate_b_decision_impl(db: Session, payload: dict[str, Any]) -> dict[str, Any
     db.commit()
     connector_promotion_identity.release_identity_lock_marker(db)
     return response
-
-
-def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
-    try:
-        return _gate_b_decision_impl(db, payload)
-    except IntegrityError as exc:
-        if not connector_promotion_identity.identity_lock_active(db):
-            raise
-        db.rollback()
-        connector_promotion_identity.release_identity_lock_marker(db)
-        raise Layer3WorkbenchError(
-            "connector_promotion_identity_conflict",
-            "Connector promotion identity conflicts with durable state.",
-            status="conflict",
-            http_status=409,
-            recoverable=False,
-        ) from exc
-    except DBAPIError as exc:
-        if not connector_promotion_identity.identity_lock_active(db):
-            raise
-        db.rollback()
-        connector_promotion_identity.release_identity_lock_marker(db)
-        raise Layer3WorkbenchError(
-            "connector_promotion_identity_lock_unavailable",
-            "Connector promotion identity lock is unavailable.",
-            status="conflict",
-            http_status=409,
-            recoverable=False,
-        ) from exc
-    except Exception:
-        if settings.layer3_connector_promotion_identity_enabled:
-            db.rollback()
-            connector_promotion_identity.release_identity_lock_marker(db)
-        raise
 
 
 def _load_session(db: Session, session_id: str) -> L3Session:
