@@ -135,6 +135,10 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
     )
+    layer3_connector_promotion_identity_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_CONNECTOR_PROMOTION_IDENTITY_ENABLED",
+    )
     layer3_sec_edgar_rate_limit_per_second: int = Field(
         default=1,
         alias="LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND",
