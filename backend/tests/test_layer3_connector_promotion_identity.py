@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 from pathlib import Path
 import sys
@@ -43,6 +44,12 @@ RAW_BYTES = b"site_id,value\nSB-001,42\nSB-002,43\n"
 def _run_alembic(url: str, operation, revision: str) -> None:
     previous = os.environ.get("DATABASE_URL")
     os.environ["DATABASE_URL"] = url
+    manager = logging.Logger.manager
+    disabled_before = {
+        name: logger.disabled
+        for name, logger in manager.loggerDict.items()
+        if isinstance(logger, logging.Logger)
+    }
     try:
         config = Config(str(ALEMBIC_INI))
         config.set_main_option("script_location", str(BACKEND / "alembic"))
@@ -53,6 +60,9 @@ def _run_alembic(url: str, operation, revision: str) -> None:
             os.environ.pop("DATABASE_URL", None)
         else:
             os.environ["DATABASE_URL"] = previous
+        for name, logger in manager.loggerDict.items():
+            if isinstance(logger, logging.Logger):
+                logger.disabled = disabled_before.get(name, False)
 
 
 @pytest.fixture()
