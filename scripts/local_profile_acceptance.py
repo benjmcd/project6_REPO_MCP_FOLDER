@@ -428,7 +428,14 @@ def _run_child(
             f"--- stdout ---\n{result.stdout}\n"
             f"--- stderr ---\n{result.stderr}"
         )
-    return json.loads(result.stdout)
+    stdout_lines = [line for line in result.stdout.splitlines() if line.strip()]
+    if not stdout_lines:
+        raise RuntimeError(
+            f"child {mode} produced no JSON output\n"
+            f"--- stdout ---\n{result.stdout}\n"
+            f"--- stderr ---\n{result.stderr}"
+        )
+    return json.loads(stdout_lines[-1])
 
 
 def _ensure_clean_work_dir(work_dir: Path) -> None:
