@@ -675,6 +675,41 @@ class _Session:
         return None
 
 
+@pytest.mark.parametrize(
+    ("authority_mode", "authority_value"),
+    [
+        pytest.param("omitted", None, id="omitted"),
+        pytest.param("explicit", None, id="none"),
+        pytest.param("explicit", False, id="non-callable"),
+    ],
+)
+def test_sciencebase_broker_requires_callable_authority_before_session_start(
+    authority_mode: str,
+    authority_value: object,
+) -> None:
+    class UnreachableTransport:
+        def execute(self, _plan: PhysicalRequestPlan) -> object:
+            pytest.fail("missing authority reached transport execution")
+
+    def read_next() -> dict[str, object]:
+        pytest.fail("missing authority reached worker frame parsing")
+
+    writer = io.BytesIO()
+    kwargs: dict[str, object] = {"read_next": read_next}
+    if authority_mode == "explicit":
+        kwargs["consume_authority"] = authority_value
+
+    with pytest.raises(EffectBoundaryHold, match="authority_consumer_required"):
+        effect_guard.BrokerEffectGuard(UnreachableTransport()).serve_sciencebase(
+            SimpleNamespace(),
+            None,
+            writer,
+            **kwargs,  # type: ignore[arg-type]
+        )
+
+    assert writer.getvalue() == b""
+
+
 def test_sciencebase_producer_completes_through_broker_after_each_reservation(
     tmp_path: Path,
 ) -> None:
@@ -682,6 +717,9 @@ def test_sciencebase_producer_completes_through_broker_after_each_reservation(
     transport = ConnectorEgressTransport(
         _ReservationRecorder(events),  # type: ignore[arg-type]
         session_factory=lambda: _Session(events),
+    )
+    transport.health_probe = (  # type: ignore[method-assign]
+        lambda _plan: events.append("health:1") is None
     )
     guard = effect_guard.BrokerEffectGuard(transport)
     broker_read_fd, worker_write_fd = os.pipe()
@@ -715,14 +753,26 @@ def test_sciencebase_producer_completes_through_broker_after_each_reservation(
 
         worker = threading.Thread(target=run_worker)
         worker.start()
-        output = guard.serve_sciencebase(request, broker_reader, broker_writer)
+        output = guard.serve_sciencebase(
+            request,
+            broker_reader,
+            broker_writer,
+            consume_authority=lambda: events.append("consume") is None,
+        )
         effect_guard.release_sciencebase_worker(broker_writer)
         worker.join(timeout=2)
         assert not worker.is_alive()
         assert failures == []
     assert output.content == b"artifact"
     assert events == [
-        "reserve:1", "effect:1", "reserve:2", "effect:2", "reserve:3", "effect:3",
+        "health:1",
+        "consume",
+        "reserve:1",
+        "effect:1",
+        "reserve:2",
+        "effect:2",
+        "reserve:3",
+        "effect:3",
     ]
 
 
