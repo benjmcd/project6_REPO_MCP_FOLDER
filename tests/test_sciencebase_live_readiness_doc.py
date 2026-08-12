@@ -14,6 +14,12 @@ def _preparation_block() -> str:
     return next(block for block in blocks if "$PreparedRuntimeArgs" in block)
 
 
+def _w5_block() -> str:
+    text = READINESS.read_text(encoding="utf-8")
+    blocks = re.findall(r"```powershell\n(.*?)\n```", text, flags=re.DOTALL)
+    return next(block for block in blocks if "$ExactSearchUrl" in block)
+
+
 def test_documented_preparation_initializes_store_and_envelope_before_prepare() -> None:
     block = _preparation_block()
 
@@ -71,3 +77,27 @@ def test_readiness_distinguishes_retired_sentinel_from_opaque_references() -> No
     assert "wrapper_start_token_ref=retired:sciencebase-live-v2" in text
     assert "two opaque authority/grant references" in text
     assert "three opaque authority/grant/token references" not in text
+
+
+def test_w5_validates_exact_sciencebase_authority_before_direct_curl() -> None:
+    block = _w5_block()
+
+    validation = block.index("foreach ($Stage in $StageUrls)")
+    attempts = block.index("foreach ($Attempt in 1..3)")
+    assert validation < attempts
+    for token in (
+        "[uri]::TryCreate",
+        "$ParsedUrl.Scheme -cne 'https'",
+        "$ParsedUrl.DnsSafeHost -ine 'www.sciencebase.gov'",
+        "-not $ParsedUrl.IsDefaultPort",
+        "$ParsedUrl.Port -ne 443",
+        "$ParsedUrl.UserInfo.Length -ne 0",
+        "$RawUrl.Contains('@')",
+        "$ParsedUrl.Fragment.Length -ne 0",
+        "curl.exe --disable",
+        "--proto '=https'",
+        "--noproxy '*'",
+        "--globoff",
+        "--max-redirs 0",
+    ):
+        assert token in block

@@ -626,8 +626,11 @@ def run_prepared_runtime(
             prepared.producer_request.limits.timeout_seconds * 1000
         )
         max_requests = 3 * (prepared.producer_request.max_redirect_hops + 1)
+        worker_wait_timeout_ms = request_timeout_ms
         session_timeout_ms = (
-            max_requests * request_timeout_ms + SCIENCEBASE_LAUNCH_IPC_OVERHEAD_MS
+            max_requests * request_timeout_ms
+            + worker_wait_timeout_ms
+            + SCIENCEBASE_LAUNCH_IPC_OVERHEAD_MS
         )
         with prepared.boundary.acquire():
             try:
@@ -682,7 +685,7 @@ def run_prepared_runtime(
                         )
                         prepared.boundary.census()
                         release_worker(writer)
-                        prepared.boundary.wait_worker(request_timeout_ms)
+                        prepared.boundary.wait_worker(worker_wait_timeout_ms)
                 return output
             finally:
                 _close_raw_handles(prepared.boundary, raw_handles)

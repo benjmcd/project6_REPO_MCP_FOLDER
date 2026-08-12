@@ -8,7 +8,6 @@ import hashlib
 import json
 import subprocess
 import sys
-import time
 from io import StringIO
 from pathlib import Path
 from dataclasses import replace
@@ -406,11 +405,15 @@ def test_run_prepared_runtime_owns_worker_pipes_job_and_exact_completion() -> No
     output = object()
     overhead_ms = 15_000
     max_requests = 3 * (request.max_redirect_hops + 1)
-    session_timeout_ms = (
-        max_requests * runtime.SCIENCEBASE_TIMEOUT_SECONDS * 1000 + overhead_ms
-    )
     worker_wait_timeout_ms = runtime.SCIENCEBASE_TIMEOUT_SECONDS * 1000
-    assert session_timeout_ms >= max_requests * 30 * 1000 + overhead_ms
+    session_timeout_ms = (
+        max_requests * runtime.SCIENCEBASE_TIMEOUT_SECONDS * 1000
+        + worker_wait_timeout_ms
+        + overhead_ms
+    )
+    assert session_timeout_ms >= (
+        max_requests * 30 * 1000 + worker_wait_timeout_ms + overhead_ms
+    )
     assert session_timeout_ms <= 15 * 60 * 1000
     assert worker_wait_timeout_ms >= 30 * 1000
 
@@ -769,6 +772,7 @@ def test_in_budget_delayed_worker_response_outlives_legacy_session_deadline() ->
     runtime = _runtime_module()
     output = object()
     observed: list[tuple[str, int]] = []
+    authorized_elapsed_ms = 0
 
     class Boundary:
         @contextlib.contextmanager
@@ -793,15 +797,16 @@ def test_in_budget_delayed_worker_response_outlives_legacy_session_deadline() ->
             return None
 
         def wait_worker(self, timeout_ms):
+            nonlocal authorized_elapsed_ms
             observed.append(("wait", timeout_ms))
+            authorized_elapsed_ms += timeout_ms
             return 0
 
         @contextlib.contextmanager
         def broker_session_deadline(self, timeout_ms):
             observed.append(("deadline", timeout_ms))
-            started = time.monotonic()
             yield
-            if time.monotonic() - started > timeout_ms / 1_000_000:
+            if authorized_elapsed_ms > timeout_ms:
                 raise runtime.RuntimeHold("broker_session_deadline")
 
     class Stream(contextlib.AbstractContextManager):
@@ -812,9 +817,13 @@ def test_in_budget_delayed_worker_response_outlives_legacy_session_deadline() ->
         def serve_sciencebase(
             self, _request, _reader, _writer, *, read_next, consume_authority
         ):
+            nonlocal authorized_elapsed_ms
             assert consume_authority() is True
             assert read_next() == {"type": "delayed"}
-            time.sleep(0.020)
+            request_slots = 3 * (_request.max_redirect_hops + 1)
+            authorized_elapsed_ms += (
+                request_slots * _request.limits.timeout_seconds * 1000
+            )
             return output
 
     request = SimpleNamespace(
@@ -845,7 +854,8 @@ def test_in_budget_delayed_worker_response_outlives_legacy_session_deadline() ->
     except runtime.RuntimeHold as exc:
         pytest.fail(f"unexpected {exc.code}; observed={observed!r}")
     assert result is output
-    assert observed == [("deadline", 105_000), ("read", 105_000), ("wait", 30_000)]
+    assert authorized_elapsed_ms == 120_000
+    assert observed == [("deadline", 135_000), ("read", 135_000), ("wait", 30_000)]
 
 
 @pytest.mark.parametrize("phase", ["boundary", "writer", "ipc"])

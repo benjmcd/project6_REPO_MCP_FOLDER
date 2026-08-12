@@ -660,9 +660,18 @@ def _write_artifact(
 
 def _artifact_content_rejected(content: bytes) -> bool:
     leading = content.lstrip()
-    if leading.startswith(b"\xef\xbb\xbf"):
-        leading = leading[3:].lstrip()
-    return leading.lower().startswith((b"<", b"<!doctype", b"<html", b"<?xml"))
+    encoded_boms = (
+        (b"\xff\xfe\x00\x00", "utf-32-le"),
+        (b"\x00\x00\xfe\xff", "utf-32-be"),
+        (b"\xff\xfe", "utf-16-le"),
+        (b"\xfe\xff", "utf-16-be"),
+        (b"\xef\xbb\xbf", "utf-8"),
+    )
+    for bom, encoding in encoded_boms:
+        if leading.startswith(bom):
+            decoded = leading[len(bom) :].decode(encoding, errors="replace")
+            return decoded.lstrip().startswith("<")
+    return leading.startswith(b"<")
 
 
 def execute_sciencebase_live(

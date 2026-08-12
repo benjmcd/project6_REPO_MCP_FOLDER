@@ -979,6 +979,45 @@ def test_write_artifact_rejects_html_error_page_before_write(tmp_path: Path) -> 
     store.close()
 
 
+@pytest.mark.parametrize(
+    ("bom", "encoding"),
+    [
+        pytest.param(b"\xff\xfe", "utf-16-le", id="utf16le"),
+        pytest.param(b"\xfe\xff", "utf-16-be", id="utf16be"),
+        pytest.param(b"\xff\xfe\x00\x00", "utf-32-le", id="utf32le"),
+        pytest.param(b"\x00\x00\xfe\xff", "utf-32-be", id="utf32be"),
+    ],
+)
+def test_write_artifact_rejects_bom_encoded_html_before_write(
+    tmp_path: Path, bom: bytes, encoding: str
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    raw = _canonical(_go_document(module, prepared))
+    go_path = tmp_path / "owner-go.json"
+    go_path.write_bytes(raw)
+    authority = module.load_live_go_once(
+        go_path,
+        "sha256:" + hashlib.sha256(raw).hexdigest(),
+        prepared,
+        owner_authenticator=_owner_authenticator(),
+    )
+    content = bom + "<html>502 Bad Gateway</html>".encode(encoding)
+    output = ScienceBaseOutput(
+        "item-1", "map.json", content, hashlib.sha256(content).hexdigest(), 3, len(content)
+    )
+
+    with pytest.raises(
+        module.LiveReadinessHold, match="sciencebase_artifact_content_rejected"
+    ):
+        module._write_artifact(store, authority, output, prepared.producer_request)
+
+    assert list(tmp_path.glob("sciencebase-*.bin")) == []
+    store.close()
+
+
 def test_failure_after_go_consumption_records_hold_without_retry(tmp_path: Path) -> None:
     module = _load_module()
     _database(tmp_path)
@@ -1092,7 +1131,7 @@ def test_post_containment_invalid_output_still_records_terminal_hold(
     assert terminal == ("hold", "sciencebase_output_invalid")
 
 
-def test_csv_artifact_writes_and_independent_closeout_verifies_exact_three_reservations(
+def test_utf16_csv_artifact_writes_and_independent_closeout_verifies_exact_three_reservations(
     tmp_path: Path,
 ) -> None:
     module = _load_module()
@@ -1103,6 +1142,7 @@ def test_csv_artifact_writes_and_independent_closeout_verifies_exact_three_reser
     go_path = tmp_path / "owner-go.json"
     go_path.write_bytes(raw)
     go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+    csv_content = b"\xff\xfe" + "col1,col2\n1,2\n".encode("utf-16-le")
 
     def run(_prepared, *, execution_authority):
         assert execution_authority.consume_exact(DIGESTS["envelope"]) is True
@@ -1114,9 +1154,13 @@ def test_csv_artifact_writes_and_independent_closeout_verifies_exact_three_reser
                 _plan(tmp_path.resolve(), ordinal, stage)
             ).disposition == "RESERVED"
         _prepared.reservation_store.close()
-        content = b"col1,col2\n1,2\n"
         return ScienceBaseOutput(
-            "item-1", "map.json", content, hashlib.sha256(content).hexdigest(), 3, 321
+            "item-1",
+            "map.json",
+            csv_content,
+            hashlib.sha256(csv_content).hexdigest(),
+            3,
+            321,
         )
 
     executed = module.execute_sciencebase_live(
@@ -1136,7 +1180,7 @@ def test_csv_artifact_writes_and_independent_closeout_verifies_exact_three_reser
     )
 
     assert executed.status == "TERMINAL"
-    assert executed.artifact_path.read_bytes() == b"col1,col2\n1,2\n"
+    assert executed.artifact_path.read_bytes() == csv_content
     assert result.status == "VERIFIED"
     assert result.code == "sciencebase_closeout_verified"
     with sqlite3.connect(tmp_path / "reservation.db") as connection:
@@ -1145,7 +1189,7 @@ def test_csv_artifact_writes_and_independent_closeout_verifies_exact_three_reser
         ).fetchone()[0] == 1
 
 
-def test_closeout_rejects_self_consistent_html_error_page_without_verified_event(
+def test_closeout_rejects_self_consistent_utf16le_html_without_verified_event(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1157,7 +1201,9 @@ def test_closeout_rejects_self_consistent_html_error_page_without_verified_event
     go_path = tmp_path / "owner-go.json"
     go_path.write_bytes(raw)
     go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
-    content = b"\xef\xbb\xbf  <!DOCTYPE html><html>502 Bad Gateway</html>"
+    content = b"\xff\xfe" + "  <!DOCTYPE html><html>502 Bad Gateway</html>".encode(
+        "utf-16-le"
+    )
 
     def bypass_write_gate(store, authority, output, _expected_request):
         digest = hashlib.sha256(output.content).hexdigest()
