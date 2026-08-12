@@ -131,6 +131,8 @@ jobs:
             "test_ci_coverage_completeness.py",
             "test_deployment_profile_*.py",
             "test_diagnostics_ref_*.py",
+            "test_dual_live_sciencebase_producer.py",
+            "test_egress_effect_boundary.py",
             "test_honesty_*.py",
             "test_legacy_api_*.py",
             "test_layer3_*.py",
@@ -621,6 +623,346 @@ jobs:
         cd backend
         python -m pytest tests/test_layer3_3c_golden_path.py -v
 
+  dual-live-windows-boundary:
+    name: dual-live-windows-boundary
+    timeout-minutes: 30
+    runs-on: windows-2025
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: ./backend/tests/requirements-layer3-api.txt
+    - name: Install B0 boundary test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r ./backend/tests/requirements-layer3-api.txt
+    - name: Provision pinned external B0 bundle and profile
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $archiveUrl = 'https://www.python.org/ftp/python/3.12.6/python-3.12.6-embed-amd64.zip'
+        $archiveSha256 = 'a86a2e28870967745d255cc597d1e4d19ae79e65e927cdc324baa0256202231c'
+        $tag = "$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+        $brokerName = "p6b0$($env:GITHUB_RUN_ATTEMPT)"
+        $brokerPassword = "P6!$([guid]::NewGuid().ToString('N'))aA1"
+        $moniker = "Project6.B0.CI.$($env:GITHUB_RUN_ID).$($env:GITHUB_RUN_ATTEMPT)"
+        $stateRoot = "C:\p6-b0-state-$tag"
+        $provisioningRoot = "C:\p6-b0-ci-$tag"
+        $statePath = Join-Path $stateRoot 'state.json'
+        @("PROJECT6_B0_STATE=$statePath", "PROJECT6_B0_PROVISIONING_ROOT=$provisioningRoot") | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        New-Item -ItemType Directory -Path $stateRoot, $provisioningRoot | Out-Null
+        foreach ($root in @($stateRoot, $provisioningRoot)) {
+          $rootItem = Get-Item -LiteralPath $root -Force
+          if ([IO.DriveInfo]::new($rootItem.PSDrive.Root).DriveType -ne [IO.DriveType]::Fixed) { throw "B0 CI root is not on a fixed local drive: $root" }
+          if (($rootItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw "B0 CI root is a reparse point: $root" }
+        }
+        $profileScript = Join-Path $stateRoot 'profile.ps1'
+        [ordered]@{ broker = $brokerName; password = $brokerPassword; moniker = $moniker; profile_created = $false; profile_script = $profileScript; state_root = $stateRoot; provisioning_root = $provisioningRoot } | ConvertTo-Json -Compress | Set-Content -LiteralPath $statePath -Encoding ascii
+        & net.exe user $brokerName $brokerPassword /add /passwordchg:no
+        if ($LASTEXITCODE -ne 0) { throw 'Could not create disposable standard broker account.' }
+        & icacls.exe $stateRoot /inheritance:r /grant:r '*S-1-5-18:(OI)(CI)(F)' '*S-1-5-32-544:(OI)(CI)(F)' "$brokerName`:(OI)(CI)(M)"
+        if ($LASTEXITCODE -ne 0) { throw 'Could not protect disposable CI state root.' }
+
+        @'
+        param([string]$Action, [string]$Moniker, [string]$OutputPath = '')
+        $ErrorActionPreference = 'Stop'
+        Add-Type @"
+        using System;
+        using System.Runtime.InteropServices;
+        public static class P6AppContainer {
+          [DllImport("userenv.dll", CharSet=CharSet.Unicode)] public static extern int CreateAppContainerProfile(string name, string display, string description, IntPtr capabilities, uint count, out IntPtr sid);
+          [DllImport("userenv.dll", CharSet=CharSet.Unicode)] public static extern int DeleteAppContainerProfile(string name);
+          [DllImport("userenv.dll", CharSet=CharSet.Unicode)] public static extern int DeriveAppContainerSidFromAppContainerName(string name, out IntPtr sid);
+          [DllImport("userenv.dll", CharSet=CharSet.Unicode)] public static extern int GetAppContainerFolderPath(string sid, out IntPtr path);
+          [DllImport("advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)] public static extern bool ConvertSidToStringSid(IntPtr sid, out IntPtr text);
+          [DllImport("advapi32.dll")] public static extern IntPtr FreeSid(IntPtr sid);
+          [DllImport("kernel32.dll")] public static extern IntPtr LocalFree(IntPtr value);
+          [DllImport("ole32.dll")] public static extern void CoTaskMemFree(IntPtr value);
+        }
+        "@
+        if ($Action -eq 'delete') {
+          $hr = [P6AppContainer]::DeleteAppContainerProfile($Moniker)
+          if ($hr -notin @(0, -2147023728)) { exit 1 }
+          exit 0
+        }
+        $sid = [IntPtr]::Zero
+        $hr = [P6AppContainer]::CreateAppContainerProfile($Moniker, $Moniker, $Moniker, [IntPtr]::Zero, 0, [ref]$sid)
+        if ($hr -ne 0 -or $sid -eq [IntPtr]::Zero) { throw ('CreateAppContainerProfile failed: 0x{0:x8}' -f ($hr -band 0xffffffffL)) }
+        try {
+          $text = [IntPtr]::Zero
+          if (-not [P6AppContainer]::ConvertSidToStringSid($sid, [ref]$text)) { throw 'Package SID conversion failed.' }
+          try { $packageSid = [Runtime.InteropServices.Marshal]::PtrToStringUni($text) } finally { [void][P6AppContainer]::LocalFree($text) }
+          $derived = [IntPtr]::Zero
+          $hr = [P6AppContainer]::DeriveAppContainerSidFromAppContainerName($Moniker, [ref]$derived)
+          if ($hr -ne 0 -or $derived -eq [IntPtr]::Zero) { throw ('DeriveAppContainerSidFromAppContainerName failed: 0x{0:x8}' -f ($hr -band 0xffffffffL)) }
+          try {
+            $derivedText = [IntPtr]::Zero
+            if (-not [P6AppContainer]::ConvertSidToStringSid($derived, [ref]$derivedText)) { throw 'Derived Package SID conversion failed.' }
+            try { if ([Runtime.InteropServices.Marshal]::PtrToStringUni($derivedText) -ne $packageSid) { throw 'Created and derived Package SID mismatch.' } } finally { [void][P6AppContainer]::LocalFree($derivedText) }
+          } finally { [void][P6AppContainer]::FreeSid($derived) }
+          $folder = [IntPtr]::Zero
+          $hr = [P6AppContainer]::GetAppContainerFolderPath($packageSid, [ref]$folder)
+          if ($hr -ne 0 -or $folder -eq [IntPtr]::Zero) { throw ('GetAppContainerFolderPath failed: 0x{0:x8}' -f ($hr -band 0xffffffffL)) }
+          try { $profileRoot = [Runtime.InteropServices.Marshal]::PtrToStringUni($folder) } finally { [P6AppContainer]::CoTaskMemFree($folder) }
+          [ordered]@{
+            appcontainer_profile_root = $profileRoot
+            broker_profile_root = $env:USERPROFILE
+            broker_sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+            package_sid = $packageSid
+            user_data_root = $env:LOCALAPPDATA
+          } | ConvertTo-Json -Compress | Set-Content -LiteralPath $OutputPath -Encoding ascii
+        } finally { [void][P6AppContainer]::FreeSid($sid) }
+        '@ | Set-Content -LiteralPath $profileScript -Encoding ascii
+        $profileInfo = Join-Path $stateRoot 'profile.json'
+        $secure = ConvertTo-SecureString $brokerPassword -AsPlainText -Force
+        $credential = [Management.Automation.PSCredential]::new(".\$brokerName", $secure)
+        $profileArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$profileScript`" create `"$moniker`" `"$profileInfo`""
+        [ordered]@{ broker = $brokerName; password = $brokerPassword; moniker = $moniker; profile_created = $true; profile_script = $profileScript; state_root = $stateRoot; provisioning_root = $provisioningRoot } | ConvertTo-Json -Compress | Set-Content -LiteralPath $statePath -Encoding ascii
+        $created = Start-Process powershell.exe -Credential $credential -LoadUserProfile -ArgumentList $profileArgs -Wait -PassThru
+        if ($created.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $profileInfo)) { throw 'Disposable AppContainer profile creation failed.' }
+        $profile = Get-Content -Raw -LiteralPath $profileInfo | ConvertFrom-Json
+
+        $archive = Join-Path $stateRoot 'python.zip'
+        Invoke-WebRequest -Uri $archiveUrl -OutFile $archive
+        if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $archiveSha256) { throw 'Pinned Python.org archive SHA256 mismatch.' }
+        $stage = Join-Path $provisioningRoot 'stage'
+        Expand-Archive -LiteralPath $archive -DestinationPath $stage
+        Get-ChildItem -LiteralPath $stage -Recurse -Force -File | Unblock-File
+        $trackedWorkerFiles = @(
+          'tools/dual_live_run.py',
+          'backend/app/__init__.py',
+          'backend/app/services/__init__.py',
+          'backend/app/services/connector_egress_contract.py',
+          'backend/app/services/dual_live_effect_guard.py',
+          'backend/app/services/dual_live_sciencebase_producer.py',
+          'backend/app/services/dual_live_worker_bundle.py',
+          'backend/app/services/dual_live_windows_boundary.py'
+        )
+        foreach ($relative in $trackedWorkerFiles) {
+          $destination = Join-Path $stage $relative
+          New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+          Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE $relative) -Destination $destination
+          Unblock-File -LiteralPath $destination
+        }
+
+        $relativeFiles = @(Get-ChildItem -LiteralPath $stage -Recurse -File | ForEach-Object { [IO.Path]::GetRelativePath($stage, $_.FullName).Replace('\', '/') })
+        [Array]::Sort($relativeFiles, [StringComparer]::Ordinal)
+        $files = @()
+        foreach ($relative in $relativeFiles) {
+          $file = Get-Item -LiteralPath (Join-Path $stage $relative)
+          $files += [ordered]@{ path = $relative; sha256 = (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant(); size = $file.Length }
+        }
+        $manifest = [ordered]@{
+          architecture = 'amd64'; entrypoint = 'tools/dual_live_run.py'; files = $files; interpreter = 'python.exe'
+          principals = [ordered]@{ broker = $profile.broker_sid; owner = 'S-1-5-19'; package = $profile.package_sid; provisioner = 'S-1-5-20' }
+          profile_moniker = $moniker; python_version = '3.12.6'; schema_version = 'project6.worker-bundle.v1'; source_commit = $env:GITHUB_SHA
+        }
+        $manifestBytes = [Text.Encoding]::ASCII.GetBytes(($manifest | ConvertTo-Json -Compress -Depth 8))
+        $manifestDigest = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($manifestBytes)).ToLowerInvariant()
+        [IO.File]::WriteAllBytes((Join-Path $stage 'worker-bundle.json'), $manifestBytes)
+        $bundleRoot = Join-Path $provisioningRoot "sha256-$manifestDigest"
+        Move-Item -LiteralPath $stage -Destination $bundleRoot
+        $bindingPath = Join-Path $stateRoot 'binding.json'
+        [ordered]@{
+          root = $bundleRoot; provisioning_root = $provisioningRoot; profile_moniker = $moniker; manifest_digest = "sha256:$manifestDigest"
+          source_commit = $env:GITHUB_SHA; entrypoint = 'tools/dual_live_run.py'; interpreter = 'python.exe'; python_version = '3.12.6'; architecture = 'amd64'
+          package_sid = $profile.package_sid; owner_sid = 'S-1-5-19'; provisioner_sid = 'S-1-5-20'; broker_sid = $profile.broker_sid
+          ambient_interpreter_root = Split-Path -Parent (Get-Command python).Source; repository_root = $env:GITHUB_WORKSPACE; campaign_root = $env:RUNNER_TEMP
+          appcontainer_profile_root = $profile.appcontainer_profile_root; broker_profile_root = $profile.broker_profile_root; user_data_root = $profile.user_data_root
+        } | ConvertTo-Json -Compress | Set-Content -LiteralPath $bindingPath -Encoding ascii
+
+        Get-ChildItem -LiteralPath $provisioningRoot -Recurse -Force | ForEach-Object { & icacls.exe $_.FullName /inheritance:r /grant:r '*S-1-5-18:(F)' '*S-1-5-32-544:(F)' | Out-Null }
+        & icacls.exe $provisioningRoot /inheritance:r /grant:r '*S-1-5-18:(F)' '*S-1-5-32-544:(F)' | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Could not establish deny-before-grant ACL.' }
+
+        $sciencebaseProof = Join-Path $stateRoot 'sciencebase-proof.py'
+        @'
+        import json
+        import sys
+        from pathlib import Path
+
+        from backend.app.services.connector_egress_contract import EffectResult, RequestLimits
+        from backend.app.services.dual_live_effect_guard import BrokerEffectGuard, release_sciencebase_worker
+        from backend.app.services.dual_live_sciencebase_producer import ScienceBaseInput
+        from backend.app.services.dual_live_windows_boundary import WindowsEffectBoundary, open_pipe_writer
+        from backend.app.services.dual_live_worker_bundle import BundleBinding, WindowsBundleProbe
+
+        class LocalBrokerTransport:
+            def __init__(self):
+                self.stages = []
+
+            def execute(self, plan):
+                self.stages.append(plan.stage)
+                bodies = {
+                    "sciencebase_search": json.dumps({"items": [{"id": "item-7"}]}).encode(),
+                    "sciencebase_hydrate": json.dumps({"id": "item-7", "files": [{"name": "target.csv", "downloadUri": "https://www.sciencebase.gov/catalog/file/get/item-7?f=target.csv"}]}).encode(),
+                    "sciencebase_download": b"a,b\n1,2\n",
+                }
+                if plan.stage not in bodies:
+                    raise AssertionError("unexpected broker request")
+                return EffectResult(
+                    reservation_event_id=plan.slot_uuid,
+                    plan_digest=plan.plan_digest,
+                    status_code=200,
+                    body=bodies[plan.stage],
+                    response_header_names=("content-type",),
+                )
+
+        document = json.loads(Path(sys.argv[1]).resolve(strict=True).read_text(encoding="utf-8"))
+        path_fields = {
+            "root", "provisioning_root", "ambient_interpreter_root", "repository_root",
+            "campaign_root", "appcontainer_profile_root", "broker_profile_root", "user_data_root",
+        }
+        binding = BundleBinding(**{
+            key: Path(value) if key in path_fields else value
+            for key, value in document.items()
+        })
+        boundary = WindowsEffectBoundary(
+            str(binding.root), "b0-sciencebase-proof", bundle_binding=binding,
+            bundle_probe=WindowsBundleProbe(binding),
+        )
+        request = ScienceBaseInput(
+            query="critical minerals",
+            expected_item_id="item-7",
+            expected_file_name="target.csv",
+            envelope_digest="sha256:" + "e" * 64,
+            campaign_id="campaign-1",
+            canonical_root=str(binding.root),
+            connector_run_id="11111111-1111-4111-8111-111111111111",
+            authorization_digest="sha256:" + "b" * 64,
+            grant_digest="sha256:" + "c" * 64,
+            max_total_bytes=4096,
+            limits=RequestLimits(timeout_seconds=5.0, max_response_bytes=4096),
+            max_redirect_hops=0,
+            connector_run_target_id="target-1",
+        )
+        transport = LocalBrokerTransport()
+        raw = [0, 0, 0, 0]
+        with boundary.acquire():
+            try:
+                raw[:] = boundary.create_worker_pipes()
+                boundary.launch_worker(tuple(raw[2:]), mode="sciencebase")
+                for index in (2, 3):
+                    boundary.close_pipe_handle(raw[index])
+                    raw[index] = 0
+                with open_pipe_writer(raw[1]) as writer:
+                    raw[1] = 0
+                    output = BrokerEffectGuard(transport).serve_sciencebase(
+                        request, None, writer,
+                        read_next=lambda: boundary.read_worker_frame(raw[0], 15_000),
+                    )
+                    boundary.census()
+                    release_sciencebase_worker(writer)
+                    boundary.wait_worker(15_000)
+            finally:
+                for index, handle in enumerate(raw):
+                    if handle:
+                        boundary.close_pipe_handle(handle)
+                        raw[index] = 0
+        assert output.content == b"a,b\n1,2\n"
+        assert output.request_count == 3
+        assert transport.stages == ["sciencebase_search", "sciencebase_hydrate", "sciencebase_download"]
+        print("sciencebase-bundle-proof-ok")
+        '@ | Set-Content -LiteralPath $sciencebaseProof -Encoding ascii
+
+        $testScript = Join-Path $stateRoot 'run-tests.ps1'
+        @'
+        param([string]$Python, [string]$Repo, [string]$Binding, [string]$Mode, [string]$Output, [string]$ScienceBaseProof)
+        $env:PROJECT6_B0_BUNDLE_BINDING = $Binding
+        $env:DB_INIT_MODE = 'none'
+        $env:PYTHONDONTWRITEBYTECODE = '1'
+        Set-Location -LiteralPath $Repo
+        if ($Mode -eq 'deny') {
+          & $Python -m pytest -p no:cacheprovider ./tests/test_dual_live_worker_bundle.py::test_windows_probe_validates_preprovisioned_fixture -q *>&1 | Tee-Object -LiteralPath $Output
+        } else {
+          & $Python -m pytest -p no:cacheprovider ./backend/tests/test_egress_effect_boundary.py ./backend/tests/test_dual_live_sciencebase_producer.py ./tests/test_dual_live_effect_guard.py ./tests/test_dual_live_worker_bundle.py ./tests/test_dual_live_runtime.py -q *>&1 | Tee-Object -LiteralPath $Output
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & $Python $ScienceBaseProof $Binding
+        }
+        exit $LASTEXITCODE
+        '@ | Set-Content -LiteralPath $testScript -Encoding ascii
+        $python = (Get-Command python).Source
+        $denyOutput = Join-Path $stateRoot 'deny.txt'
+        $denyArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$testScript`" `"$python`" `"$env:GITHUB_WORKSPACE`" `"$bindingPath`" deny `"$denyOutput`" `"$sciencebaseProof`""
+        $denied = Start-Process powershell.exe -Credential $credential -LoadUserProfile -ArgumentList $denyArgs -Wait -PassThru
+        if ($denied.ExitCode -eq 0 -or (Get-Content -Raw $denyOutput) -notmatch 'bundle_(observation_ambiguous|ancestor_invalid|dacl_mismatch)') { throw 'Deny B0 bundle before Package SID grant was not proven.' }
+
+        $aclTargets = @($provisioningRoot) + @(Get-ChildItem -LiteralPath $provisioningRoot -Recurse -Force | ForEach-Object FullName)
+        foreach ($target in $aclTargets) {
+          & icacls.exe $target /inheritance:r /setowner '*S-1-5-19' | Out-Null
+          & icacls.exe $target /grant:r '*S-1-5-18:(F)' '*S-1-5-32-544:(F)' '*S-1-5-19:(F)' '*S-1-5-20:(F)' "*$($profile.broker_sid):(RX)" "*$($profile.package_sid):(RX)" | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "Grant exact protected B0 bundle ACL failed for $target" }
+        }
+        [ordered]@{ broker = $brokerName; password = $brokerPassword; moniker = $moniker; profile_created = $true; profile_script = $profileScript; state_root = $stateRoot; provisioning_root = $provisioningRoot; binding = $bindingPath; test_script = $testScript; sciencebase_proof = $sciencebaseProof; python = $python } | ConvertTo-Json -Compress | Set-Content -LiteralPath $statePath -Encoding ascii
+        "PROJECT6_B0_BUNDLE_BINDING=$bindingPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+    - name: Prove B0 AppContainer and effect boundary
+      env:
+        DB_INIT_MODE: none
+      shell: pwsh
+      run: |
+        $state = Get-Content -Raw -LiteralPath $env:PROJECT6_B0_STATE | ConvertFrom-Json
+        $secure = ConvertTo-SecureString $state.password -AsPlainText -Force
+        $credential = [Management.Automation.PSCredential]::new(".\$($state.broker)", $secure)
+        $output = Join-Path $state.state_root 'green.txt'
+        $args = "-NoProfile -ExecutionPolicy Bypass -File `"$($state.test_script)`" `"$($state.python)`" `"$env:GITHUB_WORKSPACE`" `"$($state.binding)`" green `"$output`" `"$($state.sciencebase_proof)`""
+        $proved = Start-Process powershell.exe -Credential $credential -LoadUserProfile -ArgumentList $args -Wait -PassThru
+        Get-Content -LiteralPath $output
+        if ($proved.ExitCode -ne 0) { throw 'External bundle B0 Windows proof failed.' }
+    - name: Teardown disposable B0 profile and closure
+      if: ${{ always() }}
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        if (-not $env:PROJECT6_B0_STATE) { exit 0 }
+        if (-not (Test-Path -LiteralPath $env:PROJECT6_B0_STATE)) {
+          foreach ($root in @($env:PROJECT6_B0_PROVISIONING_ROOT, (Split-Path -Parent $env:PROJECT6_B0_STATE))) {
+            if ($root -and (Test-Path -LiteralPath $root)) {
+              Remove-Item -LiteralPath $root -Recurse -Force
+              if (Test-Path -LiteralPath $root) { throw "partial B0 root removal failed: $root" }
+            }
+          }
+          exit 0
+        }
+        $state = Get-Content -Raw -LiteralPath $env:PROJECT6_B0_STATE | ConvertFrom-Json
+        $secure = ConvertTo-SecureString $state.password -AsPlainText -Force
+        $credential = [Management.Automation.PSCredential]::new(".\$($state.broker)", $secure)
+        $args = "-NoProfile -ExecutionPolicy Bypass -File `"$($state.profile_script)`" delete `"$($state.moniker)`""
+        $teardownFailures = @()
+        $profileDeleted = -not $state.profile_created
+        if ($state.profile_created) {
+          try {
+            if (-not (Get-LocalUser -Name $state.broker -ErrorAction SilentlyContinue)) { throw 'broker account missing before profile deletion' }
+            $deleted = Start-Process powershell.exe -Credential $credential -LoadUserProfile -ArgumentList $args -Wait -PassThru
+            if ($deleted.ExitCode -ne 0) { throw 'AppContainer profile deletion failed' }
+            $profileDeleted = $true
+          } catch { $teardownFailures += $_.Exception.Message }
+        }
+        if (Test-Path -LiteralPath $state.provisioning_root) {
+          try {
+            & takeown.exe /F $state.provisioning_root /R /D Y | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'disposable root ownership restore failed' }
+            & icacls.exe $state.provisioning_root /grant:r '*S-1-5-32-544:(OI)(CI)(F)' /T /C | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'disposable root ACL restore failed' }
+            Remove-Item -LiteralPath $state.provisioning_root -Recurse -Force
+            if (Test-Path -LiteralPath $state.provisioning_root) { throw 'disposable root removal failed' }
+          } catch { $teardownFailures += $_.Exception.Message }
+        }
+        if ($profileDeleted -and (Get-LocalUser -Name $state.broker -ErrorAction SilentlyContinue)) {
+          & net.exe user $state.broker /delete | Out-Null
+          if ($LASTEXITCODE -ne 0) { $teardownFailures += 'broker account removal failed' }
+        } elseif (-not $profileDeleted) {
+          $teardownFailures += 'broker account preserved for AppContainer profile cleanup retry'
+        }
+        if ($teardownFailures.Count -eq 0) {
+          try {
+            Remove-Item -LiteralPath $state.state_root -Recurse -Force
+            if (Test-Path -LiteralPath $state.state_root) { throw 'disposable state root removal failed' }
+          } catch { $teardownFailures += $_.Exception.Message }
+        }
+        if ($teardownFailures.Count) { throw ($teardownFailures -join '; ') }
+
   release-gate:
     name: release-gate
     timeout-minutes: 15
@@ -633,6 +975,7 @@ jobs:
       - sec-xbrl-arelle-provisioning
       - root-tests
       - nrc-aps-ocr
+      - dual-live-windows-boundary
       - test
     if: ${{ always() }}
     steps:
@@ -658,6 +1001,7 @@ jobs:
           "sec-xbrl-arelle-provisioning:${{ needs['sec-xbrl-arelle-provisioning'].result }}" \
           "root-tests:${{ needs['root-tests'].result }}" \
           "nrc-aps-ocr:${{ needs['nrc-aps-ocr'].result }}" \
+          "dual-live-windows-boundary:${{ needs['dual-live-windows-boundary'].result }}" \
           "test:${{ needs['test'].result }}"
         do
           job="${item%%:*}"
