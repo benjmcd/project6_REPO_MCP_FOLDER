@@ -131,7 +131,7 @@ def _prepared(root: Path, store: ReservationStore):
         interpreter_identity="sha256:" + "2" * 64,
         authorization_digest=DIGESTS["authorization"],
         grant_digest=DIGESTS["grant"],
-        wrapper_start_token_ref="wrapper-start:test-v1",
+        wrapper_start_token_ref="retired:sciencebase-live-v2",
     )
     return SimpleNamespace(
         envelope=SimpleNamespace(envelope=envelope),

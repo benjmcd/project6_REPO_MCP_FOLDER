@@ -13,6 +13,7 @@ from uuid import UUID, uuid5
 
 
 AUTHORITY_SCHEMA_VERSION = "project6.connector_authority.v1"
+RETIRED_WRAPPER_START_TOKEN_REF = "retired:sciencebase-live-v2"
 PHYSICAL_REQUEST_PLAN_SCHEMA = "project6.physical_request_plan.v1"
 RESERVATION_SLOT_NAMESPACE = UUID("9fab120d-3790-5e28-9728-a8f7682b1cd4")
 _DIGEST_PATTERN = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -326,9 +327,8 @@ def _validate_authority_fields(document: dict[str, Any]) -> None:
             _DIGEST_PATTERN, document.get("authorization_digest")
         ),
         "grant_digest": _matches(_DIGEST_PATTERN, document.get("grant_digest")),
-        "wrapper_start_token_ref": _matches(
-            _TOKEN_PATTERN, document.get("wrapper_start_token_ref")
-        ),
+        "wrapper_start_token_ref": document.get("wrapper_start_token_ref")
+        == RETIRED_WRAPPER_START_TOKEN_REF,
     }
     checks["connector_run_id"] = _is_canonical_uuid(document.get("connector_run_id"))
     for field, valid in checks.items():

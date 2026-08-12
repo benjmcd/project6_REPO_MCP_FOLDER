@@ -49,7 +49,7 @@ def _authority_document(tmp_path: Path, runtime=None) -> dict[str, str]:
         "interpreter_identity": "sha256:" + "2" * 64,
         "authorization_digest": "sha256:" + "3" * 64,
         "grant_digest": "sha256:" + "4" * 64,
-        "wrapper_start_token_ref": "wrapper-start:test-token-v1",
+        "wrapper_start_token_ref": "retired:sciencebase-live-v2",
     }
 
 
@@ -211,7 +211,7 @@ def test_envelope_is_read_once_content_addressed_and_explicitly_non_live(
     assert validated.envelope.campaign_id == "campaign-test"
     assert validated.envelope.authorization_digest == "sha256:" + "3" * 64
     assert validated.envelope.grant_digest == "sha256:" + "4" * 64
-    assert validated.envelope.wrapper_start_token_ref == "wrapper-start:test-token-v1"
+    assert validated.envelope.wrapper_start_token_ref == "retired:sciencebase-live-v2"
     assert validated.live_authority is False
     assert validated.persisted is False
     assert validated.issued_by_b0 is False
@@ -1043,7 +1043,7 @@ def test_standard_launcher_writes_unsigned_go_template_and_closes_prepared(
         interpreter_identity="sha256:" + "2" * 64,
         authorization_digest="sha256:" + "3" * 64,
         grant_digest="sha256:" + "4" * 64,
-        wrapper_start_token_ref="wrapper-start:test-token-v1",
+        wrapper_start_token_ref="retired:sciencebase-live-v2",
     )
     prepared = SimpleNamespace(
         envelope=SimpleNamespace(envelope=envelope),

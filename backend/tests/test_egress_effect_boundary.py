@@ -55,7 +55,7 @@ def _envelope_dict(root: Path) -> dict[str, object]:
         "interpreter_identity": "python:cpython-3.11.9:sha256:" + "b" * 64,
         "authorization_digest": "sha256:" + "c" * 64,
         "grant_digest": "sha256:" + "d" * 64,
-        "wrapper_start_token_ref": "wrapper-token:item-484",
+        "wrapper_start_token_ref": "retired:sciencebase-live-v2",
     }
 
 
@@ -245,6 +245,20 @@ def test_authority_envelope_emitter_is_exact_complete_and_non_authorizing(
     with pytest.raises(ContractHold, match="authority_envelope_fields_invalid"):
         contract.emit_authority_envelope(incomplete)
     assert tuple(tmp_path.iterdir()) == ()
+
+
+def test_authority_envelope_requires_retired_wrapper_token_sentinel(
+    tmp_path: Path,
+) -> None:
+    from app.services import connector_egress_contract as contract
+
+    document = _envelope_dict(tmp_path)
+    document["wrapper_start_token_ref"] = "wrapper-token:item-484"
+
+    with pytest.raises(
+        ContractHold, match="authority_envelope_field_invalid:wrapper_start_token_ref"
+    ):
+        contract.emit_authority_envelope(document)
 
 
 def test_envelope_rejects_structurally_invalid_authorization_digest(
