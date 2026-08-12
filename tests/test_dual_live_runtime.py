@@ -89,7 +89,7 @@ def _worker_bundle(runtime, root: Path):
         provisioner_sid="S-1-5-21-2",
         broker_sid="S-1-5-21-3",
         ambient_interpreter_root=root / "ambient-python",
-        campaign_root=root / "campaign",
+        campaign_root=root,
         appcontainer_profile_root=root / "app-profile",
         broker_profile_root=root / "broker-profile",
         user_data_root=root / "user-data",
@@ -100,6 +100,12 @@ def _science_request(runtime):
     return runtime.RuntimeScienceBaseRequest(
         query="public geology", expected_item_id="item-1", expected_file_name="map.json"
     )
+
+
+def _source_root(tmp_path: Path) -> Path:
+    path = tmp_path.parent / f"{tmp_path.name}-source"
+    path.mkdir(exist_ok=True)
+    return path.resolve()
 
 
 def test_launcher_help_states_non_authorizing_contract() -> None:
@@ -159,6 +165,7 @@ def test_disabled_returns_before_authority_or_component_callbacks(
         canonical_root=tmp_path,
         connector_run_id="00000000-0000-4000-8000-000000000001",
         reservation_database_path=tmp_path / "reservation.db",
+        source_root=_source_root(tmp_path),
         worker_bundle=_worker_bundle(runtime, tmp_path.resolve()),
         sciencebase_request=_science_request(runtime),
     )
@@ -233,20 +240,58 @@ def test_runtime_identity_reads_exact_worktree_ref_and_hashes_interpreter(
 ) -> None:
     runtime = _runtime_module()
     source_root = tmp_path / "source"
-    git_dir = tmp_path / "git" / "worktrees" / "source"
     source_root.mkdir()
-    git_dir.mkdir(parents=True)
-    (source_root / ".git").write_text(f"gitdir: {git_dir}\n", encoding="ascii")
-    (git_dir / "HEAD").write_text("ref: refs/heads/b0\n", encoding="ascii")
-    (git_dir / "refs" / "heads").mkdir(parents=True)
-    (git_dir / "refs" / "heads" / "b0").write_text("a" * 40 + "\n", encoding="ascii")
     interpreter = tmp_path / "python.exe"
     interpreter.write_bytes(b"exact-interpreter")
 
-    assert runtime._source_commit(source_root) == "a" * 40
+    def runner(command, **_kwargs):
+        arguments = command[3:]
+        if arguments == ["rev-parse", "--show-toplevel"]:
+            stdout = (str(source_root.resolve()) + "\n").encode()
+        elif arguments == ["rev-parse", "HEAD"]:
+            stdout = b"a" * 40 + b"\n"
+        elif arguments == ["status", "--porcelain=v1", "--untracked-files=all"]:
+            stdout = b""
+        else:
+            raise AssertionError(arguments)
+        return subprocess.CompletedProcess(command, 0, stdout=stdout, stderr=b"")
+
+    assert runtime._source_commit(source_root, process_runner=runner) == "a" * 40
     assert runtime._interpreter_identity(interpreter) == (
         "sha256:" + hashlib.sha256(b"exact-interpreter").hexdigest()
     )
+
+
+def test_clean_source_identity_rejects_tracked_or_untracked_drift(tmp_path: Path) -> None:
+    runtime = _runtime_module()
+    source = tmp_path / "source"
+    source.mkdir()
+    subprocess.run(["git", "init", "-q", str(source)], check=True)
+    subprocess.run(["git", "-C", str(source), "config", "user.name", "test"], check=True)
+    subprocess.run(["git", "-C", str(source), "config", "core.autocrlf", "false"], check=True)
+    subprocess.run(
+        ["git", "-C", str(source), "config", "user.email", "test@example.invalid"],
+        check=True,
+    )
+    tracked = source / "tracked.py"
+    tracked.write_text("VALUE = 1\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(source), "add", "tracked.py"], check=True)
+    subprocess.run(["git", "-C", str(source), "commit", "-qm", "base"], check=True)
+    commit = subprocess.run(
+        ["git", "-C", str(source), "rev-parse", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+    assert runtime._source_commit(source) == commit
+    (source / "untracked.py").write_text("VALUE = 2\n", encoding="utf-8")
+    with pytest.raises(runtime.RuntimeHold, match="runtime_source_not_clean"):
+        runtime._source_commit(source)
+    (source / "untracked.py").unlink()
+    tracked.write_text("VALUE = 3\n", encoding="utf-8")
+    with pytest.raises(runtime.RuntimeHold, match="runtime_source_not_clean"):
+        runtime._source_commit(source)
 
 
 def test_valid_zero_reservation_path_composes_in_fail_closed_order(
@@ -285,6 +330,7 @@ def test_valid_zero_reservation_path_composes_in_fail_closed_order(
         canonical_root=tmp_path.resolve(),
         connector_run_id="00000000-0000-4000-8000-000000000001",
         reservation_database_path=tmp_path / "reservation.db",
+        source_root=_source_root(tmp_path),
         worker_bundle=_worker_bundle(runtime, tmp_path.resolve()),
         sciencebase_request=_science_request(runtime),
     )
@@ -422,6 +468,9 @@ def test_run_prepared_runtime_owns_worker_pipes_job_and_exact_completion() -> No
         transport=object(),
         broker=Broker(),
         producer_request=request,
+        source_root=Path("C:/source"),
+        source_commit="1" * 40,
+        source_commit_reader=lambda _root: "1" * 40,
     )
     result = runtime.run_prepared_runtime(
         prepared,
@@ -466,6 +515,7 @@ def test_runtime_rejects_nonstandard_external_worker_entrypoint(tmp_path: Path) 
         canonical_root=tmp_path.resolve(),
         connector_run_id="00000000-0000-4000-8000-000000000001",
         reservation_database_path=tmp_path / "reservation.db",
+        source_root=_source_root(tmp_path),
         worker_bundle=bundle,
         sciencebase_request=_science_request(runtime),
     )
@@ -488,6 +538,41 @@ def test_runtime_rejects_nonstandard_external_worker_entrypoint(tmp_path: Path) 
     assert (result.status, result.code) == (
         runtime.RuntimeStatus.HOLD,
         "worker_bundle_entrypoint_invalid",
+    )
+
+
+def test_runtime_rejects_worker_campaign_root_different_from_state_root(
+    tmp_path: Path,
+) -> None:
+    runtime = _runtime_module()
+    raw = _canonical_bytes(_authority_document(tmp_path, runtime))
+    wrong_campaign = tmp_path / "wrong-campaign"
+    wrong_campaign.mkdir()
+    request = runtime.RuntimeRequest(
+        enabled=True,
+        authority_envelope_path=tmp_path / "authority.json",
+        authority_envelope_digest="sha256:" + hashlib.sha256(raw).hexdigest(),
+        campaign_id="campaign-test",
+        canonical_root=tmp_path.resolve(),
+        connector_run_id="00000000-0000-4000-8000-000000000001",
+        reservation_database_path=tmp_path / "reservation.db",
+        source_root=_source_root(tmp_path),
+        worker_bundle=replace(
+            _worker_bundle(runtime, tmp_path.resolve()),
+            campaign_root=wrong_campaign,
+        ),
+        sciencebase_request=_science_request(runtime),
+    )
+    dependencies = replace(
+        runtime.default_runtime_dependencies(),
+        source_commit=lambda _root: "1" * 40,
+    )
+
+    result = runtime.prepare_dual_live_runtime(request, dependencies)
+
+    assert (result.status, result.code) == (
+        runtime.RuntimeStatus.HOLD,
+        "worker_bundle_campaign_root_mismatch",
     )
 
 
@@ -522,12 +607,53 @@ def test_run_rejects_missing_or_nonlive_execution_authority_before_boundary(
         transport=object(),
         broker=object(),
         producer_request=object(),
+        source_root=Path("C:/source"),
+        source_commit="1" * 40,
+        source_commit_reader=lambda _root: "1" * 40,
     )
     authority = None if decision is None else Authority()
     with pytest.raises(runtime.RuntimeHold, match="live_go_required"):
         runtime.run_prepared_runtime(prepared, execution_authority=authority)
     expected = [] if authority is None else [("consume", "sha256:" + "b" * 64)]
     assert calls == [*expected, "store_close"]
+
+
+def test_run_revalidates_exact_clean_source_before_import_or_consuming_go(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    runtime = _runtime_module()
+    calls: list[str] = []
+    original_import = __import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name.endswith(("dual_live_windows_boundary", "dual_live_effect_guard")):
+            pytest.fail("source drift imported effect-capable source")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.__import__", guarded_import)
+
+    prepared = runtime.PreparedRuntime(
+        envelope=SimpleNamespace(
+            envelope=SimpleNamespace(content_digest="sha256:" + "b" * 64)
+        ),
+        reservation_store=SimpleNamespace(close=lambda: calls.append("store_close")),
+        boundary=SimpleNamespace(
+            acquire=lambda: pytest.fail("source drift acquired boundary")
+        ),
+        transport=object(),
+        broker=object(),
+        producer_request=object(),
+        source_root=Path("C:/source"),
+        source_commit="1" * 40,
+        source_commit_reader=lambda _root: "2" * 40,
+    )
+    authority = SimpleNamespace(
+        consume_exact=lambda _digest: pytest.fail("source drift consumed GO")
+    )
+
+    with pytest.raises(runtime.RuntimeHold, match="runtime_source_identity_drift"):
+        runtime.run_prepared_runtime(prepared, execution_authority=authority)
+    assert calls == ["store_close"]
 
 
 def test_run_failure_closes_every_untransferred_pipe_inside_boundary() -> None:
@@ -561,6 +687,9 @@ def test_run_failure_closes_every_untransferred_pipe_inside_boundary() -> None:
         transport=object(),
         broker=object(),
         producer_request=object(),
+        source_root=Path("C:/source"),
+        source_commit="1" * 40,
+        source_commit_reader=lambda _root: "1" * 40,
     )
     with pytest.raises(runtime.RuntimeHold, match="runtime_execution_failed"):
         runtime.run_prepared_runtime(
@@ -614,6 +743,7 @@ def test_any_reservation_or_ambiguous_census_holds_before_boundary(
         canonical_root=tmp_path.resolve(),
         connector_run_id="00000000-0000-4000-8000-000000000001",
         reservation_database_path=tmp_path / "reservation.db",
+        source_root=_source_root(tmp_path),
         worker_bundle=_worker_bundle(runtime, tmp_path.resolve()),
         sciencebase_request=_science_request(runtime),
     )
@@ -666,6 +796,7 @@ def test_envelope_drift_holds_before_store_or_boundary(tmp_path: Path) -> None:
         canonical_root=tmp_path.resolve(),
         connector_run_id="00000000-0000-4000-8000-000000000001",
         reservation_database_path=tmp_path / "reservations.db",
+        source_root=_source_root(tmp_path),
         worker_bundle=_worker_bundle(runtime, tmp_path.resolve()),
         sciencebase_request=_science_request(runtime),
     )
@@ -861,6 +992,7 @@ def test_launcher_forwards_exact_arguments_to_runtime_without_live_effect(
     assert request.canonical_root == tmp_path.resolve()
     assert request.connector_run_id == "00000000-0000-4000-8000-000000000001"
     assert request.reservation_database_path == tmp_path / "reservation.db"
+    assert request.source_root == REPO_ROOT.resolve()
     assert request.worker_bundle == _worker_bundle(runtime, tmp_path.resolve())
     assert request.sciencebase_request == _science_request(runtime)
     assert received_dependencies is dependencies
@@ -892,6 +1024,186 @@ def test_standard_launcher_never_turns_prepared_envelope_into_live_go(
     assert code == 2
     assert stderr.getvalue() == "HOLD: live_go_required\n"
     assert closes == ["store_close"]
+
+
+def test_standard_launcher_writes_unsigned_go_template_and_closes_prepared(
+    tmp_path: Path,
+) -> None:
+    launcher = _launcher_module()
+    runtime = _runtime_module()
+    stdout = StringIO()
+    stderr = StringIO()
+    closes: list[str] = []
+    envelope = SimpleNamespace(
+        content_digest="sha256:" + "a" * 64,
+        campaign_id="campaign-test",
+        canonical_root=str(tmp_path.resolve()),
+        connector_run_id="00000000-0000-4000-8000-000000000001",
+        source_commit="1" * 40,
+        interpreter_identity="sha256:" + "2" * 64,
+        authorization_digest="sha256:" + "3" * 64,
+        grant_digest="sha256:" + "4" * 64,
+        wrapper_start_token_ref="wrapper-start:test-token-v1",
+    )
+    prepared = SimpleNamespace(
+        envelope=SimpleNamespace(envelope=envelope),
+        reservation_store=SimpleNamespace(close=lambda: closes.append("store_close")),
+        source_root=_source_root(tmp_path),
+        producer_request=SimpleNamespace(
+            query="public geology",
+            expected_item_id="item-1",
+            expected_file_name="map.json",
+            envelope_digest=envelope.content_digest,
+            campaign_id=envelope.campaign_id,
+            canonical_root=envelope.canonical_root,
+            connector_run_id=envelope.connector_run_id,
+            authorization_digest=envelope.authorization_digest,
+            grant_digest=envelope.grant_digest,
+            max_total_bytes=512 * 1024 * 1024,
+            limits=SimpleNamespace(
+                timeout_seconds=30,
+                max_response_bytes=64 * 1024 * 1024,
+                max_redirects=0,
+            ),
+            max_redirect_hops=0,
+            connector_run_target_id=None,
+        ),
+        worker_manifest_digest="sha256:" + "5" * 64,
+    )
+    owner_root = tmp_path.parent / f"{tmp_path.name}-owner"
+    owner_root.mkdir()
+    path = owner_root / "owner-go.json"
+
+    code = launcher.main(
+        [
+            *_launcher_args(tmp_path),
+            "--emit-owner-go-template",
+            str(path),
+            "--owner-go-id",
+            "22222222-2222-4222-8222-222222222222",
+        ],
+        settings_factory=lambda: SimpleNamespace(dual_live_runtime_enabled=True),
+        dependencies_factory=lambda: object(),
+        prepare=lambda _request, _dependencies: runtime.RuntimeResult(
+            runtime.RuntimeStatus.PREPARED,
+            "dual_live_runtime_prepared_non_live",
+            prepared,
+        ),
+        execute=lambda *_args, **_kwargs: pytest.fail("template mode executed live"),
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    raw = path.read_bytes()
+    digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+    assert code == 0
+    assert stdout.getvalue() == (
+        "PREPARED: owner_go_template_written\n"
+        f"OWNER_GO_PATH: {path}\n"
+        f"OWNER_GO_SHA256: {digest}\n"
+    )
+    assert stderr.getvalue() == ""
+    assert closes == ["store_close"]
+
+
+@pytest.mark.parametrize(
+    "extra",
+    [
+        ["--emit-owner-go-template", "go.json"],
+        ["--owner-go-id", "22222222-2222-4222-8222-222222222222"],
+    ],
+)
+def test_standard_launcher_rejects_incomplete_template_binding_before_prepare(
+    tmp_path: Path, extra: list[str]
+) -> None:
+    launcher = _launcher_module()
+    stderr = StringIO()
+
+    code = launcher.main(
+        [*_launcher_args(tmp_path), *extra],
+        settings_factory=lambda: SimpleNamespace(dual_live_runtime_enabled=True),
+        dependencies_factory=lambda: pytest.fail("incomplete template built runtime"),
+        prepare=lambda *_args: pytest.fail("incomplete template reached prepare"),
+        stderr=stderr,
+    )
+
+    assert code == 2
+    assert stderr.getvalue() == "HOLD: live_go_template_binding_incomplete\n"
+
+
+def test_standard_launcher_rejects_template_and_signed_go_mode_conflict(
+    tmp_path: Path,
+) -> None:
+    launcher = _launcher_module()
+    stderr = StringIO()
+
+    code = launcher.main(
+        [
+            *_launcher_args(tmp_path),
+            "--emit-owner-go-template",
+            str(tmp_path / "template.json"),
+            "--owner-go-id",
+            "22222222-2222-4222-8222-222222222222",
+            "--owner-go",
+            str(tmp_path / "owner-go.json"),
+            "--owner-go-sha256",
+            "sha256:" + "9" * 64,
+            "--owner-go-signature",
+            str(tmp_path / "owner-go.json.sig"),
+        ],
+        settings_factory=lambda: SimpleNamespace(dual_live_runtime_enabled=True),
+        dependencies_factory=lambda: pytest.fail("conflicting mode built runtime"),
+        prepare=lambda *_args: pytest.fail("conflicting mode reached prepare"),
+        stderr=stderr,
+    )
+
+    assert code == 2
+    assert stderr.getvalue() == "HOLD: live_go_mode_conflict\n"
+
+
+def test_template_cleanup_failure_retains_non_authoritative_possibly_stale_file(
+    tmp_path: Path,
+) -> None:
+    launcher = _launcher_module()
+    runtime = _runtime_module()
+    stdout = StringIO()
+    stderr = StringIO()
+    template = tmp_path / "owner-go.json"
+
+    def write(_prepared, *, path, go_id):
+        Path(path).write_bytes(b'{"unsigned":"template"}')
+        return SimpleNamespace(
+            path=Path(path), go_id=go_id, content_digest="sha256:" + "7" * 64
+        )
+
+    code = launcher.main(
+        [
+            *_launcher_args(tmp_path),
+            "--emit-owner-go-template",
+            str(template),
+            "--owner-go-id",
+            "22222222-2222-4222-8222-222222222222",
+        ],
+        settings_factory=lambda: SimpleNamespace(dual_live_runtime_enabled=True),
+        dependencies_factory=lambda: object(),
+        prepare=lambda _request, _dependencies: runtime.RuntimeResult(
+            runtime.RuntimeStatus.PREPARED,
+            "dual_live_runtime_prepared_non_live",
+            SimpleNamespace(reservation_store=object()),
+        ),
+        template_writer=write,
+        close_prepared=lambda _prepared: (_ for _ in ()).throw(RuntimeError()),
+        stdout=stdout,
+        stderr=stderr,
+    )
+
+    assert code == 2
+    assert stdout.getvalue() == ""
+    assert stderr.getvalue() == (
+        "HOLD: runtime_cleanup_failed\n"
+        f"UNSIGNED_TEMPLATE_RETAINED_NON_AUTHORITATIVE_POSSIBLY_STALE: {template}\n"
+    )
+    assert template.read_bytes() == b'{"unsigned":"template"}'
 
 
 def test_standard_launcher_forwards_signed_go_only_to_injected_trusted_executor(

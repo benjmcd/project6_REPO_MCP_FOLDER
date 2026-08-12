@@ -120,6 +120,8 @@ def _plan(root: Path, ordinal: int, stage: str) -> PhysicalRequestPlan:
 
 
 def _prepared(root: Path, store: ReservationStore):
+    source_root = root.parent / f"{root.name}-source"
+    source_root.mkdir(exist_ok=True)
     envelope = SimpleNamespace(
         content_digest=DIGESTS["envelope"],
         campaign_id="campaign-test",
@@ -136,6 +138,7 @@ def _prepared(root: Path, store: ReservationStore):
         reservation_store=store,
         producer_request=_producer_request(root),
         worker_manifest_digest=DIGESTS["manifest"],
+        source_root=source_root.resolve(),
     )
 
 
@@ -172,6 +175,84 @@ def _load_module():
 
 def _owner_authenticator():
     return SimpleNamespace(authenticate_exact=lambda _raw, _digest: True)
+
+
+def test_write_owner_go_template_derives_canonical_bindings_create_once(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path.resolve())
+    prepared = _prepared(tmp_path.resolve(), store)
+    owner_root = tmp_path.parent / f"{tmp_path.name}-owner"
+    owner_root.mkdir()
+    path = owner_root / "owner-go.json"
+    go_id = "22222222-2222-4222-8222-222222222222"
+
+    try:
+        result = module.write_owner_go_template(prepared, path=path, go_id=go_id)
+        raw = path.read_bytes()
+        expected = _canonical(_go_document(module, prepared))
+
+        assert raw == expected
+        assert result.path == path
+        assert result.go_id == go_id
+        assert result.content_digest == "sha256:" + hashlib.sha256(raw).hexdigest()
+        with sqlite3.connect(tmp_path / "reservation.db") as connection:
+            assert connection.execute(
+                "SELECT COUNT(*) FROM connector_run_event"
+            ).fetchone() == (0,)
+        with pytest.raises(module.LiveReadinessHold, match="live_go_template_exists"):
+            module.write_owner_go_template(prepared, path=path, go_id=go_id)
+    finally:
+        store.close()
+
+
+def test_write_owner_go_template_rejects_canonical_root_custody(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path.resolve())
+    prepared = _prepared(tmp_path.resolve(), store)
+
+    try:
+        with pytest.raises(
+            module.LiveReadinessHold,
+            match="live_go_template_inside_canonical_root",
+        ):
+            module.write_owner_go_template(
+                prepared,
+                path=tmp_path / "owner-go.json",
+                go_id="22222222-2222-4222-8222-222222222222",
+            )
+        assert not (tmp_path / "owner-go.json").exists()
+    finally:
+        store.close()
+
+
+def test_write_owner_go_template_rejects_source_root_custody(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path.resolve())
+    prepared = _prepared(tmp_path.resolve(), store)
+    path = prepared.source_root / "owner-go.json"
+
+    try:
+        with pytest.raises(
+            module.LiveReadinessHold,
+            match="live_go_template_inside_source_root",
+        ):
+            module.write_owner_go_template(
+                prepared,
+                path=path,
+                go_id="22222222-2222-4222-8222-222222222222",
+            )
+        assert not path.exists()
+    finally:
+        store.close()
 
 
 def _signature_bytes() -> bytes:

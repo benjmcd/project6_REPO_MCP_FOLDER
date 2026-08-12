@@ -173,6 +173,13 @@ class LiveExecutionResult:
 
 
 @dataclass(frozen=True)
+class PreparedOwnerGoTemplate:
+    path: Path
+    go_id: str
+    content_digest: str
+
+
+@dataclass(frozen=True)
 class ValidatedLiveGo:
     go_id: str
     content_digest: str
@@ -271,6 +278,80 @@ def _valid_uuid(value: object) -> bool:
         return False
 
 
+def _prepared_go_bindings(prepared: Any) -> dict[str, str]:
+    envelope = prepared.envelope.envelope
+    return {
+        "schema": LIVE_GO_SCHEMA,
+        "envelope_digest": envelope.content_digest,
+        "campaign_id": envelope.campaign_id,
+        "canonical_root": envelope.canonical_root,
+        "connector_run_id": envelope.connector_run_id,
+        "source_commit": envelope.source_commit,
+        "interpreter_identity": envelope.interpreter_identity,
+        "worker_manifest_digest": prepared.worker_manifest_digest,
+        "request_digest": sciencebase_request_digest(prepared.producer_request),
+        "authorization_digest": envelope.authorization_digest,
+        "grant_digest": envelope.grant_digest,
+        "wrapper_start_token_ref": envelope.wrapper_start_token_ref,
+        "credential_mode": "none_public",
+        "egress_mode": "capability_scoped_default_off",
+    }
+
+
+def write_owner_go_template(
+    prepared: Any, *, path: Path, go_id: str
+) -> PreparedOwnerGoTemplate:
+    output = Path(path)
+    if not output.is_absolute() or not _valid_uuid(go_id):
+        raise LiveReadinessHold("live_go_template_binding_invalid")
+    try:
+        canonical_root = Path(
+            prepared.envelope.envelope.canonical_root
+        ).resolve(strict=True)
+        source_root = Path(prepared.source_root).resolve(strict=True)
+        output = output.parent.resolve(strict=True) / output.name
+        for forbidden_root, code in (
+            (canonical_root, "live_go_template_inside_canonical_root"),
+            (source_root, "live_go_template_inside_source_root"),
+        ):
+            try:
+                output.relative_to(forbidden_root)
+            except ValueError:
+                continue
+            raise LiveReadinessHold(code)
+    except LiveReadinessHold:
+        raise
+    except (AttributeError, OSError, RuntimeError, TypeError):
+        raise LiveReadinessHold("live_go_template_binding_invalid") from None
+    try:
+        document: dict[str, object] = {"go_id": go_id, **_prepared_go_bindings(prepared)}
+        raw = _canonical(document)
+    except BaseException:
+        raise LiveReadinessHold("live_go_template_binding_invalid") from None
+    if len(raw) > MAX_LIVE_GO_BYTES:
+        raise LiveReadinessHold("live_go_template_too_large")
+    try:
+        with output.open("xb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except FileExistsError:
+        raise LiveReadinessHold("live_go_template_exists") from None
+    except OSError:
+        raise LiveReadinessHold("live_go_template_write_failed") from None
+    try:
+        observed = _read_bounded(output)
+    except LiveReadinessHold:
+        raise LiveReadinessHold("live_go_template_observation_failed") from None
+    if observed != raw:
+        raise LiveReadinessHold("live_go_template_observation_failed")
+    return PreparedOwnerGoTemplate(
+        path=output,
+        go_id=go_id,
+        content_digest="sha256:" + hashlib.sha256(raw).hexdigest(),
+    )
+
+
 def load_live_go_once(
     path: Path,
     digest: str,
@@ -293,23 +374,7 @@ def load_live_go_once(
     if authenticated is not True:
         raise LiveReadinessHold("live_go_owner_authentication_required")
     document = _strict_document(raw)
-    envelope = prepared.envelope.envelope
-    expected = {
-        "schema": LIVE_GO_SCHEMA,
-        "envelope_digest": envelope.content_digest,
-        "campaign_id": envelope.campaign_id,
-        "canonical_root": envelope.canonical_root,
-        "connector_run_id": envelope.connector_run_id,
-        "source_commit": envelope.source_commit,
-        "interpreter_identity": envelope.interpreter_identity,
-        "worker_manifest_digest": prepared.worker_manifest_digest,
-        "request_digest": sciencebase_request_digest(prepared.producer_request),
-        "authorization_digest": envelope.authorization_digest,
-        "grant_digest": envelope.grant_digest,
-        "wrapper_start_token_ref": envelope.wrapper_start_token_ref,
-        "credential_mode": "none_public",
-        "egress_mode": "capability_scoped_default_off",
-    }
+    expected = _prepared_go_bindings(prepared)
     if any(document.get(field) != value for field, value in expected.items()):
         raise LiveReadinessHold("live_go_binding_mismatch")
     valid_shapes = (

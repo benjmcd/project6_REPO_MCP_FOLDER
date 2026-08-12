@@ -85,6 +85,15 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         help="Detached OpenSSH signature from the pinned Project6 owner identity.",
     )
+    parser.add_argument(
+        "--emit-owner-go-template",
+        type=Path,
+        help="Create one unsigned canonical GO from the validated prepared runtime; no live effect.",
+    )
+    parser.add_argument(
+        "--owner-go-id",
+        help="Explicit canonical UUID for prepare-only GO-template emission.",
+    )
     for name in (
         "worker-bundle-root",
         "worker-provisioning-root",
@@ -178,6 +187,8 @@ def main(
     prepare: Callable[[Any, Any], Any] | None = None,
     execute: Callable[..., Any] = _default_execute,
     verify: Callable[..., Any] = _default_verify,
+    template_writer: Callable[..., Any] | None = None,
+    close_prepared: Callable[[Any], None] | None = None,
     stdout: TextIO = sys.stdout,
     stderr: TextIO = sys.stderr,
 ) -> int:
@@ -215,6 +226,7 @@ def main(
         close_prepared_runtime,
         prepare_dual_live_runtime,
     )
+    close_prepared = close_prepared or close_prepared_runtime
 
     args = _parser().parse_args(arguments)
     go_bindings = (
@@ -227,6 +239,17 @@ def main(
     ):
         print("HOLD: live_go_binding_incomplete", file=stderr)
         return 2
+    template_bindings = (args.emit_owner_go_template, args.owner_go_id)
+    if any(value is None for value in template_bindings) and any(
+        value is not None for value in template_bindings
+    ):
+        print("HOLD: live_go_template_binding_incomplete", file=stderr)
+        return 2
+    if any(value is not None for value in template_bindings) and any(
+        value is not None for value in go_bindings
+    ):
+        print("HOLD: live_go_mode_conflict", file=stderr)
+        return 2
 
     request = RuntimeRequest(
         enabled=True,
@@ -236,6 +259,7 @@ def main(
         canonical_root=args.canonical_root,
         connector_run_id=args.connector_run_id,
         reservation_database_path=args.reservation_database,
+        source_root=REPO_ROOT.resolve(strict=True),
         sciencebase_request=RuntimeScienceBaseRequest(
             query=args.query,
             expected_item_id=args.expected_item_id,
@@ -269,9 +293,48 @@ def main(
         print(f"HOLD: {result.code}", file=stderr)
         return 2
 
+    if args.emit_owner_go_template is not None:
+        from app.services.sciencebase_live_readiness import (
+            LiveReadinessHold,
+            write_owner_go_template,
+        )
+
+        template_writer = template_writer or write_owner_go_template
+        template = None
+        template_error = None
+        try:
+            template = template_writer(
+                result.prepared,
+                path=args.emit_owner_go_template,
+                go_id=args.owner_go_id,
+            )
+        except LiveReadinessHold as exc:
+            template_error = exc.code
+        try:
+            close_prepared(result.prepared)
+        except Exception:
+            print("HOLD: runtime_cleanup_failed", file=stderr)
+            if template is not None:
+                print(
+                    "UNSIGNED_TEMPLATE_RETAINED_NON_AUTHORITATIVE_POSSIBLY_STALE: "
+                    f"{template.path}",
+                    file=stderr,
+                )
+            return 2
+        if template_error is not None or template is None:
+            print(
+                f"HOLD: {template_error or 'live_go_template_write_failed'}",
+                file=stderr,
+            )
+            return 2
+        print("PREPARED: owner_go_template_written", file=stdout)
+        print(f"OWNER_GO_PATH: {template.path}", file=stdout)
+        print(f"OWNER_GO_SHA256: {template.content_digest}", file=stdout)
+        return 0
+
     if args.owner_go is None:
         try:
-            close_prepared_runtime(result.prepared)
+            close_prepared(result.prepared)
         except Exception:
             print("HOLD: runtime_cleanup_failed", file=stderr)
             return 2

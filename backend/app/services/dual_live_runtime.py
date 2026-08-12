@@ -13,7 +13,10 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from typing import Any, Callable, Protocol
 
 from . import dual_live_worker_bundle as worker_bundle_contract
@@ -66,6 +69,7 @@ class RuntimeRequest:
     canonical_root: Path
     connector_run_id: str
     reservation_database_path: Path
+    source_root: Path
     worker_bundle: "RuntimeWorkerBundle | None" = None
     sciencebase_request: "RuntimeScienceBaseRequest | None" = None
 
@@ -140,6 +144,9 @@ class PreparedRuntime:
     broker: Any
     producer_request: ScienceBaseInput
     worker_manifest_digest: str = ""
+    source_root: Path | None = None
+    source_commit: str = ""
+    source_commit_reader: Callable[[Path], str] | None = None
 
 
 @dataclass(frozen=True)
@@ -242,59 +249,71 @@ def _bounded_ascii(path: Path, limit: int = 4096) -> str:
         raise RuntimeHold("runtime_identity_unavailable") from exc
 
 
-def _source_commit(source_root: Path) -> str:
-    marker = source_root / ".git"
-    if marker.is_dir():
-        git_dir = marker.resolve(strict=True)
-    else:
-        pointer = _bounded_ascii(marker)
-        if not pointer.startswith("gitdir: "):
-            raise RuntimeHold("runtime_identity_unavailable")
-        git_dir = Path(pointer[8:])
-        if not git_dir.is_absolute():
-            git_dir = source_root / git_dir
-        git_dir = git_dir.resolve(strict=True)
-    head = _bounded_ascii(git_dir / "HEAD")
-    if _COMMIT.fullmatch(head):
-        return head
-    if not head.startswith("ref: "):
+def _source_commit(
+    source_root: Path,
+    *,
+    process_runner: Callable[..., subprocess.CompletedProcess[bytes]] = subprocess.run,
+) -> str:
+    try:
+        root = Path(source_root).resolve(strict=True)
+    except OSError:
+        raise RuntimeHold("runtime_identity_unavailable") from None
+    if root != source_root or not root.is_dir():
         raise RuntimeHold("runtime_identity_unavailable")
-    ref = head[5:]
-    if (
-        _GIT_REF.fullmatch(ref) is None
-        or ".." in ref.split("/")
-        or "//" in ref
-        or "\\" in ref
-    ):
+    git_executable = shutil.which("git")
+    if not git_executable:
         raise RuntimeHold("runtime_identity_unavailable")
-    roots = [git_dir]
-    common_marker = git_dir / "commondir"
-    if common_marker.is_file():
-        common = Path(_bounded_ascii(common_marker))
-        if not common.is_absolute():
-            common = git_dir / common
-        roots.append(common.resolve(strict=True))
-    for root in roots:
-        loose = root / Path(ref)
-        if loose.is_file():
-            commit = _bounded_ascii(loose)
-            if _COMMIT.fullmatch(commit):
-                return commit
+    git_environment = {
+        "SystemRoot": r"C:\Windows",
+        "WINDIR": r"C:\Windows",
+        "GIT_CONFIG_GLOBAL": "NUL",
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_OPTIONAL_LOCKS": "0",
+    }
+
+    def git(*arguments: str) -> bytes:
+        try:
+            result = process_runner(
+                [git_executable, "-C", str(root), *arguments],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=15,
+                check=False,
+                shell=False,
+                env=git_environment,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except BaseException:
+            raise RuntimeHold("runtime_identity_unavailable") from None
+        if (
+            type(result.returncode) is not int
+            or result.returncode != 0
+            or not isinstance(result.stdout, bytes)
+            or len(result.stdout) > 64 * 1024
+            or result.stderr not in {b"", None}
+        ):
             raise RuntimeHold("runtime_identity_unavailable")
-    for root in roots:
-        packed = root / "packed-refs"
-        if not packed.is_file():
-            continue
-        matches = []
-        for line in _bounded_ascii(packed, 4 * 1024 * 1024).splitlines():
-            parts = line.split(" ", 1)
-            if len(parts) == 2 and parts[1] == ref and _COMMIT.fullmatch(parts[0]):
-                matches.append(parts[0])
-        if len(matches) == 1:
-            return matches[0]
-        if matches:
-            raise RuntimeHold("runtime_identity_unavailable")
-    raise RuntimeHold("runtime_identity_unavailable")
+        return result.stdout
+
+    try:
+        with tempfile.TemporaryDirectory(prefix="project6-git-identity-") as home:
+            git_environment["HOME"] = home
+            git_environment["XDG_CONFIG_HOME"] = home
+            top = git("rev-parse", "--show-toplevel").decode("utf-8", "strict").strip()
+            try:
+                observed_root = Path(top).resolve(strict=True)
+            except OSError:
+                raise RuntimeHold("runtime_identity_unavailable") from None
+            if observed_root != root:
+                raise RuntimeHold("runtime_identity_unavailable")
+            commit = git("rev-parse", "HEAD").decode("ascii", "strict").strip()
+            if _COMMIT.fullmatch(commit) is None:
+                raise RuntimeHold("runtime_identity_unavailable")
+            if git("status", "--porcelain=v1", "--untracked-files=all") != b"":
+                raise RuntimeHold("runtime_source_not_clean")
+            return commit
+    except OSError:
+        raise RuntimeHold("runtime_identity_unavailable") from None
 
 
 def _interpreter_identity(interpreter: Path | None = None) -> str:
@@ -372,7 +391,20 @@ def prepare_dual_live_runtime(
         return RuntimeResult(RuntimeStatus.HOLD, "canonical_root_not_canonical")
 
     try:
-        source_commit = dependencies.source_commit(canonical_root)
+        source_root = request.source_root.resolve(strict=True)
+    except OSError:
+        return RuntimeResult(RuntimeStatus.HOLD, "source_root_unavailable")
+    if (
+        source_root != request.source_root
+        or not source_root.is_dir()
+        or source_root == canonical_root
+        or source_root in canonical_root.parents
+        or canonical_root in source_root.parents
+    ):
+        return RuntimeResult(RuntimeStatus.HOLD, "source_root_not_isolated")
+
+    try:
+        source_commit = dependencies.source_commit(source_root)
     except RuntimeHold as exc:
         return RuntimeResult(RuntimeStatus.HOLD, exc.code)
     except (OSError, ValueError, RuntimeError):
@@ -383,6 +415,12 @@ def prepare_dual_live_runtime(
         return RuntimeResult(RuntimeStatus.HOLD, "worker_bundle_binding_missing")
     if bundle_values.entrypoint != "tools/dual_live_run.py":
         return RuntimeResult(RuntimeStatus.HOLD, "worker_bundle_entrypoint_invalid")
+    try:
+        bundle_campaign_root = bundle_values.campaign_root.resolve(strict=True)
+    except OSError:
+        return RuntimeResult(RuntimeStatus.HOLD, "worker_bundle_campaign_root_invalid")
+    if bundle_campaign_root != canonical_root:
+        return RuntimeResult(RuntimeStatus.HOLD, "worker_bundle_campaign_root_mismatch")
     try:
         binding = worker_bundle_contract.BundleBinding(
             root=bundle_values.root,
@@ -399,8 +437,8 @@ def prepare_dual_live_runtime(
             provisioner_sid=bundle_values.provisioner_sid,
             broker_sid=bundle_values.broker_sid,
             ambient_interpreter_root=bundle_values.ambient_interpreter_root,
-            repository_root=canonical_root,
-            campaign_root=bundle_values.campaign_root,
+            repository_root=source_root,
+            campaign_root=canonical_root,
             appcontainer_profile_root=bundle_values.appcontainer_profile_root,
             broker_profile_root=bundle_values.broker_profile_root,
             user_data_root=bundle_values.user_data_root,
@@ -488,6 +526,9 @@ def prepare_dual_live_runtime(
         broker=broker,
         producer_request=producer_request,
         worker_manifest_digest=binding.manifest_digest,
+        source_root=source_root,
+        source_commit=source_commit,
+        source_commit_reader=dependencies.source_commit,
     )
     return RuntimeResult(
         status=RuntimeStatus.PREPARED,
@@ -540,6 +581,20 @@ def run_prepared_runtime(
         raise RuntimeHold("runtime_prepared_invalid")
     raw_handles = [0, 0, 0, 0]
     try:
+        digest = prepared.envelope.envelope.content_digest
+        if (
+            prepared.source_root is None
+            or not isinstance(prepared.source_commit, str)
+            or _COMMIT.fullmatch(prepared.source_commit) is None
+            or not callable(prepared.source_commit_reader)
+        ):
+            raise RuntimeHold("runtime_source_identity_invalid")
+        try:
+            observed_source_commit = prepared.source_commit_reader(prepared.source_root)
+        except BaseException:
+            raise RuntimeHold("runtime_source_identity_drift") from None
+        if observed_source_commit != prepared.source_commit:
+            raise RuntimeHold("runtime_source_identity_drift")
         if open_writer is None:
             from .dual_live_windows_boundary import open_pipe_writer
 
@@ -548,7 +603,6 @@ def run_prepared_runtime(
             from .dual_live_effect_guard import release_sciencebase_worker
 
             release_worker = release_sciencebase_worker
-        digest = prepared.envelope.envelope.content_digest
         consume = getattr(execution_authority, "consume_exact", None)
         if (
             not isinstance(digest, str)
