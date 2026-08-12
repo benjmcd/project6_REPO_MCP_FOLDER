@@ -177,6 +177,24 @@ def _owner_authenticator():
     return SimpleNamespace(authenticate_exact=lambda _raw, _digest: True)
 
 
+def test_initialize_reservation_database_create_once_and_store_opens_rw(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    root = tmp_path.resolve()
+
+    database = module.initialize_reservation_database(root, RUN_ID)
+
+    assert database == root / "reservation.db"
+    store = _store(root)
+    try:
+        assert store.assert_no_reservations(RUN_ID) is None
+    finally:
+        store.close()
+    with pytest.raises(module.LiveReadinessHold, match="reservation_database_exists"):
+        module.initialize_reservation_database(root, RUN_ID)
+
+
 def test_write_owner_go_template_derives_canonical_bindings_create_once(
     tmp_path: Path,
 ) -> None:

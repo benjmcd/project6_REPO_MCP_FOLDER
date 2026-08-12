@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sqlite3
 import subprocess
 import tempfile
 from typing import Any, Callable, Protocol
@@ -70,6 +71,69 @@ class LiveReadinessHold(RuntimeError):
     def __init__(self, code: str) -> None:
         self.code = code
         super().__init__(code)
+
+
+def initialize_reservation_database(
+    canonical_root: Path, connector_run_id: str
+) -> Path:
+    root = Path(canonical_root)
+    if (
+        not root.is_absolute()
+        or not root.is_dir()
+        or root.resolve(strict=True) != root
+        or not _valid_uuid(connector_run_id)
+    ):
+        raise LiveReadinessHold("reservation_database_binding_invalid")
+    database = root / "reservation.db"
+    try:
+        descriptor = os.open(database, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError:
+        raise LiveReadinessHold("reservation_database_exists") from None
+    except OSError:
+        raise LiveReadinessHold("reservation_database_initialize_failed") from None
+    os.close(descriptor)
+    try:
+        with sqlite3.connect(
+            database.as_uri() + "?mode=rw", uri=True, isolation_level=None
+        ) as connection:
+            connection.execute("PRAGMA foreign_keys = ON")
+            connection.execute("PRAGMA synchronous = FULL")
+            connection.executescript(
+                """
+                BEGIN IMMEDIATE;
+                CREATE TABLE connector_run (
+                    connector_run_id VARCHAR(36) PRIMARY KEY
+                );
+                CREATE TABLE connector_run_event (
+                    connector_run_event_id VARCHAR(36) PRIMARY KEY,
+                    connector_run_id VARCHAR(36) NOT NULL REFERENCES connector_run(connector_run_id),
+                    connector_run_target_id VARCHAR(36),
+                    phase VARCHAR(100),
+                    stage VARCHAR(100),
+                    event_type VARCHAR(100) NOT NULL,
+                    status_before VARCHAR(50),
+                    status_after VARCHAR(50),
+                    reason_code VARCHAR(255),
+                    error_class VARCHAR(100),
+                    message TEXT,
+                    metrics_json JSON,
+                    created_at DATETIME
+                );
+                """
+            )
+            connection.execute(
+                "INSERT INTO connector_run(connector_run_id) VALUES (?)",
+                (connector_run_id,),
+            )
+            connection.commit()
+            observed = Path(
+                connection.execute("PRAGMA database_list").fetchone()[2]
+            ).resolve()
+            if observed != database:
+                raise sqlite3.DatabaseError("reservation_store_path_ambiguous")
+    except sqlite3.Error:
+        raise LiveReadinessHold("reservation_database_initialize_failed") from None
+    return database
 
 
 class OwnerGoAuthenticator(Protocol):
