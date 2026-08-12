@@ -34,6 +34,10 @@ The tranche reuses B0's default-off broker, zero-capability worker, reservation-
 First run the standard launcher in prepare-only template mode. `$CanonicalRoot` is a dedicated non-Git campaign/evidence state root; the launcher separately binds and verifies its own clean source checkout. Supply the already-provisioned worker binding and authority-envelope values as the variables below; the launcher revalidates them, derives 14 GO fields from `PreparedRuntime`, adds the caller's explicit fresh `go_id`, writes canonical bytes with create-once semantics, prints the exact digest, closes the prepared runtime, and performs no signature, GO consumption, worker launch, or external effect.
 
 ```powershell
+$Query = 'Mineral Commodity Summaries'
+$ExpectedItemId = '63d1a3c6d34e06fef15006be'
+$ExpectedFileName = 'mcs2023-germa_salient.csv'
+$CampaignRoot = $CanonicalRoot
 $PreparedRuntimeArgs = @(
   '--authority-envelope', $AuthorityEnvelope,
   '--authority-envelope-sha256', $AuthorityEnvelopeDigest,
@@ -72,6 +76,10 @@ try {
   $env:DUAL_LIVE_RUNTIME_ENABLED = $PriorDualLiveEnabled
 }
 ```
+
+The target values above are the complete bounded acquisition subject; changing any of them requires a fresh preparation and owner act. `CampaignRoot` is exactly the canonical campaign/evidence root, never the executable source checkout.
+
+Two external, non-authorizing inputs remain. The profile binding must be produced from an actually provisioned broker profile and AppContainer profile—not hand-filled—and contains exactly `profile_moniker`, `package_sid`, `broker_sid`, `appcontainer_profile_root`, `broker_profile_root`, and `user_data_root`. The authority envelope is canonical JSON with exactly `schema_version`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `authorization_digest`, `grant_digest`, and `wrapper_start_token_ref`. Its schema is `project6.connector_authority.v1`. The source commit and worker-interpreter digest must be observed only after the final clean source and external worker closure exist; the three opaque authority/grant/token references do not themselves grant live authority. B0 does not create or issue either input, and neither substitutes for the later signed one-use owner GO.
 
 Place the template outside the canonical run root so run containment and closeout cannot modify owner-act bytes. On success, capture the printed `OWNER_GO_SHA256` value as `$GoDigest`; independently rehash the unchanged file before signing. The emitted document has exactly these canonical fields: `schema`, `go_id`, `envelope_digest`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `worker_manifest_digest`, `request_digest`, `authorization_digest`, `grant_digest`, `wrapper_start_token_ref`, `credential_mode`, and `egress_mode`. The fixed values are `schema=project6.sciencebase_live_go.v1`, `credential_mode=none_public`, and `egress_mode=capability_scoped_default_off`.
 
