@@ -80,6 +80,11 @@ def _parser() -> argparse.ArgumentParser:
         "--owner-go-sha256",
         help="Content digest only; never owner authority by itself.",
     )
+    parser.add_argument(
+        "--owner-go-signature",
+        type=Path,
+        help="Detached OpenSSH signature from the pinned Project6 owner identity.",
+    )
     for name in (
         "worker-bundle-root",
         "worker-provisioning-root",
@@ -134,10 +139,19 @@ def _default_dependencies() -> Any:
     return default_runtime_dependencies()
 
 
-def _default_execute(prepared: Any, *, go_path: Path, go_digest: str) -> Any:
+def _default_execute(
+    prepared: Any,
+    *,
+    go_path: Path,
+    go_digest: str,
+    signature_path: Path,
+) -> Any:
     from app.services.connector_egress_transport import ReservationStore
     from app.services.dual_live_runtime import run_prepared_runtime
-    from app.services.sciencebase_live_readiness import execute_sciencebase_live
+    from app.services.sciencebase_live_readiness import (
+        OpenSshOwnerGoAuthenticator,
+        execute_sciencebase_live,
+    )
 
     return execute_sciencebase_live(
         prepared,
@@ -145,6 +159,7 @@ def _default_execute(prepared: Any, *, go_path: Path, go_digest: str) -> Any:
         go_digest=go_digest,
         run=run_prepared_runtime,
         store_factory=ReservationStore,
+        owner_authenticator=OpenSshOwnerGoAuthenticator(signature_path),
     )
 
 
@@ -202,7 +217,14 @@ def main(
     )
 
     args = _parser().parse_args(arguments)
-    if (args.owner_go is None) != (args.owner_go_sha256 is None):
+    go_bindings = (
+        args.owner_go,
+        args.owner_go_sha256,
+        args.owner_go_signature,
+    )
+    if any(value is None for value in go_bindings) and any(
+        value is not None for value in go_bindings
+    ):
         print("HOLD: live_go_binding_incomplete", file=stderr)
         return 2
 
@@ -259,6 +281,7 @@ def main(
         result.prepared,
         go_path=args.owner_go,
         go_digest=args.owner_go_sha256,
+        signature_path=args.owner_go_signature,
     )
     if getattr(execution, "status", None) == "TERMINAL":
         print(f"TERMINAL: {execution.code}", file=stdout)

@@ -894,17 +894,17 @@ def test_standard_launcher_never_turns_prepared_envelope_into_live_go(
     assert closes == ["store_close"]
 
 
-def test_standard_launcher_forwards_go_only_to_injected_trusted_executor(
+def test_standard_launcher_forwards_signed_go_only_to_injected_trusted_executor(
     tmp_path: Path,
 ) -> None:
     launcher = _launcher_module()
     runtime = _runtime_module()
     stdout = StringIO()
     prepared = SimpleNamespace(reservation_store=object())
-    calls: list[tuple[object, Path, str]] = []
+    calls: list[tuple[object, Path, str, Path]] = []
 
-    def execute(prepared_value, *, go_path, go_digest, **_kwargs):
-        calls.append((prepared_value, go_path, go_digest))
+    def execute(prepared_value, *, go_path, go_digest, signature_path, **_kwargs):
+        calls.append((prepared_value, go_path, go_digest, signature_path))
         return SimpleNamespace(
             status="TERMINAL", code="sciencebase_acquisition_succeeded"
         )
@@ -916,6 +916,8 @@ def test_standard_launcher_forwards_go_only_to_injected_trusted_executor(
             str(tmp_path / "owner-go.json"),
             "--owner-go-sha256",
             "sha256:" + "9" * 64,
+            "--owner-go-signature",
+            str(tmp_path / "owner-go.json.sig"),
         ],
         settings_factory=lambda: SimpleNamespace(dual_live_runtime_enabled=True),
         dependencies_factory=lambda: object(),
@@ -931,8 +933,76 @@ def test_standard_launcher_forwards_go_only_to_injected_trusted_executor(
     assert code == 0
     assert stdout.getvalue() == "TERMINAL: sciencebase_acquisition_succeeded\n"
     assert calls == [
-        (prepared, tmp_path / "owner-go.json", "sha256:" + "9" * 64)
+        (
+            prepared,
+            tmp_path / "owner-go.json",
+            "sha256:" + "9" * 64,
+            tmp_path / "owner-go.json.sig",
+        )
     ]
+
+
+def test_standard_launcher_rejects_incomplete_signed_go_before_prepare(
+    tmp_path: Path,
+) -> None:
+    launcher = _launcher_module()
+    stderr = StringIO()
+
+    code = launcher.main(
+        [
+            *_launcher_args(tmp_path),
+            "--owner-go",
+            str(tmp_path / "owner-go.json"),
+            "--owner-go-sha256",
+            "sha256:" + "9" * 64,
+        ],
+        settings_factory=lambda: SimpleNamespace(dual_live_runtime_enabled=True),
+        dependencies_factory=lambda: pytest.fail("incomplete signed GO built runtime"),
+        prepare=lambda *_args: pytest.fail("incomplete signed GO reached prepare"),
+        stderr=stderr,
+    )
+
+    assert code == 2
+    assert stderr.getvalue() == "HOLD: live_go_binding_incomplete\n"
+
+
+def test_standard_launcher_missing_signature_holds_before_runtime_execution(
+    tmp_path: Path,
+) -> None:
+    launcher = _launcher_module()
+    runtime = _runtime_module()
+    stderr = StringIO()
+    closes: list[str] = []
+    go_path = tmp_path / "owner-go.json"
+    go_path.write_bytes(b"{}")
+
+    code = launcher.main(
+        [
+            *_launcher_args(tmp_path),
+            "--owner-go",
+            str(go_path),
+            "--owner-go-sha256",
+            "sha256:" + hashlib.sha256(b"{}").hexdigest(),
+            "--owner-go-signature",
+            str(tmp_path / "missing.sig"),
+        ],
+        settings_factory=lambda: SimpleNamespace(dual_live_runtime_enabled=True),
+        dependencies_factory=lambda: object(),
+        prepare=lambda _request, _dependencies: runtime.RuntimeResult(
+            runtime.RuntimeStatus.PREPARED,
+            "dual_live_runtime_prepared_non_live",
+            SimpleNamespace(
+                reservation_store=SimpleNamespace(
+                    close=lambda: closes.append("store_close")
+                )
+            ),
+        ),
+        stderr=stderr,
+    )
+
+    assert code == 2
+    assert stderr.getvalue() == "HOLD: live_go_owner_authentication_required\n"
+    assert closes == ["store_close"]
 
 
 def test_closeout_verification_is_separate_and_never_constructs_runtime(

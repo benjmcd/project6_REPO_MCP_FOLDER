@@ -27,4 +27,23 @@ Planning and implementation readiness never substitute for a later direct owner 
 
 ## Implemented local state
 
-The tranche reuses B0's default-off broker, zero-capability worker, reservation-before-effect transport, exact ScienceBase producer, and containment path. It adds a canonical external GO document bound to the exact envelope, worker manifest, request, credentialless public posture, and capability-scoped egress posture; mandatory authentication of those exact GO bytes and digest by an independently trusted owner capability; a run-scoped create-once GO-consumption event; a content-addressed public artifact plus secret-free terminal event; and a separate verifier that requires the exact three durable reservations, rehashes the artifact, and records one closeout event. The standard launcher has no owner authenticator and therefore remains HOLD even when a caller supplies a self-consistent GO file and digest. Any missing owner authentication, drift, prior GO, reservation mismatch, external-effect ambiguity, terminal-evidence failure, or containment uncertainty remains HOLD with no retry.
+The tranche reuses B0's default-off broker, zero-capability worker, reservation-before-effect transport, exact ScienceBase producer, and containment path. It adds a canonical external GO document bound to the exact envelope, worker manifest, request, credentialless public posture, and capability-scoped egress posture; mandatory authentication of those exact GO bytes and digest by the pinned Project6 owner Ed25519 identity; a run-scoped create-once GO-consumption event; a content-addressed public artifact plus secret-free terminal event; and a separate verifier that requires the exact three durable reservations, rehashes the artifact, and records one closeout event. Any missing or invalid owner signature, drift, prior GO, reservation mismatch, external-effect ambiguity, terminal-evidence failure, or containment uncertainty remains HOLD with no retry.
+
+## Owner signing and later actuation
+
+Signing is an external owner act and does not itself launch anything. Keep the private key outside the repository. In PowerShell, bind the exact canonical GO file and sign those bytes with the fixed namespace:
+
+```powershell
+$Go = 'C:\path\to\owner-go.json'
+$ExternalPrivateKey = 'C:\path\outside-repo\to\owner-private-key'
+$GoDigest = 'sha256:' + (Get-FileHash -LiteralPath $Go -Algorithm SHA256).Hash.ToLowerInvariant()
+& 'C:\Windows\System32\OpenSSH\ssh-keygen.exe' -Y sign -f $ExternalPrivateKey -n project6-sciencebase-live-go-v1 $Go
+```
+
+OpenSSH writes the detached signature to `$Go.sig`. A later direct owner-authorized invocation uses the existing complete prepared-runtime arguments plus exactly:
+
+```powershell
+.\project6.ps1 -Action run-dual-live -- <prepared-runtime-arguments> --owner-go $Go --owner-go-sha256 $GoDigest --owner-go-signature "$Go.sig"
+```
+
+The launcher pins signer identity `project6-sciencebase-owner-go-v1`, fingerprint `SHA256:wD25Cry/4ZcGWBZXolmIOUNEF96p/yMxQ+y0dZeFZVU`, namespace `project6-sciencebase-live-go-v1`, and the exact public key. None is caller-configurable. This instruction is usage documentation, not a GO or permission to invoke it.

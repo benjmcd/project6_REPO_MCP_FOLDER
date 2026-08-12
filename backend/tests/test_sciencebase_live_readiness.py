@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sqlite3
 from types import SimpleNamespace
 
@@ -171,6 +172,158 @@ def _load_module():
 
 def _owner_authenticator():
     return SimpleNamespace(authenticate_exact=lambda _raw, _digest: True)
+
+
+def _signature_bytes() -> bytes:
+    return (
+        b"-----BEGIN SSH SIGNATURE-----\n"
+        b"U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgdGVzdC1vbmx5\n"
+        b"-----END SSH SIGNATURE-----\n"
+    )
+
+
+def test_openssh_owner_authenticator_pins_exact_identity_and_verifies_exact_bytes(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    signature_path = tmp_path / "owner-go.json.sig"
+    signature_path.write_bytes(_signature_bytes())
+    raw = b'{"exact":"canonical-go-bytes"}'
+    digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+    observed: dict[str, object] = {}
+
+    def runner(command, **kwargs):
+        observed["command"] = command
+        observed["input"] = kwargs["input"]
+        observed["allowed_signers"] = Path(command[4]).read_text(encoding="ascii")
+        observed["signature"] = Path(command[10]).read_bytes()
+        observed["kwargs"] = kwargs
+        return subprocess.CompletedProcess(
+            command,
+            0,
+            stdout=(module.OWNER_GO_VERIFY_SUCCESS + "\n").encode("ascii"),
+            stderr=b"",
+        )
+
+    authenticator = module.OpenSshOwnerGoAuthenticator(
+        signature_path, process_runner=runner
+    )
+
+    assert authenticator.authenticate_exact(raw, digest) is True
+    assert module.OWNER_GO_PUBLIC_KEY == (
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPDrs7xXzQ1c5a+1KJZYlvKHnpqrjb3NQPiKUFd4E0ZQ "
+        "project6-sciencebase-owner-go-v1"
+    )
+    assert module.OWNER_GO_PUBLIC_KEY_FINGERPRINT == (
+        "SHA256:wD25Cry/4ZcGWBZXolmIOUNEF96p/yMxQ+y0dZeFZVU"
+    )
+    assert observed["input"] == raw
+    assert observed["signature"] == _signature_bytes()
+    assert observed["allowed_signers"] == (
+        "project6-sciencebase-owner-go-v1 "
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPDrs7xXzQ1c5a+1KJZYlvKHnpqrjb3NQPiKUFd4E0ZQ\n"
+    )
+    command = observed["command"]
+    assert command[:4] == [
+        r"C:\Windows\System32\OpenSSH\ssh-keygen.exe",
+        "-Y",
+        "verify",
+        "-f",
+    ]
+    assert command[5:10] == [
+        "-I",
+        "project6-sciencebase-owner-go-v1",
+        "-n",
+        "project6-sciencebase-live-go-v1",
+        "-s",
+    ]
+    assert observed["kwargs"]["shell"] is False
+    assert observed["kwargs"]["timeout"] == 15
+    assert observed["kwargs"]["cwd"] == r"C:\Windows\System32\OpenSSH"
+    assert observed["kwargs"]["env"] == {
+        "SystemRoot": r"C:\Windows",
+        "WINDIR": r"C:\Windows",
+    }
+
+
+@pytest.mark.parametrize(
+    ("signature", "result", "raises"),
+    [
+        (b"not-an-openssh-signature", None, False),
+        (_signature_bytes(), None, True),
+        (_signature_bytes(), (1, b"", b"Signature verification failed"), False),
+        (_signature_bytes(), (0, b"Good but ambiguous\n", b""), False),
+        (_signature_bytes(), (0, b"", b""), False),
+        (
+            _signature_bytes(),
+            (0, b"Good but ambiguous\n", b"also output\n"),
+            False,
+        ),
+    ],
+)
+def test_openssh_owner_authenticator_fails_closed_without_leaking_tool_output(
+    tmp_path: Path,
+    signature: bytes,
+    result: tuple[int, bytes, bytes] | None,
+    raises: bool,
+) -> None:
+    module = _load_module()
+    path = tmp_path / "owner-go.json.sig"
+    path.write_bytes(signature)
+
+    def runner(command, **_kwargs):
+        if raises:
+            raise OSError("C:/sentinel-secret")
+        return subprocess.CompletedProcess(command, *result)
+
+    authenticator = module.OpenSshOwnerGoAuthenticator(path, process_runner=runner)
+    raw = b"exact-canonical-go"
+    digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+    assert authenticator.authenticate_exact(raw, digest) is False
+
+
+def test_openssh_owner_authenticator_rejects_missing_or_oversized_signature(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    called = False
+
+    def runner(*_args, **_kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("invalid signature reached OpenSSH")
+
+    missing = module.OpenSshOwnerGoAuthenticator(
+        tmp_path / "missing.sig", process_runner=runner
+    )
+    digest = "sha256:" + hashlib.sha256(b"go").hexdigest()
+    assert missing.authenticate_exact(b"go", digest) is False
+    oversized_path = tmp_path / "oversized.sig"
+    oversized_path.write_bytes(b"x" * (module.MAX_OWNER_GO_SIGNATURE_BYTES + 1))
+    oversized = module.OpenSshOwnerGoAuthenticator(
+        oversized_path, process_runner=runner
+    )
+    assert oversized.authenticate_exact(b"go", digest) is False
+    assert called is False
+
+
+def test_openssh_owner_authenticator_rejects_changed_go_bytes_before_tool(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    path = tmp_path / "owner-go.json.sig"
+    path.write_bytes(_signature_bytes())
+    called = False
+
+    def runner(*_args, **_kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("changed bytes reached OpenSSH")
+
+    authenticator = module.OpenSshOwnerGoAuthenticator(path, process_runner=runner)
+    original_digest = "sha256:" + hashlib.sha256(b"original").hexdigest()
+    assert authenticator.authenticate_exact(b"changed", original_digest) is False
+    assert called is False
 
 
 def test_go_requires_exact_external_owner_authentication(tmp_path: Path) -> None:

@@ -8,6 +8,8 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
+import tempfile
 from typing import Any, Callable, Protocol
 from uuid import UUID, uuid5
 
@@ -19,6 +21,7 @@ LIVE_GO_SCHEMA = "project6.sciencebase_live_go.v1"
 LIVE_EVIDENCE_SCHEMA = "project6.sciencebase_live_evidence.v1"
 LIVE_EVENT_NAMESPACE = UUID("b9863662-dd18-58cc-9914-97eb88ad2988")
 MAX_LIVE_GO_BYTES = 64 * 1024
+MAX_OWNER_GO_SIGNATURE_BYTES = 16 * 1024
 _SHA256 = re.compile(r"sha256:[0-9a-f]{64}\Z")
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 _TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,254}\Z")
@@ -41,6 +44,26 @@ _GO_FIELDS = frozenset(
         "egress_mode",
     }
 )
+OWNER_GO_PUBLIC_KEY = (
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPDrs7xXzQ1c5a+1KJZYlvKHnpqrjb3NQPiKUFd4E0ZQ "
+    "project6-sciencebase-owner-go-v1"
+)
+OWNER_GO_PUBLIC_KEY_FINGERPRINT = (
+    "SHA256:wD25Cry/4ZcGWBZXolmIOUNEF96p/yMxQ+y0dZeFZVU"
+)
+OWNER_GO_SIGNER_IDENTITY = "project6-sciencebase-owner-go-v1"
+OWNER_GO_SIGNATURE_NAMESPACE = "project6-sciencebase-live-go-v1"
+OWNER_GO_SSH_KEYGEN = r"C:\Windows\System32\OpenSSH\ssh-keygen.exe"
+OWNER_GO_VERIFY_SUCCESS = (
+    f'Good "{OWNER_GO_SIGNATURE_NAMESPACE}" signature for '
+    f"{OWNER_GO_SIGNER_IDENTITY} with ED25519 key "
+    f"{OWNER_GO_PUBLIC_KEY_FINGERPRINT}"
+)
+_OWNER_GO_ALLOWED_SIGNER = (
+    f"{OWNER_GO_SIGNER_IDENTITY} " + " ".join(OWNER_GO_PUBLIC_KEY.split()[:2]) + "\n"
+)
+_SSH_SIGNATURE_BEGIN = b"-----BEGIN SSH SIGNATURE-----\n"
+_SSH_SIGNATURE_END = b"-----END SSH SIGNATURE-----\n"
 
 
 class LiveReadinessHold(RuntimeError):
@@ -53,6 +76,93 @@ class OwnerGoAuthenticator(Protocol):
     """Trusted external authority seam; GO bytes and digest alone grant nothing."""
 
     def authenticate_exact(self, raw: bytes, content_digest: str) -> bool: ...
+
+
+class OpenSshOwnerGoAuthenticator:
+    """Verify an exact GO with one pinned OpenSSH Ed25519 owner identity."""
+
+    def __init__(
+        self,
+        signature_path: Path,
+        *,
+        process_runner: Callable[..., subprocess.CompletedProcess[bytes]] = subprocess.run,
+    ) -> None:
+        self._signature_path = Path(signature_path)
+        self._process_runner = process_runner
+
+    def _read_signature(self) -> bytes:
+        try:
+            with self._signature_path.open("rb") as handle:
+                signature = handle.read(MAX_OWNER_GO_SIGNATURE_BYTES + 1)
+        except OSError:
+            return b""
+        if (
+            not signature
+            or len(signature) > MAX_OWNER_GO_SIGNATURE_BYTES
+            or not signature.startswith(_SSH_SIGNATURE_BEGIN)
+            or not signature.endswith(_SSH_SIGNATURE_END)
+            or b"\x00" in signature
+        ):
+            return b""
+        try:
+            signature.decode("ascii")
+        except UnicodeDecodeError:
+            return b""
+        return signature
+
+    def authenticate_exact(self, raw: bytes, content_digest: str) -> bool:
+        if (
+            not isinstance(raw, bytes)
+            or not isinstance(content_digest, str)
+            or _SHA256.fullmatch(content_digest) is None
+            or "sha256:" + hashlib.sha256(raw).hexdigest() != content_digest
+        ):
+            return False
+        signature = self._read_signature()
+        if not signature:
+            return False
+        expected = OWNER_GO_VERIFY_SUCCESS.encode("ascii")
+        allowed_outputs = {expected + b"\n", expected + b"\r\n"}
+        try:
+            with tempfile.TemporaryDirectory(prefix="project6-go-verify-") as directory:
+                root = Path(directory)
+                allowed_signers = root / "allowed-signers"
+                internal_signature = root / "owner-go.sig"
+                allowed_signers.write_text(_OWNER_GO_ALLOWED_SIGNER, encoding="ascii")
+                internal_signature.write_bytes(signature)
+                result = self._process_runner(
+                    [
+                        OWNER_GO_SSH_KEYGEN,
+                        "-Y",
+                        "verify",
+                        "-f",
+                        str(allowed_signers),
+                        "-I",
+                        OWNER_GO_SIGNER_IDENTITY,
+                        "-n",
+                        OWNER_GO_SIGNATURE_NAMESPACE,
+                        "-s",
+                        str(internal_signature),
+                    ],
+                    input=raw,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    timeout=15,
+                    check=False,
+                    shell=False,
+                    cwd=r"C:\Windows\System32\OpenSSH",
+                    env={"SystemRoot": r"C:\Windows", "WINDIR": r"C:\Windows"},
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                )
+        except BaseException:
+            return False
+        if type(result.returncode) is not int or result.returncode != 0:
+            return False
+        stdout = result.stdout if isinstance(result.stdout, bytes) else b""
+        stderr = result.stderr if isinstance(result.stderr, bytes) else b""
+        return (stdout in allowed_outputs and stderr == b"") or (
+            stderr in allowed_outputs and stdout == b""
+        )
 
 
 @dataclass(frozen=True)
