@@ -808,9 +808,6 @@ jobs:
             def __init__(self):
                 self.stages = []
 
-            def health_probe(self, plan):
-                return plan.stage == "sciencebase_search"
-
             def execute(self, plan):
                 self.stages.append(plan.stage)
                 bodies = {

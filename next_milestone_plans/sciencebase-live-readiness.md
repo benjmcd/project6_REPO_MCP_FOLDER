@@ -27,7 +27,35 @@ Planning and implementation readiness never substitute for a later direct owner 
 
 ## Implemented local state
 
-The tranche reuses B0's default-off broker, zero-capability worker, reservation-before-effect transport, exact ScienceBase producer, and containment path. It adds a canonical external GO document bound to the exact envelope, worker manifest, request, credentialless public posture, and capability-scoped egress posture; mandatory authentication of those exact GO bytes and digest by the pinned Project6 owner Ed25519 identity; a run-scoped create-once GO-consumption event; a content-addressed public artifact plus secret-free terminal event; and a separate verifier that requires the exact three durable reservations, rehashes the artifact, and records one closeout event. Any missing or invalid owner signature, drift, prior GO, reservation mismatch, external-effect ambiguity, terminal-evidence failure, or containment uncertainty remains HOLD with no retry.
+The tranche reuses B0's default-off broker, zero-capability worker, reservation-before-effect transport, exact ScienceBase producer, and containment path. It adds a canonical external GO document bound to the exact envelope, worker manifest, request, credentialless public posture, and capability-scoped egress posture; mandatory authentication of those exact GO bytes and digest by the pinned Project6 owner Ed25519 identity; a run-scoped create-once GO-consumption event; a content-addressed public artifact plus secret-free terminal event; and a separate verifier that requires the exact three durable reservations, rehashes the artifact, rejects HTML/XML-shaped error content, and records one closeout event. The owner-ratified D6 reversal removes the pre-consume HEAD health gate: within the broker/runtime chain the order is consume-exact GO, first durable reservation, then the first outbound runtime request, the reserved ordinal-1 GET. That GET doubles as the sole audited runtime availability observation instead of adding a probe; no broker HEAD or other unreserved runtime availability request precedes the reservation. Any missing or invalid owner signature, drift, prior GO, reservation mismatch, external-effect ambiguity, terminal-evidence failure, content-shape rejection, or containment uncertainty remains HOLD with no retry.
+
+The enclosing session and each worker-frame read derive from the request budget, not a shorter fixed watchdog: `3 * (max_redirect_hops + 1)` bounded requests, each with the deliberate 30-second ScienceBase timeout, plus the named 15-second launch/IPC overhead. For the bound no-redirect request this is 105,000 ms, at least the full 90,000 ms aggregate request budget plus overhead and below the Windows boundary's 15-minute cap. The coherent worker-exit wait is at least one full 30-second request budget. No in-budget request may be terminated by the enclosing session watchdog.
+
+## Mandatory same-sitting pre-signature stability gate
+
+Before signing, record at least three consecutive same-sitting observations for each of the exact search, hydrate, and download stage URLs using plain `curl.exe` GET requests with redirects disabled. Every observation must report HTTP 200 and no `Location` header. Any non-200, `Location`, curl failure, stage drift, or interrupted sequence resets the count; do not sign until all three stages have three consecutive clean observations in one sitting. Preserve the timestamped commands, exact URLs, status lines, and response-header names with the owner packet.
+
+```powershell
+$ExactSearchUrl = '<OWNER-FILL exact bound search URL>'
+$ExactHydrateUrl = '<OWNER-FILL exact bound item hydrate URL>'
+$ExactDownloadUrl = '<OWNER-FILL exact hydrate-derived download URL>'
+if (@($ExactSearchUrl, $ExactHydrateUrl, $ExactDownloadUrl).Where({ [string]::IsNullOrWhiteSpace($_) -or $_ -like '<OWNER-FILL*' }).Count -ne 0) { throw 'W5 exact stage URLs are incomplete.' }
+$StageUrls = @(
+  @{ Name = 'search'; Url = $ExactSearchUrl },
+  @{ Name = 'hydrate'; Url = $ExactHydrateUrl },
+  @{ Name = 'download'; Url = $ExactDownloadUrl }
+)
+foreach ($Attempt in 1..3) {
+  foreach ($Stage in $StageUrls) {
+    $Observed = & curl.exe --silent --show-error --request GET --max-redirs 0 --output NUL --dump-header - --write-out "`nCURL_STATUS=%{http_code}`n" $Stage.Url
+    $ObservedText = $Observed -join "`n"
+    if ($LASTEXITCODE -ne 0 -or $ObservedText -notmatch '(?m)^CURL_STATUS=200$' -or $ObservedText -match '(?im)^Location\s*:') { throw "W5 stability HOLD: $($Stage.Name) attempt $Attempt" }
+    [pscustomobject]@{ Timestamp = (Get-Date).ToString('o'); Attempt = $Attempt; Stage = $Stage.Name; Url = $Stage.Url; Observation = $ObservedText }
+  }
+}
+```
+
+The exact values are owner-filled from the already prepared request and its known/observed stage bindings; placeholders, empty values, or any drift are HOLD. W5 is a separately authorized operator observation outside the broker/runtime run. Its record is mandatory but non-authorizing and is not runtime availability evidence. The first reserved GET remains the sole audited runtime availability evidence; it is not retried.
 
 ## Owner signing and later actuation
 
@@ -146,10 +174,12 @@ try {
 }
 ```
 
-After a terminal success, perform the separate no-live closeout verification:
+After a terminal success, perform the separate no-live closeout verification. Artifact writing rejects a body whose leading bytes, after optional BOM/whitespace, begin with an HTML/XML marker; the independent verifier repeats the same negative content-shape floor after length and SHA-256 verification and writes no closeout-verified event on rejection.
 
 ```powershell
 .\project6.ps1 -Action run-dual-live -- --verify-closeout --canonical-root $CanonicalRoot --connector-run-id $ConnectorRunId --reservation-database (Join-Path $CanonicalRoot 'reservation.db') --owner-go-sha256 $GoDigest
 ```
+
+Keep the manual W7 belt-and-suspenders check: before accepting closeout, inspect the artifact's leading bytes and confirm they are the expected CSV header/data shape, not `<`, `<!DOCTYPE`, `<html`, or `<?xml`, even when the automated verifier returns `VERIFIED`.
 
 The launcher pins signer identity `project6-sciencebase-owner-go-v1`, fingerprint `SHA256:wD25Cry/4ZcGWBZXolmIOUNEF96p/yMxQ+y0dZeFZVU`, namespace `project6-sciencebase-live-go-v1`, and the exact public key. None is caller-configurable. This instruction is usage documentation, not a GO or permission to invoke it.

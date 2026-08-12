@@ -220,37 +220,6 @@ class ConnectorEgressTransport:
             raise EgressHold("HOLD", "request_header_commitment_mismatch")
         return dict(self.request_headers)
 
-    def health_probe(self, plan: PhysicalRequestPlan) -> bool:
-        session: Any = None
-        response: Any = None
-        healthy = False
-        try:
-            headers = self._validated_headers(plan)
-            session = self.session_factory()
-            response = session.request(
-                "HEAD",
-                plan.canonical_destination,
-                allow_redirects=False,
-                headers=headers,
-                stream=True,
-                timeout=plan.limits.timeout_seconds,
-            )
-            healthy = (
-                getattr(response, "status_code", None) == 200
-                and not getattr(response, "history", ())
-                and getattr(response, "headers", {}).get("Location") is None
-            )
-        except BaseException:
-            healthy = False
-        finally:
-            for resource in (response, session):
-                if resource is not None:
-                    try:
-                        resource.close()
-                    except BaseException:
-                        healthy = False
-        return healthy
-
     def execute(self, plan: PhysicalRequestPlan) -> EffectResult:
         reservation = self.reservation_store.reserve(plan)
         if not isinstance(reservation, CommittedReservation):

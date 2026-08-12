@@ -659,9 +659,8 @@ class _Session:
         self.events = events
 
     def request(self, method: str, destination: str, **kwargs: object) -> _Response:
-        ordinal = len([item for item in self.events if item.startswith("effect:")]) + 1
-        self.events.append(f"effect:{ordinal}")
-        assert method == "GET"
+        ordinal = len([item for item in self.events if item.startswith("request:")]) + 1
+        self.events.append(f"request:{method}:{ordinal}")
         assert kwargs["allow_redirects"] is False
         if "/items?" in destination:
             body = b'{"items":[{"id":"item"}]}'
@@ -718,9 +717,6 @@ def test_sciencebase_producer_completes_through_broker_after_each_reservation(
         _ReservationRecorder(events),  # type: ignore[arg-type]
         session_factory=lambda: _Session(events),
     )
-    transport.health_probe = (  # type: ignore[method-assign]
-        lambda _plan: events.append("health:1") is None
-    )
     guard = effect_guard.BrokerEffectGuard(transport)
     broker_read_fd, worker_write_fd = os.pipe()
     worker_read_fd, broker_write_fd = os.pipe()
@@ -765,18 +761,18 @@ def test_sciencebase_producer_completes_through_broker_after_each_reservation(
         assert failures == []
     assert output.content == b"artifact"
     assert events == [
-        "health:1",
         "consume",
         "reserve:1",
-        "effect:1",
+        "request:GET:1",
         "reserve:2",
-        "effect:2",
+        "request:GET:2",
         "reserve:3",
-        "effect:3",
+        "request:GET:3",
     ]
+    assert all("HEAD" not in event for event in events)
 
 
-def test_unreachable_health_gate_holds_before_go_consumption(tmp_path: Path) -> None:
+def test_denied_go_prevents_reservation_and_any_outbound_request(tmp_path: Path) -> None:
     request = ScienceBaseInput(
         query="sample",
         expected_item_id="item",
@@ -796,25 +792,22 @@ def test_unreachable_health_gate_holds_before_go_consumption(tmp_path: Path) -> 
         "sciencebase_search",
         "https://www.sciencebase.gov/catalog/items?q=sample&format=json",
     )
-    consumed: list[bool] = []
-
-    class UnreachableTransport:
-        def health_probe(self, _plan: PhysicalRequestPlan) -> bool:
-            return False
-
-        def execute(self, _plan: PhysicalRequestPlan) -> object:
-            pytest.fail("unreachable target reached transport execution")
+    events: list[str] = []
+    transport = ConnectorEgressTransport(
+        _ReservationRecorder(events),  # type: ignore[arg-type]
+        session_factory=lambda: _Session(events),
+    )
 
     writer = io.BytesIO()
-    with pytest.raises(EffectBoundaryHold, match="sciencebase_health_probe_failed"):
-        effect_guard.BrokerEffectGuard(UnreachableTransport()).serve_sciencebase(
+    with pytest.raises(EffectBoundaryHold, match="live_go_required"):
+        effect_guard.BrokerEffectGuard(transport).serve_sciencebase(
             request,
             None,
             writer,
             read_next=lambda: {"type": "effect_request", "plan": plan.to_document()},
-            consume_authority=lambda: consumed.append(True) or True,
+            consume_authority=lambda: False,
         )
-    assert consumed == []
+    assert events == []
 
 
 def test_broker_holds_malformed_request_without_transport_retry(tmp_path: Path) -> None:
