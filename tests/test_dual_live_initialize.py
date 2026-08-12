@@ -43,6 +43,35 @@ def test_reservation_store_command_initializes_fresh_root_before_prepare(
         assert connection.execute(
             "SELECT connector_run_id FROM connector_run"
         ).fetchone() == (RUN_ID,)
+    from app.services.connector_egress_transport import (
+        ReservationFileIdentity,
+        ReservationStore,
+        ReservationVolumeIdentity,
+    )
+
+    class IdentityProbe:
+        def canonicalize(self, path: Path) -> Path:
+            return path.resolve(strict=True)
+
+        def pin(self, _path: Path, *, directory: bool) -> None:
+            assert isinstance(directory, bool)
+
+        def volume(self, _path: Path) -> ReservationVolumeIdentity:
+            return ReservationVolumeIdentity("volume:1", True, True)
+
+        def identity(self, path: Path, *, directory: bool) -> ReservationFileIdentity:
+            return ReservationFileIdentity(
+                "volume:1", f"file:{path.name}", 1, False, directory
+            )
+
+        def close(self) -> None:
+            return None
+
+    store = ReservationStore(root, identity_probe=IdentityProbe())
+    try:
+        assert store.assert_no_reservations(RUN_ID) is None
+    finally:
+        store.close()
 
 
 def test_authority_envelope_command_inserts_retired_sentinel_create_once(
