@@ -445,15 +445,21 @@ class WindowsBundleProbe:
             raise BundleHold("bundle_runtime_ambiguous_appcontainer") from None
 
         try:
-            return RuntimeContext(
-                broker_sid, package_sid, canonical_profile,
-                Path(sys.executable).resolve(strict=True).parent,
-                broker_profile, self._known_folder(_LOCAL_APP_DATA),
-            )
+            interpreter_root = Path(sys.executable).resolve(strict=True).parent
         except BundleHold:
             raise
         except Exception:
-            raise BundleHold("bundle_runtime_ambiguous_roots") from None
+            raise BundleHold("bundle_runtime_ambiguous_interpreter") from None
+        try:
+            user_data_root = self._known_folder(_LOCAL_APP_DATA)
+        except BundleHold:
+            raise
+        except Exception:
+            raise BundleHold("bundle_runtime_ambiguous_user_data") from None
+        return RuntimeContext(
+            broker_sid, package_sid, canonical_profile,
+            interpreter_root, broker_profile, user_data_root,
+        )
 
     def _effective(self, acl: ctypes.c_void_p, sid_text: str) -> AccessEntry:
         sid = ctypes.c_void_p()
