@@ -219,6 +219,34 @@ def test_canonical_content_addressed_envelope_binds_every_authority_field(
     assert envelope.connector_run_id == "11111111-1111-4111-8111-111111111111"
 
 
+def test_authority_envelope_emitter_is_exact_complete_and_non_authorizing(
+    tmp_path: Path,
+) -> None:
+    from app.services import connector_egress_contract as contract
+
+    document = _envelope_dict(tmp_path)
+
+    raw = contract.emit_authority_envelope(document)
+
+    assert raw == _canonical_bytes(document)
+    assert set(json.loads(raw)) == {
+        "schema_version",
+        "campaign_id",
+        "canonical_root",
+        "connector_run_id",
+        "source_commit",
+        "interpreter_identity",
+        "authorization_digest",
+        "grant_digest",
+        "wrapper_start_token_ref",
+    }
+    incomplete = dict(document)
+    incomplete.pop("source_commit")
+    with pytest.raises(ContractHold, match="authority_envelope_fields_invalid"):
+        contract.emit_authority_envelope(incomplete)
+    assert tuple(tmp_path.iterdir()) == ()
+
+
 def test_envelope_rejects_structurally_invalid_authorization_digest(
     tmp_path: Path,
 ) -> None:

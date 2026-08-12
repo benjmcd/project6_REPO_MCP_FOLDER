@@ -7,7 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
-from typing import Any, Protocol
+from typing import Any, Mapping, Protocol
 from urllib.parse import urlsplit
 from uuid import UUID, uuid5
 
@@ -334,6 +334,15 @@ def _validate_authority_fields(document: dict[str, Any]) -> None:
     for field, valid in checks.items():
         if not valid:
             raise ContractHold(f"authority_envelope_field_invalid:{field}")
+
+
+def emit_authority_envelope(fields: Mapping[str, object]) -> bytes:
+    field_names = tuple(AuthorityBindings.__dataclass_fields__)
+    if not isinstance(fields, Mapping) or set(fields) != set(field_names):
+        raise ContractHold("authority_envelope_fields_invalid")
+    document = {name: fields[name] for name in field_names}
+    _validate_authority_fields(document)
+    return _canonical_json(document)
 
 
 def validate_authority_envelope(
