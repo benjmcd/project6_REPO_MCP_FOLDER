@@ -901,8 +901,38 @@ jobs:
         if ($denied.ExitCode -eq 0 -or (Get-Content -Raw $denyOutput) -notmatch 'bundle_(observation_ambiguous|ancestor_invalid|dacl_mismatch)') { throw 'Deny B0 bundle before Package SID grant was not proven.' }
 
         $aclTargets = @($provisioningRoot) + @(Get-ChildItem -LiteralPath $provisioningRoot -Recurse -Force | ForEach-Object FullName)
+        Add-Type @"
+        using System;
+        using System.Diagnostics;
+        using System.Runtime.InteropServices;
+        public static class P6RestorePrivilege {
+          [StructLayout(LayoutKind.Sequential)] struct LUID { public uint LowPart; public int HighPart; }
+          [StructLayout(LayoutKind.Sequential)] struct LUID_AND_ATTRIBUTES { public LUID Luid; public uint Attributes; }
+          [StructLayout(LayoutKind.Sequential)] struct TOKEN_PRIVILEGES { public uint Count; public LUID_AND_ATTRIBUTES Privilege; }
+          [DllImport("advapi32.dll", SetLastError=true)] static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+          [DllImport("advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool LookupPrivilegeValue(string system, string name, out LUID luid);
+          [DllImport("advapi32.dll", SetLastError=true)] static extern bool AdjustTokenPrivileges(IntPtr token, bool disableAll, ref TOKEN_PRIVILEGES state, uint length, IntPtr previous, IntPtr required);
+          [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
+          public static void Enable() {
+            IntPtr token;
+            if (!OpenProcessToken(Process.GetCurrentProcess().Handle, 0x28, out token)) throw new InvalidOperationException("restore privilege token open failed");
+            try {
+              LUID luid;
+              if (!LookupPrivilegeValue(null, "SeRestorePrivilege", out luid)) throw new InvalidOperationException("restore privilege lookup failed");
+              TOKEN_PRIVILEGES state = new TOKEN_PRIVILEGES { Count = 1, Privilege = new LUID_AND_ATTRIBUTES { Luid = luid, Attributes = 2 } };
+              Marshal.GetLastWin32Error();
+              if (!AdjustTokenPrivileges(token, false, ref state, 0, IntPtr.Zero, IntPtr.Zero) || Marshal.GetLastWin32Error() != 0) throw new InvalidOperationException("restore privilege enable failed");
+            } finally { CloseHandle(token); }
+          }
+        }
+        "@
+        [P6RestorePrivilege]::Enable()
         foreach ($target in $aclTargets) {
-          & icacls.exe $target /inheritance:r /setowner '*S-1-5-19' | Out-Null
+          $acl = Get-Acl -LiteralPath $target
+          $acl.SetOwner([Security.Principal.SecurityIdentifier]::new('S-1-5-19'))
+          Set-Acl -LiteralPath $target -AclObject $acl
+          $observedOwner = ([Security.Principal.NTAccount](Get-Acl -LiteralPath $target).Owner).Translate([Security.Principal.SecurityIdentifier]).Value
+          if ($observedOwner -ne 'S-1-5-19') { throw "Exact bundle owner assignment failed for $target" }
           & icacls.exe $target /grant:r '*S-1-5-18:(F)' '*S-1-5-32-544:(F)' '*S-1-5-19:(F)' '*S-1-5-20:(F)' "*$($profile.broker_sid):(RX)" "*$($profile.package_sid):(RX)" | Out-Null
           if ($LASTEXITCODE -ne 0) { throw "Grant exact protected B0 bundle ACL failed for $target" }
         }
