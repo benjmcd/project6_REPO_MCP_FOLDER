@@ -724,6 +724,8 @@ jobs:
         $profileArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$profileScript`" create `"$moniker`" `"$profileInfo`""
         $profileStdout = Join-Path $stateRoot 'profile.stdout.txt'
         $profileStderr = Join-Path $stateRoot 'profile.stderr.txt'
+        $env:TEMP = $stateRoot
+        $env:TMP = $stateRoot
         [ordered]@{ broker = $brokerName; password = $brokerPassword; moniker = $moniker; profile_created = $true; profile_script = $profileScript; state_root = $stateRoot; provisioning_root = $provisioningRoot } | ConvertTo-Json -Compress | Set-Content -LiteralPath $statePath -Encoding ascii
         $created = Start-Process powershell.exe -Credential $credential -LoadUserProfile -ArgumentList $profileArgs -RedirectStandardOutput $profileStdout -RedirectStandardError $profileStderr -Wait -PassThru
         if ($created.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $profileInfo)) {
@@ -912,6 +914,8 @@ jobs:
       shell: pwsh
       run: |
         $state = Get-Content -Raw -LiteralPath $env:PROJECT6_B0_STATE | ConvertFrom-Json
+        $env:TEMP = $state.state_root
+        $env:TMP = $state.state_root
         $secure = ConvertTo-SecureString $state.password -AsPlainText -Force
         $credential = [Management.Automation.PSCredential]::new(".\$($state.broker)", $secure)
         $output = Join-Path $state.state_root 'green.txt'
@@ -935,6 +939,8 @@ jobs:
           exit 0
         }
         $state = Get-Content -Raw -LiteralPath $env:PROJECT6_B0_STATE | ConvertFrom-Json
+        $env:TEMP = $state.state_root
+        $env:TMP = $state.state_root
         $secure = ConvertTo-SecureString $state.password -AsPlainText -Force
         $credential = [Management.Automation.PSCredential]::new(".\$($state.broker)", $secure)
         $args = "-NoProfile -ExecutionPolicy Bypass -File `"$($state.profile_script)`" delete `"$($state.moniker)`""

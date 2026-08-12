@@ -272,6 +272,7 @@ def test_dual_live_windows_boundary_job_is_required_and_exact() -> None:
         "$brokerPassword = 'P6!b0Ci9xQ2#'",
         "-RedirectStandardError $profileStderr",
         "creation failed (exit $($created.ExitCode))",
+        "$env:TEMP = $stateRoot", "$env:TEMP = $state.state_root",
         "DriveType -ne [IO.DriveType]::Fixed", "FileAttributes]::ReparsePoint",
         "[StringComparer]::Ordinal",
         "$hr -notin @(0, -2147023728)",
