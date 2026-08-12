@@ -34,6 +34,34 @@ The tranche reuses B0's default-off broker, zero-capability worker, reservation-
 First run the standard launcher in prepare-only template mode. `$CanonicalRoot` is a dedicated non-Git campaign/evidence state root; the launcher separately binds and verifies its own clean source checkout. Supply the already-provisioned worker binding and authority-envelope values as the variables below; the launcher revalidates them, derives 14 GO fields from `PreparedRuntime`, adds the caller's explicit fresh `go_id`, writes canonical bytes with create-once semantics, prints the exact digest, closes the prepared runtime, and performs no signature, GO consumption, worker launch, or external effect.
 
 ```powershell
+$RepositoryRoot = (Get-Location).Path
+$CanonicalRoot = 'C:\owner-controlled\project6\sciencebase-campaign'
+$CampaignId = 'sciencebase-live-v2'
+$ConnectorRunId = '11111111-1111-4111-8111-111111111111' # replace with a fresh UUID
+$AuthorityEnvelope = 'C:\owner-controlled\project6\sciencebase-authority.json'
+$AuthorityEnvelopeDigest = 'sha256:' + (Get-FileHash -LiteralPath $AuthorityEnvelope -Algorithm SHA256).Hash.ToLowerInvariant()
+$ProfileBinding = 'C:\owner-controlled\project6\sciencebase-profile.json'
+$WorkerBinding = 'C:\owner-controlled\project6\sciencebase-worker.json'
+$WorkerProvisioningRoot = 'C:\ProgramData\Project6\sciencebase-worker'
+$PythonArchive = 'C:\owner-controlled\project6\python-3.12.6-embed-amd64.zip'
+$AmbientInterpreterRoot = Split-Path -Parent (Get-Command python.exe).Source
+$ProfileMoniker = 'Project6.ScienceBase.LiveV2.' + ([guid]::NewGuid().ToString('N').Substring(0,8))
+.\scripts\provision-dual-live-profile.ps1 -ProfileMoniker $ProfileMoniker -OutputBinding $ProfileBinding
+.\scripts\provision-dual-live-worker.ps1 -PythonArchive $PythonArchive -ProfileBinding $ProfileBinding -ProvisioningRoot $WorkerProvisioningRoot -OutputBinding $WorkerBinding -CampaignRoot $CanonicalRoot -AmbientInterpreterRoot $AmbientInterpreterRoot -RepositoryRoot $RepositoryRoot
+$Profile = Get-Content -Raw -LiteralPath $ProfileBinding | ConvertFrom-Json
+$Worker = Get-Content -Raw -LiteralPath $WorkerBinding | ConvertFrom-Json
+$WorkerBundleRoot = $Worker.root
+$WorkerManifestDigest = $Worker.manifest_digest
+$WorkerInterpreter = Join-Path $Worker.root $Worker.interpreter
+$WorkerPythonVersion = $Worker.python_version
+$WorkerArchitecture = $Worker.architecture
+$WorkerPackageSid = $Worker.package_sid
+$WorkerOwnerSid = $Worker.owner_sid
+$WorkerProvisionerSid = $Worker.provisioner_sid
+$WorkerBrokerSid = $Worker.broker_sid
+$AppContainerProfileRoot = $Profile.appcontainer_profile_root
+$BrokerProfileRoot = $Profile.broker_profile_root
+$UserDataRoot = $Profile.user_data_root
 $Query = 'Mineral Commodity Summaries'
 $ExpectedItemId = '63d1a3c6d34e06fef15006be'
 $ExpectedFileName = 'mcs2023-germa_salient.csv'
@@ -81,12 +109,7 @@ The target values above are the complete bounded acquisition subject; changing a
 
 Two external, non-authorizing inputs remain. The profile binding must be produced from an actually provisioned broker profile and AppContainer profile—not hand-filled—and contains exactly `profile_moniker`, `package_sid`, `broker_sid`, `appcontainer_profile_root`, `broker_profile_root`, and `user_data_root`. The authority envelope is canonical JSON with exactly `schema_version`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `authorization_digest`, `grant_digest`, and `wrapper_start_token_ref`. Its schema is `project6.connector_authority.v1`. The source commit and worker-interpreter digest must be observed only after the final clean source and external worker closure exist; the three opaque authority/grant/token references do not themselves grant live authority. B0 does not create or issue either input, and neither substitutes for the later signed one-use owner GO.
 
-From an already-elevated Windows PowerShell 5.1 shell, a future operator may create the profile binding once with a fresh moniker and an output path outside both the repository and `$CanonicalRoot`; the script does not elevate itself or remove a profile:
-
-```powershell
-$ProfileMoniker = 'Project6.ScienceBase.LiveV2.' + ([guid]::NewGuid().ToString('N').Substring(0,8))
-.\scripts\provision-dual-live-profile.ps1 -ProfileMoniker $ProfileMoniker -OutputBinding 'C:\owner-controlled\project6\sciencebase-profile.json'
-```
+The provision commands above require an already-elevated Windows PowerShell 5.1 shell; neither script elevates itself or removes a profile.
 
 Place the template outside the canonical run root so run containment and closeout cannot modify owner-act bytes. On success, capture the printed `OWNER_GO_SHA256` value as `$GoDigest`; independently rehash the unchanged file before signing. The emitted document has exactly these canonical fields: `schema`, `go_id`, `envelope_digest`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `worker_manifest_digest`, `request_digest`, `authorization_digest`, `grant_digest`, `wrapper_start_token_ref`, `credential_mode`, and `egress_mode`. The fixed values are `schema=project6.sciencebase_live_go.v1`, `credential_mode=none_public`, and `egress_mode=capability_scoped_default_off`.
 
