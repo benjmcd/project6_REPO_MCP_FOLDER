@@ -354,6 +354,7 @@ def test_hold_suppresses_sensitive_observation_exception() -> None:
     rendered = "".join(traceback.format_exception(caught.value))
     assert caught.value.__cause__ is None
     assert caught.value.__suppress_context__ is True
+    assert str(caught.value) == "bundle_observation_ambiguous_manifest"
     assert "sentinel-secret" not in rendered
 
 

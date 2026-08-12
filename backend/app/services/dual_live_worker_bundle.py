@@ -596,6 +596,7 @@ def _streams_clean(probe: BundleProbe, path: Path, directory: bool) -> bool:
 
 
 def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundle:
+    phase = "canonicalize"
     try:
         root = probe.canonicalize(binding.root)
         provisioner_root = probe.canonicalize(binding.provisioning_root)
@@ -606,6 +607,7 @@ def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundl
                 binding.appcontainer_profile_root, binding.broker_profile_root, binding.user_data_root,
             )
         )
+        phase = "runtime"
         context = probe.runtime_context(binding.profile_moniker)
         if context != RuntimeContext(
             binding.broker_sid, binding.package_sid, forbidden[3], forbidden[0], forbidden[4], forbidden[5]
@@ -616,6 +618,7 @@ def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundl
             or any(_inside(root, path) or _inside(provisioner_root, path) for path in forbidden)
         ):
             _hold("bundle_root_forbidden")
+        phase = "root"
         volume = probe.volume(root)
         root_identity = probe.identity(root)
         if not volume.fixed or not volume.local or not volume.identity:
@@ -627,6 +630,7 @@ def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundl
         ):
             _hold("bundle_root_identity_invalid")
 
+        phase = "manifest"
         manifest_identity = probe.identity(root / _MANIFEST)
         raw = probe.read_bytes(root / _MANIFEST, _MAX_MANIFEST_BYTES)
         if len(raw) > _MAX_MANIFEST_BYTES:
@@ -675,6 +679,7 @@ def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundl
         aggregate_bytes = 0
         identities = {root_identity.file_identity}
         snapshot_parts: list[str] = [volume.identity, root_identity.file_identity, binding.manifest_digest]
+        phase = "ancestor"
         ancestor = provisioner_root
         first_ancestor = True
         while ancestor.parent != ancestor:
@@ -690,6 +695,7 @@ def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundl
             snapshot_parts.extend((str(ancestor), identity.file_identity, repr(security)))
             first_ancestor = False
             ancestor = ancestor.parent
+        phase = "files"
         for record in records:
             if not isinstance(record, dict) or set(record) != {"path", "sha256", "size"}:
                 _hold("bundle_file_record_invalid")
@@ -734,9 +740,11 @@ def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundl
 
         if binding.interpreter not in expected_paths or binding.entrypoint not in expected_paths:
             _hold("bundle_launch_path_unlisted")
+        phase = "inventory"
         inventory = tuple(probe.inventory(root, _MAX_INVENTORY))
         if inventory != tuple(sorted({_MANIFEST, *expected_dirs, *expected_paths})):
             _hold("bundle_inventory_mismatch")
+        phase = "directories"
         for relative in sorted(expected_dirs):
             path = root / Path(relative.rstrip("/"))
             identity = probe.identity(path)
@@ -750,6 +758,7 @@ def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundl
                 _hold("bundle_directory_drift")
             identities.add(identity.file_identity)
             snapshot_parts.extend((relative, identity.file_identity))
+        phase = "final"
         manifest_identity_after = probe.identity(root / _MANIFEST)
         if (
             manifest_identity != manifest_identity_after or manifest_identity.reparse or manifest_identity.directory
@@ -774,7 +783,7 @@ def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundl
     except BundleHold:
         raise
     except Exception:
-        raise BundleHold("bundle_observation_ambiguous") from None
+        raise BundleHold(f"bundle_observation_ambiguous_{phase}") from None
 
 
 def validate_worker_bundle(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundle:
