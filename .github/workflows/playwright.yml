@@ -722,9 +722,14 @@ jobs:
         $secure = ConvertTo-SecureString $brokerPassword -AsPlainText -Force
         $credential = [Management.Automation.PSCredential]::new(".\$brokerName", $secure)
         $profileArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$profileScript`" create `"$moniker`" `"$profileInfo`""
+        $profileStdout = Join-Path $stateRoot 'profile.stdout.txt'
+        $profileStderr = Join-Path $stateRoot 'profile.stderr.txt'
         [ordered]@{ broker = $brokerName; password = $brokerPassword; moniker = $moniker; profile_created = $true; profile_script = $profileScript; state_root = $stateRoot; provisioning_root = $provisioningRoot } | ConvertTo-Json -Compress | Set-Content -LiteralPath $statePath -Encoding ascii
-        $created = Start-Process powershell.exe -Credential $credential -LoadUserProfile -ArgumentList $profileArgs -Wait -PassThru
-        if ($created.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $profileInfo)) { throw 'Disposable AppContainer profile creation failed.' }
+        $created = Start-Process powershell.exe -Credential $credential -LoadUserProfile -ArgumentList $profileArgs -RedirectStandardOutput $profileStdout -RedirectStandardError $profileStderr -Wait -PassThru
+        if ($created.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $profileInfo)) {
+          $detail = if (Test-Path -LiteralPath $profileStderr) { (Get-Content -Raw -LiteralPath $profileStderr).Trim() } else { 'no stderr' }
+          throw "Disposable AppContainer profile creation failed (exit $($created.ExitCode)): $detail"
+        }
         $profile = Get-Content -Raw -LiteralPath $profileInfo | ConvertFrom-Json
 
         $archive = Join-Path $stateRoot 'python.zip'
