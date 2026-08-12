@@ -982,6 +982,7 @@ def test_write_artifact_rejects_html_error_page_before_write(tmp_path: Path) -> 
 @pytest.mark.parametrize(
     ("bom", "encoding"),
     [
+        pytest.param(b"\xef\xbb\xbf", "utf-8", id="utf8"),
         pytest.param(b"\xff\xfe", "utf-16-le", id="utf16le"),
         pytest.param(b"\xfe\xff", "utf-16-be", id="utf16be"),
         pytest.param(b"\xff\xfe\x00\x00", "utf-32-le", id="utf32le"),
@@ -1004,7 +1005,7 @@ def test_write_artifact_rejects_bom_encoded_html_before_write(
         prepared,
         owner_authenticator=_owner_authenticator(),
     )
-    content = bom + "<html>502 Bad Gateway</html>".encode(encoding)
+    content = bom + "<!DOCTYPE html><html>502 Bad Gateway</html>".encode(encoding)
     output = ScienceBaseOutput(
         "item-1", "map.json", content, hashlib.sha256(content).hexdigest(), 3, len(content)
     )
