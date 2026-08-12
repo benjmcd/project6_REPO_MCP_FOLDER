@@ -610,12 +610,16 @@ def run_prepared_runtime(
             or not callable(consume)
         ):
             raise RuntimeHold("live_go_required")
-        try:
-            consumed = consume(digest)
-        except BaseException:
-            raise RuntimeHold("live_go_required") from None
-        if consumed is not True:
-            raise RuntimeHold("live_go_required")
+
+        def consume_authority() -> bool:
+            try:
+                consumed = consume(digest)
+            except BaseException:
+                raise RuntimeHold("live_go_required") from None
+            if consumed is not True:
+                raise RuntimeHold("live_go_required")
+            return True
+
         with prepared.boundary.acquire():
             try:
                 allocated = prepared.boundary.create_worker_pipes()
@@ -665,6 +669,7 @@ def run_prepared_runtime(
                             read_next=lambda: prepared.boundary.read_worker_frame(
                                 raw_handles[0], 15_000
                             ),
+                            consume_authority=consume_authority,
                         )
                         prepared.boundary.census()
                         release_worker(writer)

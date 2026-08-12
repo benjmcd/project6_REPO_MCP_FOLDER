@@ -455,8 +455,12 @@ def test_run_prepared_runtime_owns_worker_pipes_job_and_exact_completion() -> No
             events.append(("stream_close", self.handle))
 
     class Broker:
-        def serve_sciencebase(self, received, reader, writer, *, read_next):
+        def serve_sciencebase(
+            self, received, reader, writer, *, read_next, consume_authority
+        ):
             events.append(("serve", received, reader, writer.handle, read_next()))
+            assert consume_authority() is True
+            events.extend(("first_reservation", "first_request"))
             return output
 
     prepared = runtime.PreparedRuntime(
@@ -481,7 +485,6 @@ def test_run_prepared_runtime_owns_worker_pipes_job_and_exact_completion() -> No
 
     assert result is output
     assert events == [
-        ("consume_go", "sha256:" + "a" * 64),
         "acquire",
         "pipes",
         ("launch", (13, 14), "sciencebase"),
@@ -490,6 +493,9 @@ def test_run_prepared_runtime_owns_worker_pipes_job_and_exact_completion() -> No
         ("deadline", 15_000),
         ("read", 11, 15_000),
         ("serve", request, None, 12, {"type": "test"}),
+        ("consume_go", "sha256:" + "a" * 64),
+        "first_reservation",
+        "first_request",
         "census",
         ("release_worker", 12),
         ("wait", 15_000),
@@ -576,8 +582,8 @@ def test_runtime_rejects_worker_campaign_root_different_from_state_root(
     )
 
 
-@pytest.mark.parametrize("decision", [None, False, "true", 1, RuntimeError("consumed")])
-def test_run_rejects_missing_or_nonlive_execution_authority_before_boundary(
+@pytest.mark.parametrize("decision", [False, "true", 1, RuntimeError("consumed")])
+def test_run_rejects_nonlive_execution_authority_at_first_request(
     decision,
 ) -> None:
     runtime = _runtime_module()
@@ -588,8 +594,33 @@ def test_run_rejects_missing_or_nonlive_execution_authority_before_boundary(
             calls.append("store_close")
 
     class Boundary:
+        @contextlib.contextmanager
         def acquire(self):
-            pytest.fail("boundary acquired without exact consumed live GO")
+            yield self
+
+        def create_worker_pipes(self):
+            return 31, 32, 33, 34
+
+        def launch_worker(self, *_args, **_kwargs):
+            return None
+
+        def close_pipe_handle(self, _handle):
+            return None
+
+        @contextlib.contextmanager
+        def broker_session_deadline(self, _timeout):
+            yield
+
+        def read_worker_frame(self, *_args):
+            return {"type": "test"}
+
+    class Stream(contextlib.AbstractContextManager):
+        def __exit__(self, *_args):
+            return None
+
+    class Broker:
+        def serve_sciencebase(self, *_args, consume_authority, **_kwargs):
+            consume_authority()
 
     class Authority:
         def consume_exact(self, digest):
@@ -605,17 +636,19 @@ def test_run_rejects_missing_or_nonlive_execution_authority_before_boundary(
         reservation_store=Store(),
         boundary=Boundary(),
         transport=object(),
-        broker=object(),
+        broker=Broker(),
         producer_request=object(),
         source_root=Path("C:/source"),
         source_commit="1" * 40,
         source_commit_reader=lambda _root: "1" * 40,
     )
-    authority = None if decision is None else Authority()
     with pytest.raises(runtime.RuntimeHold, match="live_go_required"):
-        runtime.run_prepared_runtime(prepared, execution_authority=authority)
-    expected = [] if authority is None else [("consume", "sha256:" + "b" * 64)]
-    assert calls == [*expected, "store_close"]
+        runtime.run_prepared_runtime(
+            prepared,
+            execution_authority=Authority(),
+            open_writer=lambda _handle: Stream(),
+        )
+    assert calls == [("consume", "sha256:" + "b" * 64), "store_close"]
 
 
 def test_run_revalidates_exact_clean_source_before_import_or_consuming_go(
@@ -691,10 +724,13 @@ def test_run_failure_closes_every_untransferred_pipe_inside_boundary() -> None:
         source_commit="1" * 40,
         source_commit_reader=lambda _root: "1" * 40,
     )
+    consumed: list[str] = []
     with pytest.raises(runtime.RuntimeHold, match="runtime_execution_failed"):
         runtime.run_prepared_runtime(
             prepared,
-            execution_authority=SimpleNamespace(consume_exact=lambda _digest: True),
+            execution_authority=SimpleNamespace(
+                consume_exact=lambda digest: consumed.append(digest) or True
+            ),
             open_writer=lambda _h: None,
         )
     assert events == [
@@ -706,6 +742,7 @@ def test_run_failure_closes_every_untransferred_pipe_inside_boundary() -> None:
         "release",
         "store_close",
     ]
+    assert consumed == []
 
 
 @pytest.mark.parametrize(

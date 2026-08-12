@@ -491,6 +491,7 @@ class BrokerEffectGuard:
         writer: BinaryIO,
         *,
         read_next: Callable[[], dict[str, Any]] | None = None,
+        consume_authority: Callable[[], bool] | None = None,
     ) -> Any:
         """Run one bounded ScienceBase worker session and return its artifact."""
 
@@ -500,6 +501,7 @@ class BrokerEffectGuard:
         observed_response_bytes = 0
         authorized_download: str | None = None
         max_requests = 3 * (request.max_redirect_hops + 1)
+        authority_consumed = False
         if read_next is None:
             if reader is None:
                 raise EffectBoundaryHold("effect_pipe_invalid")
@@ -512,12 +514,25 @@ class BrokerEffectGuard:
                 return _read_sciencebase_output(
                     frame, read_next, request, next_ordinal - 1, observed_response_bytes
                 )
+            try:
+                plan = _plan_from_request_frame(frame)
+                _bind_sciencebase_plan(plan, request, next_ordinal, authorized_download)
+                if not authority_consumed and consume_authority is not None:
+                    if consume_authority() is not True:
+                        raise EffectBoundaryHold("live_go_required")
+                    authority_consumed = True
+            except EffectBoundaryHold as exc:
+                write_frame(writer, {"type": "effect_hold", "code": exc.code})
+                raise
+            except (ContractHold, OSError, TypeError, ValueError):
+                write_frame(writer, {"type": "effect_hold", "code": "effect_request_malformed"})
+                raise EffectBoundaryHold("effect_request_malformed") from None
+            except BaseException:
+                raise
             if not self._lock.acquire(blocking=False):
                 raise EffectBoundaryHold("broker_request_concurrent")
             try:
                 try:
-                    plan = _plan_from_request_frame(frame)
-                    _bind_sciencebase_plan(plan, request, next_ordinal, authorized_download)
                     result = self._transport.execute(plan)
                     _write_result(writer, result, plan)
                     observed_response_bytes += len(result.body)
