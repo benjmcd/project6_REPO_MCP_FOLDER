@@ -9,8 +9,8 @@ import json
 from pathlib import Path
 import re
 import sys
-from typing import Any, Protocol
-from uuid import UUID
+from typing import Any, Callable, Protocol
+from uuid import UUID, uuid4
 
 
 _MARKER_FIELDS = frozenset({"schema", "go_id", "envelope_digest"})
@@ -20,6 +20,10 @@ _DIGEST = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
 class SpentMarkerHold(RuntimeError):
     """The marker's state cannot safely establish a one-use claim."""
+
+
+class CustodyHold(RuntimeError):
+    """A create-once file cannot be safely initialized or published."""
 
 
 @dataclass(frozen=True)
@@ -41,6 +45,19 @@ class MarkerBackend(Protocol):
     def read(self, handle: Any, limit: int) -> bytes: ...
     def append(self, handle: Any, value: bytes) -> None: ...
     def flush(self, handle: Any) -> None: ...
+    def close(self, handle: Any) -> None: ...
+
+
+class AtomicCustodyBackend(Protocol):
+    def open_existing_directory(self, path: Path) -> Any: ...
+    def create_new_file(self, path: Path) -> Any: ...
+    def open_existing_file(self, path: Path) -> Any: ...
+    def fixed_local(self, handle: Any) -> bool: ...
+    def identity(self, handle: Any) -> MarkerIdentity: ...
+    def secure(self, handle: Any) -> tuple[bool, bool, bool]: ...
+    def flush(self, handle: Any) -> None: ...
+    def publish_new(self, handle: Any, directory_handle: Any, final: Path) -> None: ...
+    def discard(self, handle: Any) -> None: ...
     def close(self, handle: Any) -> None: ...
 
 
@@ -87,6 +104,103 @@ def _valid_identity(identity: MarkerIdentity, *, directory: bool) -> bool:
         and not identity.reparse
         and identity.link_count == 1
     )
+
+
+def publish_new_initialized_file(
+    path: Path,
+    initialize: Callable[[Path], None],
+    *,
+    backend: AtomicCustodyBackend | None = None,
+) -> Path:
+    """Initialize a protected sibling and atomically publish its pinned identity."""
+
+    final = Path(path)
+    if not final.is_absolute() or not final.name:
+        raise CustodyHold("custody_binding_invalid")
+    active = backend if backend is not None else WindowsMarkerBackend()
+    directory_handle: Any = None
+    staging_handle: Any = None
+    observed_staging_handle: Any = None
+    final_handle: Any = None
+    published = False
+    try:
+        directory_handle = active.open_existing_directory(final.parent)
+        directory_identity = active.identity(directory_handle)
+        if not _valid_identity(directory_identity, directory=True):
+            raise CustodyHold("custody_directory_invalid")
+        if active.secure(directory_handle) != (True, True, True):
+            raise CustodyHold("custody_security_invalid")
+        if not active.fixed_local(directory_handle):
+            raise CustodyHold("custody_volume_invalid")
+        if final.exists():
+            raise CustodyHold("custody_exists")
+
+        staging = final.with_name(f".{final.name}.{uuid4().hex}.tmp")
+        staging_handle = active.create_new_file(staging)
+        staging_identity = active.identity(staging_handle)
+        if not _valid_identity(staging_identity, directory=False):
+            raise CustodyHold("custody_file_invalid")
+        if staging_identity.volume != directory_identity.volume:
+            raise CustodyHold("custody_volume_changed")
+        if active.secure(staging_handle) != (True, True, True):
+            raise CustodyHold("custody_security_invalid")
+
+        initialize(staging)
+        observed_staging_handle = active.open_existing_file(staging)
+        if (
+            active.identity(observed_staging_handle) != staging_identity
+            or active.secure(observed_staging_handle) != (True, True, True)
+        ):
+            raise CustodyHold("custody_identity_changed")
+        active.flush(staging_handle)
+        if (
+            active.identity(directory_handle) != directory_identity
+            or active.identity(staging_handle) != staging_identity
+            or active.secure(directory_handle) != (True, True, True)
+            or active.secure(staging_handle) != (True, True, True)
+        ):
+            raise CustodyHold("custody_identity_changed")
+        try:
+            active.publish_new(staging_handle, directory_handle, final)
+        except FileExistsError:
+            raise CustodyHold("custody_exists") from None
+        published = True
+
+        if (
+            active.identity(directory_handle) != directory_identity
+            or active.identity(staging_handle) != staging_identity
+            or active.secure(directory_handle) != (True, True, True)
+            or active.secure(staging_handle) != (True, True, True)
+        ):
+            raise CustodyHold("custody_identity_changed")
+        final_handle = active.open_existing_file(final)
+        if (
+            active.identity(final_handle) != staging_identity
+            or active.secure(final_handle) != (True, True, True)
+        ):
+            raise CustodyHold("custody_identity_changed")
+        return final
+    finally:
+        cleanup_error: BaseException | None = None
+        if staging_handle is not None and not published:
+            try:
+                active.discard(staging_handle)
+            except BaseException as exc:
+                cleanup_error = exc
+        for handle in (
+            final_handle,
+            observed_staging_handle,
+            staging_handle,
+            directory_handle,
+        ):
+            if handle is None:
+                continue
+            try:
+                active.close(handle)
+            except BaseException as exc:
+                cleanup_error = cleanup_error or exc
+        if cleanup_error is not None:
+            raise CustodyHold("custody_cleanup_indeterminate") from cleanup_error
 
 
 class SpentMarkerStore:
@@ -226,6 +340,23 @@ class _Overlapped(ctypes.Structure):
     ]
 
 
+class _FileRenameInfo(ctypes.Structure):
+    _fields_ = [
+        ("flags", wintypes.DWORD),
+        ("root_directory", wintypes.HANDLE),
+        ("file_name_length", wintypes.DWORD),
+        ("file_name", wintypes.WCHAR * 1),
+    ]
+
+
+class _FileDispositionInfo(ctypes.Structure):
+    _fields_ = [("delete_file", wintypes.BOOL)]
+
+
+class _IoStatusBlock(ctypes.Structure):
+    _fields_ = [("status", ctypes.c_void_p), ("information", ctypes.c_size_t)]
+
+
 class _Acl(ctypes.Structure):
     _fields_ = [
         ("revision", wintypes.BYTE),
@@ -255,7 +386,9 @@ class WindowsMarkerBackend:
 
     GENERIC_READ = 0x80000000
     GENERIC_WRITE = 0x40000000
+    DELETE = 0x00010000
     FILE_SHARE_READ_WRITE = 0x00000003
+    FILE_SHARE_DELETE = 0x00000004
     CREATE_NEW = 1
     OPEN_EXISTING = 3
     FILE_ATTRIBUTE_DIRECTORY = 0x10
@@ -276,6 +409,11 @@ class WindowsMarkerBackend:
     SDDL_REVISION_1 = 1
     SECURITY_DESCRIPTOR_REVISION = 1
     FILE_ALL_ACCESS = 0x001F01FF
+    FILE_RENAME_INFO_CLASS = 3
+    FILE_DISPOSITION_INFO_CLASS = 4
+    FILE_RENAME_INFORMATION_NT = 10
+    STATUS_OBJECT_NAME_COLLISION = 0xC0000035
+    DRIVE_FIXED = 3
     INVALID_HANDLE = ctypes.c_void_p(-1).value
 
     def __init__(self) -> None:
@@ -283,6 +421,7 @@ class WindowsMarkerBackend:
             raise SpentMarkerHold("windows_required")
         self.kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         self.advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+        self.ntdll = ctypes.WinDLL("ntdll")
         self._configure_functions()
         self._overlapped: dict[int, _Overlapped] = {}
         self._owner_sid = self._token_user_sid()
@@ -306,8 +445,22 @@ class WindowsMarkerBackend:
             wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE,
         ]
         self.kernel32.CreateFileW.restype = wintypes.HANDLE
+        self.kernel32.ReOpenFile.argtypes = [
+            wintypes.HANDLE, wintypes.DWORD, wintypes.DWORD, wintypes.DWORD,
+        ]
+        self.kernel32.ReOpenFile.restype = wintypes.HANDLE
         self.kernel32.GetFileInformationByHandle.argtypes = [wintypes.HANDLE, void_p]
         self.kernel32.GetFileInformationByHandle.restype = wintypes.BOOL
+        self.kernel32.GetFinalPathNameByHandleW.argtypes = [
+            wintypes.HANDLE, wintypes.LPWSTR, wintypes.DWORD, wintypes.DWORD,
+        ]
+        self.kernel32.GetFinalPathNameByHandleW.restype = wintypes.DWORD
+        self.kernel32.GetVolumePathNameW.argtypes = [
+            wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD,
+        ]
+        self.kernel32.GetVolumePathNameW.restype = wintypes.BOOL
+        self.kernel32.GetDriveTypeW.argtypes = [wintypes.LPCWSTR]
+        self.kernel32.GetDriveTypeW.restype = wintypes.UINT
         self.kernel32.LockFileEx.argtypes = [
             wintypes.HANDLE, wintypes.DWORD, wintypes.DWORD,
             wintypes.DWORD, wintypes.DWORD, void_p,
@@ -333,6 +486,18 @@ class WindowsMarkerBackend:
         self.kernel32.WriteFile.restype = wintypes.BOOL
         self.kernel32.FlushFileBuffers.argtypes = [wintypes.HANDLE]
         self.kernel32.FlushFileBuffers.restype = wintypes.BOOL
+        self.kernel32.SetFileInformationByHandle.argtypes = [
+            wintypes.HANDLE, ctypes.c_int, void_p, wintypes.DWORD,
+        ]
+        self.kernel32.SetFileInformationByHandle.restype = wintypes.BOOL
+        self.ntdll.NtSetInformationFile.argtypes = [
+            wintypes.HANDLE,
+            ctypes.POINTER(_IoStatusBlock),
+            void_p,
+            wintypes.ULONG,
+            ctypes.c_int,
+        ]
+        self.ntdll.NtSetInformationFile.restype = ctypes.c_long
         self.advapi32.OpenProcessToken.argtypes = [
             wintypes.HANDLE, wintypes.DWORD, ctypes.POINTER(wintypes.HANDLE),
         ]
@@ -426,9 +591,10 @@ class WindowsMarkerBackend:
             self._raise("ConvertStringSecurityDescriptorToSecurityDescriptorW")
         return _SecurityAttributes(ctypes.sizeof(_SecurityAttributes), descriptor, False), descriptor
 
-    def _open_directory_handle(self, path: Path) -> int:
+    def _open_directory_handle(self, path: Path, *, writable: bool = False) -> int:
         handle = self.kernel32.CreateFileW(
-            str(path), self.GENERIC_READ, self.FILE_SHARE_READ_WRITE, None,
+            str(path), self.GENERIC_READ | (self.GENERIC_WRITE if writable else 0),
+            self.FILE_SHARE_READ_WRITE, None,
             self.OPEN_EXISTING,
             self.FILE_FLAG_BACKUP_SEMANTICS | self.FILE_FLAG_OPEN_REPARSE_POINT,
             None,
@@ -463,6 +629,15 @@ class WindowsMarkerBackend:
                 self.kernel32.CloseHandle(handle)
             raise
 
+    def open_existing_directory(self, path: Path) -> _DirectoryHandles:
+        handles = [self._open_directory_handle(path, writable=True)]
+        try:
+            return _DirectoryHandles(handles[0], tuple(handles))
+        except BaseException:
+            for handle in handles:
+                self.kernel32.CloseHandle(handle)
+            raise
+
     def open_file(self, path: Path) -> tuple[int, bool]:
         attributes, descriptor = self._security_attributes()
         created = True
@@ -486,6 +661,103 @@ class WindowsMarkerBackend:
             return handle, created
         finally:
             self.kernel32.LocalFree(descriptor)
+
+    def create_new_file(self, path: Path) -> int:
+        attributes, descriptor = self._security_attributes()
+        try:
+            handle = self.kernel32.CreateFileW(
+                str(path), self.GENERIC_READ | self.GENERIC_WRITE,
+                self.FILE_SHARE_READ_WRITE | self.FILE_SHARE_DELETE,
+                ctypes.byref(attributes), self.CREATE_NEW,
+                self.FILE_FLAG_OPEN_REPARSE_POINT, None,
+            )
+            if handle == self.INVALID_HANDLE:
+                error = ctypes.get_last_error()
+                if error in (self.ERROR_ALREADY_EXISTS, self.ERROR_FILE_EXISTS):
+                    raise FileExistsError(error, "CreateFileW(staging)", str(path))
+                self._raise("CreateFileW(staging)")
+            return handle
+        finally:
+            self.kernel32.LocalFree(descriptor)
+
+    def open_existing_file(self, path: Path) -> int:
+        handle = self.kernel32.CreateFileW(
+            str(path), self.GENERIC_READ | self.GENERIC_WRITE,
+            self.FILE_SHARE_READ_WRITE | self.FILE_SHARE_DELETE, None,
+            self.OPEN_EXISTING, self.FILE_FLAG_OPEN_REPARSE_POINT, None,
+        )
+        if handle == self.INVALID_HANDLE:
+            self._raise("CreateFileW(existing)")
+        return handle
+
+    def fixed_local(self, handle: int | _DirectoryHandles) -> bool:
+        native_handle = handle.primary if isinstance(handle, _DirectoryHandles) else handle
+        final_path = ctypes.create_unicode_buffer(32768)
+        length = self.kernel32.GetFinalPathNameByHandleW(
+            native_handle, final_path, len(final_path), 0
+        )
+        if not length or length >= len(final_path):
+            self._raise("GetFinalPathNameByHandleW")
+        volume_path = ctypes.create_unicode_buffer(32768)
+        if not self.kernel32.GetVolumePathNameW(
+            final_path.value, volume_path, len(volume_path)
+        ):
+            self._raise("GetVolumePathNameW")
+        return self.kernel32.GetDriveTypeW(volume_path.value) == self.DRIVE_FIXED
+
+    def _reopen_for_delete(self, handle: int) -> int:
+        reopened = self.kernel32.ReOpenFile(
+            handle,
+            self.GENERIC_READ | self.GENERIC_WRITE | self.DELETE,
+            self.FILE_SHARE_READ_WRITE | self.FILE_SHARE_DELETE,
+            self.FILE_FLAG_OPEN_REPARSE_POINT,
+        )
+        if reopened == self.INVALID_HANDLE:
+            self._raise("ReOpenFile(delete)")
+        return reopened
+
+    def publish_new(
+        self, handle: int, directory_handle: _DirectoryHandles, final: Path
+    ) -> None:
+        encoded = final.name.encode("utf-16-le")
+        size = _FileRenameInfo.file_name.offset + len(encoded)
+        buffer = ctypes.create_string_buffer(size)
+        info = ctypes.cast(buffer, ctypes.POINTER(_FileRenameInfo)).contents
+        info.flags = 0
+        info.root_directory = directory_handle.primary
+        info.file_name_length = len(encoded)
+        ctypes.memmove(ctypes.addressof(buffer) + _FileRenameInfo.file_name.offset, encoded, len(encoded))
+        rename_handle = self._reopen_for_delete(handle)
+        try:
+            io_status = _IoStatusBlock()
+            status = self.ntdll.NtSetInformationFile(
+                rename_handle,
+                ctypes.byref(io_status),
+                buffer,
+                size,
+                self.FILE_RENAME_INFORMATION_NT,
+            )
+            unsigned_status = status & 0xFFFFFFFF
+            if unsigned_status == self.STATUS_OBJECT_NAME_COLLISION:
+                raise FileExistsError(unsigned_status, "NtSetInformationFile", str(final))
+            if status < 0:
+                raise OSError(unsigned_status, "NtSetInformationFile(rename)")
+        finally:
+            self.kernel32.CloseHandle(rename_handle)
+
+    def discard(self, handle: int) -> None:
+        info = _FileDispositionInfo(True)
+        delete_handle = self._reopen_for_delete(handle)
+        try:
+            if not self.kernel32.SetFileInformationByHandle(
+                delete_handle,
+                self.FILE_DISPOSITION_INFO_CLASS,
+                ctypes.byref(info),
+                ctypes.sizeof(info),
+            ):
+                self._raise("SetFileInformationByHandle(disposition)")
+        finally:
+            self.kernel32.CloseHandle(delete_handle)
 
     def identity(self, handle: int | _DirectoryHandles) -> MarkerIdentity:
         if isinstance(handle, _DirectoryHandles):

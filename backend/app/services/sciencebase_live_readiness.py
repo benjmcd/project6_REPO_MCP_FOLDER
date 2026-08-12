@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import closing
 from dataclasses import dataclass
 import hashlib
 import json
@@ -16,7 +17,12 @@ from uuid import UUID, uuid5
 
 from app.services.connector_egress_transport import ReservationHold
 from app.services.dual_live_sciencebase_producer import ScienceBaseOutput
-from app.services.sciencebase_spent_marker import SpentMarkerHold, SpentMarkerStore
+from app.services.sciencebase_spent_marker import (
+    CustodyHold,
+    SpentMarkerHold,
+    SpentMarkerStore,
+    publish_new_initialized_file,
+)
 
 
 LIVE_GO_SCHEMA = "project6.sciencebase_live_go.v1"
@@ -78,7 +84,10 @@ class LiveReadinessHold(RuntimeError):
 
 
 def initialize_reservation_database(
-    canonical_root: Path, connector_run_id: str
+    canonical_root: Path,
+    connector_run_id: str,
+    *,
+    sqlite_connect: Callable[..., sqlite3.Connection] = sqlite3.connect,
 ) -> Path:
     root = Path(canonical_root)
     if (
@@ -89,19 +98,14 @@ def initialize_reservation_database(
     ):
         raise LiveReadinessHold("reservation_database_binding_invalid")
     database = root / "reservation.db"
-    try:
-        descriptor = os.open(database, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
-    except FileExistsError:
-        raise LiveReadinessHold("reservation_database_exists") from None
-    except OSError:
-        raise LiveReadinessHold("reservation_database_initialize_failed") from None
-    os.close(descriptor)
-    try:
-        with sqlite3.connect(
-            database.as_uri() + "?mode=rw", uri=True, isolation_level=None
+
+    def initialize(staging: Path) -> None:
+        with closing(
+            sqlite_connect(staging.as_uri() + "?mode=rw", uri=True, isolation_level=None)
         ) as connection:
             connection.execute("PRAGMA foreign_keys = ON")
             connection.execute("PRAGMA synchronous = FULL")
+            connection.execute("PRAGMA journal_mode = DELETE")
             connection.executescript(
                 """
                 BEGIN IMMEDIATE;
@@ -133,9 +137,26 @@ def initialize_reservation_database(
             observed = Path(
                 connection.execute("PRAGMA database_list").fetchone()[2]
             ).resolve()
-            if observed != database:
+            if observed != staging:
                 raise sqlite3.DatabaseError("reservation_store_path_ambiguous")
-    except sqlite3.Error:
+
+    try:
+        publish_new_initialized_file(database, initialize)
+    except CustodyHold as exc:
+        if str(exc) == "custody_exists":
+            raise LiveReadinessHold("reservation_database_exists") from None
+        if str(exc) in {
+            "custody_binding_invalid",
+            "custody_directory_invalid",
+            "custody_file_invalid",
+            "custody_security_invalid",
+            "custody_volume_invalid",
+            "custody_volume_changed",
+            "custody_identity_changed",
+        }:
+            raise LiveReadinessHold("reservation_database_binding_invalid") from None
+        raise LiveReadinessHold("reservation_database_initialize_failed") from None
+    except (OSError, sqlite3.Error):
         raise LiveReadinessHold("reservation_database_initialize_failed") from None
     return database
 

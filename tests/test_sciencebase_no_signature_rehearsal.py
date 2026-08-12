@@ -275,6 +275,22 @@ def test_sciencebase_no_signature_rehearsal(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("DUAL_LIVE_RUNTIME_ENABLED", raising=False)
+
+    def publish(final: Path, initialize) -> Path:
+        if final.exists():
+            raise readiness.CustodyHold("custody_exists")
+        stage = final.with_name(".reservation.db.rehearsal.tmp")
+        stage.touch(exist_ok=False)
+        try:
+            initialize(stage)
+            assert not final.exists()
+            stage.rename(final)
+            return final
+        except BaseException:
+            stage.unlink(missing_ok=True)
+            raise
+
+    monkeypatch.setattr(readiness, "publish_new_initialized_file", publish)
     spent_marker = tmp_path / "authority" / "spent.jsonl"
     monkeypatch.setattr(readiness, "LIVE_GO_SPENT_MARKER", spent_marker)
     launcher = _load_tool("sciencebase_rehearsal_launcher", REPO_ROOT / "tools" / "dual_live_run.py")

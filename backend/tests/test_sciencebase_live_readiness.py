@@ -4,9 +4,11 @@ from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import gc
 import json
+import multiprocessing
 from pathlib import Path
 import subprocess
 import sqlite3
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -179,6 +181,15 @@ def _owner_authenticator():
     return SimpleNamespace(authenticate_exact=lambda _raw, _digest: True)
 
 
+def _initialize_reservation_database_child(root: str, queue) -> None:
+    module = _load_module()
+    try:
+        module.initialize_reservation_database(Path(root), RUN_ID)
+        queue.put("INITIALIZED")
+    except module.LiveReadinessHold as exc:
+        queue.put(exc.code)
+
+
 @pytest.fixture(autouse=True)
 def _isolated_spent_marker(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     module = _load_module()
@@ -191,10 +202,26 @@ def _isolated_spent_marker(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> N
 
 
 def test_initialize_reservation_database_create_once_and_store_opens_rw(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     module = _load_module()
     root = tmp_path.resolve()
+
+    def publish(final: Path, initialize) -> Path:
+        if final.exists():
+            raise module.CustodyHold("custody_exists")
+        stage = final.with_name(".reservation.db.test.tmp")
+        stage.touch(exist_ok=False)
+        try:
+            initialize(stage)
+            assert not final.exists()
+            stage.rename(final)
+            return final
+        except BaseException:
+            stage.unlink(missing_ok=True)
+            raise
+
+    monkeypatch.setattr(module, "publish_new_initialized_file", publish)
 
     database = module.initialize_reservation_database(root, RUN_ID)
 
@@ -206,6 +233,171 @@ def test_initialize_reservation_database_create_once_and_store_opens_rw(
         store.close()
     with pytest.raises(module.LiveReadinessHold, match="reservation_database_exists"):
         module.initialize_reservation_database(root, RUN_ID)
+
+
+def test_initialize_reservation_database_schema_failure_does_not_poison_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _load_module()
+    root = tmp_path.resolve()
+    final = root / "reservation.db"
+
+    def publish(path: Path, initialize) -> Path:
+        stage = path.with_name(".reservation.db.test.tmp")
+        stage.touch(exist_ok=False)
+        try:
+            initialize(stage)
+            stage.rename(path)
+            return path
+        except BaseException:
+            stage.unlink(missing_ok=True)
+            raise
+
+    monkeypatch.setattr(module, "publish_new_initialized_file", publish)
+
+    def fail_after_creation(*_args, **_kwargs):
+        raise sqlite3.DatabaseError("schema failed")
+
+    with pytest.raises(
+        module.LiveReadinessHold, match="reservation_database_initialize_failed"
+    ):
+        module.initialize_reservation_database(root, RUN_ID, sqlite_connect=fail_after_creation)
+
+    assert not final.exists()
+    assert not list(root.glob(".reservation.db.*.tmp"))
+
+    assert module.initialize_reservation_database(root, RUN_ID) == final
+    with sqlite3.connect(final) as connection:
+        assert connection.execute(
+            "SELECT connector_run_id FROM connector_run"
+        ).fetchone() == (RUN_ID,)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows custody proof")
+def test_windows_initializer_publishes_complete_database_with_native_custody(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    from app.services.sciencebase_spent_marker import WindowsMarkerBackend
+
+    backend = WindowsMarkerBackend()
+    root = tmp_path / "Project6" / "Reservation"
+    directory = backend.open_directory(root)
+    backend.close(directory)
+
+    assert module.initialize_reservation_database(root, RUN_ID) == root / "reservation.db"
+    with sqlite3.connect((root / "reservation.db").as_uri() + "?mode=rw", uri=True) as connection:
+        assert connection.execute(
+            "SELECT connector_run_id FROM connector_run"
+        ).fetchone() == (RUN_ID,)
+        assert connection.execute("SELECT COUNT(*) FROM connector_run_event").fetchone() == (0,)
+    native_store = ReservationStore(root)
+    try:
+        assert native_store.assert_no_reservations(RUN_ID) is None
+    finally:
+        native_store.close()
+    assert not list(root.glob(".reservation.db.*.tmp"))
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows custody proof")
+def test_windows_initializer_schema_failure_leaves_no_canonical_and_retries(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    from app.services.sciencebase_spent_marker import WindowsMarkerBackend
+
+    backend = WindowsMarkerBackend()
+    root = tmp_path / "Project6" / "Reservation"
+    directory = backend.open_directory(root)
+    backend.close(directory)
+
+    class FailingConnection:
+        def __init__(self, *args, **kwargs) -> None:
+            self.connection = sqlite3.connect(*args, **kwargs)
+
+        def execute(self, *args, **kwargs):
+            return self.connection.execute(*args, **kwargs)
+
+        def executescript(self, _script: str) -> None:
+            self.connection.executescript(
+                "BEGIN IMMEDIATE; CREATE TABLE partial_schema(value INTEGER);"
+            )
+            raise sqlite3.DatabaseError("injected schema failure")
+
+        def close(self) -> None:
+            self.connection.close()
+
+    with pytest.raises(
+        module.LiveReadinessHold, match="reservation_database_initialize_failed"
+    ):
+        module.initialize_reservation_database(root, RUN_ID, sqlite_connect=FailingConnection)
+    assert not (root / "reservation.db").exists()
+    assert not list(root.glob(".reservation.db.*.tmp"))
+
+    assert module.initialize_reservation_database(root, RUN_ID) == root / "reservation.db"
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows custody proof")
+def test_windows_initializer_concurrent_publish_has_exactly_one_winner(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    from app.services.sciencebase_spent_marker import WindowsMarkerBackend
+
+    backend = WindowsMarkerBackend()
+    root = tmp_path / "Project6" / "Reservation"
+    directory = backend.open_directory(root)
+    backend.close(directory)
+
+    def initialize() -> str:
+        try:
+            module.initialize_reservation_database(root, RUN_ID)
+            return "INITIALIZED"
+        except module.LiveReadinessHold as exc:
+            return exc.code
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        outcomes = list(executor.map(lambda _index: initialize(), range(8)))
+
+    assert outcomes.count("INITIALIZED") == 1
+    assert outcomes.count("reservation_database_exists") == 7
+    with sqlite3.connect(root / "reservation.db") as connection:
+        assert connection.execute("SELECT COUNT(*) FROM connector_run").fetchone() == (1,)
+        assert connection.execute("SELECT COUNT(*) FROM connector_run_event").fetchone() == (0,)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows custody proof")
+def test_windows_initializer_multiprocess_publish_has_exactly_one_winner(
+    tmp_path: Path,
+) -> None:
+    from app.services.sciencebase_spent_marker import WindowsMarkerBackend
+
+    backend = WindowsMarkerBackend()
+    root = tmp_path / "Project6" / "Reservation"
+    directory = backend.open_directory(root)
+    backend.close(directory)
+    context = multiprocessing.get_context("spawn")
+    queue = context.Queue()
+    processes = [
+        context.Process(
+            target=_initialize_reservation_database_child,
+            args=(str(root), queue),
+        )
+        for _ in range(4)
+    ]
+
+    for process in processes:
+        process.start()
+    for process in processes:
+        process.join(timeout=30)
+        assert process.exitcode == 0
+    outcomes = [queue.get(timeout=5) for _ in processes]
+
+    assert outcomes.count("INITIALIZED") == 1
+    assert outcomes.count("reservation_database_exists") == 3
+    with sqlite3.connect(root / "reservation.db") as connection:
+        assert connection.execute("SELECT COUNT(*) FROM connector_run").fetchone() == (1,)
+        assert connection.execute("SELECT COUNT(*) FROM connector_run_event").fetchone() == (0,)
 
 
 def test_write_owner_go_template_derives_canonical_bindings_create_once(

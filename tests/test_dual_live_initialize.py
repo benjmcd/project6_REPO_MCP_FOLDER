@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import sqlite3
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TOOL = REPO_ROOT / "tools" / "dual_live_initialize.py"
 RUN_ID = "11111111-1111-4111-8111-111111111111"
@@ -20,11 +22,29 @@ def _tool_module():
 
 
 def test_reservation_store_command_initializes_fresh_root_before_prepare(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     tool = _tool_module()
     stdout = StringIO()
     root = tmp_path.resolve()
+
+    from app.services import sciencebase_live_readiness as readiness
+
+    def publish(final: Path, initialize) -> Path:
+        if final.exists():
+            raise readiness.CustodyHold("custody_exists")
+        stage = final.with_name(".reservation.db.test.tmp")
+        stage.touch(exist_ok=False)
+        try:
+            initialize(stage)
+            assert not final.exists()
+            stage.rename(final)
+            return final
+        except BaseException:
+            stage.unlink(missing_ok=True)
+            raise
+
+    monkeypatch.setattr(readiness, "publish_new_initialized_file", publish)
 
     code = tool.main(
         [
