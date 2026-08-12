@@ -709,12 +709,14 @@ jobs:
           $hr = [P6AppContainer]::GetAppContainerFolderPath($packageSid, [ref]$folder)
           if ($hr -ne 0 -or $folder -eq [IntPtr]::Zero) { throw ('GetAppContainerFolderPath failed: 0x{0:x8}' -f ($hr -band 0xffffffffL)) }
           try { $profileRoot = [Runtime.InteropServices.Marshal]::PtrToStringUni($folder) } finally { [P6AppContainer]::CoTaskMemFree($folder) }
+          $userDataRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+          New-Item -ItemType Directory -Path $userDataRoot -Force | Out-Null
           [ordered]@{
             appcontainer_profile_root = $profileRoot
             broker_profile_root = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
             broker_sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
             package_sid = $packageSid
-            user_data_root = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
+            user_data_root = $userDataRoot
           } | ConvertTo-Json -Compress | Set-Content -LiteralPath $OutputPath -Encoding ascii
         } finally { [void][P6AppContainer]::FreeSid($sid) }
         '@ | Set-Content -LiteralPath $profileScript -Encoding ascii
