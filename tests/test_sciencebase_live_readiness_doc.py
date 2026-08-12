@@ -39,6 +39,9 @@ def test_documented_prepared_runtime_argv_uses_only_defined_variables() -> None:
         "--canonical-root",
         "--connector-run-id",
         "--reservation-database",
+        "--query",
+        "--expected-item-id",
+        "--expected-file-name",
         "--worker-bundle-root",
         "--worker-provisioning-root",
         "--worker-profile-moniker",
@@ -68,4 +71,3 @@ def test_readiness_distinguishes_retired_sentinel_from_opaque_references() -> No
     assert "wrapper_start_token_ref=retired:sciencebase-live-v2" in text
     assert "two opaque authority/grant references" in text
     assert "three opaque authority/grant/token references" not in text
-
