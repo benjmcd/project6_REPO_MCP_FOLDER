@@ -269,6 +269,7 @@ def test_dual_live_windows_boundary_job_is_required_and_exact() -> None:
         'mode="sciencebase"', "LocalBrokerTransport", "sciencebase-proof.py",
         "from app.services.dual_live_effect_guard import",
         "$env:PYTHONPATH = (Join-Path $Repo 'backend')",
+        "$brokerPassword = 'P6!b0Ci9xQ2#'",
         "DriveType -ne [IO.DriveType]::Fixed", "FileAttributes]::ReparsePoint",
         "[StringComparer]::Ordinal",
         "$hr -notin @(0, -2147023728)",

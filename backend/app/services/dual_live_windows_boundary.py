@@ -1144,9 +1144,9 @@ class WindowsEffectBoundary:
                 self._bundle_binding, self._bundle_probe
             )
             interpreter, entrypoint = expected.interpreter, expected.entrypoint
-            if not isinstance(interpreter, Path) or not interpreter.is_absolute():
+            if not isinstance(interpreter, Path) or not ntpath.isabs(str(interpreter)):
                 raise EffectBoundaryHold("bundle_interpreter_invalid")
-            if not isinstance(entrypoint, Path) or not entrypoint.is_absolute():
+            if not isinstance(entrypoint, Path) or not ntpath.isabs(str(entrypoint)):
                 raise EffectBoundaryHold("bundle_entrypoint_invalid")
             if mode not in {"probe", "sciencebase"}:
                 raise EffectBoundaryHold("worker_mode_invalid")

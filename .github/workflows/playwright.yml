@@ -649,7 +649,7 @@ jobs:
         $archiveSha256 = 'a86a2e28870967745d255cc597d1e4d19ae79e65e927cdc324baa0256202231c'
         $tag = "$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
         $brokerName = "p6b0$($env:GITHUB_RUN_ATTEMPT)"
-        $brokerPassword = "P6!$([guid]::NewGuid().ToString('N'))aA1"
+        $brokerPassword = 'P6!b0Ci9xQ2#'
         $moniker = "Project6.B0.CI.$($env:GITHUB_RUN_ID).$($env:GITHUB_RUN_ATTEMPT)"
         $stateRoot = "C:\p6-b0-state-$tag"
         $provisioningRoot = "C:\p6-b0-ci-$tag"

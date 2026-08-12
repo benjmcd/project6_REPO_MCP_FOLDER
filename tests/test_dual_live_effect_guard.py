@@ -586,10 +586,10 @@ def test_stalled_probe_frame_terminates_job_and_closes_process(
     monkeypatch: pytest.MonkeyPatch,
     stalled_frame: str,
 ) -> None:
-    from app.services import dual_live_windows_boundary as module
-
     backend = ProbeBackend(stalled_frame)
-    monkeypatch.setattr(module, "_CtypesBackend", ProbeBackend)
+    monkeypatch.setitem(
+        WindowsEffectBoundary.prove_worker.__globals__, "_CtypesBackend", ProbeBackend
+    )
     with make_boundary(backend).acquire() as boundary:
         with pytest.raises(EffectBoundaryHold) as caught:
             boundary.prove_worker()
