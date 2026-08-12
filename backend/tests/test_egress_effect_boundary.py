@@ -205,6 +205,22 @@ class _Session:
         self.closed = True
 
 
+def test_health_probe_is_head_200_no_redirect_and_never_reserves(tmp_path: Path) -> None:
+    events: list[str] = []
+    response = _Response(status_code=200)
+    response.history = ()
+    transport = ConnectorEgressTransport(
+        object(),  # type: ignore[arg-type]
+        session_factory=lambda: _Session(events, response),
+    )
+
+    assert transport.health_probe(_plan(tmp_path)) is True
+    assert events == [
+        "send:HEAD:https://www.sciencebase.gov/catalog/item/7"
+    ]
+    assert response.closed is True
+
+
 def test_canonical_content_addressed_envelope_binds_every_authority_field(
     tmp_path: Path,
 ) -> None:

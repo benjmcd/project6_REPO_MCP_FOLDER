@@ -725,6 +725,47 @@ def test_sciencebase_producer_completes_through_broker_after_each_reservation(
     ]
 
 
+def test_unreachable_health_gate_holds_before_go_consumption(tmp_path: Path) -> None:
+    request = ScienceBaseInput(
+        query="sample",
+        expected_item_id="item",
+        expected_file_name="sample.bin",
+        envelope_digest="sha256:" + "a" * 64,
+        campaign_id="campaign",
+        canonical_root=str(tmp_path.resolve()),
+        connector_run_id=str(uuid4()),
+        authorization_digest="sha256:" + "b" * 64,
+        grant_digest="sha256:" + "c" * 64,
+        max_total_bytes=1024 * 1024,
+        limits=RequestLimits(timeout_seconds=5, max_response_bytes=1024 * 1024),
+    )
+    plan = ScienceBaseProducer(SimpleNamespace())._plan(
+        request,
+        1,
+        "sciencebase_search",
+        "https://www.sciencebase.gov/catalog/items?q=sample&format=json",
+    )
+    consumed: list[bool] = []
+
+    class UnreachableTransport:
+        def health_probe(self, _plan: PhysicalRequestPlan) -> bool:
+            return False
+
+        def execute(self, _plan: PhysicalRequestPlan) -> object:
+            pytest.fail("unreachable target reached transport execution")
+
+    writer = io.BytesIO()
+    with pytest.raises(EffectBoundaryHold, match="sciencebase_health_probe_failed"):
+        effect_guard.BrokerEffectGuard(UnreachableTransport()).serve_sciencebase(
+            request,
+            None,
+            writer,
+            read_next=lambda: {"type": "effect_request", "plan": plan.to_document()},
+            consume_authority=lambda: consumed.append(True) or True,
+        )
+    assert consumed == []
+
+
 def test_broker_holds_malformed_request_without_transport_retry(tmp_path: Path) -> None:
     class NeverTransport:
         calls = 0

@@ -518,6 +518,9 @@ class BrokerEffectGuard:
                 plan = _plan_from_request_frame(frame)
                 _bind_sciencebase_plan(plan, request, next_ordinal, authorized_download)
                 if not authority_consumed and consume_authority is not None:
+                    health_probe = getattr(self._transport, "health_probe", None)
+                    if not callable(health_probe) or health_probe(plan) is not True:
+                        raise EffectBoundaryHold("sciencebase_health_probe_failed")
                     if consume_authority() is not True:
                         raise EffectBoundaryHold("live_go_required")
                     authority_consumed = True
