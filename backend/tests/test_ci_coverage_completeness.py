@@ -20,6 +20,8 @@ BACKEND_SHARD_PATTERNS = (
     "test_ci_coverage_completeness.py",
     "test_deployment_profile_*.py",
     "test_diagnostics_ref_*.py",
+    "test_dual_live_sciencebase_producer.py",
+    "test_egress_effect_boundary.py",
     "test_honesty_*.py",
     "test_legacy_api_*.py",
     "test_layer3_*.py",
@@ -89,6 +91,7 @@ RELEASE_GATE_AGGREGATED_JOBS = (
     "sec-xbrl-arelle-provisioning",
     "root-tests",
     "nrc-aps-ocr",
+    "dual-live-windows-boundary",
     "test",
 )
 
@@ -244,3 +247,69 @@ def test_backend_coverage_comment_matches_enforced_floor() -> None:
     assert "--cov-fail-under=90" in coverage_block
     assert "Coverage floor is set to 90%" in coverage_block
     assert "30%" not in coverage_block
+
+
+def test_dual_live_windows_boundary_job_is_required_and_exact() -> None:
+    block = _workflow_job_block("dual-live-windows-boundary")
+
+    for token in (
+        "runs-on: windows-2025", 'python-version: "3.12"',
+        "https://www.python.org/ftp/python/3.12.6/python-3.12.6-embed-amd64.zip",
+        "a86a2e28870967745d255cc597d1e4d19ae79e65e927cdc324baa0256202231c",
+        "CreateAppContainerProfile", "DeriveAppContainerSidFromAppContainerName",
+        "DeleteAppContainerProfile", "PROJECT6_B0_BUNDLE_BINDING",
+        "Deny B0 bundle before Package SID grant", "Grant exact protected B0 bundle ACL",
+        "Teardown disposable B0 profile and closure", "if: ${{ always() }}",
+        "/inheritance:r", "(RX)", "tools/dual_live_run.py",
+        "backend/app/services/dual_live_windows_boundary.py",
+        "backend/app/services/dual_live_worker_bundle.py",
+        "backend/app/services/dual_live_effect_guard.py",
+        "backend/app/services/dual_live_sciencebase_producer.py",
+        "backend/app/services/connector_egress_contract.py", "-m pytest",
+        'mode="sciencebase"', "LocalBrokerTransport", "sciencebase-proof.py",
+        "from app.services.dual_live_effect_guard import",
+        "$env:PYTHONPATH = (Join-Path $Repo 'backend')",
+        "$brokerPassword = 'P6!b0Ci9xQ2#'",
+        "-RedirectStandardError $profileStderr",
+        "creation failed (exit $($created.ExitCode))",
+        "$env:TEMP = $stateRoot", "$env:TEMP = $state.state_root",
+        "campaign_root = $stateRoot",
+        "[Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)",
+        "$brokerProfileRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)",
+        "$userDataRoot = Join-Path $brokerProfileRoot 'AppData\\Local'",
+        "New-Item -ItemType Directory -Path $userDataRoot -Force",
+        'LookupPrivilegeValue(null, "SeRestorePrivilege"',
+        "[P6RestorePrivilege]::Enable()", "Exact bundle owner assignment failed",
+        "DriveType -ne [IO.DriveType]::Fixed", "FileAttributes]::ReparsePoint",
+        "[StringComparer]::Ordinal",
+        "$hr -notin @(0, -2147023728)",
+        "PROJECT6_B0_PROVISIONING_ROOT", "partial B0 root removal failed",
+        "$teardownFailures", "broker account removal failed",
+    ):
+        assert token in block
+    for test_path in (
+        "./backend/tests/test_egress_effect_boundary.py",
+        "./backend/tests/test_dual_live_sciencebase_producer.py",
+        "./tests/test_dual_live_effect_guard.py",
+        "./tests/test_dual_live_worker_bundle.py",
+        "./tests/test_dual_live_runtime.py",
+    ):
+        assert test_path in block
+
+    assert block.index("Deny B0 bundle before Package SID grant") < block.index(
+        "Grant exact protected B0 bundle ACL"
+    ) < block.index("Prove B0 AppContainer and effect boundary")
+    assert block.index("profile_created = $true") < block.index(
+        "$created = Start-Process powershell.exe"
+    )
+    assert "[uint32]$hr" not in block
+    assert block.index('"PROJECT6_B0_STATE=$statePath"') < block.index(
+        "New-Item -ItemType Directory"
+    )
+    assert block.index("git config --global core.longpaths true") < block.index(
+        "actions/checkout@v6"
+    )
+
+    release_block = _workflow_job_block("release-gate")
+    assert "dual-live-windows-boundary" in _workflow_job_needs("release-gate")
+    assert "needs['dual-live-windows-boundary'].result" in release_block

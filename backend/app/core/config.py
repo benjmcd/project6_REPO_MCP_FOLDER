@@ -233,6 +233,16 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_CONNECTOR_PROMOTION_IDENTITY_ENABLED",
     )
+    dual_live_runtime_enabled: bool = Field(
+        default=False,
+        alias="DUAL_LIVE_RUNTIME_ENABLED",
+        description=(
+            "Master off-switch for the B0 Windows capability-broker runtime. "
+            "Enabling composition does not grant live authority; a future live run "
+            "still requires separate direct owner GO bound to the exact external "
+            "authority-envelope digest."
+        ),
+    )
 
     model_config = SettingsConfigDict(env_file=str(BACKEND_ENV_FILE), env_file_encoding="utf-8", extra="ignore")
 
