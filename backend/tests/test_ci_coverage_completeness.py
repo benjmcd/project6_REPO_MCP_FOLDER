@@ -297,6 +297,7 @@ def test_dual_live_windows_boundary_job_is_required_and_exact() -> None:
         "./tests/test_dual_live_effect_guard.py",
         "./tests/test_dual_live_worker_bundle.py",
         "./tests/test_dual_live_runtime.py",
+        "./tests/test_sciencebase_no_signature_rehearsal.py",
     ):
         assert test_path in block
 
