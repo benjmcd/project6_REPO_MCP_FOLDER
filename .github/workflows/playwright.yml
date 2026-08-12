@@ -779,7 +779,7 @@ jobs:
           root = $bundleRoot; provisioning_root = $provisioningRoot; profile_moniker = $moniker; manifest_digest = "sha256:$manifestDigest"
           source_commit = $env:GITHUB_SHA; entrypoint = 'tools/dual_live_run.py'; interpreter = 'python.exe'; python_version = '3.12.6'; architecture = 'amd64'
           package_sid = $profile.package_sid; owner_sid = 'S-1-5-19'; provisioner_sid = 'S-1-5-20'; broker_sid = $profile.broker_sid
-          ambient_interpreter_root = Split-Path -Parent (Get-Command python).Source; repository_root = $env:GITHUB_WORKSPACE; campaign_root = $env:RUNNER_TEMP
+          ambient_interpreter_root = Split-Path -Parent (Get-Command python).Source; repository_root = $env:GITHUB_WORKSPACE; campaign_root = $stateRoot
           appcontainer_profile_root = $profile.appcontainer_profile_root; broker_profile_root = $profile.broker_profile_root; user_data_root = $profile.user_data_root
         } | ConvertTo-Json -Compress | Set-Content -LiteralPath $bindingPath -Encoding ascii
 

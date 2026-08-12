@@ -273,6 +273,7 @@ def test_dual_live_windows_boundary_job_is_required_and_exact() -> None:
         "-RedirectStandardError $profileStderr",
         "creation failed (exit $($created.ExitCode))",
         "$env:TEMP = $stateRoot", "$env:TEMP = $state.state_root",
+        "campaign_root = $stateRoot",
         'LookupPrivilegeValue(null, "SeRestorePrivilege"',
         "[P6RestorePrivilege]::Enable()", "Exact bundle owner assignment failed",
         "DriveType -ne [IO.DriveType]::Fixed", "FileAttributes]::ReparsePoint",
