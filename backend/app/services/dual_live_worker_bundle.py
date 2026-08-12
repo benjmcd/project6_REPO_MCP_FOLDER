@@ -598,15 +598,23 @@ def _streams_clean(probe: BundleProbe, path: Path, directory: bool) -> bool:
 def _observe(binding: BundleBinding, probe: BundleProbe) -> ValidatedWorkerBundle:
     phase = "canonicalize"
     try:
+        phase = "canonicalize_root"
         root = probe.canonicalize(binding.root)
+        phase = "canonicalize_provisioning"
         provisioner_root = probe.canonicalize(binding.provisioning_root)
-        forbidden = tuple(
-            probe.canonicalize(path)
-            for path in (
-                binding.ambient_interpreter_root, binding.repository_root, binding.campaign_root,
-                binding.appcontainer_profile_root, binding.broker_profile_root, binding.user_data_root,
-            )
+        forbidden_paths = (
+            ("interpreter", binding.ambient_interpreter_root),
+            ("repository", binding.repository_root),
+            ("campaign", binding.campaign_root),
+            ("appcontainer", binding.appcontainer_profile_root),
+            ("broker", binding.broker_profile_root),
+            ("user_data", binding.user_data_root),
         )
+        forbidden_items: list[Path] = []
+        for category, path in forbidden_paths:
+            phase = f"canonicalize_{category}"
+            forbidden_items.append(probe.canonicalize(path))
+        forbidden = tuple(forbidden_items)
         phase = "runtime"
         context = probe.runtime_context(binding.profile_moniker)
         if context != RuntimeContext(

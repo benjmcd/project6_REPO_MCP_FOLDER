@@ -358,6 +358,17 @@ def test_hold_suppresses_sensitive_observation_exception() -> None:
     assert "sentinel-secret" not in rendered
 
 
+def test_hold_identifies_only_the_ambiguous_canonicalization_category() -> None:
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+
+    binding, probe = _valid_case()
+    original = probe.canonicalize
+    probe.canonicalize = lambda path: (_ for _ in ()).throw(RuntimeError("sentinel")) if path == binding.repository_root else original(path)
+
+    with pytest.raises(BundleHold, match="^bundle_observation_ambiguous_canonicalize_repository$"):
+        validate_worker_bundle(binding, probe)
+
+
 def test_hold_suppresses_malformed_manifest_bytes() -> None:
     from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
