@@ -711,10 +711,10 @@ jobs:
           try { $profileRoot = [Runtime.InteropServices.Marshal]::PtrToStringUni($folder) } finally { [P6AppContainer]::CoTaskMemFree($folder) }
           [ordered]@{
             appcontainer_profile_root = $profileRoot
-            broker_profile_root = $env:USERPROFILE
+            broker_profile_root = [Environment]::GetFolderPath([Environment+SpecialFolder]::UserProfile)
             broker_sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
             package_sid = $packageSid
-            user_data_root = $env:LOCALAPPDATA
+            user_data_root = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
           } | ConvertTo-Json -Compress | Set-Content -LiteralPath $OutputPath -Encoding ascii
         } finally { [void][P6AppContainer]::FreeSid($sid) }
         '@ | Set-Content -LiteralPath $profileScript -Encoding ascii
