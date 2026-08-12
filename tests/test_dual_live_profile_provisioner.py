@@ -1,5 +1,8 @@
+import os
 from pathlib import Path
 import subprocess
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -55,6 +58,7 @@ def test_profile_provisioner_is_exact_current_identity_zero_capability_builder()
         assert forbidden not in source
 
 
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows PowerShell 5.1")
 def test_profile_provisioner_parses_on_windows_powershell_51() -> None:
     command = (
         "$tokens=$null;$errors=$null;"
@@ -72,6 +76,7 @@ def test_profile_provisioner_parses_on_windows_powershell_51() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows PowerShell 5.1")
 def test_profile_binding_helper_round_trips_non_ascii_paths_on_powershell_51() -> None:
     command = (
         f"$source=Get-Content -Raw -LiteralPath '{PROVISIONER}';"

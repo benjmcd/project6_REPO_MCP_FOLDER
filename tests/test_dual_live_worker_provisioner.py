@@ -1,5 +1,8 @@
+import os
 from pathlib import Path
 import subprocess
+
+import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -88,6 +91,7 @@ def test_local_worker_provisioner_requires_external_profile_and_archive_inputs()
         assert f".{field}" in source
 
 
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows PowerShell 5.1")
 def test_local_worker_provisioner_parses_with_powershell_51_apis() -> None:
     command = (
         "$tokens=$null;$errors=$null;"
