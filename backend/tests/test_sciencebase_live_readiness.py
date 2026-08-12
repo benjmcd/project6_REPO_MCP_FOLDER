@@ -183,7 +183,10 @@ def _owner_authenticator():
 def _isolated_spent_marker(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     module = _load_module()
     monkeypatch.setattr(
-        module, "LIVE_GO_SPENT_MARKER", tmp_path / "spent.jsonl", raising=False
+        module,
+        "LIVE_GO_SPENT_MARKER",
+        tmp_path / "authority" / "spent.jsonl",
+        raising=False,
     )
 
 
@@ -537,7 +540,7 @@ def test_spent_marker_prevents_rearm_after_consumption_row_deleted(
     replay = module.OneUseLiveGoConsumer(store, authority)
     assert replay.consume_exact(DIGESTS["envelope"]) is False
     assert replay.last_code == "live_go_already_spent"
-    assert (tmp_path / "spent.jsonl").read_bytes().endswith(b"\n")
+    assert (tmp_path / "authority" / "spent.jsonl").read_bytes().endswith(b"\n")
     store.close()
 
 
