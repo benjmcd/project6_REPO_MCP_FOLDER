@@ -78,7 +78,7 @@ transport, and broker tripwires proved that prepare did not acquire/launch/serve
 inspection also confirmed the initializer contains no runtime-enable, prepare, execution, request,
 or worker-launch surface.
 
-## Unfixed production finding
+## Finding at the W6 baseline
 
 `initialize_reservation_database` closes the create-once file descriptor before SQLite reopens the
 pathname. This leaves a pathname-substitution window and does not establish native Windows
@@ -87,3 +87,22 @@ verification fails after file creation, the empty/partial `reservation.db` remai
 HOLD as `reservation_database_exists`. The behavior is fail-closed but operationally poisoned.
 Per the W6 scope fence, production code was not changed. This must be resolved or explicitly
 accepted before treating initialization as a secure owner ceremony step.
+
+## W7 resolution
+
+Resolved by `33102a89` (`fix(sciencebase): atomically initialize reservation store`). The
+initializer now creates a protected same-directory staging file, initializes SQLite through
+`?mode=rw`, explicitly closes the SQLite connection, rebinds the pathname-opened object to the
+retained handle identity, flushes and revalidates custody, and publishes that exact file under
+`reservation.db` with a pinned-directory-relative, no-replace native rename. The root and file must
+remain fixed-local, owner-controlled, protected owner-and-SYSTEM-only, non-reparse, single-link,
+same-volume, and identity-stable. Pre-publication failures dispose only the attempt's exact staging
+handle, so the canonical name remains absent and retryable; a concurrent canonical winner is never
+replaced.
+
+TDD proof includes wrong-owner directory/file, reparse directory/file, hard-link, non-fixed volume,
+staging-path substitution, identity drift, incomplete-canonical visibility, schema failure after a
+partial transaction, retry, native Windows publication, and thread/process concurrency. The broad
+offline dual-live surface passed `307 passed, 2 skipped`; Ruff and `git diff --check` passed. No
+signature, credential, UAC, network, ScienceBase request, worker launch, external effect, or live
+run occurred.
