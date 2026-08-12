@@ -745,6 +745,72 @@ def test_run_failure_closes_every_untransferred_pipe_inside_boundary() -> None:
     assert consumed == []
 
 
+@pytest.mark.parametrize("phase", ["boundary", "writer", "ipc"])
+def test_setup_failures_leave_go_unspent(phase: str) -> None:
+    runtime = _runtime_module()
+    consumed: list[str] = []
+
+    class Boundary:
+        @contextlib.contextmanager
+        def acquire(self):
+            if phase == "boundary":
+                raise OSError("boundary unavailable")
+            yield self
+
+        def create_worker_pipes(self):
+            return 41, 42, 43, 44
+
+        def launch_worker(self, *_args, **_kwargs):
+            return None
+
+        def close_pipe_handle(self, _handle):
+            return None
+
+        @contextlib.contextmanager
+        def broker_session_deadline(self, _timeout):
+            yield
+
+        def read_worker_frame(self, *_args):
+            raise OSError("ipc unavailable")
+
+    class Stream(contextlib.AbstractContextManager):
+        def __exit__(self, *_args):
+            return None
+
+    class Broker:
+        def serve_sciencebase(self, *_args, read_next, **_kwargs):
+            read_next()
+
+    prepared = runtime.PreparedRuntime(
+        envelope=SimpleNamespace(
+            envelope=SimpleNamespace(content_digest="sha256:" + "d" * 64)
+        ),
+        reservation_store=SimpleNamespace(close=lambda: None),
+        boundary=Boundary(),
+        transport=object(),
+        broker=Broker(),
+        producer_request=object(),
+        source_root=Path("C:/source"),
+        source_commit="1" * 40,
+        source_commit_reader=lambda _root: "1" * 40,
+    )
+
+    def open_writer(_handle):
+        if phase == "writer":
+            raise OSError("writer unavailable")
+        return Stream()
+
+    with pytest.raises(runtime.RuntimeHold, match="runtime_execution_failed"):
+        runtime.run_prepared_runtime(
+            prepared,
+            execution_authority=SimpleNamespace(
+                consume_exact=lambda digest: consumed.append(digest) or True
+            ),
+            open_writer=open_writer,
+        )
+    assert consumed == []
+
+
 @pytest.mark.parametrize(
     "census_result", [1, "ambiguous", object(), RuntimeError("census")]
 )

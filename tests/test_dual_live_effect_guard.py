@@ -17,6 +17,7 @@ import pytest
 
 from app.services import dual_live_effect_guard as effect_guard
 from app.services.connector_egress_contract import (
+    EffectResult,
     PhysicalRequestPlan,
     RequestLimits,
 )
@@ -814,6 +815,44 @@ def test_broker_converts_transport_failure_to_one_secret_free_hold(tmp_path: Pat
     assert response == {"code": "broker_effect_failed", "type": "effect_hold"}
     assert transport.calls == 1
     assert "private" not in json.dumps(response)
+
+
+def test_broker_failure_releases_lock_for_next_frame(tmp_path: Path) -> None:
+    plan = _ipc_plan(tmp_path)
+
+    class FailOnceTransport:
+        calls = 0
+
+        def execute(self, received: PhysicalRequestPlan) -> EffectResult:
+            self.calls += 1
+            if self.calls == 1:
+                raise RuntimeError("first failure")
+            return EffectResult(
+                reservation_event_id=received.slot_uuid,
+                plan_digest=received.plan_digest,
+                status_code=200,
+                body=b"ok",
+                response_header_names=(),
+            )
+
+    transport = FailOnceTransport()
+    guard = effect_guard.BrokerEffectGuard(transport)
+    responses: list[dict[str, object]] = []
+    for _ in range(2):
+        reader = io.BytesIO()
+        write_frame(reader, {"type": "effect_request", "plan": plan.to_document()})
+        reader.seek(0)
+        writer = io.BytesIO()
+        guard.serve_one(reader, writer)
+        writer.seek(0)
+        responses.append(read_frame(writer))
+
+    assert responses[0] == {"code": "broker_effect_failed", "type": "effect_hold"}
+    assert responses[1] != {
+        "code": "broker_request_concurrent",
+        "type": "effect_hold",
+    }
+    assert transport.calls == 2
 
 
 @pytest.mark.parametrize(
