@@ -342,6 +342,19 @@ def test_windows_probe_preserves_exact_acl_masks() -> None:
     assert entry.rights == frozenset({"read", "execute", "traverse"})
 
 
+def test_windows_runtime_observation_holds_with_fixed_secret_free_phase() -> None:
+    from types import SimpleNamespace
+    from app.services.dual_live_worker_bundle import BundleHold, WindowsBundleProbe
+
+    probe = object.__new__(WindowsBundleProbe)
+    probe._kernel = SimpleNamespace(GetCurrentProcess=lambda: 1, CloseHandle=lambda handle: None)
+    probe._advapi = SimpleNamespace(OpenProcessToken=lambda process, access, token: False)
+
+    with pytest.raises(BundleHold, match="^bundle_runtime_ambiguous_token$") as caught:
+        probe.runtime_context("Project6.B0.CI.test")
+    assert caught.value.__cause__ is None and caught.value.__suppress_context__
+
+
 def test_hold_suppresses_sensitive_observation_exception() -> None:
     from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 

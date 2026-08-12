@@ -387,53 +387,73 @@ class WindowsBundleProbe:
             self._ole32.CoTaskMemFree(value)
 
     def runtime_context(self, profile_moniker: str) -> RuntimeContext:
-        token = wintypes.HANDLE()
-        self._check(self._advapi.OpenProcessToken(self._kernel.GetCurrentProcess(), 0x0008, ctypes.byref(token)))
         try:
-            needed = wintypes.DWORD()
-            self._advapi.GetTokenInformation(token, 1, None, 0, ctypes.byref(needed))
-            if ctypes.get_last_error() != 122 or not needed.value:
-                raise ctypes.WinError(ctypes.get_last_error())
-            buffer = ctypes.create_string_buffer(needed.value)
-            self._check(self._advapi.GetTokenInformation(token, 1, buffer, needed, ctypes.byref(needed)))
-            broker_sid = self._sid_text(ctypes.cast(buffer, ctypes.POINTER(_SidAndAttributes)).contents.sid)
-            profile_size = wintypes.DWORD()
-            self._userenv.GetUserProfileDirectoryW(token, None, ctypes.byref(profile_size))
-            if ctypes.get_last_error() != 122 or not profile_size.value:
-                raise ctypes.WinError(ctypes.get_last_error())
-            profile_buffer = ctypes.create_unicode_buffer(profile_size.value)
-            self._check(self._userenv.GetUserProfileDirectoryW(token, profile_buffer, ctypes.byref(profile_size)))
-            broker_profile = Path(profile_buffer.value).resolve(strict=True)
-        finally:
-            self._kernel.CloseHandle(token)
+            token = wintypes.HANDLE()
+            self._check(self._advapi.OpenProcessToken(self._kernel.GetCurrentProcess(), 0x0008, ctypes.byref(token)))
+            try:
+                needed = wintypes.DWORD()
+                self._advapi.GetTokenInformation(token, 1, None, 0, ctypes.byref(needed))
+                if ctypes.get_last_error() != 122 or not needed.value:
+                    raise ctypes.WinError(ctypes.get_last_error())
+                buffer = ctypes.create_string_buffer(needed.value)
+                self._check(self._advapi.GetTokenInformation(token, 1, buffer, needed, ctypes.byref(needed)))
+                broker_sid = self._sid_text(ctypes.cast(buffer, ctypes.POINTER(_SidAndAttributes)).contents.sid)
+                profile_size = wintypes.DWORD()
+                self._userenv.GetUserProfileDirectoryW(token, None, ctypes.byref(profile_size))
+                if ctypes.get_last_error() != 122 or not profile_size.value:
+                    raise ctypes.WinError(ctypes.get_last_error())
+                profile_buffer = ctypes.create_unicode_buffer(profile_size.value)
+                self._check(self._userenv.GetUserProfileDirectoryW(token, profile_buffer, ctypes.byref(profile_size)))
+                broker_profile = Path(profile_buffer.value).resolve(strict=True)
+            finally:
+                self._kernel.CloseHandle(token)
+        except BundleHold:
+            raise
+        except Exception:
+            raise BundleHold("bundle_runtime_ambiguous_token") from None
 
-        package_sid_pointer = ctypes.c_void_p()
-        result = self._userenv.DeriveAppContainerSidFromAppContainerName(
-            profile_moniker, ctypes.byref(package_sid_pointer)
-        )
-        if result:
-            raise OSError(f"appcontainer_sid_derivation:{result & 0xFFFFFFFF:08x}")
         try:
-            package_sid = self._sid_text(package_sid_pointer)
-        finally:
-            self._advapi.FreeSid(package_sid_pointer)
+            package_sid_pointer = ctypes.c_void_p()
+            result = self._userenv.DeriveAppContainerSidFromAppContainerName(
+                profile_moniker, ctypes.byref(package_sid_pointer)
+            )
+            if result:
+                raise OSError("appcontainer_sid_derivation")
+            try:
+                package_sid = self._sid_text(package_sid_pointer)
+            finally:
+                self._advapi.FreeSid(package_sid_pointer)
+        except BundleHold:
+            raise
+        except Exception:
+            raise BundleHold("bundle_runtime_ambiguous_package") from None
 
-        profile_path = wintypes.LPWSTR()
-        result = self._userenv.GetAppContainerFolderPath(package_sid, ctypes.byref(profile_path))
-        if result:
-            raise OSError(f"appcontainer_profile_lookup:{result & 0xFFFFFFFF:08x}")
         try:
-            if not profile_path.value or not Path(profile_path.value).is_dir():
-                raise BundleHold("bundle_appcontainer_profile_missing")
-            canonical_profile = Path(profile_path.value).resolve(strict=True)
-        finally:
-            self._ole32.CoTaskMemFree(profile_path)
+            profile_path = wintypes.LPWSTR()
+            result = self._userenv.GetAppContainerFolderPath(package_sid, ctypes.byref(profile_path))
+            if result:
+                raise OSError("appcontainer_profile_lookup")
+            try:
+                if not profile_path.value or not Path(profile_path.value).is_dir():
+                    raise BundleHold("bundle_appcontainer_profile_missing")
+                canonical_profile = Path(profile_path.value).resolve(strict=True)
+            finally:
+                self._ole32.CoTaskMemFree(profile_path)
+        except BundleHold:
+            raise
+        except Exception:
+            raise BundleHold("bundle_runtime_ambiguous_appcontainer") from None
 
-        return RuntimeContext(
-            broker_sid, package_sid, canonical_profile,
-            Path(sys.executable).resolve(strict=True).parent,
-            broker_profile, self._known_folder(_LOCAL_APP_DATA),
-        )
+        try:
+            return RuntimeContext(
+                broker_sid, package_sid, canonical_profile,
+                Path(sys.executable).resolve(strict=True).parent,
+                broker_profile, self._known_folder(_LOCAL_APP_DATA),
+            )
+        except BundleHold:
+            raise
+        except Exception:
+            raise BundleHold("bundle_runtime_ambiguous_roots") from None
 
     def _effective(self, acl: ctypes.c_void_p, sid_text: str) -> AccessEntry:
         sid = ctypes.c_void_p()
