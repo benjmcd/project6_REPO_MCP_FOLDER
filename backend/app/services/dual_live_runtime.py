@@ -139,6 +139,7 @@ class PreparedRuntime:
     transport: Any
     broker: Any
     producer_request: ScienceBaseInput
+    worker_manifest_digest: str = ""
 
 
 @dataclass(frozen=True)
@@ -486,6 +487,7 @@ def prepare_dual_live_runtime(
         transport=transport,
         broker=broker,
         producer_request=producer_request,
+        worker_manifest_digest=binding.manifest_digest,
     )
     return RuntimeResult(
         status=RuntimeStatus.PREPARED,

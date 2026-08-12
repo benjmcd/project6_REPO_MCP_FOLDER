@@ -326,6 +326,7 @@ def test_valid_zero_reservation_path_composes_in_fail_closed_order(
     assert result.prepared.boundary is boundary
     assert result.prepared.transport is transport
     assert result.prepared.broker is broker
+    assert result.prepared.worker_manifest_digest == "sha256:" + "5" * 64
     producer_request = result.prepared.producer_request
     assert producer_request.max_total_bytes == 512 * 1024 * 1024
     assert producer_request.limits.max_response_bytes == 64 * 1024 * 1024
@@ -891,3 +892,85 @@ def test_standard_launcher_never_turns_prepared_envelope_into_live_go(
     assert code == 2
     assert stderr.getvalue() == "HOLD: live_go_required\n"
     assert closes == ["store_close"]
+
+
+def test_standard_launcher_forwards_go_only_to_injected_trusted_executor(
+    tmp_path: Path,
+) -> None:
+    launcher = _launcher_module()
+    runtime = _runtime_module()
+    stdout = StringIO()
+    prepared = SimpleNamespace(reservation_store=object())
+    calls: list[tuple[object, Path, str]] = []
+
+    def execute(prepared_value, *, go_path, go_digest, **_kwargs):
+        calls.append((prepared_value, go_path, go_digest))
+        return SimpleNamespace(
+            status="TERMINAL", code="sciencebase_acquisition_succeeded"
+        )
+
+    code = launcher.main(
+        [
+            *_launcher_args(tmp_path),
+            "--owner-go",
+            str(tmp_path / "owner-go.json"),
+            "--owner-go-sha256",
+            "sha256:" + "9" * 64,
+        ],
+        settings_factory=lambda: SimpleNamespace(dual_live_runtime_enabled=True),
+        dependencies_factory=lambda: object(),
+        prepare=lambda _request, _dependencies: runtime.RuntimeResult(
+            runtime.RuntimeStatus.PREPARED,
+            "dual_live_runtime_prepared_non_live",
+            prepared,
+        ),
+        execute=execute,
+        stdout=stdout,
+    )
+
+    assert code == 0
+    assert stdout.getvalue() == "TERMINAL: sciencebase_acquisition_succeeded\n"
+    assert calls == [
+        (prepared, tmp_path / "owner-go.json", "sha256:" + "9" * 64)
+    ]
+
+
+def test_closeout_verification_is_separate_and_never_constructs_runtime(
+    tmp_path: Path,
+) -> None:
+    launcher = _launcher_module()
+    stdout = StringIO()
+    calls: list[dict[str, object]] = []
+
+    def verify(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(status="VERIFIED", code="sciencebase_closeout_verified")
+
+    code = launcher.main(
+        [
+            "--verify-closeout",
+            "--canonical-root",
+            str(tmp_path.resolve()),
+            "--connector-run-id",
+            "00000000-0000-4000-8000-000000000001",
+            "--reservation-database",
+            str(tmp_path / "reservation.db"),
+            "--owner-go-sha256",
+            "sha256:" + "9" * 64,
+        ],
+        settings_factory=lambda: pytest.fail("verification read runtime switch"),
+        dependencies_factory=lambda: pytest.fail("verification built runtime"),
+        verify=verify,
+        stdout=stdout,
+    )
+
+    assert code == 0
+    assert stdout.getvalue() == "VERIFIED: sciencebase_closeout_verified\n"
+    assert calls == [
+        {
+            "canonical_root": tmp_path.resolve(),
+            "reservation_database_path": tmp_path / "reservation.db",
+            "connector_run_id": "00000000-0000-4000-8000-000000000001",
+            "go_digest": "sha256:" + "9" * 64,
+        }
+    ]

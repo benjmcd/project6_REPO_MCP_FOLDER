@@ -71,6 +71,15 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--query", required=True)
     parser.add_argument("--expected-item-id", required=True)
     parser.add_argument("--expected-file-name", required=True)
+    parser.add_argument(
+        "--owner-go",
+        type=Path,
+        help="Exact GO document; still requires an independently trusted owner authenticator.",
+    )
+    parser.add_argument(
+        "--owner-go-sha256",
+        help="Content digest only; never owner authority by itself.",
+    )
     for name in (
         "worker-bundle-root",
         "worker-provisioning-root",
@@ -97,6 +106,18 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _verification_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Independently verify one terminal ScienceBase closeout without live authority."
+    )
+    parser.add_argument("--verify-closeout", action="store_true", required=True)
+    parser.add_argument("--canonical-root", required=True, type=Path)
+    parser.add_argument("--connector-run-id", required=True)
+    parser.add_argument("--reservation-database", required=True, type=Path)
+    parser.add_argument("--owner-go-sha256", required=True)
+    return parser
+
+
 class _RuntimeSettings:
     def __init__(self, enabled: bool) -> None:
         self.dual_live_runtime_enabled = enabled
@@ -113,12 +134,35 @@ def _default_dependencies() -> Any:
     return default_runtime_dependencies()
 
 
+def _default_execute(prepared: Any, *, go_path: Path, go_digest: str) -> Any:
+    from app.services.connector_egress_transport import ReservationStore
+    from app.services.dual_live_runtime import run_prepared_runtime
+    from app.services.sciencebase_live_readiness import execute_sciencebase_live
+
+    return execute_sciencebase_live(
+        prepared,
+        go_path=go_path,
+        go_digest=go_digest,
+        run=run_prepared_runtime,
+        store_factory=ReservationStore,
+    )
+
+
+def _default_verify(**kwargs: Any) -> Any:
+    from app.services.connector_egress_transport import ReservationStore
+    from app.services.sciencebase_live_readiness import verify_sciencebase_closeout
+
+    return verify_sciencebase_closeout(store_factory=ReservationStore, **kwargs)
+
+
 def main(
     argv: Sequence[str] | None = None,
     *,
     settings_factory: Callable[[], Any] = _default_settings,
     dependencies_factory: Callable[[], Any] = _default_dependencies,
     prepare: Callable[[Any, Any], Any] | None = None,
+    execute: Callable[..., Any] = _default_execute,
+    verify: Callable[..., Any] = _default_verify,
     stdout: TextIO = sys.stdout,
     stderr: TextIO = sys.stderr,
 ) -> int:
@@ -127,6 +171,19 @@ def main(
         return _worker_dispatch("probe", arguments[1:])
     if arguments[:1] == ["--worker-sciencebase"]:
         return _worker_dispatch("sciencebase", arguments[1:])
+    if arguments[:1] == ["--verify-closeout"]:
+        verify_args = _verification_parser().parse_args(arguments)
+        result = verify(
+            canonical_root=verify_args.canonical_root,
+            reservation_database_path=verify_args.reservation_database,
+            connector_run_id=verify_args.connector_run_id,
+            go_digest=verify_args.owner_go_sha256,
+        )
+        if getattr(result, "status", None) == "VERIFIED":
+            print(f"VERIFIED: {result.code}", file=stdout)
+            return 0
+        print(f"HOLD: {getattr(result, 'code', 'sciencebase_closeout_failed')}", file=stderr)
+        return 2
     if "-h" in arguments or "--help" in arguments:
         _parser().parse_args(arguments)
     settings = settings_factory()
@@ -145,6 +202,9 @@ def main(
     )
 
     args = _parser().parse_args(arguments)
+    if (args.owner_go is None) != (args.owner_go_sha256 is None):
+        print("HOLD: live_go_binding_incomplete", file=stderr)
+        return 2
 
     request = RuntimeRequest(
         enabled=True,
@@ -187,12 +247,23 @@ def main(
         print(f"HOLD: {result.code}", file=stderr)
         return 2
 
-    try:
-        close_prepared_runtime(result.prepared)
-    except Exception:
-        print("HOLD: runtime_cleanup_failed", file=stderr)
+    if args.owner_go is None:
+        try:
+            close_prepared_runtime(result.prepared)
+        except Exception:
+            print("HOLD: runtime_cleanup_failed", file=stderr)
+            return 2
+        print("HOLD: live_go_required", file=stderr)
         return 2
-    print("HOLD: live_go_required", file=stderr)
+    execution = execute(
+        result.prepared,
+        go_path=args.owner_go,
+        go_digest=args.owner_go_sha256,
+    )
+    if getattr(execution, "status", None) == "TERMINAL":
+        print(f"TERMINAL: {execution.code}", file=stdout)
+        return 0
+    print(f"HOLD: {getattr(execution, 'code', 'sciencebase_execution_failed')}", file=stderr)
     return 2
 
 

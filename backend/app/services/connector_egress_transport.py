@@ -33,6 +33,13 @@ class ReservationHold:
     plan_digest: str | None
 
 
+@dataclass(frozen=True)
+class ExactEventResult:
+    disposition: str
+    event_id: str
+    reason_code: str
+
+
 class EgressHold(RuntimeError):
     def __init__(self, disposition: str, reason_code: str) -> None:
         self.disposition = disposition
@@ -302,6 +309,13 @@ class ConnectorEgressTransport:
 
 class ReservationStore:
     DATABASE_BASENAME = "reservation.db"
+    _LIVE_EVENT_TYPES = frozenset(
+        {
+            "sciencebase_live_go_consumed",
+            "sciencebase_acquisition_terminal",
+            "sciencebase_closeout_verified",
+        }
+    )
 
     def __init__(
         self,
@@ -346,6 +360,9 @@ class ReservationStore:
 
     def close(self) -> None:
         self._probe.close()
+
+    def verify_identity(self) -> None:
+        self._revalidate_identity()
 
     def __del__(self) -> None:
         probe = getattr(self, "_probe", None)
@@ -591,3 +608,158 @@ class ReservationStore:
         return ReservationHold(
             "SPENT", "connector_run_has_reservation", rows[0][0], None
         )
+
+    def write_sciencebase_live_event(
+        self,
+        *,
+        event_id: str,
+        connector_run_id: str,
+        phase: str,
+        stage: str,
+        event_type: str,
+        status_after: str,
+        reason_code: str,
+        metrics: dict[str, object],
+    ) -> ExactEventResult | ReservationHold:
+        try:
+            valid = (
+                str(UUID(event_id)) == event_id
+                and str(UUID(connector_run_id)) == connector_run_id
+                and event_type in self._LIVE_EVENT_TYPES
+                and all(
+                    isinstance(value, str) and 0 < len(value) <= limit
+                    for value, limit in (
+                        (phase, 100),
+                        (stage, 100),
+                        (status_after, 50),
+                        (reason_code, 255),
+                    )
+                )
+                and isinstance(metrics, dict)
+            )
+            metrics_json = json.dumps(
+                metrics, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            )
+        except (TypeError, ValueError, AttributeError):
+            valid = False
+            metrics_json = ""
+        if not valid or len(metrics_json.encode("utf-8")) > 32 * 1024:
+            return ReservationHold("HOLD", "live_event_invalid", event_id, None)
+        expected = (
+            connector_run_id,
+            phase,
+            stage,
+            event_type,
+            status_after,
+            reason_code,
+            metrics_json,
+        )
+        try:
+            with self._open() as connection:
+                connection.execute("BEGIN IMMEDIATE")
+                self._revalidate_identity()
+                existing = connection.execute(
+                    """
+                    SELECT connector_run_id, phase, stage, event_type,
+                           status_after, reason_code, metrics_json
+                    FROM connector_run_event WHERE connector_run_event_id = ?
+                    """,
+                    (event_id,),
+                ).fetchone()
+                if existing is not None:
+                    connection.rollback()
+                    if existing == expected:
+                        return ExactEventResult("EXISTS", event_id, reason_code)
+                    return ReservationHold(
+                        "HOLD", "live_event_identity_conflict", event_id, None
+                    )
+                connection.execute(
+                    """
+                    INSERT INTO connector_run_event (
+                        connector_run_event_id, connector_run_id, connector_run_target_id,
+                        phase, stage, event_type, status_before, status_after,
+                        reason_code, error_class, message, metrics_json, created_at
+                    ) VALUES (?, ?, NULL, ?, ?, ?, NULL, ?, ?, NULL, NULL, ?, ?)
+                    """,
+                    (
+                        event_id,
+                        connector_run_id,
+                        phase,
+                        stage,
+                        event_type,
+                        status_after,
+                        reason_code,
+                        metrics_json,
+                        datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+                self._revalidate_identity()
+                connection.commit()
+                self._revalidate_identity()
+        except EgressHold as exc:
+            return ReservationHold("HOLD", exc.reason_code, event_id, None)
+        except sqlite3.Error:
+            return ReservationHold("HOLD", "live_event_write_failed", event_id, None)
+        try:
+            with self._open() as independent:
+                observed = independent.execute(
+                    """
+                    SELECT connector_run_id, phase, stage, event_type,
+                           status_after, reason_code, metrics_json
+                    FROM connector_run_event WHERE connector_run_event_id = ?
+                    """,
+                    (event_id,),
+                ).fetchone()
+                self._revalidate_identity()
+        except (EgressHold, sqlite3.Error):
+            return ReservationHold(
+                "HOLD", "live_event_observation_indeterminate", event_id, None
+            )
+        if observed != expected:
+            return ReservationHold(
+                "HOLD", "live_event_observation_mismatch", event_id, None
+            )
+        return ExactEventResult("RECORDED", event_id, reason_code)
+
+    def read_sciencebase_run_events(
+        self, connector_run_id: str
+    ) -> tuple[dict[str, object], ...] | ReservationHold:
+        try:
+            if str(UUID(connector_run_id)) != connector_run_id:
+                raise ValueError
+            with self._open() as connection:
+                rows = connection.execute(
+                    """
+                    SELECT connector_run_event_id, phase, stage, event_type,
+                           status_after, reason_code, metrics_json
+                    FROM connector_run_event
+                    WHERE connector_run_id = ?
+                      AND (event_type = 'physical_request_reserved'
+                           OR event_type LIKE 'sciencebase_%')
+                    ORDER BY created_at, connector_run_event_id
+                    """,
+                    (connector_run_id,),
+                ).fetchall()
+                self._revalidate_identity()
+        except (EgressHold, sqlite3.Error, TypeError, ValueError, AttributeError):
+            return ReservationHold("HOLD", "live_event_read_failed", None, None)
+        result: list[dict[str, object]] = []
+        for event_id, phase, stage, event_type, status_after, reason_code, raw in rows:
+            try:
+                metrics = json.loads(raw)
+                if str(UUID(event_id)) != event_id or not isinstance(metrics, dict):
+                    raise ValueError
+            except (TypeError, ValueError, json.JSONDecodeError, AttributeError):
+                return ReservationHold("HOLD", "live_event_history_malformed", event_id, None)
+            result.append(
+                {
+                    "event_id": event_id,
+                    "phase": phase,
+                    "stage": stage,
+                    "event_type": event_type,
+                    "status_after": status_after,
+                    "reason_code": reason_code,
+                    "metrics": metrics,
+                }
+            )
+        return tuple(result)

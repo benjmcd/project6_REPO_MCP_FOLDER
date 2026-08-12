@@ -22,6 +22,7 @@ BACKEND_SHARD_PATTERNS = (
     "test_diagnostics_ref_*.py",
     "test_dual_live_sciencebase_producer.py",
     "test_egress_effect_boundary.py",
+    "test_sciencebase_live_readiness.py",
     "test_honesty_*.py",
     "test_legacy_api_*.py",
     "test_layer3_*.py",
@@ -290,6 +291,7 @@ def test_dual_live_windows_boundary_job_is_required_and_exact() -> None:
     for test_path in (
         "./backend/tests/test_egress_effect_boundary.py",
         "./backend/tests/test_dual_live_sciencebase_producer.py",
+        "./backend/tests/test_sciencebase_live_readiness.py",
         "./tests/test_dual_live_effect_guard.py",
         "./tests/test_dual_live_worker_bundle.py",
         "./tests/test_dual_live_runtime.py",
