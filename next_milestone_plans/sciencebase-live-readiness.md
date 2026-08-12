@@ -81,6 +81,13 @@ The target values above are the complete bounded acquisition subject; changing a
 
 Two external, non-authorizing inputs remain. The profile binding must be produced from an actually provisioned broker profile and AppContainer profile—not hand-filled—and contains exactly `profile_moniker`, `package_sid`, `broker_sid`, `appcontainer_profile_root`, `broker_profile_root`, and `user_data_root`. The authority envelope is canonical JSON with exactly `schema_version`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `authorization_digest`, `grant_digest`, and `wrapper_start_token_ref`. Its schema is `project6.connector_authority.v1`. The source commit and worker-interpreter digest must be observed only after the final clean source and external worker closure exist; the three opaque authority/grant/token references do not themselves grant live authority. B0 does not create or issue either input, and neither substitutes for the later signed one-use owner GO.
 
+From an already-elevated Windows PowerShell 5.1 shell, a future operator may create the profile binding once with a fresh moniker and an output path outside both the repository and `$CanonicalRoot`; the script does not elevate itself or remove a profile:
+
+```powershell
+$ProfileMoniker = 'Project6.ScienceBase.LiveV2.' + ([guid]::NewGuid().ToString('N').Substring(0,8))
+.\scripts\provision-dual-live-profile.ps1 -ProfileMoniker $ProfileMoniker -OutputBinding 'C:\owner-controlled\project6\sciencebase-profile.json'
+```
+
 Place the template outside the canonical run root so run containment and closeout cannot modify owner-act bytes. On success, capture the printed `OWNER_GO_SHA256` value as `$GoDigest`; independently rehash the unchanged file before signing. The emitted document has exactly these canonical fields: `schema`, `go_id`, `envelope_digest`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `worker_manifest_digest`, `request_digest`, `authorization_digest`, `grant_digest`, `wrapper_start_token_ref`, `credential_mode`, and `egress_mode`. The fixed values are `schema=project6.sciencebase_live_go.v1`, `credential_mode=none_public`, and `egress_mode=capability_scoped_default_off`.
 
 If the create-once write succeeds but prepared-runtime cleanup fails, the launcher returns `HOLD: runtime_cleanup_failed` and reports `UNSIGNED_TEMPLATE_RETAINED_NON_AUTHORITATIVE_POSSIBLY_STALE`. It intentionally does not delete or overwrite those evidence bytes. That file must not be signed or used; investigate cleanup, then choose a fresh path and fresh `go_id` for a newly validated preparation.
