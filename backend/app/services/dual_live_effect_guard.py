@@ -17,7 +17,7 @@ import threading
 from dataclasses import dataclass
 from typing import Any, BinaryIO, Callable, Mapping, Protocol
 
-from backend.app.services.connector_egress_contract import (
+from app.services.connector_egress_contract import (
     ContractHold,
     EffectResult,
     PhysicalRequestPlan,
@@ -617,7 +617,7 @@ def _authorized_download_uri(body: bytes, request: Any) -> str:
 
 
 def _sciencebase_input_document(request: Any) -> dict[str, Any]:
-    from backend.app.services.dual_live_sciencebase_producer import ScienceBaseInput
+    from app.services.dual_live_sciencebase_producer import ScienceBaseInput
 
     if not isinstance(request, ScienceBaseInput):
         raise EffectBoundaryHold("sciencebase_input_malformed")
@@ -645,7 +645,7 @@ def _sciencebase_input_document(request: Any) -> dict[str, Any]:
 
 
 def _sciencebase_input_from_document(document: object) -> Any:
-    from backend.app.services.dual_live_sciencebase_producer import ScienceBaseInput
+    from app.services.dual_live_sciencebase_producer import ScienceBaseInput
 
     fields = set(ScienceBaseInput.__dataclass_fields__)
     if not isinstance(document, dict) or set(document) != fields:
@@ -687,7 +687,7 @@ def _sciencebase_input_document_shape(request: Any) -> None:
 def run_sciencebase_worker(reader: BinaryIO, writer: BinaryIO) -> None:
     """Worker entry: input/effects/output use only the two inherited pipes."""
 
-    from backend.app.services.dual_live_sciencebase_producer import ScienceBaseProducer
+    from app.services.dual_live_sciencebase_producer import ScienceBaseProducer
 
     start = read_frame(reader)
     if set(start) != {"type", "request"} or start.get("type") != "sciencebase_start":
@@ -740,7 +740,7 @@ def _read_sciencebase_output(
     observed_request_count: int,
     observed_response_bytes: int,
 ) -> Any:
-    from backend.app.services.dual_live_sciencebase_producer import ScienceBaseOutput
+    from app.services.dual_live_sciencebase_producer import ScienceBaseOutput
 
     expected = {
         "type", "item_id", "file_name", "sha256", "body_size",

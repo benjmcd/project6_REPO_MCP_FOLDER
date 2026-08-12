@@ -628,6 +628,9 @@ jobs:
     timeout-minutes: 30
     runs-on: windows-2025
     steps:
+    - name: Enable Git long paths before checkout
+      shell: pwsh
+      run: git config --global core.longpaths true
     - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
       with:
@@ -783,11 +786,11 @@ jobs:
         import sys
         from pathlib import Path
 
-        from backend.app.services.connector_egress_contract import EffectResult, RequestLimits
-        from backend.app.services.dual_live_effect_guard import BrokerEffectGuard, release_sciencebase_worker
-        from backend.app.services.dual_live_sciencebase_producer import ScienceBaseInput
-        from backend.app.services.dual_live_windows_boundary import WindowsEffectBoundary, open_pipe_writer
-        from backend.app.services.dual_live_worker_bundle import BundleBinding, WindowsBundleProbe
+        from app.services.connector_egress_contract import EffectResult, RequestLimits
+        from app.services.dual_live_effect_guard import BrokerEffectGuard, release_sciencebase_worker
+        from app.services.dual_live_sciencebase_producer import ScienceBaseInput
+        from app.services.dual_live_windows_boundary import WindowsEffectBoundary, open_pipe_writer
+        from app.services.dual_live_worker_bundle import BundleBinding, WindowsBundleProbe
 
         class LocalBrokerTransport:
             def __init__(self):
@@ -873,6 +876,7 @@ jobs:
         $env:PROJECT6_B0_BUNDLE_BINDING = $Binding
         $env:DB_INIT_MODE = 'none'
         $env:PYTHONDONTWRITEBYTECODE = '1'
+        $env:PYTHONPATH = (Join-Path $Repo 'backend')
         Set-Location -LiteralPath $Repo
         if ($Mode -eq 'deny') {
           & $Python -m pytest -p no:cacheprovider ./tests/test_dual_live_worker_bundle.py::test_windows_probe_validates_preprovisioned_fixture -q *>&1 | Tee-Object -LiteralPath $Output

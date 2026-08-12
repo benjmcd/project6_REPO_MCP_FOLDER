@@ -33,12 +33,12 @@ class MemoryProbe:
         return path
 
     def volume(self, path: Path) -> object:
-        from backend.app.services.dual_live_worker_bundle import VolumeIdentity
+        from app.services.dual_live_worker_bundle import VolumeIdentity
 
         return VolumeIdentity(self.volume_id, fixed=self.fixed, local=self.local)
 
     def identity(self, path: Path) -> object:
-        from backend.app.services.dual_live_worker_bundle import FileIdentity
+        from app.services.dual_live_worker_bundle import FileIdentity
 
         try:
             relative = "." if path == self.root else path.relative_to(self.root).as_posix()
@@ -81,7 +81,7 @@ class MemoryProbe:
 
 
 def _valid_case() -> tuple[object, MemoryProbe]:
-    from backend.app.services.dual_live_worker_bundle import (
+    from app.services.dual_live_worker_bundle import (
         AccessEntry,
         BundleBinding,
         RuntimeContext,
@@ -163,7 +163,7 @@ def _rewrite_manifest(binding: object, probe: MemoryProbe, edit: object) -> obje
 
 
 def test_validates_exact_content_addressed_read_only_bundle() -> None:
-    from backend.app.services.dual_live_worker_bundle import validate_worker_bundle
+    from app.services.dual_live_worker_bundle import validate_worker_bundle
 
     binding, probe = _valid_case()
     validated = validate_worker_bundle(binding, probe)
@@ -174,7 +174,7 @@ def test_validates_exact_content_addressed_read_only_bundle() -> None:
 
 
 def test_holds_when_root_is_not_bound_to_manifest_digest() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     binding = replace(binding, root=binding.root.parent / "unbound")
@@ -184,7 +184,7 @@ def test_holds_when_root_is_not_bound_to_manifest_digest() -> None:
 
 
 def test_holds_when_bundle_is_under_broker_documents_tree() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     provisioning_root = binding.broker_profile_root / "Documents" / "Bundles"
@@ -196,7 +196,7 @@ def test_holds_when_bundle_is_under_broker_documents_tree() -> None:
 
 
 def test_holds_when_derived_runtime_principals_do_not_match_binding() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     probe.runtime_override = replace(probe.runtime_override, package_sid="S-1-15-2-other")
@@ -215,7 +215,7 @@ def test_holds_when_derived_runtime_principals_do_not_match_binding() -> None:
     ],
 )
 def test_holds_on_content_inventory_or_volume_drift(mutate: object, code: str) -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     mutate(binding, probe)
@@ -225,7 +225,7 @@ def test_holds_on_content_inventory_or_volume_drift(mutate: object, code: str) -
 
 @pytest.mark.parametrize(("attribute", "value"), [("source_commit", "b" * 40), ("interpreter", "worker.py")])
 def test_holds_on_envelope_binding_drift(attribute: str, value: str) -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     with pytest.raises(BundleHold, match="bundle_binding_mismatch"):
@@ -234,7 +234,7 @@ def test_holds_on_envelope_binding_drift(attribute: str, value: str) -> None:
 
 @pytest.mark.parametrize(("attribute", "value"), [("architecture", "mystery"), ("python_version", "3")])
 def test_holds_when_envelope_and_manifest_share_invalid_runtime_identity(attribute: str, value: str) -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     binding = replace(binding, **{attribute: value})
@@ -245,7 +245,7 @@ def test_holds_when_envelope_and_manifest_share_invalid_runtime_identity(attribu
 
 @pytest.mark.parametrize(("relative", "link_count", "reparse"), [("worker.py", 2, False), ("worker.py", 1, True)])
 def test_holds_on_hardlink_or_reparse(relative: str, link_count: int, reparse: bool) -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, FileIdentity, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, FileIdentity, validate_worker_bundle
 
     binding, probe = _valid_case()
     probe.identity_overrides[relative] = FileIdentity("vol-7", "changed", link_count, reparse)
@@ -254,7 +254,7 @@ def test_holds_on_hardlink_or_reparse(relative: str, link_count: int, reparse: b
 
 
 def test_holds_on_alternate_data_stream() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     probe.stream_overrides["worker.py"] = ("::$DATA", ":poison:$DATA")
@@ -263,7 +263,7 @@ def test_holds_on_alternate_data_stream() -> None:
 
 
 def test_holds_on_manifest_traversal() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     binding = _rewrite_manifest(binding, probe, lambda m: m["files"][0].__setitem__("path", "../python.exe"))
@@ -272,7 +272,7 @@ def test_holds_on_manifest_traversal() -> None:
 
 
 def test_holds_on_noncanonical_file_order() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     binding = _rewrite_manifest(binding, probe, lambda m: m["files"].reverse())
@@ -281,7 +281,7 @@ def test_holds_on_noncanonical_file_order() -> None:
 
 
 def test_holds_when_manifest_size_is_boolean() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     binding = _rewrite_manifest(binding, probe, lambda m: m["files"][0].__setitem__("size", True))
@@ -291,7 +291,7 @@ def test_holds_when_manifest_size_is_boolean() -> None:
 
 @pytest.mark.parametrize(("principal", "rights", "inherited"), [("package", frozenset({"read", "execute", "traverse", right}), False) for right in ("write", "create", "delete", "rename", "owner", "dacl")] + [("broker", frozenset({"read", "execute", "traverse"}), True), ("unexpected", frozenset({"read"}), False)])
 def test_holds_on_broad_inherited_or_unexpected_acl(principal: str, rights: frozenset[str], inherited: bool) -> None:
-    from backend.app.services.dual_live_worker_bundle import AccessEntry, BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import AccessEntry, BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     sid = getattr(binding, f"{principal}_sid", "S-1-1-0")
@@ -302,7 +302,7 @@ def test_holds_on_broad_inherited_or_unexpected_acl(principal: str, rights: froz
 
 
 def test_holds_when_actual_broker_token_can_mutate_bundle() -> None:
-    from backend.app.services.dual_live_worker_bundle import AccessEntry, BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import AccessEntry, BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     control = frozenset({"read", "execute", "traverse", "write", "create", "delete", "rename", "owner", "dacl"})
@@ -313,7 +313,7 @@ def test_holds_when_actual_broker_token_can_mutate_bundle() -> None:
 
 
 def test_holds_when_actual_broker_token_can_mutate_ancestor() -> None:
-    from backend.app.services.dual_live_worker_bundle import AccessEntry, BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import AccessEntry, BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     control = frozenset({"read", "execute", "traverse", "write", "create", "delete", "rename", "owner", "dacl"})
@@ -324,7 +324,7 @@ def test_holds_when_actual_broker_token_can_mutate_ancestor() -> None:
 
 
 def test_suspended_rebind_holds_on_file_identity_drift() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, FileIdentity, revalidate_worker_bundle, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, FileIdentity, revalidate_worker_bundle, validate_worker_bundle
 
     binding, probe = _valid_case()
     expected = validate_worker_bundle(binding, probe)
@@ -334,7 +334,7 @@ def test_suspended_rebind_holds_on_file_identity_drift() -> None:
 
 
 def test_windows_probe_preserves_exact_acl_masks() -> None:
-    from backend.app.services.dual_live_worker_bundle import _access_entry
+    from app.services.dual_live_worker_bundle import _access_entry
 
     entry = _access_entry("S-1-15-2-42", 0x001200A9, True, 0)
 
@@ -343,7 +343,7 @@ def test_windows_probe_preserves_exact_acl_masks() -> None:
 
 
 def test_hold_suppresses_sensitive_observation_exception() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     probe.read_bytes = lambda path, limit: (_ for _ in ()).throw(RuntimeError("C:/sentinel-secret"))
@@ -358,7 +358,7 @@ def test_hold_suppresses_sensitive_observation_exception() -> None:
 
 
 def test_hold_suppresses_malformed_manifest_bytes() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
+    from app.services.dual_live_worker_bundle import BundleHold, validate_worker_bundle
 
     binding, probe = _valid_case()
     probe.manifest = b"\xffsentinel-malformed"
@@ -374,7 +374,7 @@ def test_hold_suppresses_malformed_manifest_bytes() -> None:
 
 @pytest.mark.skipif(os.name != "nt", reason="Win32 probe")
 def test_windows_probe_validates_preprovisioned_fixture() -> None:
-    from backend.app.services.dual_live_worker_bundle import (
+    from app.services.dual_live_worker_bundle import (
         BundleBinding,
         WindowsBundleProbe,
         validate_worker_bundle,

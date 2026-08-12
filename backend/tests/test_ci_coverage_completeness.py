@@ -267,6 +267,8 @@ def test_dual_live_windows_boundary_job_is_required_and_exact() -> None:
         "backend/app/services/dual_live_sciencebase_producer.py",
         "backend/app/services/connector_egress_contract.py", "-m pytest",
         'mode="sciencebase"', "LocalBrokerTransport", "sciencebase-proof.py",
+        "from app.services.dual_live_effect_guard import",
+        "$env:PYTHONPATH = (Join-Path $Repo 'backend')",
         "DriveType -ne [IO.DriveType]::Fixed", "FileAttributes]::ReparsePoint",
         "[StringComparer]::Ordinal",
         "$hr -notin @(0, -2147023728)",
@@ -292,6 +294,9 @@ def test_dual_live_windows_boundary_job_is_required_and_exact() -> None:
     assert "[uint32]$hr" not in block
     assert block.index('"PROJECT6_B0_STATE=$statePath"') < block.index(
         "New-Item -ItemType Directory"
+    )
+    assert block.index("git config --global core.longpaths true") < block.index(
+        "actions/checkout@v6"
     )
 
     release_block = _workflow_job_block("release-gate")

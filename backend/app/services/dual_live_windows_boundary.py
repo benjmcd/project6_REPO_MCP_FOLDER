@@ -11,6 +11,7 @@ from __future__ import annotations
 import contextlib
 import ctypes
 import hashlib
+import ntpath
 import os
 import struct
 import sys
@@ -20,9 +21,9 @@ from ctypes import wintypes
 from pathlib import Path
 from typing import Any, Iterator, Protocol, Sequence
 
-from backend.app.services import dual_live_worker_bundle as _bundle
+from app.services import dual_live_worker_bundle as _bundle
 
-from backend.app.services.dual_live_effect_guard import (
+from app.services.dual_live_effect_guard import (
     MAX_FRAME_BYTES,
     EffectBoundaryHold,
     WorkerIdentity,
@@ -152,11 +153,11 @@ class TOKEN_APPCONTAINER_INFORMATION(ctypes.Structure):
 
 
 def _mutex_name(canonical_root: str, campaign_id: str) -> str:
-    if not isinstance(canonical_root, str) or not os.path.isabs(canonical_root):
+    if not isinstance(canonical_root, str) or not ntpath.isabs(canonical_root):
         raise EffectBoundaryHold("root_not_canonical")
     if not isinstance(campaign_id, str) or not campaign_id or len(campaign_id) > 128:
         raise EffectBoundaryHold("campaign_invalid")
-    root = os.path.normcase(os.path.abspath(canonical_root)).replace("/", "\\")
+    root = ntpath.normcase(ntpath.abspath(canonical_root))
     digest = hashlib.sha256(f"{root}\0{campaign_id}".encode("utf-8")).hexdigest()
     return f"Local\\Project6DualLive-{digest}"
 
@@ -196,7 +197,7 @@ def _quote_windows_arg(value: str) -> str:
 
 
 def _command_line(interpreter: str, args: Sequence[str]) -> str:
-    if not isinstance(interpreter, str) or not os.path.isabs(interpreter):
+    if not isinstance(interpreter, str) or not ntpath.isabs(interpreter):
         raise EffectBoundaryHold("interpreter_not_absolute")
     if any(not isinstance(arg, str) or "\x00" in arg for arg in args):
         raise EffectBoundaryHold("worker_args_invalid")

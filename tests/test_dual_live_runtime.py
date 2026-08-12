@@ -22,7 +22,7 @@ PROJECT6_PS1 = REPO_ROOT / "project6.ps1"
 
 
 def _runtime_module():
-    module_name = "backend.app.services.dual_live_runtime"
+    module_name = "app.services.dual_live_runtime"
     assert importlib.util.find_spec(module_name) is not None, (
         "dual-live runtime module is required"
     )
@@ -690,7 +690,7 @@ def test_envelope_drift_holds_before_store_or_boundary(tmp_path: Path) -> None:
 
 
 def test_settings_keep_dual_live_runtime_default_off() -> None:
-    from backend.app.core.config import Settings
+    Settings = importlib.import_module("app.core.config").Settings
 
     field = Settings.model_fields["dual_live_runtime_enabled"]
 
@@ -707,7 +707,7 @@ def test_launcher_reads_only_the_exact_noncredential_runtime_switch(
     monkeypatch.setenv("NRC_ADAMS_APS_SUBSCRIPTION_KEY", "must-not-be-read")
     assert launcher._default_settings().dual_live_runtime_enabled is True
     source = __import__("inspect").getsource(launcher._default_settings)
-    assert "backend.app.core.config" not in source
+    assert "core.config" not in source
 
 
 def test_project6_action_forwards_only_exact_dual_live_action_args() -> None:

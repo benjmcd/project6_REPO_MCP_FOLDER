@@ -7,7 +7,7 @@ import hashlib
 import json
 from typing import Any
 
-from backend.app.services.connector_egress_contract import (
+from app.services.connector_egress_contract import (
     EffectPort,
     EffectResult,
     PhysicalRequestPlan,

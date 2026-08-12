@@ -124,7 +124,9 @@ def _store(
     return ReservationStore(
         database_path.parent,
         database_path,
-        identity_probe=identity_probe,
+        identity_probe=(
+            identity_probe if identity_probe is not None else _TestIdentityProbe()
+        ),
     )
 
 
@@ -392,6 +394,7 @@ def test_reservation_is_committed_as_connector_run_event_and_independently_visib
         ("hardlink", "reservation_database_identity_drift"),
     ],
 )
+@pytest.mark.skipif(os.name != "nt", reason="requires Windows file identity APIs")
 def test_unsafe_reservation_database_is_rejected_before_any_effect(
     tmp_path: Path,
     unsafe_form: str,

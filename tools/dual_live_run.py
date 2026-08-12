@@ -8,8 +8,9 @@ from pathlib import Path
 from typing import Any, Callable, Sequence, TextIO
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+BACKEND_ROOT = REPO_ROOT / "backend"
+if str(BACKEND_ROOT) not in sys.path:
+    sys.path.insert(0, str(BACKEND_ROOT))
 
 
 def _worker_handles(values: Sequence[str]) -> tuple[int, int]:
@@ -27,18 +28,18 @@ def _worker_handles(values: Sequence[str]) -> tuple[int, int]:
 def _worker_dispatch(mode: str, values: Sequence[str]) -> int:
     try:
         read_handle, write_handle = _worker_handles(values)
-        from backend.app.services.dual_live_windows_boundary import (
+        from app.services.dual_live_windows_boundary import (
             open_pipe_reader,
             open_pipe_writer,
         )
 
         worker: Callable[[Any, Any], None]
         if mode == "probe":
-            from backend.app.services.dual_live_windows_boundary import run_probe_worker
+            from app.services.dual_live_windows_boundary import run_probe_worker
 
             worker = run_probe_worker
         elif mode == "sciencebase":
-            from backend.app.services.dual_live_effect_guard import (
+            from app.services.dual_live_effect_guard import (
                 run_sciencebase_worker,
             )
 
@@ -107,7 +108,7 @@ def _default_settings() -> Any:
 
 
 def _default_dependencies() -> Any:
-    from backend.app.services.dual_live_runtime import default_runtime_dependencies
+    from app.services.dual_live_runtime import default_runtime_dependencies
 
     return default_runtime_dependencies()
 
@@ -134,7 +135,7 @@ def main(
         print("DISABLED: dual_live_runtime_disabled", file=stdout)
         return 0
 
-    from backend.app.services.dual_live_runtime import (
+    from app.services.dual_live_runtime import (
         RuntimeRequest,
         RuntimeScienceBaseRequest,
         RuntimeStatus,

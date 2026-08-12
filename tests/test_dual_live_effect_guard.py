@@ -15,16 +15,16 @@ from uuid import uuid4
 
 import pytest
 
-from backend.app.services import dual_live_effect_guard as effect_guard
-from backend.app.services.connector_egress_contract import (
+from app.services import dual_live_effect_guard as effect_guard
+from app.services.connector_egress_contract import (
     PhysicalRequestPlan,
     RequestLimits,
 )
-from backend.app.services.connector_egress_transport import (
+from app.services.connector_egress_transport import (
     CommittedReservation,
     ConnectorEgressTransport,
 )
-from backend.app.services.dual_live_effect_guard import (
+from app.services.dual_live_effect_guard import (
     MAX_FRAME_BYTES,
     EffectBoundaryHold,
     WorkerIdentity,
@@ -33,11 +33,11 @@ from backend.app.services.dual_live_effect_guard import (
     read_frame,
     write_frame,
 )
-from backend.app.services.dual_live_sciencebase_producer import (
+from app.services.dual_live_sciencebase_producer import (
     ScienceBaseInput,
     ScienceBaseProducer,
 )
-from backend.app.services.dual_live_windows_boundary import (
+from app.services.dual_live_windows_boundary import (
     WindowsEffectBoundary,
     _mutex_name,
     _clear_inherited_pipe_handles,
@@ -431,7 +431,7 @@ def test_fresh_census_returns_secret_free_identity() -> None:
 
 
 def test_production_has_no_profile_creation_or_ambient_probe_signature() -> None:
-    from backend.app.services import dual_live_windows_boundary as module
+    from app.services import dual_live_windows_boundary as module
 
     source = inspect.getsource(module)
     assert "CreateAppContainerProfile" not in source
@@ -443,7 +443,7 @@ def test_production_has_no_profile_creation_or_ambient_probe_signature() -> None
 
 @pytest.mark.skipif(os.name != "nt", reason="real AppContainer proof requires Windows")
 def test_real_worker_uses_externally_preprovisioned_bundle() -> None:
-    from backend.app.services.dual_live_worker_bundle import BundleBinding, WindowsBundleProbe
+    from app.services.dual_live_worker_bundle import BundleBinding, WindowsBundleProbe
 
     binding_file = os.environ.get("PROJECT6_B0_BUNDLE_BINDING")
     if not binding_file:
@@ -586,7 +586,7 @@ def test_stalled_probe_frame_terminates_job_and_closes_process(
     monkeypatch: pytest.MonkeyPatch,
     stalled_frame: str,
 ) -> None:
-    from backend.app.services import dual_live_windows_boundary as module
+    from app.services import dual_live_windows_boundary as module
 
     backend = ProbeBackend(stalled_frame)
     monkeypatch.setattr(module, "_CtypesBackend", ProbeBackend)
@@ -878,7 +878,7 @@ def test_probe_requires_exact_os_denial_codes(
 def test_launch_fails_closed_when_inherited_handle_clear_fails() -> None:
     source = inspect.getsource(
         __import__(
-            "backend.app.services.dual_live_windows_boundary", fromlist=["_CtypesBackend"]
+            "app.services.dual_live_windows_boundary", fromlist=["_CtypesBackend"]
         )._CtypesBackend.launch_appcontainer_suspended
     )
     assert "_clear_inherited_pipe_handles" in source

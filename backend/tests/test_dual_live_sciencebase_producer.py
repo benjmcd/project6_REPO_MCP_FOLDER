@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.services.connector_egress_contract import ContractHold, RequestLimits
-from backend.app.services.dual_live_sciencebase_producer import (
+from app.services.connector_egress_contract import ContractHold, RequestLimits
+from app.services.dual_live_sciencebase_producer import (
     SCIENCEBASE_RESPONSE_CAP_BYTES,
     ProducerHold,
     ScienceBaseInput,
