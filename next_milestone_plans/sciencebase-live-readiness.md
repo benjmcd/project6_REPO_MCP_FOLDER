@@ -39,7 +39,8 @@ $CanonicalRoot = 'C:\owner-controlled\project6\sciencebase-campaign'
 $CampaignId = 'sciencebase-live-v2'
 $ConnectorRunId = '11111111-1111-4111-8111-111111111111' # replace with a fresh UUID
 $AuthorityEnvelope = 'C:\owner-controlled\project6\sciencebase-authority.json'
-$AuthorityEnvelopeDigest = 'sha256:' + (Get-FileHash -LiteralPath $AuthorityEnvelope -Algorithm SHA256).Hash.ToLowerInvariant()
+$AuthorizationDigest = 'sha256:' + ('a' * 64) # replace with the exact prepared authorization digest
+$GrantDigest = 'sha256:' + ('b' * 64) # replace with the exact prepared grant digest
 $ProfileBinding = 'C:\owner-controlled\project6\sciencebase-profile.json'
 $WorkerBinding = 'C:\owner-controlled\project6\sciencebase-worker.json'
 $WorkerProvisioningRoot = 'C:\ProgramData\Project6\sciencebase-worker'
@@ -51,21 +52,31 @@ $ProfileMoniker = 'Project6.ScienceBase.LiveV2.' + ([guid]::NewGuid().ToString('
 $Profile = Get-Content -Raw -LiteralPath $ProfileBinding | ConvertFrom-Json
 $Worker = Get-Content -Raw -LiteralPath $WorkerBinding | ConvertFrom-Json
 $WorkerBundleRoot = $Worker.root
+$WorkerProvisioningRoot = $Worker.provisioning_root
+$WorkerProfileMoniker = $Worker.profile_moniker
+if ($WorkerProfileMoniker -ne $ProfileMoniker) { throw 'Worker/profile moniker drift.' }
 $WorkerManifestDigest = $Worker.manifest_digest
 $WorkerInterpreter = Join-Path $Worker.root $Worker.interpreter
+$WorkerEntrypoint = $Worker.entrypoint
 $WorkerPythonVersion = $Worker.python_version
 $WorkerArchitecture = $Worker.architecture
 $WorkerPackageSid = $Worker.package_sid
 $WorkerOwnerSid = $Worker.owner_sid
 $WorkerProvisionerSid = $Worker.provisioner_sid
 $WorkerBrokerSid = $Worker.broker_sid
-$AppContainerProfileRoot = $Profile.appcontainer_profile_root
-$BrokerProfileRoot = $Profile.broker_profile_root
-$UserDataRoot = $Profile.user_data_root
+$AmbientInterpreterRoot = $Worker.ambient_interpreter_root
+$CampaignRoot = $Worker.campaign_root
+$AppContainerProfileRoot = $Worker.appcontainer_profile_root
+$BrokerProfileRoot = $Worker.broker_profile_root
+$UserDataRoot = $Worker.user_data_root
+$SourceCommit = (& git rev-parse HEAD).Trim()
+$InterpreterIdentity = 'sha256:' + (Get-FileHash -LiteralPath $WorkerInterpreter -Algorithm SHA256).Hash.ToLowerInvariant()
 $Query = 'Mineral Commodity Summaries'
 $ExpectedItemId = '63d1a3c6d34e06fef15006be'
 $ExpectedFileName = 'mcs2023-germa_salient.csv'
-$CampaignRoot = $CanonicalRoot
+.\project6.ps1 -Action initialize-dual-live -- reservation-store --canonical-root $CanonicalRoot --connector-run-id $ConnectorRunId
+.\project6.ps1 -Action initialize-dual-live -- authority-envelope --output $AuthorityEnvelope --campaign-id $CampaignId --canonical-root $CanonicalRoot --connector-run-id $ConnectorRunId --source-commit $SourceCommit --interpreter-identity $InterpreterIdentity --authorization-digest $AuthorizationDigest --grant-digest $GrantDigest
+$AuthorityEnvelopeDigest = 'sha256:' + (Get-FileHash -LiteralPath $AuthorityEnvelope -Algorithm SHA256).Hash.ToLowerInvariant()
 $PreparedRuntimeArgs = @(
   '--authority-envelope', $AuthorityEnvelope,
   '--authority-envelope-sha256', $AuthorityEnvelopeDigest,
@@ -80,7 +91,7 @@ $PreparedRuntimeArgs = @(
   '--worker-provisioning-root', $WorkerProvisioningRoot,
   '--worker-profile-moniker', $WorkerProfileMoniker,
   '--worker-manifest-sha256', $WorkerManifestDigest,
-  '--worker-entrypoint', 'tools/dual_live_run.py',
+  '--worker-entrypoint', $WorkerEntrypoint,
   '--worker-interpreter', $WorkerInterpreter,
   '--worker-python-version', $WorkerPythonVersion,
   '--worker-architecture', $WorkerArchitecture,
@@ -107,7 +118,7 @@ try {
 
 The target values above are the complete bounded acquisition subject; changing any of them requires a fresh preparation and owner act. `CampaignRoot` is exactly the canonical campaign/evidence root, never the executable source checkout.
 
-Two external, non-authorizing inputs remain. The profile binding must be produced from an actually provisioned broker profile and AppContainer profile—not hand-filled—and contains exactly `profile_moniker`, `package_sid`, `broker_sid`, `appcontainer_profile_root`, `broker_profile_root`, and `user_data_root`. The authority envelope is canonical JSON with exactly `schema_version`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `authorization_digest`, `grant_digest`, and `wrapper_start_token_ref`. Its schema is `project6.connector_authority.v1`. The source commit and worker-interpreter digest must be observed only after the final clean source and external worker closure exist; the three opaque authority/grant/token references do not themselves grant live authority. B0 does not create or issue either input, and neither substitutes for the later signed one-use owner GO.
+Two external, non-authorizing inputs remain. The profile binding must be produced from an actually provisioned broker profile and AppContainer profile—not hand-filled—and contains exactly `profile_moniker`, `package_sid`, `broker_sid`, `appcontainer_profile_root`, `broker_profile_root`, and `user_data_root`. The explicit `initialize-dual-live authority-envelope` step emits canonical JSON with exactly `schema_version`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `authorization_digest`, `grant_digest`, and `wrapper_start_token_ref`. Its schema is `project6.connector_authority.v1`, and its mandatory non-caller-configurable sentinel is `wrapper_start_token_ref=retired:sciencebase-live-v2`. The source commit and worker-interpreter digest must be observed only after the final clean source and external worker closure exist; the two opaque authority/grant references do not themselves grant live authority. B0 does not create or issue either input, and neither substitutes for the later signed one-use owner GO.
 
 The provision commands above require an already-elevated Windows PowerShell 5.1 shell; neither script elevates itself or removes a profile.
 
