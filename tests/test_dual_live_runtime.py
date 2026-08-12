@@ -8,6 +8,7 @@ import hashlib
 import json
 import subprocess
 import sys
+import time
 from io import StringIO
 from pathlib import Path
 from dataclasses import replace
@@ -397,8 +398,21 @@ def test_valid_zero_reservation_path_composes_in_fail_closed_order(
 def test_run_prepared_runtime_owns_worker_pipes_job_and_exact_completion() -> None:
     runtime = _runtime_module()
     events: list[object] = []
-    request = SimpleNamespace(query="public geology")
+    request = SimpleNamespace(
+        query="public geology",
+        max_redirect_hops=0,
+        limits=SimpleNamespace(timeout_seconds=runtime.SCIENCEBASE_TIMEOUT_SECONDS),
+    )
     output = object()
+    overhead_ms = 15_000
+    max_requests = 3 * (request.max_redirect_hops + 1)
+    session_timeout_ms = (
+        max_requests * runtime.SCIENCEBASE_TIMEOUT_SECONDS * 1000 + overhead_ms
+    )
+    worker_wait_timeout_ms = runtime.SCIENCEBASE_TIMEOUT_SECONDS * 1000
+    assert session_timeout_ms >= max_requests * 30 * 1000 + overhead_ms
+    assert session_timeout_ms <= 15 * 60 * 1000
+    assert worker_wait_timeout_ms >= 30 * 1000
 
     class Store:
         def close(self):
@@ -490,15 +504,15 @@ def test_run_prepared_runtime_owns_worker_pipes_job_and_exact_completion() -> No
         ("launch", (13, 14), "sciencebase"),
         ("close", 13),
         ("close", 14),
-        ("deadline", 15_000),
-        ("read", 11, 15_000),
+        ("deadline", session_timeout_ms),
+        ("read", 11, session_timeout_ms),
         ("serve", request, None, 12, {"type": "test"}),
         ("consume_go", "sha256:" + "a" * 64),
         "first_reservation",
         "first_request",
         "census",
         ("release_worker", 12),
-        ("wait", 15_000),
+        ("wait", worker_wait_timeout_ms),
         "deadline_end",
         ("stream_close", 12),
         ("close", 11),
@@ -637,7 +651,10 @@ def test_run_rejects_nonlive_execution_authority_at_first_request(
         boundary=Boundary(),
         transport=object(),
         broker=Broker(),
-        producer_request=object(),
+        producer_request=SimpleNamespace(
+            max_redirect_hops=0,
+            limits=SimpleNamespace(timeout_seconds=runtime.SCIENCEBASE_TIMEOUT_SECONDS),
+        ),
         source_root=Path("C:/source"),
         source_commit="1" * 40,
         source_commit_reader=lambda _root: "1" * 40,
@@ -719,7 +736,10 @@ def test_run_failure_closes_every_untransferred_pipe_inside_boundary() -> None:
         boundary=Boundary(),
         transport=object(),
         broker=object(),
-        producer_request=object(),
+        producer_request=SimpleNamespace(
+            max_redirect_hops=0,
+            limits=SimpleNamespace(timeout_seconds=runtime.SCIENCEBASE_TIMEOUT_SECONDS),
+        ),
         source_root=Path("C:/source"),
         source_commit="1" * 40,
         source_commit_reader=lambda _root: "1" * 40,
@@ -743,6 +763,89 @@ def test_run_failure_closes_every_untransferred_pipe_inside_boundary() -> None:
         "store_close",
     ]
     assert consumed == []
+
+
+def test_in_budget_delayed_worker_response_outlives_legacy_session_deadline() -> None:
+    runtime = _runtime_module()
+    output = object()
+    observed: list[tuple[str, int]] = []
+
+    class Boundary:
+        @contextlib.contextmanager
+        def acquire(self):
+            yield self
+
+        def create_worker_pipes(self):
+            return 51, 52, 53, 54
+
+        def launch_worker(self, _handles, *, mode):
+            assert mode == "sciencebase"
+
+        def close_pipe_handle(self, _handle):
+            return None
+
+        def read_worker_frame(self, handle, timeout_ms):
+            assert handle == 51
+            observed.append(("read", timeout_ms))
+            return {"type": "delayed"}
+
+        def census(self):
+            return None
+
+        def wait_worker(self, timeout_ms):
+            observed.append(("wait", timeout_ms))
+            return 0
+
+        @contextlib.contextmanager
+        def broker_session_deadline(self, timeout_ms):
+            observed.append(("deadline", timeout_ms))
+            started = time.monotonic()
+            yield
+            if time.monotonic() - started > timeout_ms / 1_000_000:
+                raise runtime.RuntimeHold("broker_session_deadline")
+
+    class Stream(contextlib.AbstractContextManager):
+        def __exit__(self, *_args):
+            return None
+
+    class Broker:
+        def serve_sciencebase(
+            self, _request, _reader, _writer, *, read_next, consume_authority
+        ):
+            assert consume_authority() is True
+            assert read_next() == {"type": "delayed"}
+            time.sleep(0.020)
+            return output
+
+    request = SimpleNamespace(
+        max_redirect_hops=0,
+        limits=SimpleNamespace(timeout_seconds=runtime.SCIENCEBASE_TIMEOUT_SECONDS),
+    )
+    prepared = runtime.PreparedRuntime(
+        envelope=SimpleNamespace(
+            envelope=SimpleNamespace(content_digest="sha256:" + "e" * 64)
+        ),
+        reservation_store=SimpleNamespace(close=lambda: None),
+        boundary=Boundary(),
+        transport=object(),
+        broker=Broker(),
+        producer_request=request,
+        source_root=Path("C:/source"),
+        source_commit="1" * 40,
+        source_commit_reader=lambda _root: "1" * 40,
+    )
+
+    try:
+        result = runtime.run_prepared_runtime(
+            prepared,
+            execution_authority=SimpleNamespace(consume_exact=lambda _digest: True),
+            open_writer=lambda _handle: Stream(),
+            release_worker=lambda _writer: None,
+        )
+    except runtime.RuntimeHold as exc:
+        pytest.fail(f"unexpected {exc.code}; observed={observed!r}")
+    assert result is output
+    assert observed == [("deadline", 105_000), ("read", 105_000), ("wait", 30_000)]
 
 
 @pytest.mark.parametrize("phase", ["boundary", "writer", "ipc"])
@@ -789,7 +892,10 @@ def test_setup_failures_leave_go_unspent(phase: str) -> None:
         boundary=Boundary(),
         transport=object(),
         broker=Broker(),
-        producer_request=object(),
+        producer_request=SimpleNamespace(
+            max_redirect_hops=0,
+            limits=SimpleNamespace(timeout_seconds=runtime.SCIENCEBASE_TIMEOUT_SECONDS),
+        ),
         source_root=Path("C:/source"),
         source_commit="1" * 40,
         source_commit_reader=lambda _root: "1" * 40,

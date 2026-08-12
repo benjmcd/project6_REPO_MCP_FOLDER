@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from enum import Enum
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import shutil
@@ -40,6 +41,7 @@ MAX_AUTHORITY_ENVELOPE_BYTES = 64 * 1024
 SCIENCEBASE_MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 SCIENCEBASE_MAX_TOTAL_BYTES = 512 * 1024 * 1024
 SCIENCEBASE_TIMEOUT_SECONDS = 30
+SCIENCEBASE_LAUNCH_IPC_OVERHEAD_MS = 15_000
 
 
 class RuntimeHold(RuntimeError):
@@ -620,6 +622,13 @@ def run_prepared_runtime(
                 raise RuntimeHold("live_go_required")
             return True
 
+        request_timeout_ms = math.ceil(
+            prepared.producer_request.limits.timeout_seconds * 1000
+        )
+        max_requests = 3 * (prepared.producer_request.max_redirect_hops + 1)
+        session_timeout_ms = (
+            max_requests * request_timeout_ms + SCIENCEBASE_LAUNCH_IPC_OVERHEAD_MS
+        )
         with prepared.boundary.acquire():
             try:
                 allocated = prepared.boundary.create_worker_pipes()
@@ -661,19 +670,19 @@ def run_prepared_runtime(
                 with contextlib.ExitStack() as streams:
                     writer = streams.enter_context(open_writer(raw_handles[1]))
                     raw_handles[1] = 0
-                    with prepared.boundary.broker_session_deadline(15_000):
+                    with prepared.boundary.broker_session_deadline(session_timeout_ms):
                         output = prepared.broker.serve_sciencebase(
                             prepared.producer_request,
                             None,
                             writer,
                             read_next=lambda: prepared.boundary.read_worker_frame(
-                                raw_handles[0], 15_000
+                                raw_handles[0], session_timeout_ms
                             ),
                             consume_authority=consume_authority,
                         )
                         prepared.boundary.census()
                         release_worker(writer)
-                        prepared.boundary.wait_worker(15_000)
+                        prepared.boundary.wait_worker(request_timeout_ms)
                 return output
             finally:
                 _close_raw_handles(prepared.boundary, raw_handles)
