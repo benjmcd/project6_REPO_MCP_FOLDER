@@ -634,6 +634,8 @@ def _write_artifact(
     digest = hashlib.sha256(content).hexdigest()
     if output.sha256 != digest:
         raise LiveReadinessHold("sciencebase_output_invalid")
+    if _artifact_content_rejected(content):
+        raise LiveReadinessHold("sciencebase_artifact_content_rejected")
     name = f"sciencebase-{authority.content_digest[7:]}-{digest}.bin"
     path = Path(store.canonical_root) / name
     store.verify_identity()
@@ -654,6 +656,13 @@ def _write_artifact(
     if observed != content or hashlib.sha256(observed).hexdigest() != digest:
         raise LiveReadinessHold("sciencebase_artifact_observation_failed")
     return path
+
+
+def _artifact_content_rejected(content: bytes) -> bool:
+    leading = content.lstrip()
+    if leading.startswith(b"\xef\xbb\xbf"):
+        leading = leading[3:].lstrip()
+    return leading.lower().startswith((b"<", b"<!doctype", b"<html", b"<?xml"))
 
 
 def execute_sciencebase_live(
@@ -897,6 +906,10 @@ def verify_sciencebase_closeout(
         ):
             return LiveExecutionResult(
                 "HOLD", "sciencebase_artifact_verification_failed", None
+            )
+        if _artifact_content_rejected(content):
+            return LiveExecutionResult(
+                "HOLD", "sciencebase_artifact_content_rejected", None
             )
         closeout_metrics = {
             "schema": LIVE_EVIDENCE_SCHEMA,
