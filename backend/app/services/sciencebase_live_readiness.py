@@ -11,6 +11,7 @@ import re
 import sqlite3
 import subprocess
 import tempfile
+import threading
 from typing import Any, Callable, Protocol
 from uuid import UUID, uuid5
 
@@ -21,6 +22,10 @@ from app.services.dual_live_sciencebase_producer import ScienceBaseOutput
 LIVE_GO_SCHEMA = "project6.sciencebase_live_go.v1"
 LIVE_EVIDENCE_SCHEMA = "project6.sciencebase_live_evidence.v1"
 LIVE_EVENT_NAMESPACE = UUID("b9863662-dd18-58cc-9914-97eb88ad2988")
+LIVE_GO_SPENT_MARKER = Path(
+    r"C:\ProgramData\Project6\Authority\sciencebase-go-spent-v1.jsonl"
+)
+_SPENT_MARKER_LOCK = threading.Lock()
 MAX_LIVE_GO_BYTES = 64 * 1024
 MAX_OWNER_GO_SIGNATURE_BYTES = 16 * 1024
 _SHA256 = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -477,6 +482,43 @@ class OneUseLiveGoConsumer:
             return False
         if envelope_digest != self.authority.envelope_digest:
             self.last_code = "live_go_binding_mismatch"
+            return False
+        database_path = Path(self.authority.canonical_root) / "reservation.db"
+        if not database_path.is_file():
+            self.last_code = "reservation_store_unavailable"
+            return False
+        marker = {
+            "schema": "project6.sciencebase_live_go_spent.v1",
+            "go_id": self.authority.go_id,
+            "envelope_digest": self.authority.envelope_digest,
+        }
+        marker_raw = _canonical(marker)
+        try:
+            with _SPENT_MARKER_LOCK:
+                LIVE_GO_SPENT_MARKER.parent.mkdir(parents=True, exist_ok=True)
+                with LIVE_GO_SPENT_MARKER.open("a+b") as handle:
+                    handle.seek(0)
+                    existing = handle.read()
+                    for line in existing.splitlines():
+                        observed = json.loads(line.decode("utf-8"))
+                        if not isinstance(observed, dict) or _canonical(observed) != line:
+                            raise ValueError
+                        if (
+                            observed.get("go_id") == self.authority.go_id
+                            or observed.get("envelope_digest")
+                            == self.authority.envelope_digest
+                        ):
+                            self.last_code = "live_go_already_spent"
+                            return False
+                    handle.seek(0, os.SEEK_END)
+                    handle.write(marker_raw + b"\n")
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                    handle.seek(0)
+                    if not handle.read().endswith(marker_raw + b"\n"):
+                        raise OSError
+        except (OSError, ValueError, UnicodeError, json.JSONDecodeError):
+            self.last_code = "live_go_consumption_indeterminate"
             return False
         metrics = {
             "schema": LIVE_EVIDENCE_SCHEMA,

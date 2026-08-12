@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
+import gc
 import json
 from pathlib import Path
 import subprocess
@@ -175,6 +177,14 @@ def _load_module():
 
 def _owner_authenticator():
     return SimpleNamespace(authenticate_exact=lambda _raw, _digest: True)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_spent_marker(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    module = _load_module()
+    monkeypatch.setattr(
+        module, "LIVE_GO_SPENT_MARKER", tmp_path / "spent.jsonl", raising=False
+    )
 
 
 def test_initialize_reservation_database_create_once_and_store_opens_rw(
@@ -499,6 +509,102 @@ def test_exact_go_is_credentialless_content_addressed_and_consumed_once(
     store.close()
 
 
+def test_spent_marker_prevents_rearm_after_consumption_row_deleted(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    document = _go_document(module, prepared)
+    raw = _canonical(document)
+    path = tmp_path / "owner-go.json"
+    path.write_bytes(raw)
+    authority = module.load_live_go_once(
+        path,
+        "sha256:" + hashlib.sha256(raw).hexdigest(),
+        prepared,
+        owner_authenticator=_owner_authenticator(),
+    )
+
+    assert module.OneUseLiveGoConsumer(store, authority).consume_exact(
+        DIGESTS["envelope"]
+    ) is True
+    with sqlite3.connect(tmp_path / "reservation.db") as connection:
+        connection.execute(
+            "DELETE FROM connector_run_event WHERE event_type = 'sciencebase_live_go_consumed'"
+        )
+    replay = module.OneUseLiveGoConsumer(store, authority)
+    assert replay.consume_exact(DIGESTS["envelope"]) is False
+    assert replay.last_code == "live_go_already_spent"
+    assert (tmp_path / "spent.jsonl").read_bytes().endswith(b"\n")
+    store.close()
+
+
+def test_eight_thread_go_consumption_commits_once_and_spends_seven(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    document = _go_document(module, prepared)
+    raw = _canonical(document)
+    path = tmp_path / "owner-go.json"
+    path.write_bytes(raw)
+    authority = module.load_live_go_once(
+        path,
+        "sha256:" + hashlib.sha256(raw).hexdigest(),
+        prepared,
+        owner_authenticator=_owner_authenticator(),
+    )
+    consumers = [module.OneUseLiveGoConsumer(store, authority) for _ in range(8)]
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(
+            executor.map(
+                lambda consumer: consumer.consume_exact(DIGESTS["envelope"]),
+                consumers,
+            )
+        )
+
+    assert results.count(True) == 1
+    assert results.count(False) == 7
+    assert [consumer.last_code for consumer in consumers].count(
+        "live_go_already_spent"
+    ) == 7
+    store.close()
+
+
+def test_missing_reservation_database_holds_without_rearming_spent_go(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    document = _go_document(module, prepared)
+    raw = _canonical(document)
+    path = tmp_path / "owner-go.json"
+    path.write_bytes(raw)
+    authority = module.load_live_go_once(
+        path,
+        "sha256:" + hashlib.sha256(raw).hexdigest(),
+        prepared,
+        owner_authenticator=_owner_authenticator(),
+    )
+    assert module.OneUseLiveGoConsumer(store, authority).consume_exact(
+        DIGESTS["envelope"]
+    ) is True
+    store.close()
+    gc.collect()
+    (tmp_path / "reservation.db").rename(tmp_path / "reservation.db.bak")
+
+    replay = module.OneUseLiveGoConsumer(store, authority)
+    assert replay.consume_exact(DIGESTS["envelope"]) is False
+    assert replay.last_code == "reservation_store_unavailable"
+
+
 def test_different_go_for_same_connector_run_cannot_rearm_after_consumption(
     tmp_path: Path,
 ) -> None:
@@ -534,7 +640,7 @@ def test_different_go_for_same_connector_run_cannot_rearm_after_consumption(
     consumer = module.OneUseLiveGoConsumer(store, second)
 
     assert consumer.consume_exact(DIGESTS["envelope"]) is False
-    assert consumer.last_code == "live_go_consumption_indeterminate"
+    assert consumer.last_code == "live_go_already_spent"
     with sqlite3.connect(tmp_path / "reservation.db") as connection:
         assert connection.execute(
             "SELECT COUNT(*) FROM connector_run_event WHERE event_type = 'sciencebase_live_go_consumed'"
