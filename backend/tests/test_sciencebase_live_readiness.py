@@ -947,6 +947,7 @@ def test_success_records_artifact_and_terminal_only_after_containment(tmp_path: 
     ]
     terminal = json.loads(rows[-1][2])
     assert terminal["containment_status"] == "contained"
+    assert terminal["boundary_assurance"] == "owner_waived_unproven"
     assert terminal["credential_mode"] == "none_public"
     assert terminal["artifact_sha256"] == hashlib.sha256(result.artifact_path.read_bytes()).hexdigest()
 
@@ -1019,6 +1020,58 @@ def test_write_artifact_rejects_bom_encoded_html_before_write(
     store.close()
 
 
+@pytest.mark.parametrize(
+    "content",
+    [
+        pytest.param(b"", id="empty"),
+        pytest.param(b" \t\r\n", id="whitespace"),
+        pytest.param(b"\xef\xbb\xbf", id="utf8-bom-only"),
+        pytest.param(b'{"error":"unavailable"}', id="json-object"),
+        pytest.param(b'["unavailable"]', id="json-array"),
+        pytest.param(
+            b"\xff\xfe" + '{"error":"unavailable"}'.encode("utf-16-le"),
+            id="utf16le-json",
+        ),
+        pytest.param(
+            b"\x00\x00\xfe\xff" + '["unavailable"]'.encode("utf-32-be"),
+            id="utf32be-json",
+        ),
+    ],
+)
+def test_write_artifact_rejects_empty_whitespace_and_json_before_write(
+    tmp_path: Path, content: bytes
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    raw = _canonical(_go_document(module, prepared))
+    go_path = tmp_path / "owner-go.json"
+    go_path.write_bytes(raw)
+    authority = module.load_live_go_once(
+        go_path,
+        "sha256:" + hashlib.sha256(raw).hexdigest(),
+        prepared,
+        owner_authenticator=_owner_authenticator(),
+    )
+    output = ScienceBaseOutput(
+        "item-1",
+        "map.json",
+        content,
+        hashlib.sha256(content).hexdigest(),
+        3,
+        len(content),
+    )
+
+    with pytest.raises(
+        module.LiveReadinessHold, match="sciencebase_artifact_content_rejected"
+    ):
+        module._write_artifact(store, authority, output, prepared.producer_request)
+
+    assert list(tmp_path.glob("sciencebase-*.bin")) == []
+    store.close()
+
+
 def test_failure_after_go_consumption_records_hold_without_retry(tmp_path: Path) -> None:
     module = _load_module()
     _database(tmp_path)
@@ -1051,6 +1104,7 @@ def test_failure_after_go_consumption_records_hold_without_retry(tmp_path: Path)
         "sciencebase_live_go_consumed",
         "sciencebase_acquisition_terminal",
     ]
+    assert json.loads(rows[-1][1])["boundary_assurance"] == "owner_waived_unproven"
     assert "sentinel-secret" not in json.dumps(rows)
 
 
@@ -1094,7 +1148,9 @@ def test_post_containment_artifact_failure_still_records_terminal_hold(
             "WHERE event_type = 'sciencebase_acquisition_terminal'"
         ).fetchone()
     assert terminal[0:2] == ("hold", "sciencebase_artifact_write_failed")
-    assert json.loads(terminal[2])["containment_status"] == "contained"
+    terminal_metrics = json.loads(terminal[2])
+    assert terminal_metrics["containment_status"] == "contained"
+    assert terminal_metrics["boundary_assurance"] == "owner_waived_unproven"
 
 
 def test_post_containment_invalid_output_still_records_terminal_hold(
@@ -1188,6 +1244,201 @@ def test_utf16_csv_artifact_writes_and_independent_closeout_verifies_exact_three
         assert connection.execute(
             "SELECT COUNT(*) FROM connector_run_event WHERE event_type = 'sciencebase_closeout_verified'"
         ).fetchone()[0] == 1
+
+
+def test_plain_utf8_no_bom_csv_writes_and_verifies(tmp_path: Path) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    raw = _canonical(_go_document(module, prepared))
+    go_path = tmp_path / "owner-go.json"
+    go_path.write_bytes(raw)
+    go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+    csv_content = b"col1,col2\n1,2\n"
+
+    def run(_prepared, *, execution_authority):
+        assert execution_authority.consume_exact(DIGESTS["envelope"]) is True
+        for ordinal, stage in enumerate(
+            ("sciencebase_search", "sciencebase_hydrate", "sciencebase_download"),
+            start=1,
+        ):
+            assert _prepared.reservation_store.reserve(
+                _plan(tmp_path.resolve(), ordinal, stage)
+            ).disposition == "RESERVED"
+        _prepared.reservation_store.close()
+        return ScienceBaseOutput(
+            "item-1",
+            "map.json",
+            csv_content,
+            hashlib.sha256(csv_content).hexdigest(),
+            3,
+            len(csv_content),
+        )
+
+    executed = module.execute_sciencebase_live(
+        prepared,
+        go_path=go_path,
+        go_digest=go_digest,
+        run=run,
+        store_factory=lambda root, path: _store(root),
+        owner_authenticator=_owner_authenticator(),
+    )
+    result = module.verify_sciencebase_closeout(
+        canonical_root=tmp_path.resolve(),
+        reservation_database_path=tmp_path / "reservation.db",
+        connector_run_id=RUN_ID,
+        go_digest=go_digest,
+        store_factory=lambda root, path: _store(root),
+    )
+
+    assert executed.status == "TERMINAL"
+    assert executed.artifact_path.read_bytes() == csv_content
+    assert result.status == "VERIFIED"
+    assert result.code == "sciencebase_closeout_verified"
+
+
+@pytest.mark.parametrize(
+    ("content", "expected_code"),
+    [
+        pytest.param(b"", "sciencebase_closeout_evidence_malformed", id="empty"),
+        pytest.param(
+            b" \t\r\n", "sciencebase_artifact_content_rejected", id="whitespace"
+        ),
+        pytest.param(
+            b'{"error":"unavailable"}',
+            "sciencebase_artifact_content_rejected",
+            id="json-object",
+        ),
+        pytest.param(
+            b"\xff\xfe" + '["unavailable"]'.encode("utf-16-le"),
+            "sciencebase_artifact_content_rejected",
+            id="utf16le-json",
+        ),
+    ],
+)
+def test_closeout_rejects_empty_whitespace_and_json_without_verified_event(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    content: bytes,
+    expected_code: str,
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    raw = _canonical(_go_document(module, prepared))
+    go_path = tmp_path / "owner-go.json"
+    go_path.write_bytes(raw)
+    go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+
+    def bypass_write_gate(store, authority, output, _expected_request):
+        digest = hashlib.sha256(output.content).hexdigest()
+        path = Path(store.canonical_root) / (
+            f"sciencebase-{authority.content_digest[7:]}-{digest}.bin"
+        )
+        path.write_bytes(output.content)
+        return path
+
+    monkeypatch.setattr(module, "_write_artifact", bypass_write_gate)
+
+    def run(_prepared, *, execution_authority):
+        assert execution_authority.consume_exact(DIGESTS["envelope"]) is True
+        for ordinal, stage in enumerate(
+            ("sciencebase_search", "sciencebase_hydrate", "sciencebase_download"),
+            start=1,
+        ):
+            assert _prepared.reservation_store.reserve(
+                _plan(tmp_path.resolve(), ordinal, stage)
+            ).disposition == "RESERVED"
+        _prepared.reservation_store.close()
+        return ScienceBaseOutput(
+            "item-1",
+            "map.json",
+            content,
+            hashlib.sha256(content).hexdigest(),
+            3,
+            len(content),
+        )
+
+    executed = module.execute_sciencebase_live(
+        prepared,
+        go_path=go_path,
+        go_digest=go_digest,
+        run=run,
+        store_factory=lambda root, path: _store(root),
+        owner_authenticator=_owner_authenticator(),
+    )
+    result = module.verify_sciencebase_closeout(
+        canonical_root=tmp_path.resolve(),
+        reservation_database_path=tmp_path / "reservation.db",
+        connector_run_id=RUN_ID,
+        go_digest=go_digest,
+        store_factory=lambda root, path: _store(root),
+    )
+
+    assert executed.status == "TERMINAL"
+    assert result.status == "HOLD"
+    assert result.code == expected_code
+    with sqlite3.connect(tmp_path / "reservation.db") as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM connector_run_event "
+            "WHERE event_type = 'sciencebase_closeout_verified'"
+        ).fetchone()[0] == 0
+
+
+def test_closeout_rejects_zero_artifact_bytes_even_when_content_predicate_bypassed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    raw = _canonical(_go_document(module, prepared))
+    go_path = tmp_path / "owner-go.json"
+    go_path.write_bytes(raw)
+    go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+    monkeypatch.setattr(module, "_artifact_content_rejected", lambda _content: False)
+
+    def run(_prepared, *, execution_authority):
+        assert execution_authority.consume_exact(DIGESTS["envelope"]) is True
+        for ordinal, stage in enumerate(
+            ("sciencebase_search", "sciencebase_hydrate", "sciencebase_download"),
+            start=1,
+        ):
+            assert _prepared.reservation_store.reserve(
+                _plan(tmp_path.resolve(), ordinal, stage)
+            ).disposition == "RESERVED"
+        _prepared.reservation_store.close()
+        return ScienceBaseOutput(
+            "item-1", "map.json", b"", hashlib.sha256(b"").hexdigest(), 3, 0
+        )
+
+    executed = module.execute_sciencebase_live(
+        prepared,
+        go_path=go_path,
+        go_digest=go_digest,
+        run=run,
+        store_factory=lambda root, path: _store(root),
+        owner_authenticator=_owner_authenticator(),
+    )
+    result = module.verify_sciencebase_closeout(
+        canonical_root=tmp_path.resolve(),
+        reservation_database_path=tmp_path / "reservation.db",
+        connector_run_id=RUN_ID,
+        go_digest=go_digest,
+        store_factory=lambda root, path: _store(root),
+    )
+
+    assert executed.status == "TERMINAL"
+    assert result.status == "HOLD"
+    assert result.code == "sciencebase_closeout_evidence_malformed"
+    with sqlite3.connect(tmp_path / "reservation.db") as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM connector_run_event "
+            "WHERE event_type = 'sciencebase_closeout_verified'"
+        ).fetchone()[0] == 0
 
 
 def test_closeout_rejects_self_consistent_utf16le_html_without_verified_event(

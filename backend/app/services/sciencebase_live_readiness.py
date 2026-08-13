@@ -27,6 +27,7 @@ from app.services.sciencebase_spent_marker import (
 
 LIVE_GO_SCHEMA = "project6.sciencebase_live_go.v1"
 LIVE_EVIDENCE_SCHEMA = "project6.sciencebase_live_evidence.v1"
+BOUNDARY_ASSURANCE = "owner_waived_unproven"
 LIVE_EVENT_NAMESPACE = UUID("b9863662-dd18-58cc-9914-97eb88ad2988")
 LIVE_GO_SPENT_MARKER = Path(
     r"C:\ProgramData\Project6\Authority\sciencebase-go-spent-v1.jsonl"
@@ -587,6 +588,7 @@ def _record_terminal(
         "credential_mode": authority.credential_mode,
         "egress_mode": authority.egress_mode,
         "containment_status": containment_status,
+        "boundary_assurance": BOUNDARY_ASSURANCE,
         "outcome": status,
     }
     if artifact_path is not None:
@@ -669,9 +671,11 @@ def _artifact_content_rejected(content: bytes) -> bool:
     )
     for bom, encoding in encoded_boms:
         if leading.startswith(bom):
-            decoded = leading[len(bom) :].decode(encoding, errors="replace")
-            return decoded.lstrip().startswith("<")
-    return leading.startswith(b"<")
+            normalized = leading[len(bom) :].decode(
+                encoding, errors="replace"
+            ).lstrip()
+            return not normalized or normalized.startswith(("<", "{", "["))
+    return not leading or leading.startswith((b"<", b"{", b"["))
 
 
 def execute_sciencebase_live(
@@ -699,9 +703,17 @@ def execute_sciencebase_live(
     consumer = OneUseLiveGoConsumer(prepared.reservation_store, authority)
     try:
         output = run(prepared, execution_authority=consumer)
-    except BaseException:
+    except BaseException as exc:
         if not consumer.consumed:
-            return LiveExecutionResult("HOLD", consumer.last_code, None)
+            originating_code = getattr(exc, "code", None)
+            code = consumer.last_code
+            if (
+                code == "live_go_not_consumed"
+                and isinstance(originating_code, str)
+                and re.fullmatch(r"[a-z0-9_]{1,64}", originating_code) is not None
+            ):
+                code = originating_code
+            return LiveExecutionResult("HOLD", code, None)
         terminal_store = None
         try:
             root = Path(authority.canonical_root)
@@ -893,7 +905,7 @@ def verify_sciencebase_closeout(
             == f"sciencebase-{go_digest[7:]}-{artifact_sha256}.bin"
             and not isinstance(artifact_bytes, bool)
             and isinstance(artifact_bytes, int)
-            and 0 <= artifact_bytes <= 64 * 1024 * 1024
+            and 1 <= artifact_bytes <= 64 * 1024 * 1024
         )
         if not valid_go or not reservation_valid or not valid_terminal:
             return LiveExecutionResult(

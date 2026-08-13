@@ -3,6 +3,8 @@
 ## Purpose
 Operational runbook for the Annual MCS pilot gate using the public-read ScienceBase connector.
 
+This document governs the in-process public connector API pilot. The separate [signed-GO readiness procedure](next_milestone_plans/sciencebase-live-readiness.md) governs the bounded default-off broker/runtime path. Neither document supersedes the other.
+
 ## Preconditions
 - API is running with migrations applied through `0006_connector_run_core_counters`.
 - ScienceBase connectivity is available from the API runtime.

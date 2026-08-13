@@ -768,6 +768,156 @@ def test_run_failure_closes_every_untransferred_pipe_inside_boundary() -> None:
     assert consumed == []
 
 
+def test_run_preserves_valid_duck_typed_hold_code_without_message_or_cause() -> None:
+    runtime = _runtime_module()
+
+    class OriginatingHold(RuntimeError):
+        code = "worker_origin_hold"
+
+    class Boundary:
+        def acquire(self):
+            raise OriginatingHold("sentinel-secret")
+
+    prepared = runtime.PreparedRuntime(
+        envelope=SimpleNamespace(
+            envelope=SimpleNamespace(content_digest="sha256:" + "c" * 64)
+        ),
+        reservation_store=SimpleNamespace(close=lambda: None),
+        boundary=Boundary(),
+        transport=object(),
+        broker=object(),
+        producer_request=SimpleNamespace(
+            max_redirect_hops=0,
+            limits=SimpleNamespace(timeout_seconds=runtime.SCIENCEBASE_TIMEOUT_SECONDS),
+        ),
+        source_root=Path("C:/source"),
+        source_commit="1" * 40,
+        source_commit_reader=lambda _root: "1" * 40,
+    )
+
+    with pytest.raises(runtime.RuntimeHold) as raised:
+        runtime.run_prepared_runtime(
+            prepared,
+            execution_authority=SimpleNamespace(consume_exact=lambda _digest: True),
+        )
+
+    assert raised.value.code == "worker_origin_hold"
+    assert str(raised.value) == "worker_origin_hold"
+    assert raised.value.__cause__ is None
+    assert "sentinel-secret" not in str(raised.value)
+
+
+def test_run_falls_back_for_missing_or_invalid_duck_typed_hold_code() -> None:
+    runtime = _runtime_module()
+
+    class InvalidOriginatingHold(RuntimeError):
+        def __init__(self, code: object) -> None:
+            self.code = code
+            super().__init__("sentinel-secret")
+
+    def run_case(originating: BaseException) -> None:
+        class Boundary:
+            def acquire(self):
+                raise originating
+
+        prepared = runtime.PreparedRuntime(
+            envelope=SimpleNamespace(
+                envelope=SimpleNamespace(content_digest="sha256:" + "c" * 64)
+            ),
+            reservation_store=SimpleNamespace(close=lambda: None),
+            boundary=Boundary(),
+            transport=object(),
+            broker=object(),
+            producer_request=SimpleNamespace(
+                max_redirect_hops=0,
+                limits=SimpleNamespace(
+                    timeout_seconds=runtime.SCIENCEBASE_TIMEOUT_SECONDS
+                ),
+            ),
+            source_root=Path("C:/source"),
+            source_commit="1" * 40,
+            source_commit_reader=lambda _root: "1" * 40,
+        )
+
+        with pytest.raises(runtime.RuntimeHold) as raised:
+            runtime.run_prepared_runtime(
+                prepared,
+                execution_authority=SimpleNamespace(
+                    consume_exact=lambda _digest: True
+                ),
+            )
+        assert raised.value.code == "runtime_execution_failed"
+        assert raised.value.__cause__ is None
+        assert "sentinel-secret" not in str(raised.value)
+
+    for originating in (
+        OSError("sentinel-secret"),
+        InvalidOriginatingHold("UPPERCASE"),
+        InvalidOriginatingHold("contains-hyphen"),
+        InvalidOriginatingHold("x" * 65),
+        InvalidOriginatingHold(7),
+    ):
+        run_case(originating)
+
+
+def test_execute_preserves_valid_preconsume_hold_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = importlib.import_module("app.services.sciencebase_live_readiness")
+    authority = SimpleNamespace(envelope_digest="sha256:" + "a" * 64)
+    monkeypatch.setattr(module, "load_live_go_once", lambda *_args, **_kwargs: authority)
+
+    class OriginatingHold(RuntimeError):
+        code = "sciencebase_target_hold"
+
+    result = module.execute_sciencebase_live(
+        SimpleNamespace(reservation_store=object()),
+        go_path=tmp_path / "owner-go.json",
+        go_digest="sha256:" + "b" * 64,
+        run=lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            OriginatingHold("sentinel-secret")
+        ),
+        store_factory=lambda *_args: pytest.fail("pre-consume HOLD opened store"),
+    )
+
+    assert result.status == "HOLD"
+    assert result.code == "sciencebase_target_hold"
+    assert "sentinel-secret" not in repr(result)
+
+
+@pytest.mark.parametrize(
+    "consumption_code",
+    ["live_go_already_spent", "live_go_consumption_indeterminate"],
+)
+def test_execute_preserves_go_consumption_precedence_over_exception_code(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    consumption_code: str,
+) -> None:
+    module = importlib.import_module("app.services.sciencebase_live_readiness")
+    authority = SimpleNamespace(envelope_digest="sha256:" + "a" * 64)
+    monkeypatch.setattr(module, "load_live_go_once", lambda *_args, **_kwargs: authority)
+
+    class OriginatingHold(RuntimeError):
+        code = "sciencebase_target_hold"
+
+    def fail(_prepared, *, execution_authority):
+        execution_authority.last_code = consumption_code
+        raise OriginatingHold("sentinel-secret")
+
+    result = module.execute_sciencebase_live(
+        SimpleNamespace(reservation_store=object()),
+        go_path=tmp_path / "owner-go.json",
+        go_digest="sha256:" + "b" * 64,
+        run=fail,
+        store_factory=lambda *_args: pytest.fail("pre-consume HOLD opened store"),
+    )
+
+    assert result.status == "HOLD"
+    assert result.code == consumption_code
+    assert "sentinel-secret" not in repr(result)
+
+
 def test_in_budget_delayed_worker_response_outlives_legacy_session_deadline() -> None:
     runtime = _runtime_module()
     output = object()

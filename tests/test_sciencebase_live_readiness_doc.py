@@ -6,6 +6,7 @@ import re
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 READINESS = REPO_ROOT / "next_milestone_plans" / "sciencebase-live-readiness.md"
+PILOT_RUNBOOK = REPO_ROOT / "SCIENCEBASE_PILOT_RUNBOOK.md"
 
 
 def _preparation_block() -> str:
@@ -101,3 +102,136 @@ def test_w5_validates_exact_sciencebase_authority_before_direct_curl() -> None:
         "--max-redirs 0",
     ):
         assert token in block
+
+
+def test_closeout_discloses_local_consistency_and_containment_limit() -> None:
+    text = READINESS.read_text(encoding="utf-8")
+
+    assert (
+        "`--verify-closeout` checks internal consistency; it neither "
+        "re-authenticates the GO nor measures containment. R5 remains OPEN; "
+        "this is disclosure, not control."
+    ) in text
+
+
+def test_w5_uses_saved_exact_chain_bytes_and_runtime_membership() -> None:
+    block = _w5_block()
+
+    for token in (
+        "$SearchBody",
+        "$SearchHeaders",
+        "$HydrateBody",
+        "$HydrateHeaders",
+        "$DownloadBody",
+        "$DownloadHeaders",
+        "Assert-NoDuplicateJsonKeys",
+        "$Search.items",
+        "$ExactItemId",
+        "$Hydrate.files",
+        "$Hydrate.id -cne $ExactItemId",
+        "$ExactFileName",
+        ".downloadUri",
+        ".url",
+        "$DerivedDownloadUrl",
+        "$ExactDownloadUrl -cne $DerivedDownloadUrl",
+        "$BaselineSearchMembership",
+        "$BaselineDownloadUrl",
+    ):
+        assert token in block
+    assert "--output NUL" not in block
+    assert "--dump-header -" not in block
+    assert "max=" not in block
+    assert "offset=" not in block
+    assert "sort=" not in block
+    assert "@($Hydrate.files).Count -ne 1" not in block
+    required_inputs = block[block.index("if (@(") : block.index("$StageUrls = @(")]
+    assert "$ExactDownloadUrl" not in required_inputs
+    initial_stages = block[
+        block.index("$StageUrls = @(") : block.index("function Test-PathInside")
+    ]
+    assert "$ExactDownloadUrl" not in initial_stages
+    derive = block.index("$DerivedDownloadUrl =")
+    download = block.index("Invoke-W5Stage $Attempt 'download' $DerivedDownloadUrl")
+    assert derive < download
+
+
+def test_w5_records_cleans_and_invalidates_observation_set() -> None:
+    block = _w5_block()
+
+    for token in (
+        "$ScienceBaseInactivitySeconds = 30",
+        "$ConnectTimeoutSeconds = $ScienceBaseInactivitySeconds",
+        "$MaxTimeSeconds = $ExactChainStageCount * $ScienceBaseInactivitySeconds",
+        "--connect-timeout $ConnectTimeoutSeconds",
+        "--max-time $MaxTimeSeconds",
+        "BodySha256",
+        "BodyBytes",
+        "HttpStatus",
+        "DerivedDownloadUri",
+        "$ObservationSetValid = $false",
+        "$ObservationRecords.Clear()",
+        "three fresh complete attempts in the same sitting",
+        "finally",
+        "Remove-Item -LiteralPath $RawPath -Force",
+        "$ConvertFromJsonRejectsDuplicates",
+    ):
+        assert token in block
+
+
+def test_readiness_uses_single_segment_fresh_attempt_topology_and_exact_py312_interpreter() -> None:
+    text = READINESS.read_text(encoding="utf-8")
+
+    for token in (
+        "$WorkerProvisioningRoot = 'C:\\p6-sciencebase-worker'",
+        "$Py = (& py -3.12 -c \"import sys; print(sys.executable)\").Trim()",
+        "$AmbientInterpreterRoot = Split-Path -Parent $Py",
+        "$AmbientInterpreterSha256 -cne $WorkerInterpreterSha256",
+        "fresh single-segment root, worker binding, profile binding, and moniker",
+        "at most five owner-budgeted elevated W6-PRE attempts",
+        "W7 is non-elevated",
+        "git cat-file blob",
+        "worker_source_copy_failed",
+        "explicitly treats any stderr as `worker_source_copy_failed`, even when Git exits 0",
+        "8 worker files",
+        "2>$null",
+        "$ErrorActionPreference = 'Stop'",
+        "NativeCommandError",
+        "verify locally before the sitting",
+        "stderr-silent `git` on PATH is a hard prerequisite",
+    ):
+        assert token in text
+    assert "C:\\ProgramData\\Project6\\sciencebase-worker" not in text
+    assert "Get-Command python.exe" not in text
+
+
+def test_readiness_requires_exact_clean_reviewed_source_and_owner_fill_ids() -> None:
+    text = READINESS.read_text(encoding="utf-8")
+    block = _preparation_block()
+
+    assert "`codex/sb-live-impl`" in text
+    assert "$ExpectedSourceCommit = '<OWNER-FILL reviewed head>'" in block
+    assert "git branch --show-current" in block
+    assert "git status --porcelain=v1 --untracked-files=all" in block
+    assert "git rev-parse HEAD" in block
+    for token in (
+        "$BranchExit = $LASTEXITCODE",
+        "$StatusExit = $LASTEXITCODE",
+        "$CommitExit = $LASTEXITCODE",
+        "$BranchExit -ne 0",
+        "$StatusExit -ne 0",
+        "$CommitExit -ne 0",
+    ):
+        assert token in block
+    assert "$SourceCommit -cne $ExpectedSourceCommit" in block
+    assert block.count("<OWNER-FILL fresh UUID>") == 2
+    assert "$ConnectorRunId -like '<OWNER-FILL*'" in block
+    assert "$GoId -like '<OWNER-FILL*'" in block
+
+
+def test_pilot_runbook_disambiguates_without_supersession() -> None:
+    text = PILOT_RUNBOOK.read_text(encoding="utf-8")
+
+    assert "in-process public connector API pilot" in text
+    assert "signed-GO readiness procedure" in text
+    assert "next_milestone_plans/sciencebase-live-readiness.md" in text
+    assert "Neither document supersedes the other." in text

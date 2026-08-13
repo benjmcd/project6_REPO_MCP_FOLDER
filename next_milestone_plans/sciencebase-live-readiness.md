@@ -4,7 +4,7 @@
 
 This is the canonical prospective Lane B planning and status surface. It is not live authority, owner GO, an authority envelope, a launch token, credential authority, or permission to acquire from ScienceBase.
 
-The local `codex/sciencebase-live-v2` subject is based on the owner-accepted B0 head and implements the bounded path described below. It remains local and unlanded. No live GO was issued or consumed, no ScienceBase request was made, no credential was placed or inspected, and egress was not activated. The waived B0 Windows proof remains `OWNER-WAIVED/UNPROVEN`, never PASS.
+The local `codex/sb-live-impl` subject is based on the owner-accepted B0 head and implements the bounded path described below. It remains local and unlanded. No live GO was issued or consumed, no ScienceBase request was made, no credential was placed or inspected, and egress was not activated. The waived B0 Windows proof remains `OWNER-WAIVED/UNPROVEN`, never PASS.
 
 ## Selected tranche
 
@@ -33,18 +33,50 @@ The enclosing session watchdog and each worker-frame read retain the 135,000 ms 
 
 ## Mandatory same-sitting pre-signature stability gate
 
-Before signing, record at least three consecutive same-sitting observations for each of the exact search, hydrate, and download stage URLs using plain `curl.exe` GET requests with redirects disabled. Every observation must report HTTP 200 and no `Location` header. Any non-200, `Location`, curl failure, stage drift, or interrupted sequence resets the count; do not sign until all three stages have three consecutive clean observations in one sitting. Preserve the timestamped commands, exact URLs, status lines, and response-header names with the owner packet.
+Before signing, record three complete same-sitting search -> hydrate -> download observations using saved response bytes and separate saved headers. Every stage must report exact HTTP 200 with no `Location` header. Any non-200, `Location`, curl failure, parse failure, membership/file/URI drift, or interruption invalidates the complete set; restart with three fresh complete attempts in the same sitting. Retain only the timestamped stage records, exact URIs, status, body SHA-256, body byte length, and derived download URI with the owner packet. Raw vendor bodies and headers are always removed in `finally`.
 
 ```powershell
 $ExactSearchUrl = '<OWNER-FILL exact bound search URL>'
 $ExactHydrateUrl = '<OWNER-FILL exact bound item hydrate URL>'
-$ExactDownloadUrl = '<OWNER-FILL exact hydrate-derived download URL>'
-if (@($ExactSearchUrl, $ExactHydrateUrl, $ExactDownloadUrl).Where({ [string]::IsNullOrWhiteSpace($_) -or $_ -like '<OWNER-FILL*' }).Count -ne 0) { throw 'W5 exact stage URLs are incomplete.' }
+$ExactDownloadUrl = '' # optional confirmatory value only; hydrate remains authoritative
+$ExactItemId = '<OWNER-FILL exact target item ID>'
+$ExactFileName = '<OWNER-FILL exact elected filename>'
+$ObservationRoot = '<OWNER-FILL existing non-repo W5 scratch root>'
+$W5CanonicalRoot = '<OWNER-FILL canonical campaign root>'
+$CeremonyCheckout = '<OWNER-FILL later quiesced ceremony checkout>'
+if (@(
+  $ExactSearchUrl, $ExactHydrateUrl, $ExactItemId,
+  $ExactFileName, $ObservationRoot, $W5CanonicalRoot, $CeremonyCheckout
+).Where({ [string]::IsNullOrWhiteSpace($_) -or $_ -like '<OWNER-FILL*' }).Count -ne 0) {
+  throw 'W5 exact-chain inputs are incomplete.'
+}
 $StageUrls = @(
   @{ Name = 'search'; Url = $ExactSearchUrl },
-  @{ Name = 'hydrate'; Url = $ExactHydrateUrl },
-  @{ Name = 'download'; Url = $ExactDownloadUrl }
+  @{ Name = 'hydrate'; Url = $ExactHydrateUrl }
 )
+
+function Test-PathInside([string]$Candidate, [string]$Root) {
+  $CandidateFull = [IO.Path]::GetFullPath($Candidate).TrimEnd('\') + '\'
+  $RootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\') + '\'
+  return $CandidateFull.StartsWith($RootFull, [StringComparison]::OrdinalIgnoreCase)
+}
+
+$ObservationRoot = (Resolve-Path -LiteralPath $ObservationRoot).Path
+$WorktreeRoots = @(
+  & git worktree list --porcelain |
+    Where-Object { $_ -like 'worktree *' } |
+    ForEach-Object { $_.Substring('worktree '.Length) }
+)
+if ($LASTEXITCODE -ne 0) { throw 'W5 could not enumerate worktree roots.' }
+foreach ($ForbiddenRoot in @($W5CanonicalRoot, $CeremonyCheckout) + $WorktreeRoots) {
+  if (
+    (Test-PathInside $ObservationRoot $ForbiddenRoot) -or
+    (Test-PathInside $ForbiddenRoot $ObservationRoot)
+  ) {
+    throw 'W5 scratch root must be outside every worktree, the canonical root, and the ceremony checkout.'
+  }
+}
+
 foreach ($Stage in $StageUrls) {
   $RawUrl = [string]$Stage.Url
   $ParsedUrl = $null
@@ -60,17 +92,182 @@ foreach ($Stage in $StageUrls) {
     $ParsedUrl.Fragment.Length -ne 0
   ) { throw "W5 URL authority HOLD: $($Stage.Name)" }
 }
-foreach ($Attempt in 1..3) {
-  foreach ($Stage in $StageUrls) {
-    $Observed = & curl.exe --disable --silent --show-error --proto '=https' --noproxy '*' --globoff --request GET --max-redirs 0 --output NUL --dump-header - --write-out "`nCURL_STATUS=%{http_code}`n" -- $Stage.Url
-    $ObservedText = $Observed -join "`n"
-    if ($LASTEXITCODE -ne 0 -or $ObservedText -notmatch '(?m)^CURL_STATUS=200$' -or $ObservedText -match '(?im)^Location\s*:') { throw "W5 stability HOLD: $($Stage.Name) attempt $Attempt" }
-    [pscustomobject]@{ Timestamp = (Get-Date).ToString('o'); Attempt = $Attempt; Stage = $Stage.Name; Url = $Stage.Url; Observation = $ObservedText }
+
+$Py = (& py -3.12 -c "import sys; print(sys.executable)").Trim()
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($Py)) {
+  throw 'W5 exact Python 3.12 resolution failed.'
+}
+$DuplicateKeyCheck = @'
+import json
+import pathlib
+import sys
+
+def reject_duplicates(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON key")
+        result[key] = value
+    return result
+
+json.loads(pathlib.Path(sys.argv[-1]).read_bytes(), object_pairs_hook=reject_duplicates)
+'@
+function Assert-NoDuplicateJsonKeys([string]$Path) {
+  & $Py -c $DuplicateKeyCheck $Path
+  if ($LASTEXITCODE -ne 0) { throw "W5 duplicate-key or JSON parse HOLD: $Path" }
+}
+
+$ConvertFromJsonRejectsDuplicates = $false
+try {
+  '{"duplicate":1,"duplicate":2}' | ConvertFrom-Json -ErrorAction Stop | Out-Null
+} catch {
+  $ConvertFromJsonRejectsDuplicates = $true
+}
+
+$ScienceBaseInactivitySeconds = 30
+$ConnectTimeoutSeconds = $ScienceBaseInactivitySeconds
+$ExactChainStageCount = 3
+$MaxTimeSeconds = $ExactChainStageCount * $ScienceBaseInactivitySeconds
+$ObservationRecords = [Collections.Generic.List[object]]::new()
+$RawPaths = [Collections.Generic.List[string]]::new()
+$ObservationSetValid = $false
+$BaselineSearchMembership = $null
+$BaselineDownloadUrl = $null
+
+function New-W5RawPath([int]$Attempt, [string]$Stage, [string]$Kind) {
+  do {
+    $Candidate = Join-Path $ObservationRoot (
+      'w5-{0}-{1}-{2}-{3}' -f $Attempt, $Stage, $Kind,
+      [IO.Path]::GetRandomFileName()
+    )
+  } while (Test-Path -LiteralPath $Candidate)
+  return $Candidate
+}
+
+function Invoke-W5Stage(
+  [int]$Attempt,
+  [string]$Stage,
+  [string]$Url,
+  [string]$BodyPath,
+  [string]$HeaderPath,
+  [string]$DerivedDownloadUri
+) {
+  $HttpStatus = & curl.exe --disable --silent --show-error --proto '=https' `
+    --noproxy '*' --globoff --request GET --max-redirs 0 `
+    --connect-timeout $ConnectTimeoutSeconds --max-time $MaxTimeSeconds `
+    --output $BodyPath --dump-header $HeaderPath --write-out '%{http_code}' -- $Url
+  $CurlExit = $LASTEXITCODE
+  if ($CurlExit -ne 0 -or $HttpStatus -cne '200') {
+    throw "W5 HTTP HOLD: $Stage attempt $Attempt"
+  }
+  $HeaderText = Get-Content -Raw -LiteralPath $HeaderPath
+  if ($HeaderText -match '(?im)^Location\s*:') {
+    throw "W5 redirect HOLD: $Stage attempt $Attempt"
+  }
+  $BodyInfo = Get-Item -LiteralPath $BodyPath
+  return [pscustomobject]@{
+    Timestamp = (Get-Date).ToString('o')
+    Attempt = $Attempt
+    Stage = $Stage
+    Uri = $Url
+    HttpStatus = [string]$HttpStatus
+    BodySha256 = (Get-FileHash -LiteralPath $BodyPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    BodyBytes = $BodyInfo.Length
+    DerivedDownloadUri = $DerivedDownloadUri
   }
 }
+
+try {
+  try {
+    foreach ($Attempt in 1..3) {
+      $SearchBody = New-W5RawPath $Attempt 'search' 'body'
+      $SearchHeaders = New-W5RawPath $Attempt 'search' 'headers'
+      $HydrateBody = New-W5RawPath $Attempt 'hydrate' 'body'
+      $HydrateHeaders = New-W5RawPath $Attempt 'hydrate' 'headers'
+      $DownloadBody = New-W5RawPath $Attempt 'download' 'body'
+      $DownloadHeaders = New-W5RawPath $Attempt 'download' 'headers'
+      foreach ($RawPath in @(
+        $SearchBody, $SearchHeaders, $HydrateBody, $HydrateHeaders,
+        $DownloadBody, $DownloadHeaders
+      )) { $RawPaths.Add($RawPath) }
+
+      $SearchRecord = Invoke-W5Stage $Attempt 'search' $ExactSearchUrl $SearchBody $SearchHeaders $null
+      Assert-NoDuplicateJsonKeys $SearchBody
+      $Search = Get-Content -Raw -LiteralPath $SearchBody | ConvertFrom-Json
+      $MatchingItems = @($Search.items | Where-Object { [string]$_.id -ceq $ExactItemId })
+      if ($MatchingItems.Count -ne 1) { throw "W5 exact search membership HOLD: attempt $Attempt" }
+      $SearchMembership = (@($MatchingItems | ForEach-Object { [string]$_.id }) -join ',')
+      if ($null -eq $BaselineSearchMembership) { $BaselineSearchMembership = $SearchMembership }
+      if ($SearchMembership -cne $BaselineSearchMembership) { throw 'W5 search membership drift.' }
+
+      $HydrateRecord = Invoke-W5Stage $Attempt 'hydrate' $ExactHydrateUrl $HydrateBody $HydrateHeaders $null
+      Assert-NoDuplicateJsonKeys $HydrateBody
+      $Hydrate = Get-Content -Raw -LiteralPath $HydrateBody | ConvertFrom-Json
+      if ([string]$Hydrate.id -cne $ExactItemId) {
+        throw "W5 hydrate item identity HOLD: attempt $Attempt"
+      }
+      $MatchingFiles = @($Hydrate.files | Where-Object { [string]$_.name -ceq $ExactFileName })
+      if ($MatchingFiles.Count -ne 1) {
+        throw "W5 exact file membership HOLD: attempt $Attempt"
+      }
+      $DerivedDownloadUrl = [string]$MatchingFiles[0].downloadUri
+      if ([string]::IsNullOrWhiteSpace($DerivedDownloadUrl)) { throw 'W5 hydrate downloadUri missing.' }
+      if (
+        $MatchingFiles[0].PSObject.Properties.Name -contains 'url' -and
+        [string]$MatchingFiles[0].url -cne $DerivedDownloadUrl
+      ) { throw 'W5 hydrate url/downloadUri mismatch.' }
+      if (
+        -not [string]::IsNullOrWhiteSpace($ExactDownloadUrl) -and
+        $ExactDownloadUrl -notlike '<OWNER-FILL*' -and
+        $ExactDownloadUrl -cne $DerivedDownloadUrl
+      ) { throw 'W5 confirmatory/derived download URI mismatch.' }
+
+      $RawUrl = $DerivedDownloadUrl
+      $ParsedUrl = $null
+      if (
+        $RawUrl -cne $RawUrl.Trim() -or
+        -not [uri]::TryCreate($RawUrl, [System.UriKind]::Absolute, [ref]$ParsedUrl) -or
+        $ParsedUrl.Scheme -cne 'https' -or
+        $ParsedUrl.DnsSafeHost -ine 'www.sciencebase.gov' -or
+        -not $ParsedUrl.IsDefaultPort -or $ParsedUrl.Port -ne 443 -or
+        $ParsedUrl.UserInfo.Length -ne 0 -or $RawUrl.Contains('@') -or
+        $ParsedUrl.Fragment.Length -ne 0
+      ) { throw 'W5 derived download URI authority HOLD.' }
+      if ($null -eq $BaselineDownloadUrl) { $BaselineDownloadUrl = $DerivedDownloadUrl }
+      if ($DerivedDownloadUrl -cne $BaselineDownloadUrl) { throw 'W5 derived download URI drift.' }
+
+      $HydrateRecord.DerivedDownloadUri = $DerivedDownloadUrl
+      $DownloadRecord = Invoke-W5Stage $Attempt 'download' $DerivedDownloadUrl $DownloadBody $DownloadHeaders $DerivedDownloadUrl
+      $ObservationRecords.Add($SearchRecord)
+      $ObservationRecords.Add($HydrateRecord)
+      $ObservationRecords.Add($DownloadRecord)
+    }
+    if ($ObservationRecords.Count -ne (3 * $ExactChainStageCount)) {
+      throw 'W5 incomplete observation set.'
+    }
+    $ObservationSetValid = $true
+  } catch {
+    $ObservationSetValid = $false
+    $ObservationRecords.Clear()
+    throw "W5 observation set invalid; three fresh complete attempts in the same sitting are required. $($_.Exception.Message)"
+  }
+} finally {
+  foreach ($RawPath in $RawPaths) {
+    if (Test-Path -LiteralPath $RawPath) {
+      Remove-Item -LiteralPath $RawPath -Force
+    }
+  }
+}
+
+$ObservationSet = [pscustomobject]@{
+  Valid = $ObservationSetValid
+  ConvertFromJsonRejectsDuplicates = $ConvertFromJsonRejectsDuplicates
+  Records = @($ObservationRecords)
+}
+$ObservationSet
 ```
 
-The exact values are owner-filled from the already prepared request and its known/observed stage bindings; placeholders, empty values, URI whitespace, any non-HTTPS scheme, any host other than exactly `www.sciencebase.gov`, any non-default port, userinfo or `@`, any fragment, or any drift are HOLD before the first request. `curl.exe --disable` ignores ambient curl configuration; the explicit protocol, direct/no-proxy, globbing, and redirect constraints prevent the observation recipe from silently widening egress. W5 is a separately authorized operator observation outside the broker/runtime run. Its record is mandatory but non-authorizing and is not runtime availability evidence. The first reserved GET remains the sole audited runtime availability evidence; it is not retried.
+The required exact values are owner-filled from the already prepared request and its known/observed stage bindings; placeholders, empty required values, URI whitespace, any non-HTTPS scheme, any host other than exactly `www.sciencebase.gov`, any non-default port, userinfo or `@`, any fragment, or any drift are HOLD before the first request. `$ExactDownloadUrl` is the sole optional confirmation and may remain empty; hydrate bytes remain authoritative. The single search response is intentionally unpaginated: no max, offset, sort, or pagination parameter is added. The local PowerShell 5.1 duplicate-key probe result is recorded, while the explicit Python duplicate-key check remains mandatory whether or not `ConvertFrom-Json` throws. `curl.exe --disable` ignores ambient curl configuration; the explicit protocol, direct/no-proxy, globbing, redirect, and symbolically derived timeout constraints prevent the observation recipe from silently widening or hanging egress. W5 is a separately authorized operator observation outside the broker/runtime run. Its record is mandatory but non-authorizing and is not runtime availability evidence. It reduces burn probability; it does not close R1, authorize W7, replace same-sitting review, become a GO, or alter the first reserved GET as the sole audited runtime availability evidence.
 
 ## Owner signing and later actuation
 
@@ -78,18 +275,47 @@ First run the standard launcher in prepare-only template mode. `$CanonicalRoot` 
 
 ```powershell
 $RepositoryRoot = (Get-Location).Path
+$ExpectedBranch = 'codex/sb-live-impl'
+$ExpectedSourceCommit = '<OWNER-FILL reviewed head>'
+$ObservedBranch = (& git branch --show-current).Trim()
+$BranchExit = $LASTEXITCODE
+$SourceStatus = @(& git status --porcelain=v1 --untracked-files=all)
+$StatusExit = $LASTEXITCODE
+$SourceCommit = (& git rev-parse HEAD).Trim()
+$CommitExit = $LASTEXITCODE
+if (
+  $BranchExit -ne 0 -or $StatusExit -ne 0 -or $CommitExit -ne 0 -or
+  $ExpectedSourceCommit -like '<OWNER-FILL*' -or
+  $ObservedBranch -cne $ExpectedBranch -or
+  $SourceStatus.Count -ne 0 -or
+  $SourceCommit -cne $ExpectedSourceCommit
+) { throw 'Source checkout is not the exact clean reviewed subject.' }
 $CanonicalRoot = 'C:\owner-controlled\project6\sciencebase-campaign'
 $CampaignId = 'sciencebase-live-v2'
-$ConnectorRunId = '11111111-1111-4111-8111-111111111111' # replace with a fresh UUID
+$ConnectorRunId = '<OWNER-FILL fresh UUID>'
+if ($ConnectorRunId -like '<OWNER-FILL*') { throw 'ConnectorRunId requires a fresh UUID.' }
 $AuthorityEnvelope = 'C:\owner-controlled\project6\sciencebase-authority.json'
 $AuthorizationDigest = 'sha256:' + ('a' * 64) # replace with the exact prepared authorization digest
 $GrantDigest = 'sha256:' + ('b' * 64) # replace with the exact prepared grant digest
-$ProfileBinding = 'C:\owner-controlled\project6\sciencebase-profile.json'
-$WorkerBinding = 'C:\owner-controlled\project6\sciencebase-worker.json'
-$WorkerProvisioningRoot = 'C:\ProgramData\Project6\sciencebase-worker'
+$W6PreAttempt = '<OWNER-FILL owner-budgeted attempt 1..5>'
+if ($W6PreAttempt -notin 1..5) { throw 'W6-PRE attempt must be within the owner-budgeted maximum of five.' }
+$AttemptNonce = [guid]::NewGuid().ToString('N')
+$BindingParent = 'C:\owner-controlled\project6'
+if (-not (Test-Path -LiteralPath $BindingParent)) {
+  New-Item -ItemType Directory -Path $BindingParent | Out-Null
+}
+$ProfileBinding = Join-Path $BindingParent "sciencebase-profile-$AttemptNonce.json"
+$WorkerBinding = Join-Path $BindingParent "sciencebase-worker-$AttemptNonce.json"
+$WorkerProvisioningRoot = 'C:\p6-sciencebase-worker'
+if ($W6PreAttempt -gt 1) {
+  $WorkerProvisioningRoot = "C:\p6-sciencebase-worker-$W6PreAttempt"
+}
 $PythonArchive = 'C:\owner-controlled\project6\python-3.12.6-embed-amd64.zip'
-$AmbientInterpreterRoot = Split-Path -Parent (Get-Command python.exe).Source
-$ProfileMoniker = 'Project6.ScienceBase.LiveV2.' + ([guid]::NewGuid().ToString('N').Substring(0,8))
+$Py = (& py -3.12 -c "import sys; print(sys.executable)").Trim()
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($Py)) { throw 'Exact Python 3.12 resolution failed.' }
+$AmbientInterpreterRoot = Split-Path -Parent $Py
+$AmbientInterpreterSha256 = (Get-FileHash -LiteralPath $Py -Algorithm SHA256).Hash.ToLowerInvariant()
+$ProfileMoniker = 'Project6.ScienceBase.LiveV2.' + $AttemptNonce.Substring(0,8)
 .\scripts\provision-dual-live-profile.ps1 -ProfileMoniker $ProfileMoniker -OutputBinding $ProfileBinding
 .\scripts\provision-dual-live-worker.ps1 -PythonArchive $PythonArchive -ProfileBinding $ProfileBinding -ProvisioningRoot $WorkerProvisioningRoot -OutputBinding $WorkerBinding -CampaignRoot $CanonicalRoot -AmbientInterpreterRoot $AmbientInterpreterRoot -RepositoryRoot $RepositoryRoot
 $Profile = Get-Content -Raw -LiteralPath $ProfileBinding | ConvertFrom-Json
@@ -107,13 +333,17 @@ $WorkerPackageSid = $Worker.package_sid
 $WorkerOwnerSid = $Worker.owner_sid
 $WorkerProvisionerSid = $Worker.provisioner_sid
 $WorkerBrokerSid = $Worker.broker_sid
-$AmbientInterpreterRoot = $Worker.ambient_interpreter_root
+$BoundAmbientInterpreterRoot = $Worker.ambient_interpreter_root
 $CampaignRoot = $Worker.campaign_root
 $AppContainerProfileRoot = $Worker.appcontainer_profile_root
 $BrokerProfileRoot = $Worker.broker_profile_root
 $UserDataRoot = $Worker.user_data_root
-$SourceCommit = (& git rev-parse HEAD).Trim()
-$InterpreterIdentity = 'sha256:' + (Get-FileHash -LiteralPath $WorkerInterpreter -Algorithm SHA256).Hash.ToLowerInvariant()
+$WorkerInterpreterSha256 = (Get-FileHash -LiteralPath $WorkerInterpreter -Algorithm SHA256).Hash.ToLowerInvariant()
+if (
+  [IO.Path]::GetFullPath($BoundAmbientInterpreterRoot) -cne [IO.Path]::GetFullPath($AmbientInterpreterRoot) -or
+  $AmbientInterpreterSha256 -cne $WorkerInterpreterSha256
+) { throw 'Resolved Python 3.12 and worker runtime binding are not byte-identical.' }
+$InterpreterIdentity = 'sha256:' + $WorkerInterpreterSha256
 $Query = 'Mineral Commodity Summaries'
 $ExpectedItemId = '63d1a3c6d34e06fef15006be'
 $ExpectedFileName = 'mcs2023-germa_salient.csv'
@@ -149,7 +379,8 @@ $PreparedRuntimeArgs = @(
   '--user-data-root', $UserDataRoot
 )
 $Go = 'C:\owner-controlled\project6\owner-go.json' # outside $CanonicalRoot
-$GoId = '00000000-0000-4000-8000-000000000000' # replace with an explicit fresh UUID
+$GoId = '<OWNER-FILL fresh UUID>'
+if ($GoId -like '<OWNER-FILL*') { throw 'GoId requires a fresh UUID.' }
 $PriorDualLiveEnabled = $env:DUAL_LIVE_RUNTIME_ENABLED
 try {
   $env:DUAL_LIVE_RUNTIME_ENABLED = 'true'
@@ -159,11 +390,17 @@ try {
 }
 ```
 
-The target values above are the complete bounded acquisition subject; changing any of them requires a fresh preparation and owner act. `CampaignRoot` is exactly the canonical campaign/evidence root, never the executable source checkout.
+The target values above are the complete bounded acquisition subject; changing any of them requires a fresh preparation and owner act. `CampaignRoot` is exactly the canonical campaign/evidence root, never the executable source checkout. The later ceremony uses a dedicated, quiesced checkout at the final reviewed commit, separate from `sb-impl`.
 
 Two external, non-authorizing inputs remain. The profile binding must be produced from an actually provisioned broker profile and AppContainer profile—not hand-filled—and contains exactly `profile_moniker`, `package_sid`, `broker_sid`, `appcontainer_profile_root`, `broker_profile_root`, and `user_data_root`. The explicit `initialize-dual-live authority-envelope` step emits canonical JSON with exactly `schema_version`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `authorization_digest`, `grant_digest`, and `wrapper_start_token_ref`. Its schema is `project6.connector_authority.v1`, and its mandatory non-caller-configurable sentinel is `wrapper_start_token_ref=retired:sciencebase-live-v2`. The source commit and worker-interpreter digest must be observed only after the final clean source and external worker closure exist; the two opaque authority/grant references do not themselves grant live authority. B0 does not create or issue either input, and neither substitutes for the later signed one-use owner GO.
 
-The provision commands above require an already-elevated Windows PowerShell 5.1 shell; neither script elevates itself or removes a profile.
+The `authorization_digest:B2` and `grant_digest:B2` labels are KNOWINGLY-RATIFIED non-authorizing attestations that bind nothing. `wrapper_start_token_ref` remains untouched.
+
+W6-PRE may create only the output-binding parent under `C:\owner-controlled\project6`; both provisioners then run in an already-elevated Windows PowerShell 5.1 shell. Do not pre-create the worker provisioning root, `C:\ProgramData\Project6`, or its Authority child, and do not add manual parent-ACL steps: the provisioner-owned ACL application is the sole worker-root ACL mechanism. Each retry requires a fresh single-segment root, worker binding, profile binding, and moniker. There are at most five owner-budgeted elevated W6-PRE attempts; five is an operational stop, not a code ceiling, and failed-attempt state is retained. W7 is non-elevated and never runs in this change-set.
+
+The worker provisioner invokes `git cat-file blob` once for each of the 8 worker files and explicitly treats any stderr as `worker_source_copy_failed`, even when Git exits 0 (`provision-dual-live-worker.ps1:23-31`, `:122-126`). Whether `2>$null` at `:227`, `:229`, `:247`, and `:248` can itself raise a terminating `NativeCommandError` on Windows PowerShell 5.1 under the script's `$ErrorActionPreference = 'Stop'` at `:13` is not asserted; verify locally before the sitting. A stderr-silent `git` on PATH is a hard prerequisite either way. CI corroborates topology and ACL sequencing only; it is not owner-host broker-identity or interpreter evidence.
+
+The still-HIGH DACL residual is accepted only for this public credential-free run and is not transferable to NRC or another credentialed tranche. The owner accepts the structural-burn risk only with same-sitting W5 and T1.6 pre-7 interruption invalidation; neither R19 nor the separately required characterization is waived.
 
 Place the template outside the canonical run root so run containment and closeout cannot modify owner-act bytes. On success, capture the printed `OWNER_GO_SHA256` value as `$GoDigest`; independently rehash the unchanged file before signing. The emitted document has exactly these canonical fields: `schema`, `go_id`, `envelope_digest`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `worker_manifest_digest`, `request_digest`, `authorization_digest`, `grant_digest`, `wrapper_start_token_ref`, `credential_mode`, and `egress_mode`. The fixed values are `schema=project6.sciencebase_live_go.v1`, `credential_mode=none_public`, and `egress_mode=capability_scoped_default_off`.
 
@@ -189,11 +426,13 @@ try {
 }
 ```
 
-After a terminal success, perform the separate no-live closeout verification. Artifact writing rejects a body whose decoded leading content, after leading whitespace and an optional UTF-8, UTF-16LE, UTF-16BE, UTF-32LE, or UTF-32BE BOM, begins with `<` (including `<!DOCTYPE`, `<html`, and `<?xml`); the independent verifier repeats the same negative content-shape floor after length and SHA-256 verification and writes no closeout-verified event on rejection.
+After a terminal success, perform the separate no-live closeout verification. Artifact writing rejects content that is empty after whitespace/BOM normalization or whose decoded leading content begins with `<`, `{`, or `[` after leading whitespace and an optional UTF-8, UTF-16LE, UTF-16BE, UTF-32LE, or UTF-32BE BOM. The independent verifier repeats the same negative content-shape floor after length and SHA-256 verification and writes no closeout-verified event on rejection.
 
 ```powershell
 .\project6.ps1 -Action run-dual-live -- --verify-closeout --canonical-root $CanonicalRoot --connector-run-id $ConnectorRunId --reservation-database (Join-Path $CanonicalRoot 'reservation.db') --owner-go-sha256 $GoDigest
 ```
+
+`--verify-closeout` checks internal consistency; it neither re-authenticates the GO nor measures containment. R5 remains OPEN; this is disclosure, not control.
 
 Keep the manual W7 belt-and-suspenders check: before accepting closeout, decode the artifact under any detected UTF-8, UTF-16LE/BE, or UTF-32LE/BE BOM, inspect its leading content, and confirm the expected CSV header/data shape rather than `<`, `<!DOCTYPE`, `<html`, or `<?xml`, even when the automated verifier returns `VERIFIED`.
 

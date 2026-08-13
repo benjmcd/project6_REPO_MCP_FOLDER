@@ -691,8 +691,15 @@ def run_prepared_runtime(
                 _close_raw_handles(prepared.boundary, raw_handles)
     except RuntimeHold:
         raise
-    except BaseException:
-        raise RuntimeHold("runtime_execution_failed") from None
+    except BaseException as exc:
+        originating_code = getattr(exc, "code", None)
+        code = (
+            originating_code
+            if isinstance(originating_code, str)
+            and re.fullmatch(r"[a-z0-9_]{1,64}", originating_code) is not None
+            else "runtime_execution_failed"
+        )
+        raise RuntimeHold(code) from None
     finally:
         _close_reservation_store(prepared.reservation_store)
 
