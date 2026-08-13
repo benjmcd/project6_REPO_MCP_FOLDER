@@ -7,6 +7,7 @@ import hmac
 import json
 import os
 import time
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path
@@ -18,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.models import (
+    AnalysisArtifact,
     AnalysisRun,
     ApsContentChunk,
     ApsContentDocument,
@@ -31,6 +33,7 @@ from app.models.models import (
     L3AnalysisPlan,
     L3AnalysisSet,
     L3AnalysisUnit,
+    L3ConnectorSourceIntakeRecord,
     L3ConnectorLocalDestinationReceipt,
     L3ExternalLocalExportAuditEvent,
     L3ExternalLocalExportReceipt,
@@ -92,6 +95,14 @@ from app.services.layer3_execution_state import (
 )
 from app.services.layer3_execution_errors import analysis_execution_start_workbench_error
 from app.services.layer3_execution_output import output_metadata_summary as _output_metadata_summary
+from app.services.layer3_execution_output import (
+    assert_pass_output_integrity,
+    build_connector_output_integrity,
+)
+from app.services.layer3_origin_continuity import (
+    assert_pass_downstream_connector_origin,
+    resolve_downstream_connector_origin,
+)
 from app.services.layer3_pdf_location import (
     pdf_location_projection_for_session as _pdf_location_projection_for_session,
 )
@@ -135,6 +146,7 @@ from app.services.layer3_package_entry import (
     Layer3PackageEntryError,
     materialize_mixed_source_package_commit,
     materialize_workbench_package_commit,
+    verify_package_payload_bytes,
 )
 from app.services.layer3_package_submit_response import (
     COHORT_PACKAGE_REVIEW_SUBMIT_SCHEMA_ID,
@@ -183,6 +195,7 @@ from app.services.layer3_gate_b_state import (
     find_gate_b_idempotency_claim,
     find_gate_b_idempotency_session,
     gate_b_counts,
+    gate_b_descriptor_selector,
     gate_b_decision_manifest_id as build_gate_b_decision_manifest_id,
     gate_b_idempotency_claim_matches,
     gate_b_idempotency_from_session,
@@ -253,6 +266,7 @@ from app.services.layer3_source_intake import (
 )
 from app.services.layer3_connector_source_intake import (
     CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+    STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
     ConnectorSourceIntakeError,
     validate_connector_intake_gate_b_decision_basis,
 )
@@ -458,6 +472,12 @@ ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW = "source_intake_qualitative_pre
 SOURCE_INTAKE_EXECUTION_OUTPUT_SCHEMA_ID = "layer3.source_intake_execution_output.v1"
 SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE = "306_SOURCE_INTAKE_EXECUTION_START_BOUNDARY_FREEZE"
 SOURCE_INTAKE_EXECUTION_METHOD_NAME = "operator_uploaded_source_review_preview"
+SOURCE_INTAKE_EXECUTION_SOURCE_SHAPES = frozenset(
+    {
+        SOURCE_INTAKE_SOURCE_FAMILY,
+        STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
+    }
+)
 PLAN_PREVIEW_DOWNSTREAM_UNAVAILABLE = ("execution", "results", "package")
 PLAN_PREVIEW_SCOPE = "owner_service_default"
 PLAN_APPROVAL_SCOPE = "owner_service_default"
@@ -869,6 +889,42 @@ WORKBENCH_STATE_MODEL_STATE_NAMES = {
     "EXECUTION_RESULT_STATUS_BLOCKED_STATE": EXECUTION_RESULT_STATUS_BLOCKED_STATE,
     "EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE": EXECUTION_RESULT_STATUS_MISSING_OUTPUT_STATE,
 }
+
+
+def _source_intake_source_shape(output_metadata_summary: Mapping[str, Any]) -> str:
+    source_shape = str(
+        output_metadata_summary.get("source_intake_source_shape")
+        or SOURCE_INTAKE_SOURCE_FAMILY
+    ).strip()
+    if source_shape not in SOURCE_INTAKE_EXECUTION_SOURCE_SHAPES:
+        raise Layer3WorkbenchError(
+            "source_intake_source_shape_not_admitted",
+            "Source-intake downstream state contains an unsupported source shape.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["source_intake_source_shape"],
+        )
+    return source_shape
+
+
+def _source_intake_connector_authority(
+    output_metadata_summary: Mapping[str, Any],
+) -> dict[str, Any]:
+    if _source_intake_source_shape(output_metadata_summary) != STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS:
+        return {}
+    return {
+        field: output_metadata_summary.get(field)
+        for field in (
+            "connector_source_intake_record_id",
+            "connector_key",
+            "connector_run_id",
+            "connector_run_target_id",
+            "connector_origin_receipt_hash",
+            "content_sha256",
+        )
+    }
+
+
 def _signed_reference_state_workbench_error(exc: SignedReferenceStateError) -> Layer3WorkbenchError:
     return Layer3WorkbenchError(
         exc.error_code,
@@ -2343,7 +2399,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 ) from exc
         if source_class == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY:
             try:
-                validate_connector_intake_gate_b_decision_basis(
+                source_class = validate_connector_intake_gate_b_decision_basis(
                     db,
                     candidate_id=candidate_id,
                     decision_basis=decision_basis,
@@ -2601,15 +2657,7 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             {
                 "source_plane": f"plane_{item['source_class']}_{short_id}",
                 "descriptor_type": item["source_class"],
-                "selector_payload": {
-                    "candidate_id": item["candidate_id"],
-                    "source_ref": item["decision_basis"].get("source_ref", item["candidate_id"]),
-                    **(
-                        {"dataset_version_id": item["source_identity"]["dataset_version_id"]}
-                        if item["source_identity"].get("dataset_version_id")
-                        else {}
-                    ),
-                },
+                "selector_payload": gate_b_descriptor_selector(item),
                 "selection_basis": {
                     "candidate_id": item["candidate_id"],
                     "query_basis": item["decision_basis"].get("query_basis", "operator_intent"),
@@ -2879,6 +2927,46 @@ def _stamp_api_dataset_cohort_method_authority(
         }
 
 
+def _gate_c_connector_origin_state(
+    connector_origin_integrity: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    if connector_origin_integrity is None:
+        return {
+            "schema_id": "layer3.gate_c_connector_origin_state.v1",
+            "applicability": "not_applicable",
+        }
+    return {
+        "schema_id": "layer3.gate_c_connector_origin_state.v1",
+        "applicability": "applicable",
+        "connector_origin_integrity_v1": _json_clone(
+            connector_origin_integrity
+        ),
+    }
+
+
+def _assert_gate_c_connector_origin_state(
+    *,
+    session: L3Session,
+    connector_origin_integrity: Mapping[str, Any] | None,
+) -> None:
+    stored = (session.summary_json or {}).get(
+        "gate_c_connector_origin_state_v1"
+    )
+    expected = _gate_c_connector_origin_state(
+        connector_origin_integrity
+    )
+    if stored is None and connector_origin_integrity is None:
+        return
+    if stored != expected:
+        raise Layer3WorkbenchError(
+            "gate_c_connector_origin_mismatch",
+            "Gate C connector origin does not equal current server authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["session_id"],
+        )
+
+
 def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     session_id = str(payload.get("session_id") or "").strip()
@@ -2891,8 +2979,28 @@ def gate_c_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     commit_typing = bool(payload.get("commit_typing"))
     try:
         if commit_typing:
+            session = (
+                db.query(L3Session)
+                .filter(L3Session.session_id == session_id)
+                .with_for_update()
+                .populate_existing()
+                .one()
+            )
+            connector_origin_integrity = resolve_downstream_connector_origin(
+                db,
+                session_id=session.session_id,
+                boundary="gate_c_typing",
+            )
             result = materialize_typing_entry(db, session_id=session_id)
             _stamp_api_dataset_cohort_method_authority(db, analysis_sets=result.analysis_sets)
+            session.summary_json = {
+                **_json_clone(session.summary_json or {}),
+                "gate_c_connector_origin_state_v1": (
+                    _gate_c_connector_origin_state(
+                        connector_origin_integrity
+                    )
+                ),
+            }
             db.commit()
             typing_records = [_serialize_typing_record(record) for record in result.typing_records]
             analysis_units = [_serialize_analysis_unit(unit) for unit in result.analysis_units]
@@ -3686,6 +3794,8 @@ def _source_intake_package_payload_extras(
     package_review_preview_hash: str,
     result_review_state: dict[str, Any],
 ) -> dict[str, dict[str, Any]]:
+    source_shape = _source_intake_source_shape(output_metadata_summary)
+    connector_authority = _source_intake_connector_authority(output_metadata_summary)
     source_authority = {
         "schema_id": "layer3.source_intake_package_source_authority.v1",
         "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
@@ -3693,13 +3803,14 @@ def _source_intake_package_payload_extras(
         "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
         "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
         "package_construction_source_gate": SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE,
-        "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+        "source_shape": source_shape,
         "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
         "candidate_id": output_metadata_summary.get("candidate_id"),
         "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
         "output_payload_hash": output_metadata_summary.get("output_hash"),
         "package_review_preview_hash": package_review_preview_hash,
         "candidate_package_kinds": list(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS),
+        **connector_authority,
     }
     negative_capabilities = {
         "package_review_submit_enabled": False,
@@ -3730,6 +3841,8 @@ def _source_intake_package_payload_extras(
                 "output_payload_hash": output_metadata_summary.get("output_hash"),
                 "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
                 "reviewed_output_item_count": len(reviewed_items),
+                "source_shape": source_shape,
+                **connector_authority,
             },
             "negative_capability_flags": _json_clone(negative_capabilities),
         },
@@ -4583,10 +4696,37 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             http_status=409,
         )
     approved_plan = approved_plans[0]
+    connector_origin_integrity = resolve_downstream_connector_origin(
+        db,
+        session_id=session_id,
+        boundary="pass_selection",
+    )
+    _assert_gate_c_connector_origin_state(
+        session=session,
+        connector_origin_integrity=connector_origin_integrity,
+    )
 
     existing_selection = _execution_selection_from_session(session)
     existing_pass_runs = _execution_selection_pass_runs(db, session_id=session_id)
     if existing_selection is not None:
+        for existing_pass_run in existing_pass_runs:
+            stored_origin = (
+                existing_pass_run.summary_json or {}
+            ).get("connector_origin_integrity_v1")
+            if (
+                connector_origin_integrity is None
+                and stored_origin is not None
+            ) or (
+                connector_origin_integrity is not None
+                and stored_origin != connector_origin_integrity
+            ):
+                raise Layer3WorkbenchError(
+                    "execution_selection_origin_mismatch",
+                    "Stored execution-selection origin contradicts current server authority.",
+                    status="conflict",
+                    http_status=409,
+                    blocked_fields=["pass_run_ids"],
+                )
         stored_pass_run_ids = list(existing_selection.get("pass_run_ids_json") or [])
         existing_pass_run_ids = [pass_run.pass_run_id for pass_run in existing_pass_runs]
         if stored_pass_run_ids != existing_pass_run_ids:
@@ -4712,6 +4852,15 @@ def execution_selection(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                 "analysis_run_id": None,
                 "downstream_unavailable": list(EXECUTION_SELECTION_DOWNSTREAM_UNAVAILABLE),
                 "planned_pass": _json_clone(planned_pass),
+                **(
+                    {
+                        "connector_origin_integrity_v1": _json_clone(
+                            connector_origin_integrity
+                        )
+                    }
+                    if connector_origin_integrity is not None
+                    else {}
+                ),
                 "selected_at": selected_at,
             },
             created_at=datetime.now(timezone.utc),
@@ -4765,12 +4914,114 @@ def _is_source_intake_execution_start_planned_pass(*, pass_run: L3PassRun, plann
     )
 
 
-def _source_intake_execution_output_ref(*, pass_run_id: str, payload: dict[str, Any]) -> str:
+def _source_intake_execution_record(
+    db: Session,
+    *,
+    planned_pass: dict[str, Any],
+) -> tuple[L3SourceIntakeRecord | L3ConnectorSourceIntakeRecord | None, str, str]:
+    source_shape = str(
+        planned_pass.get("source_intake_source_shape") or SOURCE_INTAKE_SOURCE_FAMILY
+    ).strip()
+    source_intake_record_id = str(planned_pass.get("source_intake_record_id") or "").strip()
+    if source_shape == STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS:
+        connector_record_id = str(
+            planned_pass.get("connector_source_intake_record_id") or ""
+        ).strip()
+        if connector_record_id != source_intake_record_id:
+            raise Layer3WorkbenchError(
+                "source_intake_execution_start_record_identity_mismatch",
+                "Connector source-intake execution requires one exact record identity.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["connector_source_intake_record_id", "source_intake_record_id"],
+            )
+        record = (
+            db.query(L3ConnectorSourceIntakeRecord)
+            .filter(
+                L3ConnectorSourceIntakeRecord.connector_source_intake_record_id
+                == connector_record_id
+            )
+            .with_for_update()
+            .first()
+        )
+        return record, source_shape, connector_record_id
+    if source_shape != SOURCE_INTAKE_SOURCE_FAMILY:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_start_source_shape_not_admitted",
+            "Source-intake execution start requires an admitted source shape.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["source_intake_source_shape"],
+        )
+    record = (
+        db.query(L3SourceIntakeRecord)
+        .filter(L3SourceIntakeRecord.source_intake_record_id == source_intake_record_id)
+        .with_for_update()
+        .first()
+    )
+    return record, source_shape, source_intake_record_id
+
+
+def _connector_source_intake_execution_projection(
+    *,
+    record: L3ConnectorSourceIntakeRecord,
+    planned_pass: dict[str, Any],
+) -> dict[str, Any]:
+    provenance = record.provenance_json or {}
+    projection = {
+        "connector_source_intake_record_id": record.connector_source_intake_record_id,
+        "connector_key": record.connector_key,
+        "connector_run_id": record.connector_run_id,
+        "connector_run_target_id": record.connector_run_target_id,
+        "connector_origin_receipt_hash": provenance.get("connector_origin_receipt_hash"),
+        "content_sha256": record.content_sha256,
+    }
+    mismatches = [
+        field
+        for field, actual in projection.items()
+        if planned_pass.get(field) != actual
+    ]
+    if mismatches:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_start_connector_authority_mismatch",
+            "Connector source-intake execution requires exact planned connector authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=sorted(mismatches),
+        )
+    return projection
+
+
+def _source_intake_execution_output_ref(
+    *,
+    pass_run_id: str,
+    payload: dict[str, Any],
+    public_safe_ref: bool = False,
+) -> str:
     output_dir = Path(settings.artifact_storage_dir) / "layer3"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"l3_source_intake_output_{pass_run_id}.json"
     output_path.write_bytes(_canonical_json_bytes(payload))
+    if public_safe_ref:
+        return output_path.name
     return str(output_path)
+
+
+def _source_intake_execution_output_path(output_ref: str) -> Path:
+    candidate = Path(output_ref)
+    if candidate.is_absolute():
+        return candidate
+    root = (Path(settings.artifact_storage_dir) / "layer3").resolve()
+    resolved = (root / candidate).resolve()
+    if resolved != root and root not in resolved.parents:
+        raise Layer3WorkbenchError(
+            "source_intake_execution_result_status_output_not_admitted",
+            "Source-intake output reference resolves outside artifact storage.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["output_payload_ref"],
+        )
+    return resolved
 
 
 def _execute_source_intake_execution_start(
@@ -4805,12 +5056,9 @@ def _execute_source_intake_execution_start(
             blocked_fields=["pass_run_id"],
         )
 
-    source_intake_record_id = str(planned_pass.get("source_intake_record_id") or "").strip()
-    record = (
-        db.query(L3SourceIntakeRecord)
-        .filter(L3SourceIntakeRecord.source_intake_record_id == source_intake_record_id)
-        .with_for_update()
-        .first()
+    record, source_shape, source_intake_record_id = _source_intake_execution_record(
+        db,
+        planned_pass=planned_pass,
     )
     if record is None:
         raise Layer3WorkbenchError(
@@ -4820,6 +5068,11 @@ def _execute_source_intake_execution_start(
             http_status=409,
             blocked_fields=["source_intake_record_id"],
         )
+    connector_projection = (
+        _connector_source_intake_execution_projection(record=record, planned_pass=planned_pass)
+        if isinstance(record, L3ConnectorSourceIntakeRecord)
+        else {}
+    )
 
     completed_at = datetime.now(timezone.utc)
     completed_at_text = completed_at.isoformat()
@@ -4835,7 +5088,9 @@ def _execute_source_intake_execution_start(
         "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
         "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
         "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
-        "source_intake_record_id": record.source_intake_record_id,
+        "source_intake_record_id": source_intake_record_id,
+        "source_intake_source_shape": source_shape,
+        **connector_projection,
         "candidate_id": planned_pass.get("candidate_id"),
         "source_identity": {
             "source_family": record.source_family,
@@ -4846,11 +5101,20 @@ def _execute_source_intake_execution_start(
             "content_sha256": record.content_sha256,
             "metadata_hash": record.metadata_hash,
             "authority_basis_hash": record.authority_basis_hash,
+            **connector_projection,
         },
         "source_provenance": _json_clone(record.provenance_json or {}),
         "storage_pointer": {
-            "storage_ref": record.storage_ref,
-            "storage_authority": "server_raw_storage",
+            "storage_ref": (
+                f"sha256:{record.content_sha256}"
+                if isinstance(record, L3ConnectorSourceIntakeRecord)
+                else record.storage_ref
+            ),
+            "storage_authority": (
+                "server_connector_raw_storage"
+                if isinstance(record, L3ConnectorSourceIntakeRecord)
+                else "server_raw_storage"
+            ),
             "content_addressed": True,
             "absolute_path_exposed": False,
         },
@@ -4862,7 +5126,11 @@ def _execute_source_intake_execution_start(
         "created_at": completed_at_text,
     }
     output_payload["output_hash"] = _stable_hash(output_payload)
-    output_ref = _source_intake_execution_output_ref(pass_run_id=pass_run.pass_run_id, payload=output_payload)
+    output_ref = _source_intake_execution_output_ref(
+        pass_run_id=pass_run.pass_run_id,
+        payload=output_payload,
+        public_safe_ref=isinstance(record, L3ConnectorSourceIntakeRecord),
+    )
 
     pass_run.status = PASS_STATUS_COMPLETED
     pass_run.started_at = completed_at
@@ -4877,7 +5145,9 @@ def _execute_source_intake_execution_start(
         "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
         "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
         "planned_pass_source_gate": planned_pass.get("source_gate"),
-        "source_intake_record_id": record.source_intake_record_id,
+        "source_intake_record_id": source_intake_record_id,
+        "source_intake_source_shape": source_shape,
+        **connector_projection,
         "candidate_id": planned_pass.get("candidate_id"),
         "source_label": record.source_label,
         "content_sha256": record.content_sha256,
@@ -4913,7 +5183,9 @@ def _source_intake_result_status_output_summary(
         payload: dict[str, Any] = {}
     else:
         try:
-            loaded_payload = json.loads(Path(output_ref).read_text(encoding="utf-8"))
+            loaded_payload = json.loads(
+                _source_intake_execution_output_path(output_ref).read_text(encoding="utf-8")
+            )
         except (OSError, json.JSONDecodeError) as exc:
             raise Layer3WorkbenchError(
                 "source_intake_execution_result_status_output_not_admitted",
@@ -4947,11 +5219,24 @@ def _source_intake_result_status_output_summary(
         "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
         "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
         "source_intake_record_id": planned_pass.get("source_intake_record_id"),
+        "source_intake_source_shape": planned_pass.get("source_intake_source_shape")
+        or SOURCE_INTAKE_SOURCE_FAMILY,
         "candidate_id": planned_pass.get("candidate_id"),
     }
     for key, expected in expected_scalars.items():
         if payload.get(key) != expected:
             blocked_fields.append(key)
+    if expected_scalars["source_intake_source_shape"] == STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS:
+        for key in (
+            "connector_source_intake_record_id",
+            "connector_key",
+            "connector_run_id",
+            "connector_run_target_id",
+            "connector_origin_receipt_hash",
+            "content_sha256",
+        ):
+            if payload.get(key) != planned_pass.get(key):
+                blocked_fields.append(key)
 
     source_identity = payload.get("source_identity")
     if not isinstance(source_identity, dict):
@@ -4997,6 +5282,23 @@ def _source_intake_result_status_output_summary(
         **output_metadata_summary,
         "schema_id": payload.get("schema_id"),
         "source_intake_record_id": payload.get("source_intake_record_id"),
+        "source_intake_source_shape": payload.get("source_intake_source_shape"),
+        **(
+            {
+                key: payload.get(key)
+                for key in (
+                    "connector_source_intake_record_id",
+                    "connector_key",
+                    "connector_run_id",
+                    "connector_run_target_id",
+                    "connector_origin_receipt_hash",
+                    "content_sha256",
+                )
+            }
+            if payload.get("source_intake_source_shape")
+            == STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
+            else {}
+        ),
         "candidate_id": payload.get("candidate_id"),
         "planned_pass_source_gate": payload.get("planned_pass_source_gate"),
         "source_identity": _json_clone(source_identity),
@@ -5239,8 +5541,18 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
             http_status=409,
         )
 
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="execution_output",
+    )
     existing_start = _analysis_execution_start_from_pass_run(pass_run)
     if existing_start is not None:
+        if connector_origin_integrity is not None:
+            assert_pass_output_integrity(
+                db,
+                pass_run_id=pass_run.pass_run_id,
+            )
         if str(existing_start.get("client_request_id") or "") == request_id:
             status = "already_completed" if pass_run.status in {PASS_STATUS_COMPLETED, PASS_STATUS_COMPLETED_WITH_WARNINGS} else pass_run.status
             return _analysis_execution_start_response(
@@ -5290,6 +5602,45 @@ def analysis_execution_start(db: Session, payload: dict[str, Any]) -> dict[str, 
                 planned_pass=planned_pass,
                 client_request_id=request_id,
             )
+        if connector_origin_integrity is not None:
+            analysis_run_id = _pass_run_analysis_run_id(pass_run)
+            artifacts = (
+                db.query(AnalysisArtifact)
+                .filter(
+                    AnalysisArtifact.analysis_run_id == analysis_run_id
+                )
+                .order_by(
+                    AnalysisArtifact.artifact_type.asc(),
+                    AnalysisArtifact.artifact_id.asc(),
+                )
+                .all()
+                if analysis_run_id
+                else []
+            )
+            output_ref = str(pass_run.output_payload_ref or "").strip()
+            if not output_ref:
+                raise Layer3WorkbenchError(
+                    "connector_output_manifest_missing",
+                    "Reserved connector execution produced no output manifest.",
+                    status="conflict",
+                    http_status=409,
+                )
+            connector_output_integrity = (
+                build_connector_output_integrity(
+                    artifacts,
+                    output_manifest_ref=output_ref,
+                    connector_origin_integrity=(
+                        connector_origin_integrity
+                    ),
+                )
+            )
+            pass_run.summary_json = {
+                **_json_clone(pass_run.summary_json or {}),
+                "connector_output_integrity_v1": (
+                    connector_output_integrity
+                ),
+            }
+            db.flush()
     except (Layer3PassEntryError, Layer3QualApsExecutionError) as exc:
         raise analysis_execution_start_workbench_error(exc) from exc
 
@@ -5764,8 +6115,32 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             next_allowed_actions=["inspect_execution_result_status"],
         )
 
-    session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
-    pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
+    session = (
+        db.query(L3Session)
+        .filter(L3Session.session_id == session_id)
+        .with_for_update()
+        .populate_existing()
+        .one_or_none()
+    )
+    analysis_plan = (
+        db.query(L3AnalysisPlan)
+        .filter(
+            L3AnalysisPlan.analysis_plan_id == analysis_plan_id,
+            L3AnalysisPlan.session_id == session_id,
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
+            L3AnalysisPlan.approved_by_operator.is_(True),
+        )
+        .with_for_update()
+        .populate_existing()
+        .one_or_none()
+    )
+    pass_run = (
+        db.query(L3PassRun)
+        .filter(L3PassRun.pass_run_id == pass_run_id)
+        .with_for_update()
+        .populate_existing()
+        .one_or_none()
+    )
     if session is None or pass_run is None:
         raise Layer3WorkbenchError(
             "execution_result_review_inconsistent",
@@ -5773,13 +6148,185 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
             status="conflict",
             http_status=409,
         )
+    if analysis_plan is None:
+        raise Layer3WorkbenchError(
+            "approved_plan_mismatch",
+            "Execution result-review must reference the current approved analysis plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["analysis_plan_id"],
+        )
+    if (
+        pass_run.session_id != session_id
+        or pass_run.analysis_plan_id != analysis_plan.analysis_plan_id
+    ):
+        raise Layer3WorkbenchError(
+            "execution_result_review_pass_run_mismatch",
+            "Execution result-review pass_run_id must belong to the supplied session and approved plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id"],
+        )
+    locked_approved_plan_ids = [
+        row.analysis_plan_id
+        for row in (
+            db.query(L3AnalysisPlan)
+            .filter(
+                L3AnalysisPlan.session_id == session_id,
+                L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
+                L3AnalysisPlan.approved_by_operator.is_(True),
+            )
+            .order_by(
+                L3AnalysisPlan.created_at.desc(),
+                L3AnalysisPlan.analysis_plan_id.asc(),
+            )
+            .with_for_update()
+            .populate_existing()
+            .all()
+        )
+    ]
+    locked_pass_run_ids = [
+        row.pass_run_id
+        for row in (
+            db.query(L3PassRun)
+            .filter(L3PassRun.session_id == session_id)
+            .order_by(
+                L3PassRun.created_at.asc(),
+                L3PassRun.pass_run_id.asc(),
+            )
+            .with_for_update()
+            .populate_existing()
+            .all()
+        )
+    ]
+    locked_output_metadata, locked_output_error = (
+        _output_metadata_summary(pass_run)
+    )
+    locked_analysis_run_id = _pass_run_analysis_run_id(pass_run)
+    status_analysis_run_id = (
+        str(status_body.get("analysis_run_id") or "").strip() or None
+    )
+    locked_summary = pass_run.summary_json or {}
+    locked_planned_pass = locked_summary.get("planned_pass")
+    if not isinstance(locked_planned_pass, dict):
+        locked_planned_pass = {}
+    locked_plan_json = analysis_plan.plan_json or {}
+    locked_selection = _execution_selection_from_session(session)
+    locked_selection_ids = (
+        [
+            str(item)
+            for item in (locked_selection.get("pass_run_ids_json") or [])
+        ]
+        if locked_selection is not None
+        else []
+    )
+    locked_authority_changed = bool(
+        _plan_revision_control_from_session(session) is not None
+        or str(locked_plan_json.get("source_preview_id") or "").strip()
+        != preview_id
+        or str(locked_plan_json.get("source_preview_hash") or "").strip()
+        != preview_hash
+        or str(locked_summary.get("source_preview_id") or "").strip()
+        != preview_id
+        or str(locked_summary.get("source_preview_hash") or "").strip()
+        != preview_hash
+        or locked_selection is None
+        or str(locked_selection.get("analysis_plan_id") or "")
+        != analysis_plan_id
+        or str(locked_selection.get("source_preview_id") or "")
+        != preview_id
+        or str(locked_selection.get("source_preview_hash") or "")
+        != preview_hash
+        or locked_approved_plan_ids != [analysis_plan_id]
+        or locked_selection_ids != locked_pass_run_ids
+        or (
+            _is_source_intake_execution_start_planned_pass(
+                pass_run=pass_run,
+                planned_pass=locked_planned_pass,
+            )
+            != source_intake_result_review
+        )
+    )
+    if (
+        not locked_authority_changed
+        and source_intake_result_review
+        and locked_output_error is None
+        and isinstance(locked_output_metadata, dict)
+    ):
+        locked_output_metadata = _source_intake_result_status_output_summary(
+            pass_run=pass_run,
+            planned_pass=locked_planned_pass,
+            output_metadata_summary=locked_output_metadata,
+        )
+    locked_status_bindings = {
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan.analysis_plan_id,
+        "pass_run_id": pass_run.pass_run_id,
+        "pass_run_status": pass_run.status,
+        "output_payload_ref": pass_run.output_payload_ref,
+        "engine_family": pass_run.engine_family,
+        "pass_type": pass_run.pass_type,
+        "pass_scope": (
+            locked_summary.get("pass_scope")
+            or locked_planned_pass.get("pass_scope")
+        ),
+        "selected_method_name": locked_summary.get(
+            "selected_method_name"
+        ),
+        "dataset_version_id": locked_summary.get(
+            "dataset_version_id"
+        ),
+    }
+    changed_status_fields = [
+        field
+        for field, expected in locked_status_bindings.items()
+        if status_body.get(field) != expected
+    ]
+    status_preview = status_body.get("preview_identity")
+    if (
+        not isinstance(status_preview, dict)
+        or status_preview.get("preview_id") != preview_id
+        or status_preview.get("preview_hash") != preview_hash
+    ):
+        changed_status_fields.append("preview_identity")
+    if (
+        locked_output_error is not None
+        or not isinstance(locked_output_metadata, dict)
+        or locked_output_metadata.get("readable") is not True
+        or locked_authority_changed
+        or locked_output_metadata != output_metadata_summary
+        or locked_analysis_run_id != status_analysis_run_id
+        or changed_status_fields
+    ):
+        raise Layer3WorkbenchError(
+            "execution_result_review_authority_changed",
+            "Execution result-review authority changed before its mutation locks were acquired.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["pass_run_id", "analysis_run_id"],
+            next_allowed_actions=["inspect_execution_result_status"],
+        )
+    output_metadata_summary = locked_output_metadata
     _ensure_result_review_source_admitted(
         status_body=status_body,
         pass_run=pass_run,
         output_metadata_summary=output_metadata_summary,
     )
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="result_review",
+    )
+    connector_output_integrity = (
+        assert_pass_output_integrity(
+            db,
+            pass_run_id=pass_run.pass_run_id,
+        )
+        if connector_origin_integrity is not None
+        else None
+    )
 
-    analysis_run_id = str(status_body.get("analysis_run_id") or "").strip() or None
+    analysis_run_id = locked_analysis_run_id
     reviewed_items, unresolved_trace_count = _normalize_result_review_items(
         items=payload.get("reviewed_output_items"),
         session_id=session_id,
@@ -5830,6 +6377,29 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
 
     existing_review = _execution_result_review_from_pass_run(pass_run)
     if existing_review is not None:
+        existing_origin = existing_review.get(
+            "connector_origin_integrity_v1"
+        )
+        existing_output = existing_review.get(
+            "connector_output_integrity_v1"
+        )
+        if (
+            connector_origin_integrity is None
+            and (existing_origin is not None or existing_output is not None)
+        ) or (
+            connector_origin_integrity is not None
+            and (
+                existing_origin != connector_origin_integrity
+                or existing_output != connector_output_integrity
+            )
+        ):
+            raise Layer3WorkbenchError(
+                "execution_result_review_integrity_mismatch",
+                "Stored result-review integrity contradicts current server authority.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["pass_run_id"],
+            )
         if (
             existing_review.get("client_request_id") == request_id
             and existing_review.get("review_record_ref") == review_record_ref
@@ -5878,6 +6448,19 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
         "cohort_shape": output_metadata_summary.get("cohort_shape") or pass_summary.get("cohort_shape"),
         "requested_method_name": output_metadata_summary.get("requested_method_name") or pass_summary.get("requested_method_name"),
         "requested_method_source": output_metadata_summary.get("requested_method_source") or pass_summary.get("requested_method_source"),
+        **(
+            {
+                "connector_origin_integrity_v1": _json_clone(
+                    connector_origin_integrity
+                ),
+                "connector_output_integrity_v1": _json_clone(
+                    connector_output_integrity
+                ),
+            }
+            if connector_origin_integrity is not None
+            and connector_output_integrity is not None
+            else {}
+        ),
         "recorded_at": _utcnow_iso(),
         "package_review_enabled": False,
         "handoff_enabled": False,
@@ -7131,7 +7714,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
                 "pass_type": pass_run.pass_type,
                 "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
                 "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
-                "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+                "source_shape": _source_intake_source_shape(output_metadata_summary),
                 "status": "source_intake_package_construction_admitted",
                 "reason": "Source-intake package-review preview can proceed to bounded package construction.",
             },
@@ -7151,7 +7734,7 @@ def package_review_preview(db: Session, payload: dict[str, Any]) -> dict[str, An
             "selected_method_name": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
             "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
             "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
-            "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+            "source_shape": _source_intake_source_shape(output_metadata_summary),
             "source_dataset_version_ids": [],
             "cohort_shape": None,
             "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
@@ -8122,6 +8705,19 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             http_status=409,
             blocked_fields=["pass_run_id"],
         )
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="package_commit",
+    )
+    connector_output_integrity = (
+        assert_pass_output_integrity(
+            db,
+            pass_run_id=pass_run.pass_run_id,
+        )
+        if connector_origin_integrity is not None
+        else None
+    )
     associated_cohort_commit = False
     if status_body.get("pass_type") == PASS_TYPE_ASSOCIATED_COHORT:
         associated_cohort_commit = _associated_cohort_result_source_admitted(
@@ -8284,13 +8880,18 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
     authority_basis_extra: dict[str, Any] | None = None
     package_payload_extras_by_kind: dict[str, dict[str, Any]] | None = None
     authority_schema_id = "layer3.workbench_package_construction_authority.v1"
+    source_intake_source_shape = (
+        _source_intake_source_shape(output_metadata_summary)
+        if source_intake_commit
+        else None
+    )
     if source_intake_commit:
         authority_schema_id = "layer3.source_intake_package_construction_authority.v1"
         authority_basis_extra = {
             "engine_family": ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW,
             "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
             "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
-            "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+            "source_shape": source_intake_source_shape,
             "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
             "package_construction_source_gate": SOURCE_INTAKE_PACKAGE_CONSTRUCTION_SOURCE_GATE,
             "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
@@ -8352,6 +8953,8 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
             authority_schema_id=authority_schema_id,
             authority_basis_extra=authority_basis_extra,
             package_payload_extras_by_kind=package_payload_extras_by_kind,
+            connector_origin_integrity=connector_origin_integrity,
+            connector_output_integrity=connector_output_integrity,
         )
     except Layer3PackageEntryError as exc:
         raise Layer3WorkbenchError(
@@ -8372,7 +8975,7 @@ def package_construction_commit(db: Session, payload: dict[str, Any]) -> dict[st
     package_source_shape = (
         SOURCE_SHAPE_APS_CONTENT_DOCUMENT
         if qualitative_aps_commit
-        else SOURCE_INTAKE_SOURCE_FAMILY
+        else source_intake_source_shape
         if source_intake_commit
         else _package_source_shape(
             output_metadata_summary=output_metadata_summary,
@@ -8639,11 +9242,22 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    analysis_plan = (
+        db.query(L3AnalysisPlan)
+        .filter(
+            L3AnalysisPlan.analysis_plan_id == analysis_plan_id,
+            L3AnalysisPlan.session_id == session_id,
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
+            L3AnalysisPlan.approved_by_operator.is_(True),
+        )
+        .with_for_update()
+        .one_or_none()
+    )
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
-    if session is None or pass_run is None:
+    if session is None or analysis_plan is None or pass_run is None:
         raise Layer3WorkbenchError(
             "package_review_submit_inconsistent",
-            "Package-review submit could not reload the selected session or pass run.",
+            "Package-review submit could not reload selected authority.",
             status="conflict",
             http_status=409,
         )
@@ -8879,6 +9493,22 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             next_allowed_actions=["inspect_existing_package_state"],
         )
     ordered_packages = _packages_in_review_order(packages)
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="package_submit",
+    )
+    connector_output_integrity = None
+    if connector_origin_integrity is not None:
+        connector_output_integrity = assert_pass_output_integrity(
+            db,
+            pass_run_id=pass_run.pass_run_id,
+        )
+    verify_package_payload_bytes(
+        ordered_packages,
+        expected_connector_origin=connector_origin_integrity,
+        expected_connector_output=connector_output_integrity,
+    )
     if not isinstance(raw_output_package_ids, list):
         raise Layer3WorkbenchError(
             "package_review_submit_package_ids_invalid",
@@ -9036,6 +9666,11 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "") or None
+    source_intake_source_shape = (
+        _source_intake_source_shape(output_metadata_summary)
+        if source_intake_submit
+        else None
+    )
     submit_basis = {
         "schema_id": "layer3.package_review_submit_authority.v1",
         "session_id": session_id,
@@ -9060,7 +9695,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
         "source_shape": (
-            SOURCE_INTAKE_SOURCE_FAMILY
+            source_intake_source_shape
             if source_intake_submit
             else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
             if qualitative_aps_submit
@@ -9097,6 +9732,29 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         )
     submit_record_ref = _stable_id("l3-package-review-submit", submit_basis)
     if existing_submit is not None:
+        existing_origin = existing_submit.get(
+            "connector_origin_integrity_v1"
+        )
+        existing_output = existing_submit.get(
+            "connector_output_integrity_v1"
+        )
+        if (
+            connector_origin_integrity is None
+            and (existing_origin is not None or existing_output is not None)
+        ) or (
+            connector_origin_integrity is not None
+            and (
+                existing_origin != connector_origin_integrity
+                or existing_output != connector_output_integrity
+            )
+        ):
+            raise Layer3WorkbenchError(
+                "package_review_submit_integrity_mismatch",
+                "Stored package-review integrity contradicts current server authority.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["reconciliation_record_id"],
+            )
         existing_submit_ref = str(existing_submit.get("submit_record_ref") or "")
         legacy_submit_record_ref = _legacy_package_review_submit_record_ref(
             submit_basis=submit_basis,
@@ -9170,7 +9828,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "source_gate": output_metadata_summary.get("source_gate"),
         "package_construction_source_gate": package_construction_source_gate,
         "source_shape": (
-            SOURCE_INTAKE_SOURCE_FAMILY
+            source_intake_source_shape
             if source_intake_submit
             else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
             if qualitative_aps_submit
@@ -9186,6 +9844,19 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
         "handoff_enabled": False,
         "export_enabled": False,
         "downstream_unavailable": list(downstream_unavailable),
+        **(
+            {
+                "connector_origin_integrity_v1": _json_clone(
+                    connector_origin_integrity
+                ),
+                "connector_output_integrity_v1": _json_clone(
+                    connector_output_integrity
+                ),
+            }
+            if connector_origin_integrity is not None
+            and connector_output_integrity is not None
+            else {}
+        ),
     }
     if source_intake_submit:
         submit_state.update(
@@ -9223,7 +9894,7 @@ def package_review_submit(db: Session, payload: dict[str, Any]) -> dict[str, Any
             "source_gate": output_metadata_summary.get("source_gate"),
             "package_construction_source_gate": package_construction_source_gate,
             "source_shape": (
-                SOURCE_INTAKE_SOURCE_FAMILY
+                source_intake_source_shape
                 if source_intake_submit
                 else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
                 if qualitative_aps_submit
@@ -9795,6 +10466,81 @@ def _mixed_source_handoff_export_prepare(db: Session, payload: dict[str, Any]) -
     )
 
 
+def _assert_handoff_prepare_connector_integrity(
+    *,
+    prepare_state: Mapping[str, Any],
+    connector_origin_integrity: Mapping[str, Any] | None,
+    connector_output_integrity: Mapping[str, Any] | None,
+) -> None:
+    stored_state_origin = prepare_state.get(
+        "connector_origin_integrity_v1"
+    )
+    stored_state_output = prepare_state.get(
+        "connector_output_integrity_v1"
+    )
+    if (
+        connector_origin_integrity is None
+        and (
+            stored_state_origin is not None
+            or stored_state_output is not None
+        )
+    ) or (
+        connector_origin_integrity is not None
+        and (
+            stored_state_origin != connector_origin_integrity
+            or stored_state_output != connector_output_integrity
+        )
+    ):
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_integrity_mismatch",
+            "Stored handoff state integrity contradicts current server authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+    envelope = prepare_state.get("handoff_export_envelope")
+    operator_decision = str(
+        prepare_state.get("operator_decision") or ""
+    )
+    if operator_decision != "authorize_prepare":
+        if envelope is not None:
+            raise Layer3WorkbenchError(
+                "handoff_export_prepare_integrity_mismatch",
+                "A non-authorized handoff decision cannot retain an export envelope.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["reconciliation_record_id"],
+            )
+        return
+    if not isinstance(envelope, Mapping):
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_integrity_mismatch",
+            "An authorized handoff decision is missing its export envelope.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+    stored_origin = envelope.get("connector_origin_integrity_v1")
+    stored_output = envelope.get("connector_output_integrity_v1")
+    if (
+        connector_origin_integrity is None
+        and (stored_origin is not None or stored_output is not None)
+    ) or (
+        connector_origin_integrity is not None
+        and (
+            stored_origin != connector_origin_integrity
+            or stored_output != connector_output_integrity
+        )
+    ):
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_integrity_mismatch",
+            "Stored handoff integrity contradicts current server authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["reconciliation_record_id"],
+        )
+
+
 def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or "").strip()
     if not request_id:
@@ -9963,6 +10709,11 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         status_body=status_body,
         output_metadata_summary=output_metadata_summary,
     )
+    source_intake_source_shape = (
+        _source_intake_source_shape(output_metadata_summary)
+        if source_intake_prepare
+        else None
+    )
     if (
         status_body.get("engine_family") == ENGINE_FAMILY_SOURCE_INTAKE_QUALITATIVE_PREVIEW
         and not source_intake_prepare
@@ -9995,6 +10746,17 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         )
 
     session = db.query(L3Session).filter(L3Session.session_id == session_id).with_for_update().first()
+    analysis_plan = (
+        db.query(L3AnalysisPlan)
+        .filter(
+            L3AnalysisPlan.analysis_plan_id == analysis_plan_id,
+            L3AnalysisPlan.session_id == session_id,
+            L3AnalysisPlan.status == PLAN_STATUS_APPROVED,
+            L3AnalysisPlan.approved_by_operator.is_(True),
+        )
+        .with_for_update()
+        .one_or_none()
+    )
     pass_run = db.query(L3PassRun).filter(L3PassRun.pass_run_id == pass_run_id).with_for_update().first()
     reconciliation = (
         db.query(L3ReconciliationRecord)
@@ -10011,6 +10773,14 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "Handoff/export preparation could not reload the selected session or pass run.",
             status="conflict",
             http_status=409,
+        )
+    if analysis_plan is None:
+        raise Layer3WorkbenchError(
+            "approved_plan_mismatch",
+            "Handoff/export preparation must reference the current approved analysis plan.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["analysis_plan_id"],
         )
     if pass_run.session_id != session_id or pass_run.analysis_plan_id != analysis_plan_id:
         raise Layer3WorkbenchError(
@@ -10212,6 +10982,22 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             next_allowed_actions=["inspect_existing_package_state"],
         )
     ordered_packages = _packages_in_review_order(packages)
+    connector_origin_integrity = assert_pass_downstream_connector_origin(
+        db,
+        pass_run=pass_run,
+        boundary="handoff_prepare",
+    )
+    connector_output_integrity = None
+    if connector_origin_integrity is not None:
+        connector_output_integrity = assert_pass_output_integrity(
+            db,
+            pass_run_id=pass_run.pass_run_id,
+        )
+    verify_package_payload_bytes(
+        ordered_packages,
+        expected_connector_origin=connector_origin_integrity,
+        expected_connector_output=connector_output_integrity,
+    )
     if not isinstance(raw_output_package_ids, list):
         raise Layer3WorkbenchError(
             "handoff_export_prepare_package_ids_invalid",
@@ -10386,6 +11172,29 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             blocked_fields=["package_review_submit_record_ref"],
             next_allowed_actions=["submit_package_review_approval"],
         )
+    submit_origin = package_review_submit.get(
+        "connector_origin_integrity_v1"
+    )
+    submit_output = package_review_submit.get(
+        "connector_output_integrity_v1"
+    )
+    if (
+        connector_origin_integrity is None
+        and (submit_origin is not None or submit_output is not None)
+    ) or (
+        connector_origin_integrity is not None
+        and (
+            submit_origin != connector_origin_integrity
+            or submit_output != connector_output_integrity
+        )
+    ):
+        raise Layer3WorkbenchError(
+            "handoff_export_prepare_submit_integrity_mismatch",
+            "Approved package-review integrity contradicts current package authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["package_review_submit_record_ref"],
+        )
     if package_review_submit.get("package_review_state") != PACKAGE_REVIEW_APPROVED_STATE:
         raise Layer3WorkbenchError(
             "handoff_export_prepare_requires_approved_package_review",
@@ -10472,7 +11281,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "pass_scope": PASS_SCOPE_SOURCE_INTAKE_QUALITATIVE,
             "method": SOURCE_INTAKE_EXECUTION_METHOD_NAME,
             "source_gate": SOURCE_INTAKE_EXECUTION_START_SOURCE_GATE,
-            "source_shape": SOURCE_INTAKE_SOURCE_FAMILY,
+            "source_shape": source_intake_source_shape,
             "source_intake_record_id": output_metadata_summary.get("source_intake_record_id"),
             "candidate_id": output_metadata_summary.get("candidate_id"),
             "output_payload_ref": output_metadata_summary.get("output_payload_ref"),
@@ -10529,7 +11338,7 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         )
 
     source_shape = (
-        SOURCE_INTAKE_SOURCE_FAMILY
+        source_intake_source_shape
         if source_intake_prepare
         else SOURCE_SHAPE_APS_CONTENT_DOCUMENT
         if qualitative_aps_prepare
@@ -10699,6 +11508,11 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         )
     prepare_record_ref = _stable_id("l3-handoff-export-prepare", preparation_basis)
     if existing_prepare is not None:
+        _assert_handoff_prepare_connector_integrity(
+            prepare_state=existing_prepare,
+            connector_origin_integrity=connector_origin_integrity,
+            connector_output_integrity=connector_output_integrity,
+        )
         if existing_prepare.get("prepare_record_ref") == prepare_record_ref:
             existing_decision = str(existing_prepare.get("operator_decision") or operator_decision)
             existing_status = HANDOFF_EXPORT_PREPARE_STATUS_BY_DECISION.get(existing_decision, "recorded")
@@ -10766,6 +11580,9 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
             "provider_public_url_enabled": False,
             "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
         }
+        if connector_origin_integrity is not None:
+            envelope["connector_origin_integrity_v1"] = _json_clone(connector_origin_integrity)
+            envelope["connector_output_integrity_v1"] = _json_clone(connector_output_integrity)
         if active_authority_projection is not None:
             envelope.update(active_authority_projection)
         if source_intake_prepare:
@@ -10834,6 +11651,13 @@ def handoff_export_prepare(db: Session, payload: dict[str, Any]) -> dict[str, An
         "provider_public_url_enabled": False,
         "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
     }
+    if connector_origin_integrity is not None:
+        prepare_state["connector_origin_integrity_v1"] = _json_clone(
+            connector_origin_integrity
+        )
+        prepare_state["connector_output_integrity_v1"] = _json_clone(
+            connector_output_integrity
+        )
     if active_authority_projection is not None:
         prepare_state.update(active_authority_projection)
     if source_intake_prepare:

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 import hashlib
+import importlib
 import importlib.metadata
 import json
 import os
 import re
+import sys
 import tempfile
 import time
 import unicodedata
@@ -23,8 +25,17 @@ from app.services import nrc_aps_sec_edgar_parser
 from app.services import nrc_aps_ocr
 from app.services import nrc_aps_parser_registry
 from app.services import nrc_aps_settings
-from app.services import nrc_aps_advanced_table_parser
 from app.services import nrc_aps_advanced_ocr
+from app.services.nrc_aps_strict_parse import (
+    STRICT_PARSE_MAX_CPU_SECONDS,
+    STRICT_PARSE_MAX_PAGES,
+    STRICT_PARSE_MAX_PEAK_RSS_BYTES,
+    STRICT_PARSE_MAX_TABLE_COLUMNS,
+    STRICT_PARSE_MAX_TABLE_ROWS,
+    STRICT_PARSE_MAX_TEXT_BYTES,
+    STRICT_PARSE_PROFILE_ID,
+    StrictParseViolation,
+)
 # Temporary proof collector for next-pass verification (module-level)
 
 
@@ -371,6 +382,7 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
         "visual_lane_mode": APS_VISUAL_LANE_MODE_BASELINE,
         "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
         "document_processing_engine_explicit": False,
+        "strict_parse_profile": None,
     }
     config.update(incoming)
     if "document_processing_engine_explicit" not in incoming:
@@ -409,6 +421,115 @@ def _raise_if_deadline_exceeded(deadline: float | None) -> None:
         return
     if time.monotonic() > float(deadline):
         raise ValueError("content_parse_timeout_exceeded")
+
+
+def _strict_parse_profile_enabled(config: dict[str, Any] | None) -> bool:
+    return (
+        config is not None
+        and config.get("strict_parse_profile") == STRICT_PARSE_PROFILE_ID
+    )
+
+
+def _load_advanced_table_parser() -> Any:
+    return importlib.import_module("app.services.nrc_aps_advanced_table_parser")
+
+
+def _peak_rss_bytes() -> int:
+    if os.name == "nt":
+        import ctypes
+        from ctypes import wintypes
+
+        class ProcessMemoryCounters(ctypes.Structure):
+            _fields_ = [
+                ("cb", wintypes.DWORD),
+                ("PageFaultCount", wintypes.DWORD),
+                ("PeakWorkingSetSize", ctypes.c_size_t),
+                ("WorkingSetSize", ctypes.c_size_t),
+                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                ("PagefileUsage", ctypes.c_size_t),
+                ("PeakPagefileUsage", ctypes.c_size_t),
+            ]
+
+        counters = ProcessMemoryCounters()
+        counters.cb = ctypes.sizeof(counters)
+        get_current_process = ctypes.windll.kernel32.GetCurrentProcess
+        get_current_process.restype = wintypes.HANDLE
+        get_process_memory_info = ctypes.windll.psapi.GetProcessMemoryInfo
+        get_process_memory_info.argtypes = [
+            wintypes.HANDLE,
+            ctypes.POINTER(ProcessMemoryCounters),
+            wintypes.DWORD,
+        ]
+        get_process_memory_info.restype = wintypes.BOOL
+        process = get_current_process()
+        if not get_process_memory_info(
+            process,
+            ctypes.byref(counters),
+            counters.cb,
+        ):
+            raise StrictParseViolation("strict_memory_measurement_failed")
+        return int(counters.PeakWorkingSetSize)
+
+    try:
+        resource_module: Any = importlib.import_module("resource")
+    except ImportError as exc:
+        raise StrictParseViolation("strict_memory_measurement_unavailable") from exc
+
+    peak_rss = int(
+        resource_module.getrusage(resource_module.RUSAGE_SELF).ru_maxrss
+    )
+    # macOS reports bytes; Linux and other supported Unix runtimes report KiB.
+    return peak_rss if sys.platform == "darwin" else peak_rss * 1024
+
+
+def _strict_parse_checkpoint(
+    config: dict[str, Any],
+    *,
+    deadline: float | None,
+    cpu_started_at: float,
+) -> None:
+    if not _strict_parse_profile_enabled(config):
+        return
+    _raise_if_deadline_exceeded(deadline)
+    if _peak_rss_bytes() > STRICT_PARSE_MAX_PEAK_RSS_BYTES:
+        raise StrictParseViolation("strict_memory_limit_exceeded")
+    if time.process_time() - cpu_started_at > STRICT_PARSE_MAX_CPU_SECONDS:
+        raise StrictParseViolation("strict_cpu_limit_exceeded")
+
+
+def _strict_parse_checkpoint_or_close(
+    document: Any,
+    config: dict[str, Any],
+    *,
+    deadline: float | None,
+    cpu_started_at: float,
+) -> None:
+    try:
+        _strict_parse_checkpoint(
+            config,
+            deadline=deadline,
+            cpu_started_at=cpu_started_at,
+        )
+    except Exception:
+        document.close()
+        raise
+
+
+def _pdf_deadline_checkpoint_or_close(
+    document: Any,
+    deadline: float | None,
+    *,
+    strict_parse: bool,
+) -> None:
+    try:
+        _raise_if_deadline_exceeded(deadline)
+    except ValueError:
+        if strict_parse:
+            document.close()
+        raise
 
 
 def process_document(
@@ -1151,11 +1272,17 @@ def _process_pdf(
     deadline: float | None,
 ) -> dict[str, Any]:
     _raise_if_deadline_exceeded(deadline)
+    strict_parse = _strict_parse_profile_enabled(config)
+    strict_cpu_started_at = time.process_time() if strict_parse else 0.0
     try:
         document = fitz.open(stream=content, filetype="pdf")
     except Exception as exc:  # noqa: BLE001
         raise ValueError("pdf_open_failed") from exc
-    _raise_if_deadline_exceeded(deadline)
+    _pdf_deadline_checkpoint_or_close(
+        document,
+        deadline,
+        strict_parse=strict_parse,
+    )
     
     if document.needs_pass:
         document.close()
@@ -1163,10 +1290,15 @@ def _process_pdf(
 
     total_pages = int(document.page_count)
     max_pages = int(config.get("content_parse_max_pages", 500))
+    if strict_parse and total_pages > STRICT_PARSE_MAX_PAGES:
+        document.close()
+        raise StrictParseViolation("strict_page_limit_exceeded")
     # Hard cap for stability, but allowing significantly more than before via chunking
-    if total_pages > max_pages * 30: 
+    if not strict_parse and total_pages > max_pages * 30:
         document.close()
         raise ValueError("pdf_page_limit_absolute_exceeded")
+    if strict_parse:
+        config["_strict_table_rows_seen"] = 0
 
     all_units: list[dict[str, Any]] = []
     page_summaries: list[dict[str, Any]] = []
@@ -1174,6 +1306,7 @@ def _process_pdf(
     native_page_count = 0
     ocr_page_count = 0
     weak_page_count = 0
+    cumulative_text_bytes = 0
     debug_page_states: list[dict[str, Any]] = []
     visual_page_refs: list[dict[str, Any]] = []
     # Store exact pdf path if provided via config
@@ -1187,10 +1320,18 @@ def _process_pdf(
     chunk_size = 100
     for chunk_start in range(0, total_pages, chunk_size):
         chunk_end = min(chunk_start + chunk_size, total_pages)
-        _raise_if_deadline_exceeded(deadline)
+        _pdf_deadline_checkpoint_or_close(
+            document,
+            deadline,
+            strict_parse=strict_parse,
+        )
         
         for page_index in range(chunk_start, chunk_end):
-            _raise_if_deadline_exceeded(deadline)
+            _pdf_deadline_checkpoint_or_close(
+                document,
+                deadline,
+                strict_parse=strict_parse,
+            )
             page = document.load_page(page_index)
             # Initialize instrumentation flags for this page
             fallback_entered = False
@@ -1210,7 +1351,15 @@ def _process_pdf(
             has_significant_image = any(img[2] >= 100 and img[3] >= 100 for img in images)
             images_present = bool(images)
             # Pass full context for doc-type routing and bytes-fallback for Camelot
-            native_units = _extract_native_pdf_units(page, config=config, pdf_content=content)
+            try:
+                native_units = _extract_native_pdf_units(
+                    page,
+                    config=config,
+                    pdf_content=content,
+                )
+            except StrictParseViolation:
+                document.close()
+                raise
             
             native_text = _normalize_text("\n".join(str(item.get("text") or "") for item in native_units if str(item.get("text") or "").strip()))
             native_quality = _quality_metrics(
@@ -1240,6 +1389,9 @@ def _process_pdf(
                 fallback_entered = True
                 weak_page_count += 1
                 if bool(config.get("ocr_enabled", True)) and page_number <= int(config["ocr_max_pages"]):
+                    if strict_parse:
+                        document.close()
+                        raise StrictParseViolation("strict_ocr_path_refused")
                     ocr_attempted = True
                     ocr_attempted_fallback = True
                     try:
@@ -1275,12 +1427,17 @@ def _process_pdf(
                                 degradation_codes.append("ocr_fallback_used")
                         else:
                             degradation_codes.append("ocr_required_but_unavailable")
-                    except (nrc_aps_ocr.OcrExecutionError, Exception):
+                    except Exception:
+                        if strict_parse:
+                            raise
                         degradation_codes.append("ocr_execution_failed")
             
             # Hybrid path (Selective OCR for images)
-            if images and (ocr_available or is_advanced_doc):
+            if bool(config.get("ocr_enabled", True)) and images and (ocr_available or is_advanced_doc):
                 if has_significant_image:
+                    if strict_parse:
+                        document.close()
+                        raise StrictParseViolation("strict_ocr_path_refused")
                     hybrid_entered = True
                     try:
                         image_payload: dict[str, Any] = {}
@@ -1311,7 +1468,9 @@ def _process_pdf(
                                 ocr_page_count += 1
                                 # Compute delta for hybrid as well
                                 new_word_delta = len(ocr_words - native_words)
-                    except (nrc_aps_ocr.OcrExecutionError, Exception):
+                    except Exception:
+                        if strict_parse:
+                            raise
                         degradation_codes.append("ocr_hybrid_failed")
             
             if page_source == "native":
@@ -1344,7 +1503,16 @@ def _process_pdf(
             # text_heavy_or_empty → skip (no ref added)
             # ---------------------------------------------------------------
 
-            all_units.extend(page_units)
+            if strict_parse:
+                for unit in page_units:
+                    strict_text_bytes = len(str(unit.get("text") or "").encode("utf-8"))
+                    cumulative_text_bytes += strict_text_bytes
+                    if cumulative_text_bytes > STRICT_PARSE_MAX_TEXT_BYTES:
+                        document.close()
+                        raise StrictParseViolation("strict_text_limit_exceeded")
+                    all_units.append(unit)
+            else:
+                all_units.extend(page_units)
             page_summaries.append({
                 "page_number": page_number,
                 "unit_count": len(page_units),
@@ -1359,8 +1527,16 @@ def _process_pdf(
             # Explicitly clear page object
             page = None
 
-    
-    _raise_if_deadline_exceeded(deadline)
+        if strict_parse:
+            _strict_parse_checkpoint_or_close(
+                document,
+                config,
+                deadline=deadline,
+                cpu_started_at=strict_cpu_started_at,
+            )
+
+    if not strict_parse:
+        _raise_if_deadline_exceeded(deadline)
     full_text = "\n".join(str(u.get("text") or "") for u in all_units if str(u.get("text") or "").strip())
     normalized_text = _normalize_text(full_text)
     
@@ -1399,6 +1575,13 @@ def _process_pdf(
         "normalized_text_sha256": hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
         "normalized_char_count": len(normalized_text),
     }
+    if strict_parse:
+        _strict_parse_checkpoint_or_close(
+            document,
+            config,
+            deadline=deadline,
+            cpu_started_at=strict_cpu_started_at,
+        )
     document.close()
     # Populate external proof collector for next-pass analysis
 
@@ -1780,7 +1963,10 @@ def _extract_native_pdf_units(
     
     # Advanced Table Routing
     if config and config.get("document_type") in nrc_aps_settings.COMPLEX_TABLE_DOC_TYPES:
-        adv_result = nrc_aps_advanced_table_parser.extract_advanced_table(
+        if _strict_parse_profile_enabled(config):
+            raise StrictParseViolation("strict_advanced_table_refused")
+        advanced_table_parser = _load_advanced_table_parser()
+        adv_result = advanced_table_parser.extract_advanced_table(
             pdf_source=config.get("file_path") or pdf_content,
             page_index_0=page.number
         )
@@ -1800,6 +1986,15 @@ def _extract_native_pdf_units(
             rows = tab.extract()
             if not rows:
                 continue
+            if _strict_parse_profile_enabled(config):
+                assert config is not None
+                prior_rows = int(config.get("_strict_table_rows_seen") or 0)
+                next_rows = prior_rows + len(rows)
+                if next_rows > STRICT_PARSE_MAX_TABLE_ROWS:
+                    raise StrictParseViolation("strict_table_row_limit_exceeded")
+                if any(len(row) > STRICT_PARSE_MAX_TABLE_COLUMNS for row in rows):
+                    raise StrictParseViolation("strict_table_column_limit_exceeded")
+                config["_strict_table_rows_seen"] = next_rows
             
             # Convert to markdown-like table
             table_text_lines = []

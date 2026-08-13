@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 os.environ["DB_INIT_MODE"] = "none"
 
@@ -53,7 +54,12 @@ from app.services.layer3_typing_entry import materialize_typing_entry
 
 
 def _make_session():
-    engine = create_engine("sqlite:///:memory:", future=True)
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        future=True,
+    )
     Base.metadata.create_all(engine)
     Session = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
     return Session()
@@ -222,7 +228,12 @@ def _seed_non_timeseries_dataset_version(db, tmp_path: Path, *, dataset_id: str,
     db.flush()
 
 
-def _build_quant_ready_session(db, tmp_path: Path) -> tuple[str, str, datetime]:
+def _build_quant_ready_session(
+    db,
+    tmp_path: Path,
+    *,
+    snapshot_storage_root: Path | None = None,
+) -> tuple[str, str, datetime]:
     dataset_version_id = "dv-pass-001"
     _seed_dataset_version(db, tmp_path, dataset_id="ds-pass-001", dataset_version_id=dataset_version_id)
 
@@ -260,7 +271,11 @@ def _build_quant_ready_session(db, tmp_path: Path) -> tuple[str, str, datetime]:
                 load_summary={"loaded_records": 1, "failed_records": 0},
             )
         ],
-        storage_root=tmp_path,
+        storage_root=(
+            tmp_path
+            if snapshot_storage_root is None
+            else snapshot_storage_root
+        ),
     )
     finalize_session(db, session=session)
     phase1a_status = session.status

@@ -19,6 +19,7 @@ from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED,
     SESSION_STATUS_COMPLETED_WITH_WARNINGS,
 )
+from app.services.layer3_connector_source_intake import STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS
 from app.services.layer3_source_boundary import (
     SOURCE_DIRECTORY_GATE_B_SOURCE_CLASS,
     SOURCE_INTAKE_GATE_B_SOURCE_CLASS,
@@ -105,6 +106,13 @@ SUPPORTED_TYPING_RULES = {
         chosen_modality=MODALITY_QUALITATIVE,
         confidence=1.0,
         confidence_basis="frozen_source_intake_text_document_default",
+    ),
+    STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS: _TypingRule(
+        planning_shape_family="document_chunks",
+        candidate_modalities=(MODALITY_QUALITATIVE,),
+        chosen_modality=MODALITY_QUALITATIVE,
+        confidence=1.0,
+        confidence_basis="bounded_connector_csv_source_intake_default",
     ),
     SOURCE_DIRECTORY_GATE_B_SOURCE_CLASS: _TypingRule(
         planning_shape_family="document_chunks",

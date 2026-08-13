@@ -29,6 +29,7 @@ from app.models.models import (
     VariableDefinition,
     VariableProfile,
 )
+from app.services import layer3_package_entry as package_entry
 from app.services import layer3_pass_entry as layer3_pass_entry_module
 from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
@@ -279,6 +280,253 @@ def _package_rows_by_kind(db) -> dict[str, L3OutputPackage]:
 
 def _load_payload(path: str) -> dict:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _connector_integrity_objects() -> tuple[dict, dict]:
+    origin_integrity = {
+        "schema_id": "layer3.connector_origin_integrity.v1",
+        "connector_key": "sciencebase_mcs",
+        "connector_run_target_id": "target-package",
+        "connector_origin_receipt_hash": "a" * 64,
+        "proof_class": "offline_fixture",
+    }
+    output_integrity = {
+        "schema_id": "layer3.connector_output_integrity.v1",
+        **{
+            key: value
+            for key, value in origin_integrity.items()
+            if key != "schema_id"
+        },
+        "artifact_receipts": [],
+        "artifact_set_hash": hashlib.sha256(b"[]").hexdigest(),
+        "output_manifest_sha256": "c" * 64,
+    }
+    return origin_integrity, output_integrity
+
+
+def _connector_package_rows(
+    tmp_path: Path,
+    monkeypatch,
+) -> tuple[list[L3OutputPackage], tuple[dict, ...]]:
+    storage_dir = tmp_path / "storage"
+    artifact_root = storage_dir / "artifacts"
+    package_root = artifact_root / "layer3"
+    package_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    origin_integrity, output_integrity = _connector_integrity_objects()
+    rows: list[L3OutputPackage] = []
+    payloads: list[dict] = []
+    for index, package_kind in enumerate(
+        (
+            PACKAGE_KIND_CANONICAL_INTERNAL,
+            PACKAGE_KIND_USER_FACING,
+            PACKAGE_KIND_REVIEW_FACING,
+        )
+    ):
+        package_key = package_entry._package_key(  # type: ignore[attr-defined]
+            session_id="session-package-bytes",
+            package_kind=package_kind,
+        )
+        payload = {
+            "package_header": {
+                "schema_id": package_entry.PACKAGE_SCHEMA_IDS[package_kind],
+                "package_kind": package_kind,
+                "package_key": package_key,
+                "package_status": "package_complete",
+                "session_id": "session-package-bytes",
+                **(
+                    {
+                        "canonical_package_key": (
+                            package_entry._package_key(  # type: ignore[attr-defined]
+                                session_id="session-package-bytes",
+                                package_kind=(
+                                    PACKAGE_KIND_CANONICAL_INTERNAL
+                                ),
+                            )
+                        )
+                    }
+                    if package_kind != PACKAGE_KIND_CANONICAL_INTERNAL
+                    else {}
+                ),
+            },
+            "connector_origin_integrity_v1": origin_integrity,
+            "connector_output_integrity_v1": output_integrity,
+        }
+        payload_bytes = stable_json_text_bytes(payload)
+        payload_path = package_root / f"package-{index}.json"
+        payload_path.write_bytes(payload_bytes)
+        rows.append(
+            L3OutputPackage(
+                output_package_id=f"package-{index}",
+                session_id="session-package-bytes",
+                reconciliation_record_id="reconciliation-package-bytes",
+                package_kind=package_kind,
+                status="package_complete",
+                payload_ref=str(payload_path),
+                payload_hash=hashlib.sha256(payload_bytes).hexdigest(),
+                summary_json={},
+            )
+        )
+        payloads.append(payload)
+    return rows, tuple(payloads)
+
+
+def test_verify_package_payload_bytes_requires_exact_three_bound_payloads(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    rows, payloads = _connector_package_rows(tmp_path, monkeypatch)
+
+    verified = package_entry.verify_package_payload_bytes(
+        [rows[2], rows[0], rows[1]]
+    )
+
+    assert verified == payloads
+    assert [
+        payload["package_header"]["package_kind"]
+        for payload in verified
+    ] == [
+        PACKAGE_KIND_CANONICAL_INTERNAL,
+        PACKAGE_KIND_USER_FACING,
+        PACKAGE_KIND_REVIEW_FACING,
+    ]
+    assert all(
+        payload["connector_origin_integrity_v1"]
+        == payloads[0]["connector_origin_integrity_v1"]
+        and payload["connector_output_integrity_v1"]
+        == payloads[0]["connector_output_integrity_v1"]
+        for payload in verified
+    )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ("proof_downgrade", "proof_replacement", "header_session"),
+)
+def test_verify_package_payload_bytes_binds_fresh_pass_authority(
+    tmp_path: Path,
+    monkeypatch,
+    mutation: str,
+) -> None:
+    rows, payloads = _connector_package_rows(tmp_path, monkeypatch)
+    expected_origin, expected_output = _connector_integrity_objects()
+    for row in rows:
+        payload_path = Path(row.payload_ref)
+        payload = json.loads(payload_path.read_text(encoding="utf-8"))
+        if mutation == "proof_downgrade":
+            payload.pop("connector_origin_integrity_v1")
+            payload.pop("connector_output_integrity_v1")
+        elif mutation == "proof_replacement":
+            payload["connector_origin_integrity_v1"][
+                "connector_origin_receipt_hash"
+            ] = "d" * 64
+            payload["connector_output_integrity_v1"][
+                "connector_origin_receipt_hash"
+            ] = "d" * 64
+        else:
+            payload["package_header"]["session_id"] = "other-session"
+        payload_bytes = stable_json_text_bytes(payload)
+        payload_path.write_bytes(payload_bytes)
+        row.payload_hash = hashlib.sha256(payload_bytes).hexdigest()
+
+    with pytest.raises(Layer3PackageEntryError):
+        package_entry.verify_package_payload_bytes(
+            rows,
+            expected_connector_origin=expected_origin,
+            expected_connector_output=expected_output,
+        )
+
+    assert (
+        payloads[0]["connector_origin_integrity_v1"]
+        == expected_origin
+    )
+    assert (
+        payloads[0]["connector_output_integrity_v1"]
+        == expected_output
+    )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        "payload_hash",
+        "package_kind",
+        "schema_id",
+        "noncanonical",
+        "duplicate_key",
+        "integrity_disagreement",
+    ),
+)
+def test_verify_package_payload_bytes_rejects_single_axis_corruption(
+    tmp_path: Path,
+    monkeypatch,
+    mutation: str,
+) -> None:
+    rows, _ = _connector_package_rows(tmp_path, monkeypatch)
+    target = rows[1]
+    payload_path = Path(target.payload_ref)
+    payload = json.loads(payload_path.read_text(encoding="utf-8"))
+    if mutation == "payload_hash":
+        target.payload_hash = "f" * 64
+    elif mutation == "package_kind":
+        target.package_kind = "unexpected"
+    elif mutation == "schema_id":
+        payload["package_header"]["schema_id"] = "wrong-schema"
+        payload_path.write_bytes(stable_json_text_bytes(payload))
+        target.payload_hash = hashlib.sha256(payload_path.read_bytes()).hexdigest()
+    elif mutation == "noncanonical":
+        payload_path.write_bytes((json.dumps(payload, indent=2) + "\n").encode("utf-8"))
+        target.payload_hash = hashlib.sha256(payload_path.read_bytes()).hexdigest()
+    elif mutation == "duplicate_key":
+        payload_path.write_text(
+            '{"package_header":{"schema_id":"x","schema_id":"x"}}',
+            encoding="utf-8",
+        )
+        target.payload_hash = hashlib.sha256(payload_path.read_bytes()).hexdigest()
+    else:
+        payload["connector_origin_integrity_v1"][
+            "connector_origin_receipt_hash"
+        ] = "d" * 64
+        payload_path.write_bytes(stable_json_text_bytes(payload))
+        target.payload_hash = hashlib.sha256(payload_path.read_bytes()).hexdigest()
+
+    with pytest.raises(Layer3PackageEntryError):
+        package_entry.verify_package_payload_bytes(rows)
+
+
+def test_persist_package_payload_rehashes_existing_bytes_without_repair(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    storage_dir = tmp_path / "storage"
+    artifact_root = storage_dir / "artifacts"
+    (artifact_root / "layer3").mkdir(parents=True)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    payload = {
+        "package_header": {
+            "schema_id": package_entry.PACKAGE_SCHEMA_IDS[
+                PACKAGE_KIND_CANONICAL_INTERNAL
+            ],
+            "package_kind": PACKAGE_KIND_CANONICAL_INTERNAL,
+        }
+    }
+    payload_bytes = stable_json_text_bytes(payload)
+    payload_hash = hashlib.sha256(payload_bytes).hexdigest()
+    target = package_entry._package_artifact_path(  # type: ignore[attr-defined]
+        session_id="session-existing-package",
+        package_kind=PACKAGE_KIND_CANONICAL_INTERNAL,
+        payload_hash=payload_hash,
+    )
+    target.write_bytes(b"wrong-existing-bytes")
+
+    with pytest.raises(Layer3PackageEntryError):
+        package_entry._persist_package_payload(  # type: ignore[attr-defined]
+            session_id="session-existing-package",
+            package_kind=PACKAGE_KIND_CANONICAL_INTERNAL,
+            payload=payload,
+        )
+
+    assert target.read_bytes() == b"wrong-existing-bytes"
 
 
 def test_gated_package_entry_emits_canonical_user_and_review_packages(tmp_path):

@@ -185,4 +185,17 @@ def execution_result_review_response(
         "source_gate": review_state.get("source_gate"),
         "source_dataset_version_ids": json_clone(review_state.get("source_dataset_version_ids") or []),
         "cohort_shape": review_state.get("cohort_shape"),
+        **(
+            {
+                "connector_origin_integrity_v1": json_clone(
+                    review_state["connector_origin_integrity_v1"]
+                ),
+                "connector_output_integrity_v1": json_clone(
+                    review_state["connector_output_integrity_v1"]
+                ),
+            }
+            if "connector_origin_integrity_v1" in review_state
+            and "connector_output_integrity_v1" in review_state
+            else {}
+        ),
     }

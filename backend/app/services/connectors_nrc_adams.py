@@ -4,14 +4,16 @@ import hashlib
 import json
 import os
 import re
+import stat
 import tempfile
 import time
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from urllib.parse import urlparse
 
 import requests
@@ -35,6 +37,13 @@ from app.services import nrc_aps_contract
 from app.services import nrc_aps_dataset_bridge
 from app.services import nrc_aps_safeguards
 from app.services import nrc_aps_sync_drift
+from app.services import connector_egress_arming
+from app.services.connector_egress_authorization import strict_json_loads
+from app.services.connector_egress_transport import (
+    BoundedConnectorResponse,
+    BoundedConnectorTransport,
+    FrozenPhysicalRequest,
+)
 from app.services.connectors_sciencebase import _finalize_run, _record_run_event
 from app.services.sciencebase_connector.contracts import RETRYABLE_HTTP_STATUSES, RUN_TERMINAL_STATUSES, SubmissionConflictError
 from app.services.sciencebase_connector.executor import ExecutorGuards, assert_lease_token, transition_target_state
@@ -109,6 +118,21 @@ APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_ID = "aps.csv_dataset_bridge_run.v1"
 APS_CSV_DATASET_BRIDGE_RUN_SCHEMA_VERSION = 1
 APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_ID = "aps.table_dataset_bridge_run.v1"
 APS_TABLE_DATASET_BRIDGE_RUN_SCHEMA_VERSION = 1
+NRC_FRESH_ACCESSION = "ML17123A319"
+NRC_FRESH_FILENAME = "ML17123A319.pdf"
+NRC_FRESH_DETAIL_URL = (
+    "https://adams-api.nrc.gov/aps/api/search/ML17123A319"
+)
+NRC_FRESH_ARTIFACT_URL = (
+    "https://www.nrc.gov/docs/ML1712/ML17123A319.pdf"
+)
+NRC_FRESH_DETAIL_STAGE = "exact_accession_api"
+NRC_FRESH_ARTIFACT_STAGE = "artifact"
+NRC_FRESH_ARTIFACT_PATH_CLASS = "nrc_public_pdf_exact_v1"
+NRC_FRESH_MAX_PDF_BYTES = 64 * 1024 * 1024
+NRC_FRESH_MEDIA_TYPES = frozenset(
+    {"application/pdf", "application/octet-stream"}
+)
 
 
 @dataclass
@@ -141,6 +165,12 @@ class ApsArtifactSizeLimitExceeded(RuntimeError):
         super().__init__(
             f"artifact_size_limit_exceeded:max={self.max_file_bytes}:received={self.bytes_received_before_abort}:phase={self.overrun_phase}"
         )
+
+
+class NrcFreshAdmissionError(RuntimeError):
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
 
 
 @dataclass(frozen=True)
@@ -2414,7 +2444,39 @@ def _upsert_sync_cursor_after_run(
     db.flush()
 
 
+def _has_reserved_egress_submit_marker(
+    payload: Mapping[str, Any],
+    *,
+    idempotency_key: str | None,
+) -> bool:
+    source_mode = payload.get("source_mode")
+    submission_keys = (
+        idempotency_key,
+        payload.get("client_request_id"),
+        payload.get("submission_idempotency_key"),
+    )
+    return bool(
+        "connector_egress_arming" in payload
+        or (
+            isinstance(source_mode, str)
+            and source_mode.strip().lower() == "strict_live_egress"
+        )
+        or any(
+            isinstance(value, str)
+            and value.strip().startswith("egress-arm:")
+            for value in submission_keys
+        )
+    )
+
+
 def submit_nrc_adams_run(db: Session, *, payload: dict[str, Any], idempotency_key: str | None) -> tuple[ConnectorRun, bool]:
+    if _has_reserved_egress_submit_marker(
+        payload,
+        idempotency_key=idempotency_key,
+    ):
+        raise SubmissionConflictError(
+            "reserved egress provenance requires the protected arming API"
+        )
     submitted_key = (idempotency_key or payload.get("client_request_id") or "").strip() or None
     config = _normalize_request_config(payload, submitted_key)
     request_fingerprint = _stable_json_hash(config)
@@ -3528,14 +3590,578 @@ def _process_target_metadata(
     )
 
 
+def _strict_response_body(
+    response: BoundedConnectorResponse,
+    *,
+    stage: str,
+) -> bytes:
+    status = response.response_status
+    if response.outcome_class == "oversized":
+        raise NrcFreshAdmissionError(f"nrc_strict_{stage}_oversized")
+    if response.outcome_class != "completed":
+        raise NrcFreshAdmissionError(f"nrc_strict_{stage}_transport_stopped")
+    if isinstance(status, int) and 300 <= status < 400:
+        raise NrcFreshAdmissionError(f"nrc_strict_{stage}_redirect_refused")
+    if stage == NRC_FRESH_DETAIL_STAGE and status in {401, 403}:
+        raise NrcFreshAdmissionError("nrc_strict_api_key_rejected")
+    if status != 200:
+        raise NrcFreshAdmissionError(f"nrc_strict_{stage}_http_rejected")
+    body = response.body
+    if not isinstance(body, bytes):
+        raise NrcFreshAdmissionError(f"nrc_strict_{stage}_body_invalid")
+    digest = hashlib.sha256(body).hexdigest()
+    if (
+        response.byte_count != len(body)
+        or response.delivered_body_bytes != len(body)
+        or response.body_sha256 != digest
+    ):
+        raise NrcFreshAdmissionError(f"nrc_strict_{stage}_body_incomplete")
+    return body
+
+
+def _count_json_member(value: Any, member: str) -> int:
+    if isinstance(value, Mapping):
+        return sum(
+            (1 if key == member else 0) + _count_json_member(item, member)
+            for key, item in value.items()
+        )
+    if isinstance(value, list):
+        return sum(_count_json_member(item, member) for item in value)
+    return 0
+
+
+def _strict_document_url(response_body: bytes) -> str:
+    try:
+        payload = strict_json_loads(response_body)
+    except (TypeError, ValueError) as exc:
+        raise NrcFreshAdmissionError("nrc_strict_detail_json_invalid") from exc
+    if not isinstance(payload, dict):
+        raise NrcFreshAdmissionError("nrc_strict_detail_root_invalid")
+    document = payload.get("document")
+    if not isinstance(document, dict):
+        raise NrcFreshAdmissionError("nrc_strict_detail_document_invalid")
+    if document.get("AccessionNumber") != NRC_FRESH_ACCESSION:
+        raise NrcFreshAdmissionError("nrc_strict_accession_mismatch")
+    if _count_json_member(payload, "Url") != 1:
+        raise NrcFreshAdmissionError("nrc_strict_url_member_cardinality")
+    raw_url = document.get("Url")
+    if not isinstance(raw_url, str) or raw_url != NRC_FRESH_ARTIFACT_URL:
+        raise NrcFreshAdmissionError("nrc_strict_artifact_url_not_exact")
+    return raw_url
+
+
+def _strict_pdf_body(
+    response: BoundedConnectorResponse,
+) -> tuple[bytes, str]:
+    body = _strict_response_body(
+        response,
+        stage=NRC_FRESH_ARTIFACT_STAGE,
+    )
+    content_type = str(response.safe_headers.get("content_type") or "")
+    if content_type not in NRC_FRESH_MEDIA_TYPES:
+        raise NrcFreshAdmissionError("nrc_strict_artifact_media_type_rejected")
+    if not body or not body.startswith(b"%PDF-"):
+        raise NrcFreshAdmissionError("nrc_strict_artifact_pdf_magic_missing")
+    if len(body) > NRC_FRESH_MAX_PDF_BYTES:
+        raise NrcFreshAdmissionError("nrc_strict_artifact_oversized")
+    return body, content_type
+
+
+def _verify_content_addressed_blob(
+    *,
+    stored: Mapping[str, Any],
+    expected_sha256: str,
+    expected_bytes: int,
+) -> str:
+    expected_rel = nrc_aps_artifact_ingestion.blob_relative_path(
+        sha256=expected_sha256
+    )
+    raw_root = Path(settings.connector_raw_dir)
+    expected_path = raw_root / expected_rel
+    stored_path = Path(str(stored.get("blob_ref") or ""))
+    if (
+        stored.get("blob_sha256") != expected_sha256
+        or stored.get("blob_bytes") != expected_bytes
+        or stored.get("blob_storage_layout") != "nrc_aps_blob_sha256_v1"
+        or stored_path.absolute() != expected_path.absolute()
+        or stored_path.is_symlink()
+    ):
+        raise NrcFreshAdmissionError("nrc_strict_blob_binding_invalid")
+    try:
+        metadata = stored_path.lstat()
+        resolved_root = raw_root.resolve(strict=True)
+        resolved_path = stored_path.resolve(strict=True)
+    except OSError as exc:
+        raise NrcFreshAdmissionError("nrc_strict_blob_unavailable") from exc
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or not resolved_path.is_relative_to(resolved_root)
+    ):
+        raise NrcFreshAdmissionError("nrc_strict_blob_path_invalid")
+    digest = hashlib.sha256()
+    byte_count = 0
+    try:
+        with resolved_path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                byte_count += len(chunk)
+                digest.update(chunk)
+    except OSError as exc:
+        raise NrcFreshAdmissionError("nrc_strict_blob_unavailable") from exc
+    if byte_count != expected_bytes or digest.hexdigest() != expected_sha256:
+        raise NrcFreshAdmissionError("nrc_strict_blob_content_mismatch")
+    return str(stored_path)
+
+
+def _persist_fresh_nrc_target(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    detail_response_sha256: str,
+    artifact_url_sha256: str,
+    pdf_body: bytes,
+    content_type: str,
+) -> ConnectorRunTarget:
+    existing_targets = (
+        db.query(ConnectorRunTarget)
+        .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
+        .count()
+    )
+    if existing_targets != 0:
+        raise NrcFreshAdmissionError("nrc_strict_target_already_exists")
+    raw_sha256 = hashlib.sha256(pdf_body).hexdigest()
+    stored = nrc_aps_artifact_ingestion.write_blob_content_addressed(
+        raw_root=settings.connector_raw_dir,
+        content=pdf_body,
+    )
+    raw_storage_ref = _verify_content_addressed_blob(
+        stored=stored,
+        expected_sha256=raw_sha256,
+        expected_bytes=len(pdf_body),
+    )
+    now = _utcnow()
+    target = ConnectorRunTarget(
+        connector_run_target_id=str(
+            uuid.uuid5(
+                uuid.NAMESPACE_URL,
+                (
+                    "project6:nrc-fresh:"
+                    f"{run.connector_run_id}:target:{NRC_FRESH_ACCESSION}"
+                ),
+            )
+        ),
+        connector_run_id=run.connector_run_id,
+        ordinal=1,
+        stable_release_key=NRC_FRESH_ACCESSION,
+        stable_release_identifier=(
+            f"adams_accession:{NRC_FRESH_ACCESSION}"
+        ),
+        identifiers_json=[
+            {"type": "AccessionNumber", "value": NRC_FRESH_ACCESSION}
+        ],
+        sciencebase_item_id=None,
+        sciencebase_item_url=None,
+        sciencebase_file_name=NRC_FRESH_FILENAME,
+        sciencebase_download_uri=None,
+        artifact_surface="files",
+        selection_source="strict_exact_accession",
+        selection_scope="dual_live_proof_v1",
+        selection_match_basis="exact_accession",
+        artifact_locator_type=NRC_FRESH_ARTIFACT_PATH_CLASS,
+        source_artifact_key=f"nrc_adams_aps::{NRC_FRESH_ACCESSION}",
+        canonical_artifact_key=f"nrc_adams_aps::{NRC_FRESH_ACCESSION}",
+        downloaded_sha256=raw_sha256,
+        raw_storage_ref=raw_storage_ref,
+        etag=None,
+        last_modified=None,
+        fetch_policy_mode="strict_live_egress",
+        resolved_ip=None,
+        redirect_count=0,
+        blocked_reason=None,
+        aliases_json=[],
+        source_reference_json={
+            "schema_id": "project6.nrc_raw_admission.v1",
+            "accession_number": NRC_FRESH_ACCESSION,
+            "artifact_file_name": NRC_FRESH_FILENAME,
+            "detail_response_sha256": detail_response_sha256,
+            "artifact_url_sha256": artifact_url_sha256,
+            "artifact_path_class": NRC_FRESH_ARTIFACT_PATH_CLASS,
+            "raw_content_sha256": raw_sha256,
+            "raw_content_size_bytes": len(pdf_body),
+            "media_type": content_type,
+            "blob_storage_layout": stored["blob_storage_layout"],
+        },
+        permission_snapshot_json={"direct_public_200": True},
+        access_level_summary="public_direct_200",
+        public_read_confirmed=True,
+        status="downloaded",
+        retry_eligible=False,
+        attempt_count=1,
+        discovered_at=now,
+        selected_at=now,
+        downloaded_at=now,
+        last_attempt_at=now,
+        last_stage_transition_at=now,
+    )
+    db.add(target)
+    run.discovered_count = 1
+    run.selected_count = 1
+    run.downloaded_count = 1
+    run.ingested_count = 0
+    run.consumed_bytes = len(pdf_body)
+    run.terminal_target_count = 1
+    run.nonterminal_target_count = 0
+    db.flush()
+    return target
+
+
+def _strict_http_counter_path(verified_grant: Any) -> Path:
+    campaign = verified_grant.verified_campaign
+    matches = [
+        capture
+        for capture in campaign.index_chain.head.log_captures
+        if (
+            capture.campaign_id == str(campaign.model.campaign_id)
+            and capture.campaign_fingerprint == campaign.canonical_fingerprint
+            and capture.campaign_definition_sha256 == campaign.raw_sha256
+            and capture.code_revision == campaign.model.code_revision
+        )
+    ]
+    if len(matches) != 1:
+        raise NrcFreshAdmissionError("nrc_strict_http_counter_unbound")
+    capture = matches[0]
+    if capture.expected_stream_files != (
+        "app.jsonl",
+        "http.jsonl",
+        "stdout.log",
+        "stderr.log",
+    ):
+        raise NrcFreshAdmissionError("nrc_strict_log_stream_set_invalid")
+    try:
+        evidence_root = Path(campaign.evidence_root).resolve(strict=True)
+        counter_path = (
+            evidence_root
+            / capture.log_dir_relative_path
+            / "http.jsonl"
+        )
+        resolved_counter = counter_path.resolve(strict=True)
+    except OSError as exc:
+        raise NrcFreshAdmissionError("nrc_strict_http_counter_unavailable") from exc
+    if (
+        counter_path.is_symlink()
+        or not resolved_counter.is_file()
+        or not resolved_counter.is_relative_to(evidence_root)
+        or resolved_counter
+        != (
+            evidence_root
+            / "logs"
+            / campaign.canonical_fingerprint
+            / "http.jsonl"
+        )
+    ):
+        raise NrcFreshAdmissionError("nrc_strict_http_counter_path_invalid")
+    return resolved_counter
+
+
+def _build_strict_nrc_transport(
+    *,
+    run: ConnectorRun,
+    lease_token: str,
+    verified_grant: Any,
+) -> BoundedConnectorTransport:
+    arming_fingerprint = str(run.request_fingerprint or "")
+    if not re.fullmatch(r"[0-9a-f]{64}", arming_fingerprint):
+        raise NrcFreshAdmissionError("nrc_strict_arming_fingerprint_invalid")
+    return BoundedConnectorTransport(
+        connector_run_id=run.connector_run_id,
+        lease_token=lease_token,
+        arming_fingerprint=arming_fingerprint,
+        counter_path=_strict_http_counter_path(verified_grant),
+    )
+
+
+def _acquire_strict_run_lease(
+    db: Session,
+    *,
+    run: ConnectorRun,
+) -> str | None:
+    if run.status != "pending" or run.cancellation_requested_at is not None:
+        return None
+    now = _utcnow()
+    lease_token = uuid.uuid4().hex
+    updated = (
+        db.query(ConnectorRun)
+        .filter(
+            ConnectorRun.connector_run_id == run.connector_run_id,
+            ConnectorRun.status == "pending",
+            ConnectorRun.source_mode == "strict_live_egress",
+            ConnectorRun.execution_lease_token.is_(None),
+            ConnectorRun.cancellation_requested_at.is_(None),
+        )
+        .update(
+            {
+                ConnectorRun.status: "running",
+                ConnectorRun.execution_lease_owner: f"pid:{os.getpid()}",
+                ConnectorRun.execution_lease_token: lease_token,
+                ConnectorRun.execution_lease_expires_at: now
+                + timedelta(seconds=settings.connector_lease_ttl_seconds),
+                ConnectorRun.claimed_at: now,
+                ConnectorRun.heartbeat_at: now,
+                ConnectorRun.started_at: now,
+                ConnectorRun.attempt_number: int(run.attempt_number or 0) + 1,
+            },
+            synchronize_session=False,
+        )
+    )
+    if updated != 1:
+        db.rollback()
+        return None
+    db.commit()
+    db.refresh(run)
+    return lease_token
+
+
+def _refresh_strict_nrc_run_lease(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    lease_token: str,
+) -> None:
+    connector_egress_arming.refresh_strict_run_lease(
+        db,
+        run=run,
+        lease_token=lease_token,
+        now=datetime.now(timezone.utc),
+    )
+
+
+def _finalize_strict_nrc_run(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    lease_token: str,
+    terminal_status: Literal["completed", "failed"],
+    outcome_class: str,
+) -> None:
+    connector_egress_arming.finalize_strict_run(
+        db,
+        run=run,
+        lease_token=lease_token,
+        terminal_status=terminal_status,
+        outcome_class=outcome_class,
+        now=datetime.now(timezone.utc),
+    )
+
+
+def _strict_outcome_class(exc: Exception) -> str:
+    code = getattr(exc, "code", None)
+    if isinstance(code, str) and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,127}", code):
+        return code
+    return "nrc_strict_admission_failed"
+
+
+def _execute_fresh_exact_nrc_aps_run(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    lease_token: str,
+    transport: BoundedConnectorTransport,
+) -> None:
+    try:
+        verified_grant = connector_egress_arming.resolve_current_egress_authority(
+            db,
+            connector_run_id=run.connector_run_id,
+            now=datetime.now(timezone.utc),
+        )
+        subscription_key = settings.nrc_adams_subscription_key
+        if (
+            not subscription_key
+            or subscription_key.strip() != subscription_key
+            or any(ord(char) < 0x20 or ord(char) > 0x7E for char in subscription_key)
+        ):
+            raise NrcFreshAdmissionError("nrc_strict_subscription_key_invalid")
+        _refresh_strict_nrc_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+        )
+        detail_response = transport.send_once(
+            ordinal=1,
+            stage=NRC_FRESH_DETAIL_STAGE,
+            request=FrozenPhysicalRequest(
+                method="GET",
+                url=NRC_FRESH_DETAIL_URL,
+                headers={"Ocp-Apim-Subscription-Key": subscription_key},
+                credential_audience="nrc_aps_api_key",
+            ),
+        )
+        _refresh_strict_nrc_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+        )
+        detail_body = _strict_response_body(
+            detail_response,
+            stage=NRC_FRESH_DETAIL_STAGE,
+        )
+        raw_artifact_url = _strict_document_url(detail_body)
+        derived = connector_egress_arming.commit_derived_url_arming(
+            db,
+            run=run,
+            lease_token=lease_token,
+            ordinal=2,
+            stage=NRC_FRESH_ARTIFACT_STAGE,
+            normalized_url=raw_artifact_url,
+            verified_grant=verified_grant,
+        )
+        expected_url_sha256 = hashlib.sha256(
+            NRC_FRESH_ARTIFACT_URL.encode("ascii")
+        ).hexdigest()
+        if (
+            derived.normalized_url != NRC_FRESH_ARTIFACT_URL
+            or derived.url_sha256 != expected_url_sha256
+            or derived.path_rule_id != NRC_FRESH_ARTIFACT_PATH_CLASS
+        ):
+            raise NrcFreshAdmissionError("nrc_strict_derived_arming_mismatch")
+        _refresh_strict_nrc_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+        )
+        artifact_response = transport.send_once(
+            ordinal=2,
+            stage=NRC_FRESH_ARTIFACT_STAGE,
+            request=FrozenPhysicalRequest(
+                method="GET",
+                url=derived.normalized_url,
+                headers={},
+                credential_audience="none",
+            ),
+            expected_derived_arming_hash=derived.url_sha256,
+        )
+        _refresh_strict_nrc_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+        )
+        pdf_body, content_type = _strict_pdf_body(artifact_response)
+        _refresh_strict_nrc_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+        )
+        _persist_fresh_nrc_target(
+            db,
+            run=run,
+            detail_response_sha256=hashlib.sha256(detail_body).hexdigest(),
+            artifact_url_sha256=derived.url_sha256,
+            pdf_body=pdf_body,
+            content_type=content_type,
+        )
+        _finalize_strict_nrc_run(
+            db,
+            run=run,
+            lease_token=lease_token,
+            terminal_status="completed",
+            outcome_class="nrc_raw_admission_completed",
+        )
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        _finalize_strict_nrc_run(
+            db,
+            run=run,
+            lease_token=lease_token,
+            terminal_status="failed",
+            outcome_class=_strict_outcome_class(exc),
+        )
+        return
+
+
+def _reject_malformed_reserved_egress_run(
+    db: Session,
+    *,
+    run: ConnectorRun,
+) -> None:
+    prior_status = run.status
+    now = _utcnow()
+    run.status = "failed"
+    run.error_summary = "reserved_egress_provenance_invalid"
+    run.completed_at = now
+    run.execution_lease_owner = None
+    run.execution_lease_token = None
+    run.execution_lease_expires_at = now
+    _record_run_event(
+        db,
+        run=run,
+        event_type="reserved_egress_provenance_rejected",
+        phase="execution",
+        stage="pre_dispatch",
+        status_before=prior_status,
+        status_after="failed",
+        reason_code="reserved_egress_provenance_invalid",
+        error_class="reserved_egress_provenance_invalid",
+        metrics_json={"generic_execution_entered": False},
+        commit=True,
+    )
+
+
 def execute_nrc_adams_run(connector_run_id: str) -> None:
     db = SessionLocal()
     try:
         NRC_EXECUTOR_GUARDS.acquire_run_slot()
         client: Any | None = None
+        run: ConnectorRun | None = None
         try:
             run = db.get(ConnectorRun, connector_run_id)
             if not run:
+                return
+            has_reserved_provenance = (
+                connector_egress_arming.has_reserved_egress_provenance(run)
+            )
+            if has_reserved_provenance:
+                if run.status in RUN_TERMINAL_STATUSES:
+                    return
+                if (
+                    not connector_egress_arming.is_strict_egress_run(run)
+                    or run.connector_key != "nrc_adams_aps"
+                    or run.source_system != "nrc_adams"
+                ):
+                    _reject_malformed_reserved_egress_run(db, run=run)
+                    return
+                lease_token = _acquire_strict_run_lease(db, run=run)
+                if lease_token is None:
+                    raise NrcFreshAdmissionError(
+                        "nrc_strict_execution_state_conflict"
+                    )
+                try:
+                    verified_grant = (
+                        connector_egress_arming.resolve_current_egress_authority(
+                            db,
+                            connector_run_id=run.connector_run_id,
+                            now=datetime.now(timezone.utc),
+                        )
+                    )
+                    strict_transport = _build_strict_nrc_transport(
+                        run=run,
+                        lease_token=lease_token,
+                        verified_grant=verified_grant,
+                    )
+                except Exception as exc:  # noqa: BLE001
+                    db.rollback()
+                    connector_egress_arming.finalize_strict_run(
+                        db,
+                        run=run,
+                        lease_token=lease_token,
+                        terminal_status="failed",
+                        outcome_class=_strict_outcome_class(exc),
+                        now=datetime.now(timezone.utc),
+                    )
+                    return
+                _execute_fresh_exact_nrc_aps_run(
+                    db,
+                    run=run,
+                    lease_token=lease_token,
+                    transport=strict_transport,
+                )
                 return
             if run.status in RUN_TERMINAL_STATUSES:
                 return
@@ -4275,6 +4901,12 @@ def execute_nrc_adams_run(connector_run_id: str) -> None:
                 commit=True,
             )
         except Exception as exc:  # noqa: BLE001
+            if (
+                run is not None
+                and connector_egress_arming.has_reserved_egress_provenance(run)
+            ):
+                db.rollback()
+                raise
             run = db.get(ConnectorRun, connector_run_id)
             if run:
                 run.status = "failed"

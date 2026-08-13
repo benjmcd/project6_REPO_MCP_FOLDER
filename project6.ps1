@@ -1,6 +1,6 @@
 [CmdletBinding(PositionalBinding = $false)]
 param(
-    [ValidateSet("setup", "provision-a8-root", "migrate", "migrate-tier1-postgres", "start-api", "status", "validate-structure", "validate-sec-live-preflight", "validate-sec-live-smoke-evidence", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "refresh-nrc-aps-review-gate-reports", "refresh-nrc-aps-validate-only-gates", "validate-nrc-aps-validate-only-gates", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
+    [ValidateSet("setup", "provision-a8-root", "migrate", "migrate-tier1-postgres", "start-api", "status", "run-dual-live-proof", "validate-dual-live-proof", "validate-structure", "validate-sec-live-preflight", "validate-sec-live-smoke-evidence", "validate-sciencebase-live", "validate-live", "validate-nrc-aps", "collect-nrc-aps-live-batch", "build-nrc-aps-replay-corpus", "validate-nrc-aps-replay", "check-nrc-aps-replay-corpus", "validate-nrc-aps-sync-drift", "validate-nrc-aps-safeguards", "validate-nrc-aps-artifact-ingestion", "validate-nrc-aps-content-index", "validate-nrc-aps-evidence-bundle", "validate-nrc-aps-evidence-citation-pack", "validate-nrc-aps-evidence-report", "validate-nrc-aps-evidence-report-export", "validate-nrc-aps-evidence-report-export-package", 'validate-nrc-aps-context-packet', "validate-nrc-aps-context-dossier", "validate-nrc-aps-deterministic-insight-artifact", "validate-nrc-aps-deterministic-challenge-artifact", "validate-nrc-aps-deterministic-challenge-review-packet", "refresh-nrc-aps-review-gate-reports", "refresh-nrc-aps-validate-only-gates", "validate-nrc-aps-validate-only-gates", "validate-nrc-aps-promotion", "validate-nrc-aps-retrieval-cutover", "compare-nrc-aps-promotion-policy", "prove-nrc-aps-document-processing", "compare-nrc-aps-candidate-b", "gate-nrc-aps", "eval-attached", "bootstrap-sciencebase-live", "all")]
     [string]$Action = "status",
     [string]$BaseUrl = "http://127.0.0.1:8000",
     [int]$ConsecutiveRuns = 3,
@@ -400,6 +400,52 @@ switch ($Action) {
             Write-Host "API not reachable at $BaseUrl"
             exit 1
         }
+    }
+    "run-dual-live-proof" {
+        if ($ActionArgs.Count -gt 0) {
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_arguments_invalid"}'
+            exit 2
+        }
+        if ([string]::IsNullOrEmpty($env:DUAL_LIVE_CAMPAIGN_ID)) {
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_campaign_id_missing"}'
+            exit 2
+        }
+        if ([string]::IsNullOrEmpty($env:DUAL_LIVE_CAMPAIGN_FINGERPRINT)) {
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_campaign_fingerprint_missing"}'
+            exit 2
+        }
+        Push-Location $RepoRoot
+        try {
+            & py "-$PythonVersion" -I -B .\tools\dual_live_run.py --campaign-id $env:DUAL_LIVE_CAMPAIGN_ID --campaign-fingerprint $env:DUAL_LIVE_CAMPAIGN_FINGERPRINT
+            $DualLiveRunExitCode = $LASTEXITCODE
+        }
+        finally {
+            Pop-Location
+        }
+        exit $DualLiveRunExitCode
+    }
+    "validate-dual-live-proof" {
+        if ($ActionArgs.Count -gt 0) {
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_arguments_invalid"}'
+            exit 2
+        }
+        if ([string]::IsNullOrEmpty($env:DUAL_LIVE_CAMPAIGN_ID)) {
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_campaign_id_missing"}'
+            exit 2
+        }
+        if ([string]::IsNullOrEmpty($env:DUAL_LIVE_CAMPAIGN_FINGERPRINT)) {
+            Write-Output '{"schema_id":"project6.dual_live_gate_refusal.v1","status":"REFUSED","fresh_live":false,"evaluation_complete":false,"code":"dual_live_campaign_fingerprint_missing"}'
+            exit 2
+        }
+        Push-Location $RepoRoot
+        try {
+            & py "-$PythonVersion" -I -B .\tools\dual_live_gate.py --campaign-id $env:DUAL_LIVE_CAMPAIGN_ID --campaign-fingerprint $env:DUAL_LIVE_CAMPAIGN_FINGERPRINT
+            $DualLiveGateExitCode = $LASTEXITCODE
+        }
+        finally {
+            Pop-Location
+        }
+        exit $DualLiveGateExitCode
     }
     "validate-structure" {
         if (-not (Test-Path $ValidateStructurePath)) {

@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import importlib
+import inspect
 import json
 import os
 import secrets
@@ -17,7 +18,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from functools import wraps
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Iterator, Literal, get_type_hints
 
 
 def _sqlite_path(database_url: str) -> Path:
@@ -1233,9 +1234,10 @@ sys.path.insert(0, str(BACKEND))
 try:
     import pytest
     from fastapi.testclient import TestClient
+    from sqlalchemy import create_engine, event, select, update
     from sqlalchemy.engine import Connection, Engine, make_url
     from sqlalchemy.orm import Session
-    from sqlalchemy.pool import QueuePool
+    from sqlalchemy.pool import QueuePool, StaticPool
 
     from app.core.config import bootstrap_storage_tree, settings
 
@@ -1250,9 +1252,13 @@ try:
     from app.models.models import (
         AnalysisArtifact,
         AnalysisRun,
+        ApsContentDocument,
+        ApsContentLinkage,
         AssumptionCheck,
         CaveatNote,
+        ConnectorPolicySnapshot,
         ConnectorRun,
+        ConnectorRunEvent,
         ConnectorRunTarget,
         Dataset,
         DatasetRow,
@@ -1277,6 +1283,10 @@ try:
         VariableDefinition,
     )
     from app.services.analysis import run_analysis
+    from app.services import layer3_connector_source_intake as connector_intake
+    from app.services import layer3_gate_b_state as gate_b_state
+    from app.services import layer3_origin_continuity as origin
+    from app.services import layer3_workbench
     from app.services.ingest import ingest_csv_bytes_to_dataset
     from app.services.layer3_connector_source_intake import (
         ConnectorSourceIntakeError,
@@ -2286,6 +2296,36 @@ def b1a_runtime() -> Iterator[_B1aRuntime]:
         raise
     finally:
         settings.storage_dir = previous_storage_dir
+
+
+@pytest.fixture
+def task7_origin_runtime(
+    tmp_path: Path,
+    monkeypatch,
+) -> Iterator[_B1aRuntime]:
+    database_path = (tmp_path / "origin.sqlite3").resolve()
+    storage_dir = (tmp_path / "storage").resolve()
+    engine = create_engine(
+        f"sqlite:///{database_path.as_posix()}",
+        connect_args={"check_same_thread": False},
+        poolclass=QueuePool,
+        pool_size=4,
+        max_overflow=0,
+    )
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    bootstrap_storage_tree(storage_dir)
+    Base.metadata.create_all(engine)
+    with engine.connect() as first, engine.connect() as second:
+        assert (
+            first.connection.dbapi_connection
+            is not second.connection.dbapi_connection
+        )
+    runtime = _B1aRuntime(engine, storage_dir)
+    try:
+        yield runtime
+    finally:
+        assert engine.pool.checkedout() == 0
+        engine.dispose()
 
 
 def _row_census(db: Session) -> dict[str, int]:
@@ -3408,6 +3448,2676 @@ def test_b1a_descriptive_summary_component_determinism(
                 "status": _phase_status(),
             },
         )
+
+
+_DOWNSTREAM_ORIGIN_BOUNDARIES = (
+    "execution_output",
+    "result_review",
+    "package_commit",
+    "package_submit",
+    "handoff_prepare",
+)
+
+
+def _register_origin_test_path(
+    path: Path,
+    runtime: _B1aRuntime,
+) -> Path:
+    resolved = path.resolve()
+    if resolved.is_relative_to(_DESIRED_STORAGE_PATH):
+        return _register_stored_path(resolved)
+    assert resolved.is_relative_to(runtime.storage_dir)
+    assert resolved.is_file()
+    return resolved
+
+
+def _commit_origin_test_session(
+    db: Session,
+    runtime: _B1aRuntime,
+    *,
+    session_id: str,
+    source_class: str,
+    decision_item: dict[str, Any],
+    snapshot_identity: dict[str, Any],
+    snapshot_provenance: dict[str, Any],
+    snapshot_payload: dict[str, Any],
+    include_snapshot: bool = True,
+) -> tuple[L3Session, L3MaterialSnapshot | None]:
+    manifest_id = f"{session_id}-manifest"
+    descriptor_id = f"{session_id}-descriptor"
+    payload_bytes = json.dumps(
+        snapshot_payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    payload_hash = hashlib.sha256(payload_bytes).hexdigest()
+    assert Path(settings.artifact_storage_dir) == runtime.storage_dir / "artifacts"
+    payload_path = (
+        Path(settings.artifact_storage_dir)
+        / "layer3"
+        / session_id
+        / f"{payload_hash}.json"
+    )
+    payload_path.parent.mkdir(parents=True, exist_ok=True)
+    payload_path.write_bytes(payload_bytes)
+    _register_origin_test_path(payload_path, runtime)
+    normalized_decision = copy.deepcopy(decision_item)
+    normalized_decision["material_preview_basis"] = (
+        gate_b_state.material_candidate_basis_from_decision(
+            candidate_id=normalized_decision["candidate_id"],
+            source_class=normalized_decision["source_class"],
+            decision_basis=normalized_decision["decision_basis"],
+        )
+    )
+    decision_manifest = gate_b_state.candidate_decision_manifest(
+        [normalized_decision]
+    )
+    decision_manifest_id = gate_b_state.gate_b_decision_manifest_id(
+        decision_manifest
+    )
+    descriptor_selector = gate_b_state.gate_b_descriptor_selector(
+        normalized_decision
+    )
+    material_preview_hash = gate_b_state.material_preview_hash(
+        [normalized_decision["material_preview_basis"]]
+    )
+    client_request_id = f"{session_id}-gate-b"
+    preflight_id = f"{session_id}-preflight"
+    source_set_id = f"{session_id}-source-set"
+    material_preview_id = f"{session_id}-preview"
+    idempotency_record = gate_b_state.gate_b_idempotency_record(
+        client_request_id=client_request_id,
+        preflight_id=preflight_id,
+        source_set_id=source_set_id,
+        material_preview_id=material_preview_id,
+        material_preview_hash=material_preview_hash,
+        gate_b_decision_manifest_id=decision_manifest_id,
+    )
+    manifest_json = {
+        "items": [
+            {
+                "source_plane": f"plane-{source_class}",
+                "descriptor_type": source_class,
+                "selector_payload": copy.deepcopy(descriptor_selector),
+                "selection_basis": {"gate_b_decision": "approved"},
+                "expansion_reason": "gate_b_approved_material",
+            }
+        ]
+    }
+    source_plane_hints = {"source_classes": [source_class]}
+    session = L3Session(
+        session_id=session_id,
+        status="completed",
+        selection_manifest_id=manifest_id,
+        entry_route_context_json={"route": "/layer3/workbench"},
+        operator_context_json={
+            "actor": "pytest-task7a",
+            "layer3_gate_b_decision_manifest_v1": decision_manifest,
+            "layer3_gate_b_idempotency_v1": idempotency_record,
+        },
+        summary_json={
+            "current_gate": "gate_b",
+            "gate_b_summary_v1": {
+                "approved": 1,
+                "denied": 0,
+                "isolated": 0,
+                "flagged": 0,
+            },
+        },
+    )
+    manifest = L3SelectionManifest(
+        selection_manifest_id=manifest_id,
+        session_id=session_id,
+        manifest_json=manifest_json,
+        source_plane_hints_json=source_plane_hints,
+        selection_hash=hashlib.sha256(
+            json.dumps(
+                {
+                    "manifest_json": manifest_json,
+                    "source_plane_hints_json": source_plane_hints,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest(),
+        commit_reason="operator_gate_b_decision",
+    )
+    descriptor = L3Descriptor(
+        descriptor_id=descriptor_id,
+        session_id=session_id,
+        selection_manifest_id=manifest_id,
+        source_plane=f"plane-{source_class}",
+        descriptor_type=source_class,
+        selector_payload_json=copy.deepcopy(descriptor_selector),
+        selection_basis_json={"gate_b_decision": "approved"},
+        expansion_reason="gate_b_approved_material",
+        status="resolved_loaded",
+        descriptor_hash=hashlib.sha256(descriptor_id.encode()).hexdigest(),
+    )
+    snapshot = L3MaterialSnapshot(
+        material_snapshot_id=f"{session_id}-snapshot",
+        session_id=session_id,
+        descriptor_id=descriptor_id,
+        source_plane=f"plane-{source_class}",
+        source_shape=source_class,
+        payload_ref=str(payload_path),
+        payload_hash=payload_hash,
+        source_identity_json=copy.deepcopy(snapshot_identity),
+        source_provenance_json=copy.deepcopy(snapshot_provenance),
+        co_retrieval_group_id=f"{session_id}-group",
+        load_summary_json=copy.deepcopy(
+            normalized_decision["load_summary"]
+        ),
+    )
+    idempotency = L3GateBIdempotencyKey(
+        gate_b_idempotency_key_id=f"{session_id}-gate-b-key",
+        client_request_id=client_request_id,
+        request_basis_hash=gate_b_state.gate_b_idempotency_request_hash(
+            client_request_id=client_request_id,
+            preflight_id=preflight_id,
+            source_set_id=source_set_id,
+            material_preview_id=material_preview_id,
+            material_preview_hash=material_preview_hash,
+            gate_b_decision_manifest_id=decision_manifest_id,
+        ),
+        preflight_id=preflight_id,
+        source_set_id=source_set_id,
+        material_preview_id=material_preview_id,
+        material_preview_hash=material_preview_hash,
+        gate_b_decision_manifest_id=decision_manifest_id,
+        status="committed",
+        session_id=session_id,
+        selection_manifest_id=manifest_id,
+    )
+    rows: list[Any] = [session, manifest, idempotency]
+    if include_snapshot:
+        rows.extend([descriptor, snapshot])
+    db.add_all(rows)
+    db.flush()
+    return session, snapshot
+
+
+def _sciencebase_origin_session(
+    db: Session,
+    runtime: _B1aRuntime,
+    *,
+    stem: str,
+) -> tuple[str, str, str, L3MaterialSnapshot]:
+    run_id = f"{stem}-run"
+    target_id = f"{stem}-target"
+    record_id = f"{stem}-intake"
+    session_id = f"{stem}-session"
+    receipt_hash = hashlib.sha256(target_id.encode()).hexdigest()
+    raw_path = runtime.storage_dir / "connectors" / "raw" / f"{stem}.csv"
+    raw_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_path.write_bytes(FIXTURE_BYTES)
+    _register_origin_test_path(raw_path, runtime)
+    run = ConnectorRun(
+        connector_run_id=run_id,
+        connector_key="sciencebase_mcs",
+        source_system="sciencebase",
+        source_mode="strict_live_egress",
+        status="completed",
+    )
+    target = ConnectorRunTarget(
+        connector_run_target_id=target_id,
+        connector_run_id=run_id,
+        ordinal=1,
+        sciencebase_item_id="63d1a3c6d34e06fef15006be",
+        sciencebase_file_name="mcs2023-germa_salient.csv",
+        artifact_surface="files",
+        artifact_locator_type="downloadUri_hash_only",
+        source_artifact_key=(
+            "sciencebase:63d1a3c6d34e06fef15006be:"
+            "mcs2023-germa_salient.csv"
+        ),
+        downloaded_sha256=FIXTURE_SHA256,
+        raw_storage_ref=str(raw_path),
+        public_read_confirmed=True,
+        status="downloaded",
+        source_reference_json={},
+    )
+    pair = {
+        "connector_run_target_id": target_id,
+        "connector_origin_receipt_hash": receipt_hash,
+    }
+    strict_values = connector_intake._strict_sciencebase_intake_values(
+        connector_key="sciencebase_mcs",
+        connector_run_id=run_id,
+        connector_run_target_id=target_id,
+        raw_storage_ref=str(raw_path),
+        freshness_timestamp=datetime.fromisoformat(
+            "2026-07-30T12:00:00+00:00"
+        ),
+        content_size_bytes=len(FIXTURE_BYTES),
+        content_sha256=FIXTURE_SHA256,
+        connector_origin_receipt_hash=receipt_hash,
+    )
+    record = L3ConnectorSourceIntakeRecord(
+        connector_source_intake_record_id=record_id,
+        **strict_values,
+    )
+    source_identity = {
+        "connector_source_intake_record_id": record_id,
+        "source_family": "connector_produced_single_source",
+        "content_sha256": FIXTURE_SHA256,
+        "metadata_hash": strict_values["metadata_hash"],
+        "connector_key": "sciencebase_mcs",
+        "connector_run_id": run_id,
+        **pair,
+    }
+    source_provenance = {
+        **copy.deepcopy(strict_values["provenance_json"]),
+        "mode": "connector_source_intake_gate_b_material_admission",
+        "source_ref": f"connector_source_intake_record:{record_id}",
+    }
+    payload = {
+        "connector_source_intake_record_id": record_id,
+        "source_class": connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
+        "content_sha256": FIXTURE_SHA256,
+        "metadata_hash": strict_values["metadata_hash"],
+        "authority_basis_hash": strict_values["authority_basis_hash"],
+        "connector_key": "sciencebase_mcs",
+        "connector_run_id": run_id,
+        "bounded_preview_char_count": len(FIXTURE_BYTES.decode("utf-8")),
+        "preview_truncated": False,
+        **pair,
+    }
+    load_summary = {
+        "loaded_records": 1,
+        "failed_records": 0,
+        "preview_material": True,
+        "bounded_text_preview": True,
+        "connector_source_intake_gate_b_material_admission": True,
+    }
+    decision_basis = {
+        "source_ref": f"connector_source_intake_record:{record_id}",
+        "query_basis": "connector_produced_source_intake",
+        "provenance_ref": (
+            f"connector_source_intake_record:{record_id}:"
+            f"metadata:{strict_values['metadata_hash']}"
+        ),
+        "source_identity": copy.deepcopy(source_identity),
+        "source_provenance": copy.deepcopy(source_provenance),
+        "payload": copy.deepcopy(payload),
+        "load_summary": copy.deepcopy(load_summary),
+        "connector_target": {
+            "connector_run_target_id": target_id,
+            "connector_key": "sciencebase_mcs",
+        },
+    }
+    decision_item = {
+        "candidate_id": f"mat-connector_source_intake_record-{record_id}",
+        "source_class": connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
+        "decision": "approved",
+        "decision_basis": copy.deepcopy(decision_basis),
+        "source_identity": copy.deepcopy(source_identity),
+        "source_provenance": copy.deepcopy(source_provenance),
+        "payload": copy.deepcopy(payload),
+        "load_summary": copy.deepcopy(load_summary),
+    }
+    db.add_all([run, target, record])
+    _, snapshot = _commit_origin_test_session(
+        db,
+        runtime,
+        session_id=session_id,
+        source_class=connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
+        decision_item=decision_item,
+        snapshot_identity={
+            "candidate_id": decision_item["candidate_id"],
+            "source_class": connector_intake.STRICT_SCIENCEBASE_GATE_C_SOURCE_CLASS,
+            **source_identity,
+        },
+        snapshot_provenance=source_provenance,
+        snapshot_payload=payload,
+    )
+    assert snapshot is not None
+    return session_id, target_id, receipt_hash, snapshot
+
+
+def _nrc_origin_session(
+    db: Session,
+    runtime: _B1aRuntime,
+    *,
+    stem: str,
+) -> tuple[str, str, str]:
+    run_id = f"{stem}-run"
+    target_id = f"{stem}-target-dynamic"
+    content_id = f"{stem}-content"
+    session_id = f"{stem}-session"
+    content_contract_id = f"{stem}-content-contract"
+    chunking_contract_id = f"{stem}-chunk-contract"
+    normalization_contract_id = f"{stem}-normalization"
+    receipt_hash = hashlib.sha256(target_id.encode()).hexdigest()
+    run = ConnectorRun(
+        connector_run_id=run_id,
+        connector_key="nrc_adams_aps",
+        source_system="nrc_adams",
+        source_mode="strict_live_egress",
+        status="completed",
+    )
+    target = ConnectorRunTarget(
+        connector_run_target_id=target_id,
+        connector_run_id=run_id,
+        ordinal=1,
+        stable_release_key="ML17123A319",
+        stable_release_identifier="adams_accession:ML17123A319",
+        selection_source="strict_exact_accession",
+        selection_scope="dual_live_proof_v1",
+        fetch_policy_mode="strict_live_egress",
+        status="downloaded",
+        source_reference_json={},
+    )
+    document = ApsContentDocument(
+        aps_content_document_id=f"{stem}-document",
+        content_id=content_id,
+        content_contract_id=content_contract_id,
+        chunking_contract_id=chunking_contract_id,
+        normalization_contract_id=normalization_contract_id,
+        normalized_text_sha256="a" * 64,
+        normalized_char_count=128,
+        chunk_count=1,
+        content_status="indexed",
+        media_type="application/pdf",
+        document_class="nrc_adams_aps",
+        quality_status="verified",
+        page_count=1,
+    )
+    linkage = ApsContentLinkage(
+        aps_content_linkage_id=f"{stem}-linkage",
+        content_id=content_id,
+        run_id=run_id,
+        target_id=target_id,
+        accession_number="ML17123A319",
+        content_contract_id=content_contract_id,
+        chunking_contract_id=chunking_contract_id,
+        normalized_text_sha256=document.normalized_text_sha256,
+    )
+    source_identity = {
+        "schema_id": "layer3.aps_content_document_source_identity.v1",
+        "source_class": "aps_content_document",
+        "content_id": content_id,
+        "content_contract_id": content_contract_id,
+        "chunking_contract_id": chunking_contract_id,
+        "normalization_contract_id": normalization_contract_id,
+        "content_status": "indexed",
+        "media_type": "application/pdf",
+        "document_class": "nrc_adams_aps",
+        "quality_status": "verified",
+    }
+    source_provenance = {
+        "schema_id": "layer3.aps_content_document_source_provenance.v1",
+        "content_id": content_id,
+        "aps_content_linkages": [
+            {
+                "aps_content_linkage_id": linkage.aps_content_linkage_id,
+                "content_id": content_id,
+                "run_id": run_id,
+                "target_id": target_id,
+                "accession_number": "ML17123A319",
+                "content_contract_id": content_contract_id,
+                "chunking_contract_id": chunking_contract_id,
+                "content_units_ref": None,
+                "normalized_text_ref": None,
+                "normalized_text_sha256": "a" * 64,
+                "blob_ref": None,
+                "blob_sha256": None,
+                "download_exchange_ref": None,
+                "discovery_ref": None,
+                "selection_ref": None,
+                "diagnostics_ref": None,
+            }
+        ],
+        "source_trace": {
+            "document_identity": {"content_id": content_id},
+            "aps_trace_refs": {
+                "run_id": run_id,
+                "target_id": target_id,
+            },
+        },
+    }
+    decision_item = {
+        "candidate_id": f"mat-aps_content_document-{stem}",
+        "source_class": "aps_content_document",
+        "decision": "approved",
+        "decision_basis": {
+            "source_ref": f"aps_content_document:{content_id}",
+            "query_basis": "dual-live-proof",
+            "provenance_ref": f"aps_content_document:{content_id}",
+            "source_identity": copy.deepcopy(source_identity),
+            "source_provenance": copy.deepcopy(source_provenance),
+            "payload": {"content_id": content_id},
+            "load_summary": {"loaded_records": 1, "failed_records": 0},
+        },
+        "source_identity": copy.deepcopy(source_identity),
+        "source_provenance": copy.deepcopy(source_provenance),
+        "payload": {"content_id": content_id},
+        "load_summary": {"loaded_records": 1, "failed_records": 0},
+    }
+    db.add_all([run, target, document, linkage])
+    _commit_origin_test_session(
+        db,
+        runtime,
+        session_id=session_id,
+        source_class="aps_content_document",
+        decision_item=decision_item,
+        snapshot_identity={
+            "candidate_id": decision_item["candidate_id"],
+            **source_identity,
+            "run_id": run_id,
+            "target_id": target_id,
+        },
+        snapshot_provenance=source_provenance,
+        snapshot_payload={"content_id": content_id},
+    )
+    return session_id, target_id, receipt_hash
+
+
+def _mock_origin_verifiers(
+    monkeypatch,
+    *,
+    target_id: str,
+    receipt_hash: str,
+    connector_key: str,
+    final_receipt_hash: str | None = None,
+) -> list[tuple[str, str]]:
+    calls: list[tuple[str, str]] = []
+    monkeypatch.setitem(
+        sys.modules,
+        "app.services.layer3_origin_continuity",
+        origin,
+    )
+    services_package = sys.modules.get("app.services")
+    if services_package is not None:
+        monkeypatch.setattr(
+            services_package,
+            "layer3_origin_continuity",
+            origin,
+            raising=False,
+        )
+
+    def verified(db, *, connector_run_target_id: str):
+        del db
+        calls.append(("verified", connector_run_target_id))
+        assert connector_run_target_id == target_id
+        projected_receipt_hash = receipt_hash
+        if final_receipt_hash is not None and len(calls) > 3:
+            projected_receipt_hash = final_receipt_hash
+        return {
+            "connector_run_target_id": target_id,
+            "connector_origin_receipt_hash": projected_receipt_hash,
+        }
+
+    def derived(db, *, connector_run_target_id: str):
+        del db
+        calls.append(("derived", connector_run_target_id))
+        assert connector_run_target_id == target_id
+        return {
+            "connector_run_target_id": target_id,
+            "connector_key": connector_key,
+            "proof_class": "fresh_live",
+            "receipt_hash": receipt_hash,
+        }
+
+    def continuous(
+        db,
+        *,
+        connector_run_target_id: str,
+        expected_receipt_hash: str,
+        expected_bindings: dict[str, str],
+    ):
+        del db
+        calls.append(("continuous", connector_run_target_id))
+        assert connector_run_target_id == target_id
+        assert expected_receipt_hash == receipt_hash
+        assert expected_bindings == {
+            "connector_run_target_id": target_id,
+            "connector_key": connector_key,
+            "proof_class": "fresh_live",
+        }
+
+    monkeypatch.setattr(
+        origin,
+        "verified_connector_origin_projection",
+        verified,
+    )
+    monkeypatch.setattr(origin, "derive_connector_origin_receipt", derived)
+    monkeypatch.setattr(origin, "assert_connector_origin_continuity", continuous)
+    return calls
+
+
+def _origin_authority_state(
+    db: Session,
+    runtime: _B1aRuntime,
+) -> dict[str, Any]:
+    models = (
+        L3Session,
+        L3SelectionManifest,
+        L3GateBIdempotencyKey,
+        L3Descriptor,
+        L3MaterialSnapshot,
+        L3ConnectorSourceIntakeRecord,
+        ConnectorRun,
+        ConnectorRunTarget,
+        ApsContentDocument,
+        ApsContentLinkage,
+    )
+    files = {}
+    for path in sorted(
+        candidate
+        for candidate in runtime.storage_dir.rglob("*")
+        if candidate.is_file()
+    ):
+        payload = path.read_bytes()
+        files[path.relative_to(runtime.storage_dir).as_posix()] = {
+            "size": len(payload),
+            "sha256": hashlib.sha256(payload).hexdigest(),
+        }
+    return {
+        "rows": {model.__name__: db.query(model).count() for model in models},
+        "files": files,
+    }
+
+
+def _scrub_downstream_session_surfaces(
+    db: Session,
+    *,
+    session_id: str,
+    rewrite_mode: str,
+) -> None:
+    session_values = {
+        "entry_route_context_json": {},
+        "operator_context_json": {},
+        "summary_json": {},
+    }
+    manifest_values = {
+        "manifest_json": {},
+        "source_plane_hints_json": {},
+    }
+    descriptor_values = {
+        "source_plane": "generic",
+        "descriptor_type": "manual_upload",
+        "selector_payload_json": {},
+        "selection_basis_json": {},
+    }
+    snapshot_values = {
+        "source_plane": "generic",
+        "source_shape": "manual_upload",
+        "source_identity_json": {},
+        "source_provenance_json": {},
+        "load_summary_json": {},
+    }
+    if rewrite_mode == "orm_flush":
+        session = db.get(L3Session, session_id)
+        manifest = (
+            db.query(L3SelectionManifest)
+            .filter(L3SelectionManifest.session_id == session_id)
+            .one()
+        )
+        descriptor = (
+            db.query(L3Descriptor)
+            .filter(L3Descriptor.session_id == session_id)
+            .one()
+        )
+        snapshot = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == session_id)
+            .one()
+        )
+        assert session is not None
+        for field, value in session_values.items():
+            setattr(session, field, copy.deepcopy(value))
+        for row, values in (
+            (manifest, manifest_values),
+            (descriptor, descriptor_values),
+            (snapshot, snapshot_values),
+        ):
+            for field, value in values.items():
+                setattr(row, field, copy.deepcopy(value))
+        db.flush()
+    elif rewrite_mode == "raw_sql":
+        connection = db.connection()
+        for model, values in (
+            (L3Session, session_values),
+            (L3SelectionManifest, manifest_values),
+            (L3Descriptor, descriptor_values),
+            (L3MaterialSnapshot, snapshot_values),
+        ):
+            table = model.__table__
+            connection.execute(
+                update(table)
+                .where(table.c.session_id == session_id)
+                .values(**values)
+            )
+        db.expire_all()
+    else:
+        raise AssertionError(f"unsupported rewrite mode: {rewrite_mode}")
+    assert not db.new
+    assert not db.dirty
+    assert not db.deleted
+
+
+def test_downstream_origin_guard_has_exact_public_signature() -> None:
+    signature = inspect.signature(
+        origin.assert_downstream_connector_origin
+    )
+    assert list(signature.parameters) == [
+        "db",
+        "session_id",
+        "expected_receipt_hash",
+        "boundary",
+    ]
+    assert signature.parameters["session_id"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert (
+        signature.parameters["expected_receipt_hash"].kind
+        is inspect.Parameter.KEYWORD_ONLY
+    )
+    assert signature.parameters["boundary"].kind is inspect.Parameter.KEYWORD_ONLY
+    hints = get_type_hints(origin.assert_downstream_connector_origin)
+    assert hints["boundary"] == Literal[
+        "execution_output",
+        "result_review",
+        "package_commit",
+        "package_submit",
+        "handoff_prepare",
+    ]
+    assert hints["return"] == dict[str, Any]
+
+
+def test_downstream_committed_reader_accepts_connection_bound_session(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with task7_origin_runtime.engine.connect() as caller_connection:
+        with Session(
+            bind=caller_connection,
+            autoflush=False,
+            expire_on_commit=False,
+        ) as db:
+            session_id, target_id, receipt_hash, _ = (
+                _sciencebase_origin_session(
+                    db,
+                    task7_origin_runtime,
+                    stem="origin-connection-bind",
+                )
+            )
+            db.commit()
+            db.begin()
+            _mock_origin_verifiers(
+                monkeypatch,
+                target_id=target_id,
+                receipt_hash=receipt_hash,
+                connector_key="sciencebase_mcs",
+            )
+
+            assert origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="execution_output",
+            )["connector_run_target_id"] == target_id
+
+
+def test_downstream_engine_url_predicate_is_dialect_correct() -> None:
+    assert origin._downstream_engine_url_admitted(  # type: ignore[attr-defined]
+        make_url("postgresql://task7@localhost/project6")
+    )
+    for url in (
+        "sqlite://",
+        "sqlite:///:memory:",
+        "sqlite:///file::memory:?cache=shared&uri=true",
+        "sqlite:///file:task7?mode=memory&cache=shared&uri=true",
+        "sqlite:///file:/proof?vfs=memdb&uri=true",
+    ):
+        assert not origin._downstream_engine_url_admitted(  # type: ignore[attr-defined]
+            make_url(url)
+        )
+
+
+def test_downstream_committed_reader_rejects_sqlite_named_memory() -> None:
+    engine = create_engine(
+        "sqlite:///file:task7-shared?mode=memory&cache=shared&uri=true",
+        connect_args={"check_same_thread": False},
+        poolclass=QueuePool,
+        pool_size=2,
+        max_overflow=0,
+    )
+    try:
+        with Session(engine, autoflush=False) as db:
+            db.begin()
+            with pytest.raises(
+                origin.Layer3OriginContinuityError
+            ) as excinfo:
+                origin._downstream_committed_engine(db)  # type: ignore[attr-defined]
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+    finally:
+        engine.dispose()
+
+
+def test_downstream_guard_rejects_relative_configured_storage_root(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+    ) as db:
+        db.begin()
+        monkeypatch.setattr(settings, "storage_dir", "relative-storage")
+        monkeypatch.setattr(
+            origin,
+            "_downstream_session_origin",
+            lambda *args, **kwargs: pytest.fail(
+                "invalid configured root must fail before authority reads"
+            ),
+        )
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id="root-validation-session",
+                expected_receipt_hash="0" * 64,
+                boundary="execution_output",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+
+
+def test_downstream_origin_rejects_fully_flushed_uncommitted_authority(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, target_id, receipt_hash, _ = _sciencebase_origin_session(
+            db,
+            task7_origin_runtime,
+            stem="origin-uncommitted-forge",
+        )
+        _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key="sciencebase_mcs",
+        )
+        before = _origin_authority_state(db, task7_origin_runtime)
+        flushes: list[bool] = []
+
+        def record_flush(*_args: object) -> None:
+            flushes.append(True)
+
+        event.listen(db, "before_flush", record_flush)
+        try:
+            with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+                origin.assert_downstream_connector_origin(
+                    db,
+                    session_id=session_id,
+                    expected_receipt_hash=receipt_hash,
+                    boundary="execution_output",
+                )
+        finally:
+            event.remove(db, "before_flush", record_flush)
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert flushes == []
+        assert _origin_authority_state(db, task7_origin_runtime) == before
+        db.rollback()
+
+    with Session(task7_origin_runtime.engine, autoflush=False) as durable:
+        assert durable.query(L3Session).count() == 0
+        assert durable.query(ConnectorRun).count() == 0
+        assert durable.query(ConnectorRunTarget).count() == 0
+
+
+def test_downstream_origin_rejects_self_consistent_flushed_manifest_rewrite(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, target_id, receipt_hash, _ = _sciencebase_origin_session(
+            db,
+            task7_origin_runtime,
+            stem="origin-flushed-manifest",
+        )
+        db.commit()
+        original_manifest = copy.deepcopy(
+            db.query(L3SelectionManifest).one().manifest_json
+        )
+        db.commit()
+        db.begin()
+        manifest = db.query(L3SelectionManifest).one()
+        rewritten = copy.deepcopy(manifest.manifest_json)
+        rewritten["flushed_rewrite"] = {"self_consistent": True}
+        manifest.manifest_json = rewritten
+        manifest.selection_hash = hashlib.sha256(
+            json.dumps(
+                {
+                    "manifest_json": rewritten,
+                    "source_plane_hints_json": (
+                        manifest.source_plane_hints_json
+                    ),
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest()
+        db.flush()
+        unrelated = L3Session(
+            session_id="origin-unrelated-pending",
+            status="completed",
+            selection_manifest_id="origin-unrelated-manifest",
+            entry_route_context_json={},
+            operator_context_json={},
+            summary_json={},
+        )
+        db.add(unrelated)
+        caller_root = db.get_transaction()
+        _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key="sciencebase_mcs",
+        )
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="package_commit",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert db.get_transaction() is caller_root
+        assert caller_root is not None and caller_root.is_active
+        assert unrelated in db.new
+        assert manifest.manifest_json == rewritten
+        with Session(
+            task7_origin_runtime.engine,
+            autoflush=False,
+        ) as committed:
+            durable_manifest = committed.query(L3SelectionManifest).one()
+            assert durable_manifest.manifest_json == original_manifest
+
+
+def test_downstream_sciencebase_origin_uses_committed_session_authority(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, target_id, receipt_hash, snapshot = (
+            _sciencebase_origin_session(
+                db,
+                task7_origin_runtime,
+                stem="origin-sciencebase",
+            )
+        )
+        db.commit()
+        db.begin()
+        calls = _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key="sciencebase_mcs",
+        )
+        for boundary in _DOWNSTREAM_ORIGIN_BOUNDARIES:
+            assert origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary=boundary,
+            ) == {
+                "connector_run_target_id": target_id,
+                "connector_origin_receipt_hash": receipt_hash,
+                "proof_class": "fresh_live",
+                "connector_key": "sciencebase_mcs",
+                "boundary": boundary,
+            }
+        assert calls
+        assert {target for _, target in calls} == {target_id}
+        assert sum(label == "derived" for label, _ in calls) == 5
+        assert sum(label == "continuous" for label, _ in calls) == 5
+        assert sum(label == "verified" for label, _ in calls) >= 5
+
+        call_count = len(calls)
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash="f" * 64,
+                boundary="execution_output",
+            )
+        assert excinfo.value.code == "layer3_downstream_origin_hash_mismatch"
+        assert len(calls) > call_count
+        assert {
+            label for label, _ in calls[call_count:]
+        } == {"verified"}
+
+        changed_identity = copy.deepcopy(snapshot.source_identity_json)
+        changed_identity["connector_origin_receipt_hash"] = "e" * 64
+        snapshot.source_identity_json = changed_identity
+        db.flush()
+        before_census = _row_census(db)
+        before_payload = Path(snapshot.payload_ref).read_bytes()
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="result_review",
+            )
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert _row_census(db) == before_census
+        assert Path(snapshot.payload_ref).read_bytes() == before_payload
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    ("selection_hash", "snapshot_identity", "nrc_linkage_field"),
+)
+def test_downstream_origin_requires_exact_durable_authority(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+    mutation: str,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        if mutation == "nrc_linkage_field":
+            session_id, target_id, receipt_hash = _nrc_origin_session(
+                db,
+                task7_origin_runtime,
+                stem="origin-exact-nrc-linkage",
+            )
+            linkage = db.query(ApsContentLinkage).one()
+            linkage.content_contract_id = "origin-contradictory-contract"
+            connector_key = "nrc_adams_aps"
+        else:
+            session_id, target_id, receipt_hash, snapshot = (
+                _sciencebase_origin_session(
+                    db,
+                    task7_origin_runtime,
+                    stem=f"origin-exact-{mutation}",
+                )
+            )
+            connector_key = "sciencebase_mcs"
+            if mutation == "selection_hash":
+                manifest = db.query(L3SelectionManifest).one()
+                manifest.selection_hash = "f" * 64
+            else:
+                changed_identity = copy.deepcopy(
+                    snapshot.source_identity_json
+                )
+                changed_identity["content_sha256"] = "d" * 64
+                snapshot.source_identity_json = changed_identity
+        db.commit()
+        db.begin()
+        _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key=connector_key,
+        )
+        before = _origin_authority_state(db, task7_origin_runtime)
+        flushes: list[bool] = []
+
+        def record_flush(*_args: object) -> None:
+            flushes.append(True)
+
+        event.listen(db, "before_flush", record_flush)
+        try:
+            with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+                origin.assert_downstream_connector_origin(
+                    db,
+                    session_id=session_id,
+                    expected_receipt_hash=receipt_hash,
+                    boundary="package_commit",
+                )
+        finally:
+            event.remove(db, "before_flush", record_flush)
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert flushes == []
+        assert _origin_authority_state(db, task7_origin_runtime) == before
+
+
+@pytest.mark.parametrize("mutation", ("target", "event", "policy"))
+def test_downstream_origin_rejects_flushed_nrc_origin_anchor_mutation(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+    mutation: str,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, target_id, receipt_hash = _nrc_origin_session(
+            db,
+            task7_origin_runtime,
+            stem=f"origin-anchor-{mutation}",
+        )
+        db.commit()
+        db.begin()
+        target = db.get(ConnectorRunTarget, target_id)
+        assert target is not None
+        run_id = target.connector_run_id
+        if mutation == "target":
+            target.source_reference_json = {"flushed": "target"}
+        elif mutation == "event":
+            db.add(
+                ConnectorRunEvent(
+                    connector_run_event_id="origin-flushed-event",
+                    connector_run_id=run_id,
+                    connector_run_target_id=target_id,
+                    event_type="diagnostic",
+                    metrics_json={"flushed": "event"},
+                )
+            )
+        else:
+            db.add(
+                ConnectorPolicySnapshot(
+                    connector_policy_snapshot_id="origin-flushed-policy",
+                    connector_run_id=run_id,
+                    policy_json={"flushed": "policy"},
+                    retry_matrix_json={},
+                )
+            )
+        db.flush()
+        caller_root = db.get_transaction()
+        _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key="nrc_adams_aps",
+        )
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="handoff_prepare",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert db.get_transaction() is caller_root
+        assert caller_root is not None and caller_root.is_active
+        caller_values = {
+            "target": copy.deepcopy(target.source_reference_json),
+            "events": [
+                (row.connector_run_event_id, copy.deepcopy(row.metrics_json))
+                for row in db.query(ConnectorRunEvent).all()
+            ],
+            "policies": [
+                (
+                    row.connector_policy_snapshot_id,
+                    copy.deepcopy(row.policy_json),
+                )
+                for row in db.query(ConnectorPolicySnapshot).all()
+            ],
+        }
+        with Session(
+            task7_origin_runtime.engine,
+            autoflush=False,
+        ) as committed:
+            durable_target = committed.get(ConnectorRunTarget, target_id)
+            assert durable_target is not None
+            durable_values = {
+                "target": durable_target.source_reference_json,
+                "events": [
+                    (
+                        row.connector_run_event_id,
+                        row.metrics_json,
+                    )
+                    for row in committed.query(ConnectorRunEvent).all()
+                ],
+                "policies": [
+                    (
+                        row.connector_policy_snapshot_id,
+                        row.policy_json,
+                    )
+                    for row in committed.query(
+                        ConnectorPolicySnapshot
+                    ).all()
+                ],
+            }
+        assert caller_values != durable_values
+
+
+def test_downstream_reserved_sciencebase_missing_snapshot_fails_closed(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        source_session_id, target_id, receipt_hash, source_snapshot = (
+            _sciencebase_origin_session(
+                db,
+                task7_origin_runtime,
+                stem="origin-sciencebase-missing",
+            )
+        )
+        source_session = db.get(L3Session, source_session_id)
+        assert source_session is not None
+        manifest = source_session.operator_context_json[
+            "layer3_gate_b_decision_manifest_v1"
+        ]
+        decision_item = copy.deepcopy(manifest["items"][0])
+        missing_session_id = "origin-sciencebase-no-snapshot-session"
+        _commit_origin_test_session(
+            db,
+            task7_origin_runtime,
+            session_id=missing_session_id,
+            source_class="connector_produced_single_source",
+            decision_item=decision_item,
+            snapshot_identity=copy.deepcopy(
+                source_snapshot.source_identity_json
+            ),
+            snapshot_provenance=copy.deepcopy(
+                source_snapshot.source_provenance_json
+            ),
+            snapshot_payload={
+                "connector_run_target_id": target_id,
+                "connector_origin_receipt_hash": receipt_hash,
+            },
+            include_snapshot=False,
+        )
+        db.commit()
+        db.begin()
+        monkeypatch.setattr(
+            origin,
+            "verified_connector_origin_projection",
+            lambda *args, **kwargs: pytest.fail(
+                "missing reserved material must fail before origin verification"
+            ),
+        )
+        before_census = _row_census(db)
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=missing_session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="execution_output",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert _row_census(db) == before_census
+
+
+@pytest.mark.parametrize(
+    ("source_class", "candidate_id", "identity_updates"),
+    (
+        (
+            "aps_content_document",
+            "mat-partial-nrc",
+            {"selection_scope": "dual_live_proof_v1"},
+        ),
+        (
+            "manual_upload",
+            "mat-connector_source_intake_record-partial-sciencebase",
+            {
+                "source_system": "sciencebase",
+                "source_mode": "strict_live_egress",
+            },
+        ),
+        (
+            "aps_content_document",
+            "mat-connector_source_intake_record-contradictory",
+            {
+                "selection_scope": "dual_live_proof_v1",
+                "source_system": "sciencebase",
+                "source_mode": "strict_live_egress",
+            },
+        ),
+    ),
+)
+def test_downstream_reserved_partial_signals_cannot_downgrade(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+    source_class: str,
+    candidate_id: str,
+    identity_updates: dict[str, str],
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        identity = {
+            "candidate_id": candidate_id,
+            "source_class": source_class,
+            **identity_updates,
+        }
+        provenance = {"schema_id": "layer3.partial_origin.v1"}
+        payload = {"partial": True}
+        load_summary = {"loaded_records": 1, "failed_records": 0}
+        decision = {
+            "candidate_id": candidate_id,
+            "source_class": source_class,
+            "decision": "approved",
+            "decision_basis": {
+                "source_ref": f"partial:{candidate_id}",
+                "query_basis": "partial_reserved_signal",
+                "provenance_ref": f"partial:{candidate_id}",
+                "source_identity": copy.deepcopy(identity),
+                "source_provenance": copy.deepcopy(provenance),
+                "payload": copy.deepcopy(payload),
+                "load_summary": copy.deepcopy(load_summary),
+            },
+            "source_identity": copy.deepcopy(identity),
+            "source_provenance": copy.deepcopy(provenance),
+            "payload": copy.deepcopy(payload),
+            "load_summary": copy.deepcopy(load_summary),
+        }
+        session, _ = _commit_origin_test_session(
+            db,
+            task7_origin_runtime,
+            session_id=(
+                "partial-"
+                f"{hashlib.sha256(candidate_id.encode()).hexdigest()[:8]}"
+            ),
+            source_class=source_class,
+            decision_item=decision,
+            snapshot_identity=identity,
+            snapshot_provenance=provenance,
+            snapshot_payload=payload,
+        )
+        db.commit()
+        db.begin()
+        monkeypatch.setattr(
+            origin,
+            "verified_connector_origin_projection",
+            lambda *args, **kwargs: pytest.fail(
+                "partial reserved authority must fail before projection"
+            ),
+        )
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session.session_id,
+                expected_receipt_hash="0" * 64,
+                boundary="result_review",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+
+
+@pytest.mark.parametrize("origin_kind", ("sciencebase", "nrc"))
+def test_downstream_linked_reserved_authority_cannot_be_scrubbed(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+    origin_kind: str,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        if origin_kind == "sciencebase":
+            session_id, _, receipt_hash, snapshot = (
+                _sciencebase_origin_session(
+                    db,
+                    task7_origin_runtime,
+                    stem="origin-scrubbed-sciencebase",
+                )
+            )
+        else:
+            session_id, _, receipt_hash = _nrc_origin_session(
+                db,
+                task7_origin_runtime,
+                stem="origin-scrubbed-nrc",
+            )
+            snapshot = db.query(L3MaterialSnapshot).one()
+        session = db.get(L3Session, session_id)
+        assert session is not None
+        session.operator_context_json = {"actor": "scrubbed"}
+        snapshot.source_identity_json = {}
+        snapshot.source_provenance_json = {}
+        db.commit()
+        db.begin()
+        monkeypatch.setattr(
+            origin,
+            "verified_connector_origin_projection",
+            lambda *args, **kwargs: pytest.fail(
+                "scrubbed reserved authority must fail before verification"
+            ),
+        )
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="result_review",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+
+
+@pytest.mark.parametrize(
+    "case",
+    (
+        "depth",
+        "cycle",
+        "non_string_key",
+        "non_finite",
+        "fanout",
+        "string_bytes",
+    ),
+)
+def test_downstream_reserved_signal_json_validation_is_bounded(
+    monkeypatch,
+    case: str,
+) -> None:
+    value: object
+    if case == "depth":
+        value = {}
+        for _ in range(32):
+            value = {"nested": value}
+    elif case == "cycle":
+        cyclic: list[object] = []
+        cyclic.append(cyclic)
+        value = cyclic
+    elif case == "non_string_key":
+        value = {1: "not-json-object-authority"}
+    elif case == "non_finite":
+        value = {"value": float("nan")}
+    elif case == "fanout":
+        monkeypatch.setattr(
+            origin,
+            "_DOWNSTREAM_JSON_FANOUT_CAP",
+            4,
+            raising=False,
+        )
+        value = {"values": list(range(5))}
+    else:
+        monkeypatch.setattr(
+            origin,
+            "_DOWNSTREAM_JSON_STRING_BYTE_CAP",
+            8,
+            raising=False,
+        )
+        value = {"value": "x" * 9}
+
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin._downstream_reserved_kind(value)  # type: ignore[attr-defined]
+
+    assert (
+        excinfo.value.code
+        == "layer3_downstream_origin_authority_invalid"
+    )
+
+
+@pytest.mark.parametrize(
+    "encoding",
+    ("duplicate_key", "invalid_constant", "noncanonical"),
+)
+def test_downstream_snapshot_payload_requires_strict_canonical_bytes(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+    encoding: str,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, target_id, receipt_hash, snapshot = (
+            _sciencebase_origin_session(
+                db,
+                task7_origin_runtime,
+                stem=f"origin-payload-{encoding}",
+            )
+        )
+        canonical_bytes = Path(snapshot.payload_ref).read_bytes()
+        payload = json.loads(canonical_bytes)
+        if encoding == "duplicate_key":
+            rewritten_bytes = (
+                b'{"connector_key":"shadow",'
+                + canonical_bytes.removeprefix(b"{")
+            )
+        elif encoding == "invalid_constant":
+            rewritten_bytes = (
+                canonical_bytes.removesuffix(b"}")
+                + b',"invalid_constant":NaN}'
+            )
+        else:
+            rewritten_bytes = json.dumps(
+                payload,
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=False,
+            ).encode("utf-8")
+        rewritten_hash = hashlib.sha256(rewritten_bytes).hexdigest()
+        rewritten_path = (
+            Path(settings.artifact_storage_dir)
+            / "layer3"
+            / session_id
+            / f"{rewritten_hash}.json"
+        )
+        rewritten_path.write_bytes(rewritten_bytes)
+        _register_origin_test_path(rewritten_path, task7_origin_runtime)
+        snapshot.payload_ref = str(rewritten_path)
+        snapshot.payload_hash = rewritten_hash
+        db.commit()
+        db.begin()
+        _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key="sciencebase_mcs",
+        )
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="package_submit",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+
+
+def test_downstream_generic_connector_session_is_not_applicable(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        generic_identity = {
+            "candidate_id": "mat-manual_upload-origin-generic",
+            "source_class": "connector_produced_single_source",
+        }
+        generic_provenance = {
+            "schema_id": "layer3.manual_upload_source_provenance.v1",
+        }
+        generic_payload = {"record_count": 1}
+        generic_load_summary = {"loaded_records": 1, "failed_records": 0}
+        generic_decision = {
+            "candidate_id": generic_identity["candidate_id"],
+            "source_class": "connector_produced_single_source",
+            "decision": "approved",
+            "decision_basis": {
+                "source_ref": "manual_upload:origin-generic",
+                "query_basis": "manual_upload",
+                "provenance_ref": "manual_upload:origin-generic",
+                "source_identity": copy.deepcopy(generic_identity),
+                "source_provenance": copy.deepcopy(generic_provenance),
+                "payload": copy.deepcopy(generic_payload),
+                "load_summary": copy.deepcopy(generic_load_summary),
+            },
+            "source_identity": copy.deepcopy(generic_identity),
+            "source_provenance": copy.deepcopy(generic_provenance),
+            "payload": copy.deepcopy(generic_payload),
+            "load_summary": copy.deepcopy(generic_load_summary),
+        }
+        committed_session, _ = _commit_origin_test_session(
+            db,
+            task7_origin_runtime,
+            session_id="origin-generic-session",
+            source_class="connector_produced_single_source",
+            decision_item=generic_decision,
+            snapshot_identity=generic_identity,
+            snapshot_provenance=generic_provenance,
+            snapshot_payload=generic_payload,
+        )
+        db.commit()
+        db.begin()
+        monkeypatch.setattr(
+            origin,
+            "verified_connector_origin_projection",
+            lambda *args, **kwargs: pytest.fail(
+                "generic sessions must not enter reserved origin verification"
+            ),
+        )
+        before_census = _row_census(db)
+
+        assert origin.assert_downstream_connector_origin(
+            db,
+            session_id=committed_session.session_id,
+            expected_receipt_hash="0" * 64,
+            boundary="execution_output",
+        ) == {
+            "applicability": "not_applicable",
+            "boundary": "execution_output",
+        }
+        assert _row_census(db) == before_census
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=committed_session.session_id,
+                expected_receipt_hash="0" * 64,
+                boundary="not-a-boundary",  # type: ignore[arg-type]
+            )
+        assert excinfo.value.code == "layer3_downstream_origin_boundary_invalid"
+        assert _row_census(db) == before_census
+
+
+@pytest.mark.parametrize(
+    ("connector_key", "source_system", "source_mode", "weak_signal"),
+    (
+        (
+            "nrc_adams_aps",
+            "nrc_adams",
+            "aps",
+            {"source_shape": "aps_content_document"},
+        ),
+        (
+            "sciencebase_mcs",
+            "sciencebase",
+            "public_api",
+            {
+                "candidate_id": (
+                    "mat-connector_source_intake_record-legacy-record"
+                )
+            },
+        ),
+    ),
+)
+def test_downstream_legacy_connector_run_is_not_reserved(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+    connector_key: str,
+    source_system: str,
+    source_mode: str,
+    weak_signal: dict[str, str],
+) -> None:
+    run_id = f"legacy-{connector_key}-run"
+    session_id = f"legacy-{connector_key}-session"
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        db.add_all(
+            [
+                ConnectorRun(
+                    connector_run_id=run_id,
+                    connector_key=connector_key,
+                    source_system=source_system,
+                    source_mode=source_mode,
+                    status="completed",
+                ),
+                L3Session(
+                    session_id=session_id,
+                    status="completed",
+                    selection_manifest_id=f"manifest-{session_id}",
+                    entry_route_context_json={},
+                    operator_context_json={},
+                    summary_json={"run_id": run_id, **weak_signal},
+                ),
+            ]
+        )
+        db.commit()
+        db.begin()
+        monkeypatch.setattr(
+            origin,
+            "verified_connector_origin_projection",
+            lambda *args, **kwargs: pytest.fail(
+                "legacy connector run entered reserved origin verification"
+            ),
+        )
+
+        assert origin.assert_downstream_connector_origin(
+            db,
+            session_id=session_id,
+            expected_receipt_hash="0" * 64,
+            boundary="result_review",
+        ) == {
+            "applicability": "not_applicable",
+            "boundary": "result_review",
+        }
+
+
+@pytest.mark.parametrize(
+    ("database_url", "url_label"),
+    (
+        ("sqlite://", "empty"),
+        ("sqlite:///:memory:", "explicit"),
+    ),
+)
+@pytest.mark.parametrize("generic_aps_signals", (False, True))
+def test_downstream_generic_guards_bypass_staticpool_in_memory_reader(
+    tmp_path: Path,
+    monkeypatch,
+    database_url: str,
+    url_label: str,
+    generic_aps_signals: bool,
+) -> None:
+    storage_dir = (tmp_path / "generic-storage").resolve()
+    bootstrap_storage_tree(storage_dir)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    engine = create_engine(
+        database_url,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    signal_label = "aps" if generic_aps_signals else "empty"
+    session_id = f"origin-generic-staticpool-{url_label}-{signal_label}"
+    with Session(
+        engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        db.add(
+            L3Session(
+                session_id=session_id,
+                status="completed",
+                selection_manifest_id=f"manifest-{session_id}",
+                entry_route_context_json={},
+                operator_context_json={},
+                summary_json=(
+                    {
+                        "source_class": "aps_content_document",
+                        "source_shape": "aps_content_document",
+                        "document_class": "nrc_adams_aps",
+                        "accession_number": "ML17123A319",
+                    }
+                    if generic_aps_signals
+                    else {}
+                ),
+            )
+        )
+        db.commit()
+        db.begin()
+        monkeypatch.setattr(
+            origin,
+            "_assert_downstream_connector_origin",
+            lambda *args, **kwargs: pytest.fail(
+                "generic resolution entered the committed reader"
+            ),
+        )
+
+        assert origin.resolve_downstream_connector_origin(
+            db,
+            session_id=session_id,
+            boundary="pass_selection",
+        ) is None
+        pass_run = L3PassRun(
+            pass_run_id=f"pass-{session_id}",
+            session_id=session_id,
+            analysis_plan_id=f"plan-{session_id}",
+            analysis_set_id=f"set-{session_id}",
+            pass_type="single_item",
+            engine_family="wrapped_quantitative_analysis",
+            status="selected_not_started",
+            input_payload_ref="layer3://generic/input",
+            summary_json={},
+        )
+        assert origin.assert_pass_downstream_connector_origin(
+            db,
+            pass_run=pass_run,
+            boundary="execution_output",
+        ) is None
+    engine.dispose()
+
+
+def test_downstream_reserved_marker_cannot_bypass_staticpool_memory_reader(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    storage_dir = (tmp_path / "reserved-storage").resolve()
+    bootstrap_storage_tree(storage_dir)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    try:
+        with Session(
+            engine,
+            autoflush=False,
+            expire_on_commit=False,
+        ) as db:
+            db.add(
+                L3Session(
+                    session_id="origin-reserved-staticpool",
+                    status="completed",
+                    selection_manifest_id="manifest-reserved-staticpool",
+                    entry_route_context_json={},
+                    operator_context_json={},
+                    summary_json={"query_basis": "dual-live-proof"},
+                )
+            )
+            db.commit()
+            db.begin()
+
+            with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+                origin.resolve_downstream_connector_origin(
+                    db,
+                    session_id="origin-reserved-staticpool",
+                    boundary="pass_selection",
+                )
+
+            assert (
+                excinfo.value.code
+                == "layer3_downstream_origin_authority_invalid"
+            )
+    finally:
+        engine.dispose()
+
+
+def test_downstream_generic_resolver_rejects_file_staticpool_bypass(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    storage_dir = (tmp_path / "file-staticpool-storage").resolve()
+    database_path = (tmp_path / "file-staticpool.sqlite3").resolve()
+    bootstrap_storage_tree(storage_dir)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    engine = create_engine(
+        f"sqlite:///{database_path.as_posix()}",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    try:
+        with Session(
+            engine,
+            autoflush=False,
+            expire_on_commit=False,
+        ) as db:
+            db.add(
+                L3Session(
+                    session_id="origin-generic-file-staticpool",
+                    status="completed",
+                    selection_manifest_id=(
+                        "manifest-generic-file-staticpool"
+                    ),
+                    entry_route_context_json={},
+                    operator_context_json={},
+                    summary_json={},
+                )
+            )
+            db.commit()
+            db.begin()
+            monkeypatch.setattr(
+                origin,
+                "_downstream_session_origin",
+                lambda *args, **kwargs: pytest.fail(
+                    "file StaticPool must fail before not_applicable"
+                ),
+            )
+            caller_root = db.get_transaction()
+            statements: list[str] = []
+
+            def capture_statement(
+                _connection: Connection,
+                _cursor: object,
+                statement: str,
+                _parameters: object,
+                _context: object,
+                _executemany: bool,
+            ) -> None:
+                statements.append(
+                    statement.lstrip().partition(" ")[0].upper()
+                )
+
+            event.listen(
+                engine,
+                "before_cursor_execute",
+                capture_statement,
+            )
+            try:
+                with pytest.raises(
+                    origin.Layer3OriginContinuityError
+                ) as excinfo:
+                    origin.resolve_downstream_connector_origin(
+                        db,
+                        session_id=(
+                            "origin-generic-file-staticpool"
+                        ),
+                        boundary="pass_selection",
+                    )
+            finally:
+                event.remove(
+                    engine,
+                    "before_cursor_execute",
+                    capture_statement,
+                )
+
+            assert (
+                excinfo.value.code
+                == "layer3_downstream_origin_authority_invalid"
+            )
+            assert not {"INSERT", "UPDATE", "DELETE"} & set(statements)
+            assert db.get_transaction() is caller_root
+            assert caller_root is not None and caller_root.is_active
+    finally:
+        engine.dispose()
+
+
+def test_downstream_generic_pass_rejects_file_staticpool_bypass(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    storage_dir = (
+        tmp_path / "file-staticpool-pass-storage"
+    ).resolve()
+    database_path = (
+        tmp_path / "file-staticpool-pass.sqlite3"
+    ).resolve()
+    bootstrap_storage_tree(storage_dir)
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    engine = create_engine(
+        f"sqlite:///{database_path.as_posix()}",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    try:
+        with Session(
+            engine,
+            autoflush=False,
+            expire_on_commit=False,
+        ) as db:
+            session_id = "origin-pass-generic-file-staticpool"
+            db.add(
+                L3Session(
+                    session_id=session_id,
+                    status="completed",
+                    selection_manifest_id=(
+                        "manifest-pass-generic-file-staticpool"
+                    ),
+                    entry_route_context_json={},
+                    operator_context_json={},
+                    summary_json={},
+                )
+            )
+            db.commit()
+            db.begin()
+            monkeypatch.setattr(
+                origin,
+                "_downstream_session_origin",
+                lambda *args, **kwargs: pytest.fail(
+                    "file StaticPool must fail before not_applicable"
+                ),
+            )
+            pass_run = L3PassRun(
+                pass_run_id="pass-generic-file-staticpool",
+                session_id=session_id,
+                analysis_plan_id="plan-generic-file-staticpool",
+                analysis_set_id="set-generic-file-staticpool",
+                pass_type="single_item",
+                engine_family="wrapped_quantitative_analysis",
+                status="selected_not_started",
+                input_payload_ref="layer3://generic/input",
+                summary_json={},
+            )
+            caller_root = db.get_transaction()
+            statements: list[str] = []
+
+            def capture_statement(
+                _connection: Connection,
+                _cursor: object,
+                statement: str,
+                _parameters: object,
+                _context: object,
+                _executemany: bool,
+            ) -> None:
+                statements.append(
+                    statement.lstrip().partition(" ")[0].upper()
+                )
+
+            event.listen(
+                engine,
+                "before_cursor_execute",
+                capture_statement,
+            )
+            try:
+                with pytest.raises(
+                    origin.Layer3OriginContinuityError
+                ) as excinfo:
+                    origin.assert_pass_downstream_connector_origin(
+                        db,
+                        pass_run=pass_run,
+                        boundary="result_review",
+                    )
+            finally:
+                event.remove(
+                    engine,
+                    "before_cursor_execute",
+                    capture_statement,
+                )
+
+            assert (
+                excinfo.value.code
+                == "layer3_downstream_origin_authority_invalid"
+            )
+            assert not {"INSERT", "UPDATE", "DELETE"} & set(statements)
+            assert db.get_transaction() is caller_root
+            assert caller_root is not None and caller_root.is_active
+    finally:
+        engine.dispose()
+
+
+@pytest.mark.parametrize(
+    "connector_key",
+    ("nrc_adams_aps", "sciencebase_mcs"),
+)
+def test_downstream_reserved_kind_preserves_explicit_integrity_key(
+    connector_key: str,
+) -> None:
+    integrity = {
+        "schema_id": "layer3.connector_origin_integrity.v1",
+        "connector_key": connector_key,
+        "connector_run_target_id": f"target-{connector_key}",
+        "connector_origin_receipt_hash": "a" * 64,
+        "proof_class": "offline_fixture",
+    }
+
+    assert (
+        origin._downstream_reserved_kind(integrity)  # type: ignore[attr-defined]
+        == connector_key
+    )
+
+
+def test_downstream_reserved_kind_rejects_unkeyed_receipt_claim() -> None:
+    with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+        origin._downstream_reserved_kind(  # type: ignore[attr-defined]
+            {
+                "connector_run_target_id": "target-unkeyed-origin",
+                "connector_origin_receipt_hash": "a" * 64,
+            }
+        )
+
+    assert (
+        excinfo.value.code
+        == "layer3_downstream_origin_authority_invalid"
+    )
+
+
+def test_downstream_nrc_pass_wrapper_accepts_exact_integrity(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    integrity = {
+        "schema_id": "layer3.connector_origin_integrity.v1",
+        "connector_key": "nrc_adams_aps",
+        "connector_run_target_id": "target-nrc-pass-wrapper",
+        "connector_origin_receipt_hash": "a" * 64,
+        "proof_class": "offline_fixture",
+    }
+    pass_run = L3PassRun(
+        pass_run_id="pass-nrc-exact-origin",
+        session_id="session-nrc-exact-origin",
+        analysis_plan_id="plan-nrc-exact-origin",
+        analysis_set_id="set-nrc-exact-origin",
+        pass_type="single_item",
+        engine_family="wrapped_quantitative_analysis",
+        status="selected_not_started",
+        input_payload_ref="layer3://nrc/input",
+        summary_json={
+            "planned_pass": {
+                "connector_key": "nrc_adams_aps",
+                "selected_method_name": "descriptive_summary",
+            },
+            "connector_origin_integrity_v1": copy.deepcopy(integrity),
+        },
+    )
+    calls: list[dict[str, Any]] = []
+
+    def exact_verifier(
+        _db: Session,
+        *,
+        session_id: str,
+        expected_receipt_hash: str | None,
+        boundary: str,
+    ) -> dict[str, Any]:
+        calls.append(
+            {
+                "session_id": session_id,
+                "expected_receipt_hash": expected_receipt_hash,
+                "boundary": boundary,
+            }
+        )
+        return {
+            "connector_run_target_id": integrity[
+                "connector_run_target_id"
+            ],
+            "connector_origin_receipt_hash": integrity[
+                "connector_origin_receipt_hash"
+            ],
+            "proof_class": integrity["proof_class"],
+            "connector_key": integrity["connector_key"],
+            "boundary": boundary,
+        }
+
+    monkeypatch.setattr(
+        origin,
+        "assert_downstream_connector_origin",
+        exact_verifier,
+    )
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        db.begin()
+        assert origin.assert_pass_downstream_connector_origin(
+            db,
+            pass_run=pass_run,
+            boundary="execution_output",
+        ) == integrity
+
+    assert calls == [
+        {
+            "session_id": pass_run.session_id,
+            "expected_receipt_hash": (
+                integrity["connector_origin_receipt_hash"]
+            ),
+            "boundary": "execution_output",
+        }
+    ]
+
+
+@pytest.mark.parametrize("rewrite_mode", ("orm_flush", "raw_sql"))
+def test_downstream_resolver_rejects_committed_reserved_authority_scrub(
+    task7_origin_runtime: _B1aRuntime,
+    rewrite_mode: str,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, _, _, _ = _sciencebase_origin_session(
+            db,
+            task7_origin_runtime,
+            stem=f"origin-resolver-scrub-{rewrite_mode}",
+        )
+        db.commit()
+        db.begin()
+        _scrub_downstream_session_surfaces(
+            db,
+            session_id=session_id,
+            rewrite_mode=rewrite_mode,
+        )
+        assert (
+            origin._downstream_session_reserved_row_kind(  # type: ignore[attr-defined]
+                db,
+                session_id=session_id,
+            )
+            is None
+        )
+        caller_root = db.get_transaction()
+        statements: list[str] = []
+
+        def capture_statement(
+            _connection: Connection,
+            _cursor: object,
+            statement: str,
+            _parameters: object,
+            _context: object,
+            _executemany: bool,
+        ) -> None:
+            statements.append(statement.lstrip().partition(" ")[0].upper())
+
+        event.listen(
+            task7_origin_runtime.engine,
+            "before_cursor_execute",
+            capture_statement,
+        )
+        try:
+            with pytest.raises(
+                origin.Layer3OriginContinuityError
+            ) as excinfo:
+                origin.resolve_downstream_connector_origin(
+                    db,
+                    session_id=session_id,
+                    boundary="pass_selection",
+                )
+        finally:
+            event.remove(
+                task7_origin_runtime.engine,
+                "before_cursor_execute",
+                capture_statement,
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert not {"INSERT", "UPDATE", "DELETE"} & set(statements)
+        assert db.get_transaction() is caller_root
+        assert caller_root is not None and caller_root.is_active
+
+
+@pytest.mark.parametrize("rewrite_mode", ("orm_flush", "raw_sql"))
+def test_downstream_pass_wrapper_rejects_committed_reserved_summary_scrub(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+    rewrite_mode: str,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, target_id, receipt_hash, _ = (
+            _sciencebase_origin_session(
+                db,
+                task7_origin_runtime,
+                stem=f"origin-pass-scrub-{rewrite_mode}",
+            )
+        )
+        integrity = {
+            "schema_id": "layer3.connector_origin_integrity.v1",
+            "connector_key": "sciencebase_mcs",
+            "connector_run_target_id": target_id,
+            "connector_origin_receipt_hash": receipt_hash,
+            "proof_class": "fresh_live",
+        }
+        pass_run = L3PassRun(
+            pass_run_id=f"pass-summary-scrub-{rewrite_mode}",
+            session_id=session_id,
+            analysis_plan_id=f"plan-summary-scrub-{rewrite_mode}",
+            analysis_set_id=f"set-summary-scrub-{rewrite_mode}",
+            pass_type="single_item",
+            engine_family="wrapped_quantitative_analysis",
+            status="selected_not_started",
+            input_payload_ref="layer3://sciencebase/input",
+            summary_json={
+                "planned_pass": {
+                    "connector_key": "sciencebase_mcs",
+                    "selected_method_name": "descriptive_summary",
+                },
+                "connector_origin_integrity_v1": copy.deepcopy(
+                    integrity
+                ),
+            },
+        )
+        db.add(pass_run)
+        db.commit()
+        db.begin()
+        if rewrite_mode == "orm_flush":
+            pass_run.summary_json = {}
+            db.flush()
+        else:
+            table = L3PassRun.__table__
+            db.connection().execute(
+                update(table)
+                .where(table.c.pass_run_id == pass_run.pass_run_id)
+                .values(summary_json={})
+            )
+            db.expire_all()
+            pass_run = db.get(L3PassRun, pass_run.pass_run_id)
+            assert pass_run is not None
+        assert pass_run.summary_json == {}
+        assert not db.new
+        assert not db.dirty
+        assert not db.deleted
+        _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key="sciencebase_mcs",
+        )
+        monkeypatch.setattr(
+            origin,
+            "assert_downstream_connector_origin",
+            lambda *args, **kwargs: pytest.fail(
+                "generic pass verification must use the private None-capable guard"
+            ),
+        )
+        caller_root = db.get_transaction()
+        statements: list[str] = []
+
+        def capture_statement(
+            _connection: Connection,
+            _cursor: object,
+            statement: str,
+            _parameters: object,
+            _context: object,
+            _executemany: bool,
+        ) -> None:
+            statements.append(statement.lstrip().partition(" ")[0].upper())
+
+        event.listen(
+            task7_origin_runtime.engine,
+            "before_cursor_execute",
+            capture_statement,
+        )
+        try:
+            with pytest.raises(
+                origin.Layer3OriginContinuityError
+            ) as excinfo:
+                origin.assert_pass_downstream_connector_origin(
+                    db,
+                    pass_run=pass_run,
+                    boundary="result_review",
+                )
+        finally:
+            event.remove(
+                task7_origin_runtime.engine,
+                "before_cursor_execute",
+                capture_statement,
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert not {"INSERT", "UPDATE", "DELETE"} & set(statements)
+        assert db.get_transaction() is caller_root
+        assert caller_root is not None and caller_root.is_active
+
+
+def test_reserved_pass_rejects_not_applicable_origin_result(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    pass_run = L3PassRun(
+        pass_run_id="pass-reserved-not-applicable",
+        session_id="session-reserved-not-applicable",
+        analysis_plan_id="plan-reserved-not-applicable",
+        analysis_set_id="set-reserved-not-applicable",
+        pass_type="single_item",
+        engine_family="wrapped_quantitative_analysis",
+        status="selected_not_started",
+        input_payload_ref="layer3://reserved/input",
+        summary_json={
+            "planned_pass": {
+                "connector_key": "sciencebase_mcs",
+                "selected_method_name": "descriptive_summary",
+            },
+            "connector_origin_integrity_v1": {
+                "schema_id": "layer3.connector_origin_integrity.v1",
+                "connector_key": "sciencebase_mcs",
+                "connector_run_target_id": "target-reserved-not-applicable",
+                "connector_origin_receipt_hash": "a" * 64,
+                "proof_class": "offline_fixture",
+            },
+        },
+    )
+    monkeypatch.setattr(
+        origin,
+        "assert_downstream_connector_origin",
+        lambda *args, **kwargs: {
+            "applicability": "not_applicable",
+            "boundary": kwargs["boundary"],
+        },
+    )
+
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        db.begin()
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_pass_downstream_connector_origin(
+                db,
+                pass_run=pass_run,
+                boundary="execution_output",
+            )
+
+    assert excinfo.value.code == "layer3_downstream_origin_authority_invalid"
+
+
+def test_downstream_nrc_origin_resolves_dynamic_linkage_target(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, target_id, receipt_hash = _nrc_origin_session(
+            db,
+            task7_origin_runtime,
+            stem="origin-nrc",
+        )
+        db.commit()
+        db.begin()
+        calls = _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key="nrc_adams_aps",
+        )
+
+        assert origin.assert_downstream_connector_origin(
+            db,
+            session_id=session_id,
+            expected_receipt_hash=receipt_hash,
+            boundary="handoff_prepare",
+        ) == {
+            "connector_run_target_id": target_id,
+            "connector_origin_receipt_hash": receipt_hash,
+            "proof_class": "fresh_live",
+            "connector_key": "nrc_adams_aps",
+            "boundary": "handoff_prepare",
+        }
+        assert {target for _, target in calls} == {target_id}
+        assert {"verified", "derived", "continuous"} <= {
+            label for label, _ in calls
+        }
+        assert not hasattr(
+            ApsContentLinkage,
+            "connector_origin_receipt_hash",
+        )
+
+        second_run_id = "origin-nrc-second-run"
+        second_target_id = "origin-nrc-second-target"
+        first_linkage = db.query(ApsContentLinkage).one()
+        db.add_all(
+            [
+                ConnectorRun(
+                    connector_run_id=second_run_id,
+                    connector_key="nrc_adams_aps",
+                    source_system="nrc_adams",
+                    source_mode="strict_live_egress",
+                    status="completed",
+                ),
+                ConnectorRunTarget(
+                    connector_run_target_id=second_target_id,
+                    connector_run_id=second_run_id,
+                    ordinal=1,
+                    stable_release_key="ML17123A319",
+                    selection_scope="dual_live_proof_v1",
+                    fetch_policy_mode="strict_live_egress",
+                    status="downloaded",
+                    source_reference_json={},
+                ),
+                ApsContentLinkage(
+                    aps_content_linkage_id="origin-nrc-second-linkage",
+                    content_id=first_linkage.content_id,
+                    run_id=second_run_id,
+                    target_id=second_target_id,
+                    accession_number="ML17123A319",
+                    content_contract_id="origin-nrc-second-content",
+                    chunking_contract_id="origin-nrc-second-chunk",
+                ),
+            ]
+        )
+        db.flush()
+        before_counts = {
+            "runs": db.query(ConnectorRun).count(),
+            "targets": db.query(ConnectorRunTarget).count(),
+            "linkages": db.query(ApsContentLinkage).count(),
+        }
+        call_count = len(calls)
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="package_submit",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert len(calls) == call_count
+        assert {
+            "runs": db.query(ConnectorRun).count(),
+            "targets": db.query(ConnectorRunTarget).count(),
+            "linkages": db.query(ApsContentLinkage).count(),
+        } == before_counts
+
+
+def test_downstream_origin_revalidates_final_projection_before_return(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, target_id, receipt_hash = _nrc_origin_session(
+            db,
+            task7_origin_runtime,
+            stem="origin-final-projection",
+        )
+        db.commit()
+        db.begin()
+        calls = _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key="nrc_adams_aps",
+            final_receipt_hash="f" * 64,
+        )
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="handoff_prepare",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+        assert [label for label, _ in calls] == [
+            "verified",
+            "verified",
+            "derived",
+            "continuous",
+            "verified",
+        ]
+
+
+def test_downstream_committed_reread_bypasses_orm_identity_cache(
+    task7_origin_runtime: _B1aRuntime,
+    monkeypatch,
+) -> None:
+    with Session(
+        task7_origin_runtime.engine,
+        autoflush=False,
+        expire_on_commit=False,
+    ) as db:
+        session_id, target_id, receipt_hash, _ = _sciencebase_origin_session(
+            db,
+            task7_origin_runtime,
+            stem="origin-fresh-reread",
+        )
+        db.commit()
+        db.begin()
+        _mock_origin_verifiers(
+            monkeypatch,
+            target_id=target_id,
+            receipt_hash=receipt_hash,
+            connector_key="sciencebase_mcs",
+        )
+        base_verified = origin.verified_connector_origin_projection
+        savepoints: list[Any] = []
+        savepoint_owner: list[Session] = []
+
+        def verified(db: Session, *, connector_run_target_id: str):
+            if (
+                savepoints
+                and savepoint_owner[-1] is db
+                and savepoints[-1].is_active
+            ):
+                savepoints[-1].rollback()
+            return base_verified(
+                db,
+                connector_run_target_id=connector_run_target_id,
+            )
+
+        def mutate_during_continuity(
+            committed_db: Session,
+            **_kwargs: object,
+        ) -> None:
+            table = L3SelectionManifest.__table__
+            row = committed_db.connection().execute(
+                select(
+                    table.c.selection_manifest_id,
+                    table.c.manifest_json,
+                    table.c.source_plane_hints_json,
+                )
+            ).mappings().one()
+            rewritten = copy.deepcopy(row["manifest_json"])
+            rewritten["fresh_reread_probe"] = True
+            rewritten_hash = hashlib.sha256(
+                json.dumps(
+                    {
+                        "manifest_json": rewritten,
+                        "source_plane_hints_json": (
+                            row["source_plane_hints_json"]
+                        ),
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+            savepoints.append(committed_db.begin_nested())
+            savepoint_owner.append(committed_db)
+            committed_db.connection().execute(
+                update(table)
+                .where(
+                    table.c.selection_manifest_id
+                    == row["selection_manifest_id"]
+                )
+                .values(
+                    manifest_json=rewritten,
+                    selection_hash=rewritten_hash,
+                )
+            )
+
+        monkeypatch.setattr(
+            origin,
+            "verified_connector_origin_projection",
+            verified,
+        )
+        monkeypatch.setattr(
+            origin,
+            "assert_connector_origin_continuity",
+            mutate_during_continuity,
+        )
+
+        with pytest.raises(origin.Layer3OriginContinuityError) as excinfo:
+            origin.assert_downstream_connector_origin(
+                db,
+                session_id=session_id,
+                expected_receipt_hash=receipt_hash,
+                boundary="result_review",
+            )
+
+        assert (
+            excinfo.value.code
+            == "layer3_downstream_origin_authority_invalid"
+        )
+
+
+def test_gate_c_connector_origin_state_is_exact_and_fail_closed() -> None:
+    origin_integrity = {
+        "schema_id": "layer3.connector_origin_integrity.v1",
+        "connector_key": "sciencebase_mcs",
+        "connector_run_target_id": "target-gate-c-state",
+        "connector_origin_receipt_hash": "a" * 64,
+        "proof_class": "offline_fixture",
+    }
+    reserved_state = layer3_workbench._gate_c_connector_origin_state(  # type: ignore[attr-defined]
+        origin_integrity
+    )
+    generic_state = layer3_workbench._gate_c_connector_origin_state(  # type: ignore[attr-defined]
+        None
+    )
+    session = L3Session(
+        session_id="session-gate-c-state",
+        status="completed",
+        selection_manifest_id="manifest-gate-c-state",
+        entry_route_context_json={},
+        operator_context_json={},
+        summary_json={
+            "gate_c_connector_origin_state_v1": reserved_state,
+        },
+    )
+
+    layer3_workbench._assert_gate_c_connector_origin_state(  # type: ignore[attr-defined]
+        session=session,
+        connector_origin_integrity=origin_integrity,
+    )
+    assert generic_state == {
+        "schema_id": "layer3.gate_c_connector_origin_state.v1",
+        "applicability": "not_applicable",
+    }
+
+    changed_origin = {
+        **origin_integrity,
+        "connector_origin_receipt_hash": "b" * 64,
+    }
+    original_summary = copy.deepcopy(session.summary_json)
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_workbench._assert_gate_c_connector_origin_state(  # type: ignore[attr-defined]
+            session=session,
+            connector_origin_integrity=changed_origin,
+        )
+    assert (
+        excinfo.value.error_code
+        == "gate_c_connector_origin_mismatch"
+    )
+    assert session.summary_json == original_summary
 
 
 @_stop_receipt_on_failure

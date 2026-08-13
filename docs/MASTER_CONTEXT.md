@@ -614,3 +614,86 @@ disposition policy (possibly including erasure) would be needed — explicitly o
   remains deferred where it exceeds that frontier.
 - **A8 is owner-gated** — everything downstream waits on a human decision that is correctly outside
   agent authority.
+
+---
+
+## 9. 2026-07-29 dual-live acquisition-to-handoff planning addendum
+
+This addendum records the next connector-origin product proof without replacing
+the historical program context above. It is an M0 candidate until the exact
+campaign/plan bytes and this pointer are co-committed after architecture/spec
+review; it is not a completed planning freeze.
+
+- Comprehensive campaign record:
+  `docs/campaign-records/2026-07-29-dual-live-proof.md`.
+- Executable implementation plan:
+  `docs/superpowers/plans/2026-07-29-dual-live-proof.md`.
+- Design baseline:
+  `c1fcd840b421ceafb560266858a75808207f4540`.
+- Named targets: ScienceBase item `63d1a3c6d34e06fef15006be`, desired exact
+  file `mcs2023-germa_salient.csv` subject to live hydration confirmation, and
+  NRC APS accession `ML17123A319`.
+- Intended proof: newly retrieved bytes → connector provenance → appropriate
+  Layer 3C execution → result review → exactly three package kinds → package
+  review submission → internal handoff/export preparation.
+- Current value: public connector/runtime records, fixture-proven ScienceBase
+  CSV-to-Gate-B intake, NRC document processing, and the deep Layer 3
+  review/package/handoff path already exist. The missing work is bounded
+  campaign-definition/fingerprint correlation, first-use arming,
+  physical-request accounting, strict fresh connector modes, and end-to-end
+  origin-hash continuity.
+- Governance decision: group the campaign, acceptance matrix, and milestone
+  review once; keep ScienceBase and NRC authority, budgets, credentials, and
+  outcomes separately armed and separately auditable.
+- Authority boundary: caller identity/role, feature flags, and the shared
+  campaign definition are not grants. A protected strict definition/raw digest
+  rederives the campaign fingerprint and acts only as deny-only correlation.
+  Each connector still requires exact owner grant bytes from a protected server
+  path and separately configured SHA-256 before arming, execution, and every
+  request reservation.
+- Lifecycle boundary: sends require the current unexpired definition
+  intersected with the current unexpired connector grant; only the grant
+  supplies egress authority. Protected content-addressed definition/grant bytes
+  plus immutable content-addressed evidence-index revisions support later
+  event-time validation. The configured revision must be the unique maximal
+  head of one gap-free predecessor chain; every successor is a strict superset
+  that introduces exactly one complete campaign slice, so rollback, fork, or
+  evidence drop fails. Arming is allowed only while that campaign's earliest
+  complete-slice revision is the current head; a retained ancestor is
+  historical-only. Campaign armings, log seals, and the seal event(s) of every extant connector run (two on a passing dual run, one after an NRC-first stop) bind the
+  introduction revision/digest. Historical types cannot enter arming,
+  reservation, or transport. Each grant
+  carries one UUID4 nonce and `max_armings=1`; a deterministic parent-run ID and
+  atomic no-overwrite digest-keyed consumption marker bind it to one parent
+  arming. Marker-only failure is fail-closed and recovery needs a new
+  definition/campaign plus a new explicitly superseding grant; same-campaign
+  recovery is forbidden.
+- URL-custody boundary: the exact derived artifact URL exists only in the
+  non-serializable in-memory physical request. Strict-lane URL scalar columns
+  remain null; raw ScienceBase item/`files[]` and NRC Get Document snapshots do
+  not persist; only a URL digest plus the closed scheme/host/port/path/query
+  class and continuity identifiers cross storage or Layer 3 boundaries.
+  ScienceBase strictly rejects duplicate JSON members, admits only one exact
+  untrimmed `downloadUri`, and checks raw ASCII path/query byte-for-byte before
+  any permissive parser; its one optional redirect has a closed status set and
+  exactly one raw `Location`. The protected index revision fixes a four-stream
+  runtime-log capture whose manifest is anchored by a separate no-overwrite
+  seal plus matching events on every extant connector run (one in an NRC-first failure state); all three bind the same
+  campaign index revision/digest. Machine-global logs and cryptographic
+  nonrepudiation remain outside this experimental proof.
+- Current status: documentation/design only. No fresh acquisition, owner grant,
+  arming, implementation, acceptance, delivery, supported-profile promotion,
+  or production readiness is claimed.
+- Live-session boundary: the latest inspected Claude export ends with an
+  external B1b re-audit waiter. That separate lane neither ends nor authorizes
+  connector work by implication. Offline connector work may proceed in
+  collision-free resources; shared worktree/runtime/operator resources require
+  an explicit scheduling mutex with no authority effect.
+
+Current official NRC guidance makes the artifact URL an empirical result of the
+keyed Get Document call; its sample result uses
+`www.nrc.gov/docs/<prefix>/<accession>.pdf`. The current NRC ADAMS page no
+longer contains the earlier observed WBA-transition notice, so that unarchived
+observation is not design authority. The proposed first attempt admits only
+the exact inferred public path for `ML17123A319`, commits a hash/class-only
+derived arming, follows no NRC redirect, and stops on any mismatch.

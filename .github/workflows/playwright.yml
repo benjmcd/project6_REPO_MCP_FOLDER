@@ -137,6 +137,7 @@ jobs:
             "test_market_*.py",
             "test_analyst_*.py",
             "test_nrc_aps_*.py",
+            "test_nrc_phase_b_linkage.py",
             "test_pre_body_*.py",
             "test_review_browser_*.py",
             "test_review_nrc_aps_candidate_b_trace_*.py",
@@ -150,6 +151,20 @@ jobs:
             "test_sec_xbrl_*.py",
             "test_support_matrix.py",
             "test_visual_artifact_*.py",
+            "test_arming_api.py",
+            "test_campaign_log_capture.py",
+            "test_connector_transport_loopback.py",
+            "test_dual_live_dependencies.py",
+            "test_dual_live_p4_faults.py",
+            "test_egress_arming.py",
+            "test_egress_auth.py",
+            "test_egress_crash.py",
+            "test_egress_schema.py",
+            "test_egress_transport.py",
+            "test_nrc_fresh.py",
+            "test_nrc_strict_parse.py",
+            "test_sciencebase_fresh.py",
+            "test_sciencebase_locator_live_shape.py",
         )
         files = sorted({
             f for pat in patterns for f in glob.glob(f"./backend/tests/{pat}")
@@ -197,7 +212,7 @@ jobs:
 
   backend-layer3-api:
     name: backend-layer3-api
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     needs: backend-layer3-api-shard
     if: ${{ always() }}
@@ -220,6 +235,8 @@ jobs:
         shard: [1, 2, 3, 4]
     steps:
     - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
     - uses: actions/setup-python@v6
       with:
         python-version: "3.12"
@@ -305,6 +322,71 @@ jobs:
           exit 1
         fi
         echo "All repo-root pytest shards passed."
+
+  dual-gate-windows:
+    name: dual-gate-windows
+    timeout-minutes: 30
+    runs-on: windows-latest
+    env:
+      CONNECTOR_LIVE_EGRESS_ENABLED: "false"
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+    - uses: actions/checkout@v6
+      env:
+        GIT_CONFIG_COUNT: "1"
+        GIT_CONFIG_KEY_0: core.longpaths
+        GIT_CONFIG_VALUE_0: "true"
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-python@v6
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: ./backend/tests/requirements-layer3-api.txt
+    - name: Install dual-live gate test dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r ./backend/tests/requirements-layer3-api.txt
+    - name: Run Windows-bound dual-live proof and evaluator suites serially
+      shell: pwsh
+      run: |
+        $forbidden = @(
+          "CONNECTOR_LIVE_EGRESS_ENABLED",
+          "CONNECTOR_CAMPAIGN_DEFINITION_PATH",
+          "CONNECTOR_CAMPAIGN_DEFINITION_SHA256",
+          "CONNECTOR_SCIENCEBASE_GRANT_PATH",
+          "CONNECTOR_SCIENCEBASE_GRANT_SHA256",
+          "CONNECTOR_NRC_APS_GRANT_PATH",
+          "CONNECTOR_NRC_APS_GRANT_SHA256",
+          "NRC_ADAMS_APS_SUBSCRIPTION_KEY",
+          "GH_TOKEN",
+          "GITHUB_TOKEN"
+        )
+        foreach ($name in $forbidden) {
+          Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+        }
+        $present = @($forbidden | Where-Object { Test-Path "Env:$_" })
+        if ($present.Count -ne 0) {
+          throw "Dual-live Windows CI authority environment must be absent."
+        }
+        python -m pytest ./tests/test_dual_gate.py `
+          ./backend/tests/test_campaign_log_capture.py::test_strict_runner_public_mode_is_reachable_under_reviewed_posture `
+          -p no:cacheprovider -p no:xdist -ra --tb=short -q
+        $dualGateExitCode = $LASTEXITCODE
+        if ($dualGateExitCode -ne 0) {
+          exit $dualGateExitCode
+        }
+        Push-Location ./backend
+        try {
+          python -m pytest tests/test_dual_eval.py `
+            -p no:cacheprovider -p no:xdist -ra --tb=short -q
+          $dualEvalExitCode = $LASTEXITCODE
+        }
+        finally {
+          Pop-Location
+        }
+        exit $dualEvalExitCode
 
   sec-xbrl-arelle-provisioning:
     name: sec-xbrl-arelle-provisioning
@@ -632,6 +714,7 @@ jobs:
       - backend-migrations-postgres
       - sec-xbrl-arelle-provisioning
       - root-tests
+      - dual-gate-windows
       - nrc-aps-ocr
       - test
     if: ${{ always() }}
@@ -657,6 +740,7 @@ jobs:
           "backend-migrations-postgres:${{ needs['backend-migrations-postgres'].result }}" \
           "sec-xbrl-arelle-provisioning:${{ needs['sec-xbrl-arelle-provisioning'].result }}" \
           "root-tests:${{ needs['root-tests'].result }}" \
+          "dual-gate-windows:${{ needs['dual-gate-windows'].result }}" \
           "nrc-aps-ocr:${{ needs['nrc-aps-ocr'].result }}" \
           "test:${{ needs['test'].result }}"
         do

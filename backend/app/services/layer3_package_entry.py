@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
+import os
+from collections.abc import Mapping, Sequence
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,6 +34,19 @@ from app.services.layer3_pass_entry import (
     PASS_STATUS_COMPLETED,
     PASS_STATUS_COMPLETED_WITH_WARNINGS,
     PASS_STATUS_FAILED,
+)
+from app.services.layer3_execution_output import (
+    Layer3ExecutionOutputIntegrityError,
+    _managed_regular_file,
+    _managed_root,
+    _managed_storage_path,
+    _stable_managed_file,
+    assert_pass_output_integrity,
+    artifact_set_hash,
+)
+from app.services.layer3_origin_continuity import (
+    Layer3OriginContinuityError,
+    assert_pass_downstream_connector_origin,
 )
 from app.services.layer3_session_entry import (
     SESSION_STATUS_COMPLETED,
@@ -98,6 +114,7 @@ PACKAGE_SCHEMA_IDS = {
     PACKAGE_KIND_USER_FACING: "layer3.user_facing_package.v1",
     PACKAGE_KIND_REVIEW_FACING: "layer3.review_facing_package.v1",
 }
+_EXPECTED_INTEGRITY_UNSPECIFIED = object()
 
 
 class Layer3PackageEntryError(ValueError):
@@ -121,9 +138,34 @@ def _package_key(*, session_id: str, package_kind: str) -> str:
 
 
 def _package_artifact_dir() -> Path:
-    path = Path(settings.artifact_storage_dir) / "layer3"
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    try:
+        storage_root = _managed_root(
+            Path(settings.storage_dir),
+            field="storage_dir",
+        )
+        configured_artifact_root = Path(
+            settings.artifact_storage_dir
+        )
+        if configured_artifact_root != storage_root / "artifacts":
+            raise Layer3ExecutionOutputIntegrityError(
+                "layer3_output_binding_invalid",
+                "artifact_storage_dir does not equal managed artifact storage.",
+            )
+        configured_artifact_root.mkdir(exist_ok=True)
+        artifact_root = _managed_root(
+            configured_artifact_root,
+            field="artifact_storage_dir",
+        )
+        path = artifact_root / "layer3"
+        path.mkdir(exist_ok=True)
+        return _managed_root(
+            path,
+            field="package artifact root",
+        )
+    except (Layer3ExecutionOutputIntegrityError, OSError) as exc:
+        raise Layer3PackageEntryError(
+            "Package artifact root is not managed local storage"
+        ) from exc
 
 
 def _package_artifact_path(*, session_id: str, package_kind: str, payload_hash: str) -> Path:
@@ -140,9 +182,327 @@ def _persist_package_payload(*, session_id: str, package_kind: str, payload: dic
         package_kind=package_kind,
         payload_hash=payload_hash,
     )
-    if not payload_path.exists():
-        payload_path.write_bytes(payload_bytes)
+    try:
+        with payload_path.open("xb") as handle:
+            handle.write(payload_bytes)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except FileExistsError:
+        root = _package_artifact_dir()
+        try:
+            initial = _managed_regular_file(root, payload_path)
+            _, existing_hash, existing_bytes = _stable_managed_file(
+                root,
+                payload_path,
+                initial=initial,
+                read_bytes=True,
+            )
+        except Layer3ExecutionOutputIntegrityError as exc:
+            raise Layer3PackageEntryError(
+                "Existing package payload bytes are not authoritative"
+            ) from exc
+        if existing_hash != payload_hash or existing_bytes != payload_bytes:
+            raise Layer3PackageEntryError(
+                "Existing package payload bytes contradict the canonical payload"
+            )
+    root = _package_artifact_dir()
+    try:
+        final = _managed_regular_file(root, payload_path)
+        if int(getattr(final, "st_nlink", 1)) != 1:
+            raise Layer3PackageEntryError(
+                "Package payload has multiple filesystem links"
+            )
+        _, final_hash, final_bytes = _stable_managed_file(
+            root,
+            payload_path,
+            initial=final,
+            read_bytes=True,
+        )
+    except Layer3ExecutionOutputIntegrityError as exc:
+        raise Layer3PackageEntryError(
+            "Published package payload bytes are not authoritative"
+        ) from exc
+    if final_hash != payload_hash or final_bytes != payload_bytes:
+        raise Layer3PackageEntryError(
+            "Published package payload bytes changed"
+        )
     return str(payload_path), payload_hash
+
+
+def _strict_package_payload(payload_bytes: bytes) -> dict[str, Any]:
+    def unique_object(
+        pairs: list[tuple[str, Any]],
+    ) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate JSON object key")
+            result[key] = value
+        return result
+
+    def reject_constant(value: str) -> None:
+        raise ValueError(f"invalid JSON constant: {value}")
+
+    try:
+        payload = json.loads(
+            payload_bytes.decode("utf-8"),
+            object_pairs_hook=unique_object,
+            parse_constant=reject_constant,
+        )
+    except (
+        RecursionError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        ValueError,
+    ) as exc:
+        raise Layer3PackageEntryError(
+            "Package payload must be strict UTF-8 JSON"
+        ) from exc
+    if (
+        not isinstance(payload, dict)
+        or payload_bytes != _stable_json_bytes(payload)
+    ):
+        raise Layer3PackageEntryError(
+            "Package payload bytes must be canonical JSON"
+        )
+    return payload
+
+
+def _validate_package_integrity_pair(
+    payload: Mapping[str, Any],
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    origin = payload.get("connector_origin_integrity_v1")
+    output = payload.get("connector_output_integrity_v1")
+    if origin is None and output is None:
+        return None, None
+    origin_fields = {
+        "schema_id",
+        "connector_key",
+        "connector_run_target_id",
+        "connector_origin_receipt_hash",
+        "proof_class",
+    }
+    output_fields = {
+        "schema_id",
+        "connector_key",
+        "connector_run_target_id",
+        "connector_origin_receipt_hash",
+        "proof_class",
+        "artifact_receipts",
+        "artifact_set_hash",
+        "output_manifest_sha256",
+    }
+    if (
+        not isinstance(origin, Mapping)
+        or set(origin) != origin_fields
+        or not isinstance(output, Mapping)
+        or set(output) != output_fields
+    ):
+        raise Layer3PackageEntryError(
+            "Connector package integrity is missing or malformed"
+        )
+    receipt_hash = origin.get("connector_origin_receipt_hash")
+    artifact_hash = output.get("artifact_set_hash")
+    manifest_hash = output.get("output_manifest_sha256")
+    if (
+        origin.get("schema_id")
+        != "layer3.connector_origin_integrity.v1"
+        or origin.get("connector_key")
+        not in {"sciencebase_mcs", "nrc_adams_aps"}
+        or origin.get("proof_class")
+        not in {"fresh_live", "offline_fixture"}
+        or not isinstance(origin.get("connector_run_target_id"), str)
+        or not origin.get("connector_run_target_id")
+        or not isinstance(receipt_hash, str)
+        or len(receipt_hash) != 64
+        or any(char not in "0123456789abcdef" for char in receipt_hash)
+        or output.get("schema_id")
+        != "layer3.connector_output_integrity.v1"
+        or any(
+            output.get(field) != origin.get(field)
+            for field in (
+                "connector_key",
+                "connector_run_target_id",
+                "connector_origin_receipt_hash",
+                "proof_class",
+            )
+        )
+        or not isinstance(artifact_hash, str)
+        or len(artifact_hash) != 64
+        or any(char not in "0123456789abcdef" for char in artifact_hash)
+        or not isinstance(manifest_hash, str)
+        or len(manifest_hash) != 64
+        or any(char not in "0123456789abcdef" for char in manifest_hash)
+        or not isinstance(output.get("artifact_receipts"), list)
+    ):
+        raise Layer3PackageEntryError(
+            "Connector package integrity contains invalid canonical values"
+        )
+    try:
+        computed_artifact_hash = artifact_set_hash(
+            output["artifact_receipts"]
+        )
+    except Layer3ExecutionOutputIntegrityError as exc:
+        raise Layer3PackageEntryError(
+            "Connector package artifact receipts are invalid"
+        ) from exc
+    if computed_artifact_hash != artifact_hash:
+        raise Layer3PackageEntryError(
+            "Connector package artifact receipts contradict their set hash"
+        )
+    return dict(origin), dict(output)
+
+
+def verify_package_payload_bytes(
+    packages: Sequence[L3OutputPackage],
+    *,
+    expected_connector_origin: Mapping[str, Any] | None | object = (
+        _EXPECTED_INTEGRITY_UNSPECIFIED
+    ),
+    expected_connector_output: Mapping[str, Any] | None | object = (
+        _EXPECTED_INTEGRITY_UNSPECIFIED
+    ),
+) -> tuple[dict[str, Any], ...]:
+    canonical_kinds = (
+        PACKAGE_KIND_CANONICAL_INTERNAL,
+        PACKAGE_KIND_USER_FACING,
+        PACKAGE_KIND_REVIEW_FACING,
+    )
+    by_kind = {package.package_kind: package for package in packages}
+    if (
+        len(packages) != len(canonical_kinds)
+        or len(by_kind) != len(canonical_kinds)
+        or set(by_kind) != set(canonical_kinds)
+    ):
+        raise Layer3PackageEntryError(
+            "Exactly three canonical package rows are required"
+        )
+    session_ids = {str(package.session_id or "") for package in packages}
+    reconciliation_ids = {
+        str(package.reconciliation_record_id or "")
+        for package in packages
+    }
+    if (
+        len(session_ids) != 1
+        or "" in session_ids
+        or len(reconciliation_ids) != 1
+        or "" in reconciliation_ids
+    ):
+        raise Layer3PackageEntryError(
+            "Canonical package rows must share one session and reconciliation"
+        )
+    expectation_supplied = (
+        expected_connector_origin is not _EXPECTED_INTEGRITY_UNSPECIFIED
+        or expected_connector_output is not _EXPECTED_INTEGRITY_UNSPECIFIED
+    )
+    if (
+        expected_connector_origin is _EXPECTED_INTEGRITY_UNSPECIFIED
+    ) != (
+        expected_connector_output is _EXPECTED_INTEGRITY_UNSPECIFIED
+    ):
+        raise Layer3PackageEntryError(
+            "Expected connector integrity must be supplied as one pair"
+        )
+    fresh_expected_origin: dict[str, Any] | None = None
+    fresh_expected_output: dict[str, Any] | None = None
+    if expectation_supplied:
+        fresh_expected_origin, fresh_expected_output = (
+            _validate_package_integrity_pair(
+                {
+                    "connector_origin_integrity_v1": (
+                        expected_connector_origin
+                    ),
+                    "connector_output_integrity_v1": (
+                        expected_connector_output
+                    ),
+                }
+            )
+        )
+    root = Path(settings.artifact_storage_dir) / "layer3"
+    preflight: list[tuple[L3OutputPackage, Path, os.stat_result]] = []
+    for kind in canonical_kinds:
+        package = by_kind[kind]
+        try:
+            canonical_root, path = _managed_storage_path(
+                package.payload_ref,
+                field="L3OutputPackage.payload_ref",
+                root=root,
+            )
+            initial = _managed_regular_file(canonical_root, path)
+        except Layer3ExecutionOutputIntegrityError as exc:
+            raise Layer3PackageEntryError(
+                "Package payload_ref is not a managed regular file"
+            ) from exc
+        preflight.append((package, path, initial))
+    payloads: list[dict[str, Any]] = []
+    observed_origin: dict[str, Any] | None = None
+    observed_output: dict[str, Any] | None = None
+    for package, path, initial in preflight:
+        try:
+            _, payload_hash, payload_bytes = _stable_managed_file(
+                root,
+                path,
+                initial=initial,
+                read_bytes=True,
+            )
+        except Layer3ExecutionOutputIntegrityError as exc:
+            raise Layer3PackageEntryError(
+                "Package payload bytes are unreadable or unstable"
+            ) from exc
+        if (
+            payload_bytes is None
+            or package.payload_hash != payload_hash
+        ):
+            raise Layer3PackageEntryError(
+                "Package payload_hash contradicts durable bytes"
+            )
+        payload = _strict_package_payload(payload_bytes)
+        header = payload.get("package_header")
+        canonical_package_key = _package_key(
+            session_id=package.session_id,
+            package_kind=PACKAGE_KIND_CANONICAL_INTERNAL,
+        )
+        if (
+            not isinstance(header, Mapping)
+            or header.get("package_kind") != package.package_kind
+            or header.get("schema_id")
+            != PACKAGE_SCHEMA_IDS[package.package_kind]
+            or header.get("session_id") != package.session_id
+            or header.get("package_status") != package.status
+            or header.get("package_key")
+            != _package_key(
+                session_id=package.session_id,
+                package_kind=package.package_kind,
+            )
+            or (
+                package.package_kind == PACKAGE_KIND_CANONICAL_INTERNAL
+                and header.get("canonical_package_key") is not None
+            )
+            or (
+                package.package_kind != PACKAGE_KIND_CANONICAL_INTERNAL
+                and header.get("canonical_package_key")
+                != canonical_package_key
+            )
+        ):
+            raise Layer3PackageEntryError(
+                "Package header contradicts its durable package row"
+            )
+        origin, output = _validate_package_integrity_pair(payload)
+        if not payloads:
+            observed_origin, observed_output = origin, output
+        elif origin != observed_origin or output != observed_output:
+            raise Layer3PackageEntryError(
+                "Connector integrity disagrees across package payloads"
+            )
+        payloads.append(payload)
+    if expectation_supplied and (
+        observed_origin != fresh_expected_origin
+        or observed_output != fresh_expected_output
+    ):
+        raise Layer3PackageEntryError(
+            "Package connector integrity contradicts fresh pass authority"
+        )
+    return tuple(payloads)
 
 
 def _require_existing_ref(ref: str | None, *, label: str) -> str:
@@ -980,12 +1340,16 @@ def _existing_workbench_package_result(
     reconciliation = (
         db.query(L3ReconciliationRecord)
         .filter(L3ReconciliationRecord.session_id == session_id)
+        .with_for_update()
+        .populate_existing()
         .one_or_none()
     )
     packages = (
         db.query(L3OutputPackage)
         .filter(L3OutputPackage.session_id == session_id)
         .order_by(L3OutputPackage.package_kind.asc())
+        .with_for_update()
+        .populate_existing()
         .all()
     )
     if reconciliation is None and not packages:
@@ -1034,7 +1398,70 @@ def materialize_workbench_package_commit(
     authority_schema_id: str = "layer3.workbench_package_construction_authority.v1",
     authority_basis_extra: dict[str, Any] | None = None,
     package_payload_extras_by_kind: dict[str, dict[str, Any]] | None = None,
+    connector_origin_integrity: Mapping[str, Any] | None = None,
+    connector_output_integrity: Mapping[str, Any] | None = None,
 ) -> Layer3PackageEntryResult:
+    try:
+        verified_origin = assert_pass_downstream_connector_origin(
+            db,
+            pass_run=pass_run,
+            boundary="package_commit",
+        )
+        verified_output = (
+            assert_pass_output_integrity(
+                db,
+                pass_run_id=pass_run.pass_run_id,
+            )
+            if verified_origin is not None
+            else None
+        )
+    except (
+        Layer3ExecutionOutputIntegrityError,
+        Layer3OriginContinuityError,
+    ) as exc:
+        raise Layer3PackageEntryError(
+            "Reserved package authority failed verification"
+        ) from exc
+    if (
+        (
+            verified_origin is None
+            and (
+                connector_origin_integrity is not None
+                or connector_output_integrity is not None
+            )
+        )
+        or (
+            verified_origin is not None
+            and (
+                not isinstance(connector_origin_integrity, Mapping)
+                or dict(connector_origin_integrity) != verified_origin
+                or not isinstance(connector_output_integrity, Mapping)
+                or dict(connector_output_integrity) != verified_output
+            )
+        )
+    ):
+        raise Layer3PackageEntryError(
+            "Supplied package integrity context is not server-authoritative"
+        )
+    review_origin = result_review_state.get(
+        "connector_origin_integrity_v1"
+    )
+    review_output = result_review_state.get(
+        "connector_output_integrity_v1"
+    )
+    if (
+        verified_origin is None
+        and (review_origin is not None or review_output is not None)
+    ) or (
+        verified_origin is not None
+        and (
+            review_origin != verified_origin
+            or review_output != verified_output
+        )
+    ):
+        raise Layer3PackageEntryError(
+            "Result-review integrity contradicts package authority"
+        )
     unavailable = list(downstream_unavailable or ["handoff", "export"])
     authority_basis = {
         "schema_id": authority_schema_id,
@@ -1061,6 +1488,11 @@ def materialize_workbench_package_commit(
         client_request_id=client_request_id,
     )
     if existing is not None:
+        verify_package_payload_bytes(
+            existing.output_packages,
+            expected_connector_origin=verified_origin,
+            expected_connector_output=verified_output,
+        )
         return existing
 
     package_status = _workbench_package_status(pass_run)
@@ -1149,6 +1581,18 @@ def materialize_workbench_package_commit(
     for package_kind, extra in (package_payload_extras_by_kind or {}).items():
         if package_kind in package_payloads and isinstance(extra, dict):
             package_payloads[package_kind].update(_json_clone(extra))
+    if verified_origin is not None and verified_output is not None:
+        for payload in package_payloads.values():
+            payload.update(
+                {
+                    "connector_origin_integrity_v1": _json_clone(
+                        verified_origin
+                    ),
+                    "connector_output_integrity_v1": _json_clone(
+                        verified_output
+                    ),
+                }
+            )
     reconciliation_summary = {
         "analysis_plan_id": analysis_plan.analysis_plan_id,
         "pass_run_ids_json": [pass_run.pass_run_id],
@@ -1230,6 +1674,11 @@ def materialize_workbench_package_commit(
         )
     db.add_all(package_rows)
     db.flush()
+    verify_package_payload_bytes(
+        package_rows,
+        expected_connector_origin=verified_origin,
+        expected_connector_output=verified_output,
+    )
     construction_basis_hash = _workbench_authority_basis_hash(
         {
             **authority_basis,

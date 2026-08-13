@@ -1,9 +1,19 @@
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any, Literal
+from datetime import UTC, datetime
+import re
+from typing import Any, Literal, Mapping
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    UUID4,
+    BaseModel,
+    ConfigDict,
+    Field,
+    PositiveInt,
+    field_validator,
+    model_validator,
+)
 
 
 class ProfileRequest(BaseModel):
@@ -165,6 +175,666 @@ class AnalysisRunOut(BaseModel):
     caveats: list[CaveatOut] = Field(default_factory=list)
 
 
+SINGLE_SEND_DETECTION_ALLOWANCE_BYTES = 6_684_672
+
+COMMON_GRANT_NON_AUTHORITIES = (
+    "other_connector_or_target_not_authorized",
+    "search_not_authorized",
+    "automatic_retry_not_authorized",
+    "resume_or_recurrence_not_authorized",
+    "alternate_selection_not_authorized",
+    "credential_fallback_not_authorized",
+    "post_expiry_send_not_authorized",
+    "continuation_after_code_change_not_authorized",
+    "external_delivery_not_authorized",
+    "production_or_support_promotion_not_authorized",
+    "additional_parent_arming_not_authorized",
+    "unused_budget_transfer_not_authorized",
+)
+NRC_GRANT_NON_AUTHORITIES = (
+    *COMMON_GRANT_NON_AUTHORITIES,
+    "redirect_follow_not_authorized",
+)
+CAMPAIGN_NON_AUTHORITIES = COMMON_GRANT_NON_AUTHORITIES
+
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_CODE_REVISION_RE = re.compile(r"^[0-9a-f]{40}$")
+_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+_HOST_RE = re.compile(
+    r"^(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*"
+    r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+)
+
+
+def _normalized_sha256(value: object) -> str:
+    normalized = str(value or "").strip().lower()
+    if not _SHA256_RE.fullmatch(normalized):
+        raise ValueError("value must be a lowercase 64-hex SHA-256")
+    return normalized
+
+
+def _normalized_code_revision(value: object) -> str:
+    normalized = str(value or "").strip().lower()
+    if not _CODE_REVISION_RE.fullmatch(normalized):
+        raise ValueError("code_revision must be a lowercase 40-hex Git revision")
+    return normalized
+
+
+def _validated_id(value: object) -> str:
+    text = str(value or "")
+    if text != text.strip() or not _ID_RE.fullmatch(text):
+        raise ValueError("identifier must be 1-128 safe ASCII characters")
+    return text
+
+
+def _canonical_uuid4_text(value: object) -> str:
+    try:
+        parsed = UUID(str(value))
+    except (TypeError, ValueError, AttributeError) as exc:
+        raise ValueError("campaign_id must be a UUID4") from exc
+    if parsed.version != 4:
+        raise ValueError("campaign_id must be a UUID4")
+    return str(parsed)
+
+
+def _utc_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValueError("timestamp must be timezone-aware")
+    return value.astimezone(UTC)
+
+
+def _normalized_hosts(value: object) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        raise ValueError("allowed_hosts must be an ordered array")
+    normalized: list[str] = []
+    for raw in value:
+        host = str(raw or "").strip().lower()
+        if host.endswith("."):
+            host = host[:-1]
+        if host.endswith("."):
+            raise ValueError("hostname cannot contain repeated trailing dots")
+        try:
+            host.encode("ascii")
+        except UnicodeEncodeError as exc:
+            raise ValueError("hostname must be ASCII") from exc
+        if not _HOST_RE.fullmatch(host):
+            raise ValueError("hostname is invalid")
+        normalized.append(host)
+    result = tuple(normalized)
+    if not result or len(set(result)) != len(result):
+        raise ValueError("allowed_hosts must be non-empty and duplicate-free")
+    return result
+
+
+def expected_grant_rule_payloads(connector_key: str) -> tuple[dict[str, object], ...]:
+    if connector_key == "sciencebase_mcs":
+        common: dict[str, object] = {
+            "method": "GET",
+            "scheme": "https",
+            "port": 443,
+            "credential_audience": "none",
+        }
+        return (
+            {
+                **common,
+                "ordinal": 1,
+                "stage": "item_hydration",
+                "allowed_hosts": ("www.sciencebase.gov",),
+                "path_rule_id": "sciencebase_item_exact_v1",
+                "query_rule_id": "format_json_exact_v1",
+                "max_response_bytes": 5 * 1024 * 1024,
+            },
+            {
+                **common,
+                "ordinal": 2,
+                "stage": "artifact",
+                "allowed_hosts": ("sciencebase.gov", "www.sciencebase.gov"),
+                "path_rule_id": "sciencebase_file_exact_v1",
+                "query_rule_id": "sciencebase_exact_file_selector_v1",
+                "max_response_bytes": 64 * 1024 * 1024,
+            },
+            {
+                **common,
+                "ordinal": 3,
+                "stage": "artifact_redirect",
+                "allowed_hosts": ("sciencebase.gov", "www.sciencebase.gov"),
+                "path_rule_id": "sciencebase_file_exact_v1",
+                "query_rule_id": "sciencebase_exact_file_selector_v1",
+                "max_response_bytes": 64 * 1024 * 1024,
+            },
+        )
+    if connector_key == "nrc_adams_aps":
+        return (
+            {
+                "ordinal": 1,
+                "stage": "exact_accession_api",
+                "method": "GET",
+                "scheme": "https",
+                "allowed_hosts": ("adams-api.nrc.gov",),
+                "port": 443,
+                "path_rule_id": "nrc_get_document_exact_v1",
+                "query_rule_id": "none_v1",
+                "credential_audience": "nrc_aps_api_key",
+                "max_response_bytes": 5 * 1024 * 1024,
+            },
+            {
+                "ordinal": 2,
+                "stage": "artifact",
+                "method": "GET",
+                "scheme": "https",
+                "allowed_hosts": ("www.nrc.gov",),
+                "port": 443,
+                "path_rule_id": "nrc_public_pdf_exact_v1",
+                "query_rule_id": "none_v1",
+                "credential_audience": "none",
+                "max_response_bytes": 64 * 1024 * 1024,
+            },
+        )
+    raise ValueError("connector_key is not admitted")
+
+
+class ScienceBaseFreshTargetV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    connector_key: Literal["sciencebase_mcs"]
+    item_id: Literal["63d1a3c6d34e06fef15006be"]
+    exact_file_name: Literal["mcs2023-germa_salient.csv"]
+    locator_key: Literal["downloadUri"]
+
+
+class NrcApsFreshTargetV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    connector_key: Literal["nrc_adams_aps"]
+    accession_number: Literal["ML17123A319"]
+
+
+class DualLiveCampaignDefinitionV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: Literal["project6.dual_live_campaign_definition.v1"]
+    campaign_id: UUID4
+    code_revision: str
+    connector_keys: tuple[Literal["sciencebase_mcs"], Literal["nrc_adams_aps"]]
+    sciencebase_target: ScienceBaseFreshTargetV1
+    nrc_target: NrcApsFreshTargetV1
+    acceptance_profile: Literal["dual_live_to_internal_handoff_v1"]
+    evidence_profile: Literal["dual_live_evidence_v1"]
+    review_policy: Literal["security_egress_and_layer3_integrity_v1"]
+    required_review_roles: tuple[
+        Literal["security_egress"], Literal["layer3_integrity"]
+    ]
+    execution_order: Literal["nrc_then_sciencebase"]
+    package_kinds: tuple[
+        Literal["canonical_internal"],
+        Literal["user_facing"],
+        Literal["review_facing"],
+    ]
+    not_before: datetime
+    expires_at: datetime
+    non_authorities: tuple[str, ...]
+
+    _code_revision = field_validator("code_revision", mode="before")(
+        _normalized_code_revision
+    )
+    _times = field_validator("not_before", "expires_at")(_utc_datetime)
+
+    @model_validator(mode="after")
+    def _validate_campaign(self) -> "DualLiveCampaignDefinitionV1":
+        if self.connector_keys != ("sciencebase_mcs", "nrc_adams_aps"):
+            raise ValueError("connector_keys must use exact campaign order")
+        if self.required_review_roles != ("security_egress", "layer3_integrity"):
+            raise ValueError("required_review_roles must use exact review order")
+        if self.package_kinds != (
+            "canonical_internal",
+            "user_facing",
+            "review_facing",
+        ):
+            raise ValueError("package_kinds must use exact package order")
+        if self.not_before >= self.expires_at:
+            raise ValueError("campaign authority window must be non-empty")
+        if self.non_authorities != CAMPAIGN_NON_AUTHORITIES:
+            raise ValueError("campaign non_authorities must equal canonical codes")
+        return self
+
+
+class ConnectorGrantRequestRuleV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    ordinal: int = Field(gt=0)
+    stage: Literal[
+        "item_hydration",
+        "artifact",
+        "artifact_redirect",
+        "exact_accession_api",
+    ]
+    method: Literal["GET"]
+    scheme: Literal["https"]
+    allowed_hosts: tuple[str, ...]
+    port: Literal[443]
+    path_rule_id: Literal[
+        "sciencebase_item_exact_v1",
+        "sciencebase_file_exact_v1",
+        "nrc_get_document_exact_v1",
+        "nrc_public_pdf_exact_v1",
+    ]
+    query_rule_id: Literal[
+        "format_json_exact_v1",
+        "sciencebase_exact_file_selector_v1",
+        "none_v1",
+    ]
+    credential_audience: Literal["none", "nrc_aps_api_key"]
+    max_response_bytes: int = Field(gt=0)
+
+    @field_validator("method", mode="before")
+    @classmethod
+    def _normalize_method(cls, value: object) -> str:
+        return str(value or "").strip().upper()
+
+    _hosts = field_validator("allowed_hosts", mode="before")(_normalized_hosts)
+
+    @model_validator(mode="after")
+    def _validate_credential_audience(self) -> "ConnectorGrantRequestRuleV1":
+        if (
+            self.credential_audience == "nrc_aps_api_key"
+            and self.allowed_hosts != ("adams-api.nrc.gov",)
+        ):
+            raise ValueError(
+                "nrc_aps_api_key audience is restricted to adams-api.nrc.gov"
+            )
+        return self
+
+
+class ConnectorEgressGrantV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: Literal["project6.connector_egress_grant.v1"]
+    grant_id: str
+    connector_key: Literal["sciencebase_mcs", "nrc_adams_aps"]
+    campaign_id: str
+    campaign_fingerprint: str
+    campaign_definition_sha256: str
+    code_revision: str
+    arming_nonce: UUID4
+    max_armings: Literal[1]
+    supersedes_grant_sha256: str | None = None
+    issued_at: datetime
+    expires_at: datetime
+    operator_mode: Literal["local_loopback", "proxy_owner"]
+    target: ScienceBaseFreshTargetV1 | NrcApsFreshTargetV1
+    request_rules: tuple[ConnectorGrantRequestRuleV1, ...]
+    max_physical_requests: int = Field(gt=0)
+    max_run_bytes: int = Field(gt=0)
+    max_single_send_detection_allowance_bytes: int = Field(gt=0)
+    request_timeout_seconds: int = Field(gt=0)
+    min_request_interval_ms: int = Field(gt=0)
+    non_authorities: tuple[str, ...]
+
+    _grant_id = field_validator("grant_id", mode="before")(_validated_id)
+    _campaign_id = field_validator("campaign_id", mode="before")(
+        _canonical_uuid4_text
+    )
+    _hashes = field_validator(
+        "campaign_fingerprint",
+        "campaign_definition_sha256",
+        "supersedes_grant_sha256",
+        mode="before",
+    )(
+        lambda value: (
+            None if value is None else _normalized_sha256(value)
+        )
+    )
+    _code_revision = field_validator("code_revision", mode="before")(
+        _normalized_code_revision
+    )
+    _times = field_validator("issued_at", "expires_at")(_utc_datetime)
+
+    @model_validator(mode="after")
+    def _validate_grant(self) -> "ConnectorEgressGrantV1":
+        if self.issued_at >= self.expires_at:
+            raise ValueError("grant authority window must be non-empty")
+        expected_target_type = (
+            ScienceBaseFreshTargetV1
+            if self.connector_key == "sciencebase_mcs"
+            else NrcApsFreshTargetV1
+        )
+        if not isinstance(self.target, expected_target_type):
+            raise ValueError("target does not match connector discriminator")
+        expected_rules = expected_grant_rule_payloads(self.connector_key)
+        actual_rules = tuple(
+            rule.model_dump(mode="python") for rule in self.request_rules
+        )
+        if actual_rules != expected_rules:
+            raise ValueError("request_rules do not equal exact connector matrix")
+        expected_ceiling = 3 if self.connector_key == "sciencebase_mcs" else 2
+        if self.max_physical_requests != expected_ceiling:
+            raise ValueError("max_physical_requests does not equal connector ceiling")
+        if (
+            self.max_single_send_detection_allowance_bytes
+            != SINGLE_SEND_DETECTION_ALLOWANCE_BYTES
+        ):
+            raise ValueError(
+                "max_single_send_detection_allowance_bytes does not equal pinned allowance"
+            )
+        expected_non_authorities = (
+            COMMON_GRANT_NON_AUTHORITIES
+            if self.connector_key == "sciencebase_mcs"
+            else NRC_GRANT_NON_AUTHORITIES
+        )
+        if self.non_authorities != expected_non_authorities:
+            raise ValueError("grant non_authorities do not equal canonical codes")
+        return self
+
+
+class ConnectorEgressArmingIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: Literal["project6.connector_egress_arming.v1"]
+    client_request_id: str
+    connector_key: Literal["sciencebase_mcs", "nrc_adams_aps"]
+    campaign_id: str
+    campaign_fingerprint: str
+    grant_sha256: str
+
+    _client_request_id = field_validator("client_request_id", mode="before")(
+        _validated_id
+    )
+    _campaign_id = field_validator("campaign_id", mode="before")(
+        _canonical_uuid4_text
+    )
+    _hashes = field_validator(
+        "campaign_fingerprint", "grant_sha256", mode="before"
+    )(_normalized_sha256)
+
+
+class ConnectorEgressExecuteIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    execution_idempotency_key: str
+    arming_fingerprint: str
+
+    _execution_idempotency_key = field_validator(
+        "execution_idempotency_key", mode="before"
+    )(_validated_id)
+    _arming_fingerprint = field_validator("arming_fingerprint", mode="before")(
+        _normalized_sha256
+    )
+
+
+class ConnectorGrantEvidenceRefV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    campaign_id: str
+    campaign_fingerprint: str
+    campaign_definition_sha256: str
+    connector_key: Literal["sciencebase_mcs", "nrc_adams_aps"]
+    code_revision: str
+    raw_grant_sha256: str
+    canonical_grant_fingerprint: str
+    grant_relative_path: str
+    consumption_marker_sha256: str
+    consumption_marker_relative_path: str
+
+    _campaign_id = field_validator("campaign_id", mode="before")(
+        _canonical_uuid4_text
+    )
+    _hashes = field_validator(
+        "campaign_fingerprint",
+        "campaign_definition_sha256",
+        "raw_grant_sha256",
+        "canonical_grant_fingerprint",
+        "consumption_marker_sha256",
+        mode="before",
+    )(_normalized_sha256)
+    _code_revision = field_validator("code_revision", mode="before")(
+        _normalized_code_revision
+    )
+
+
+class ConnectorCampaignDefinitionRefV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    campaign_id: str
+    campaign_fingerprint: str
+    code_revision: str
+    raw_definition_sha256: str
+    definition_relative_path: str
+
+    _campaign_id = field_validator("campaign_id", mode="before")(
+        _canonical_uuid4_text
+    )
+    _hashes = field_validator(
+        "campaign_fingerprint", "raw_definition_sha256", mode="before"
+    )(_normalized_sha256)
+    _code_revision = field_validator("code_revision", mode="before")(
+        _normalized_code_revision
+    )
+
+
+class ConnectorCampaignLogCaptureRefV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    campaign_id: str
+    campaign_fingerprint: str
+    campaign_definition_sha256: str
+    code_revision: str
+    log_dir_relative_path: str
+    manifest_relative_path: str
+    seal_relative_path: str
+    expected_stream_files: tuple[
+        Literal["app.jsonl", "http.jsonl", "stdout.log", "stderr.log"], ...
+    ]
+
+    _campaign_id = field_validator("campaign_id", mode="before")(
+        _canonical_uuid4_text
+    )
+    _hashes = field_validator(
+        "campaign_fingerprint", "campaign_definition_sha256", mode="before"
+    )(_normalized_sha256)
+    _code_revision = field_validator("code_revision", mode="before")(
+        _normalized_code_revision
+    )
+
+    @model_validator(mode="after")
+    def _validate_stream_set(self) -> "ConnectorCampaignLogCaptureRefV1":
+        if self.expected_stream_files != (
+            "app.jsonl",
+            "http.jsonl",
+            "stdout.log",
+            "stderr.log",
+        ):
+            raise ValueError("expected_stream_files must equal exact four-stream set")
+        return self
+
+
+class ConnectorGrantConsumptionMarkerV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: Literal["project6.connector_grant_consumption.v1"]
+    connector_key: Literal["sciencebase_mcs", "nrc_adams_aps"]
+    campaign_id: str
+    campaign_fingerprint: str
+    campaign_definition_sha256: str
+    raw_grant_sha256: str
+    canonical_grant_fingerprint: str
+    arming_nonce: UUID4
+    connector_run_id: str
+    max_armings: Literal[1]
+
+    _campaign_id = field_validator("campaign_id", mode="before")(
+        _canonical_uuid4_text
+    )
+    _hashes = field_validator(
+        "campaign_fingerprint",
+        "campaign_definition_sha256",
+        "raw_grant_sha256",
+        "canonical_grant_fingerprint",
+        mode="before",
+    )(_normalized_sha256)
+    _run_id = field_validator("connector_run_id", mode="before")(_validated_id)
+
+
+class ConnectorCampaignEvidenceIndexV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: Literal["project6.connector_campaign_evidence_index.v1"]
+    revision: PositiveInt
+    predecessor_index_sha256: str | None
+    predecessor_index_relative_path: str | None
+    campaigns: tuple[ConnectorCampaignDefinitionRefV1, ...]
+    entries: tuple[ConnectorGrantEvidenceRefV1, ...]
+    log_captures: tuple[ConnectorCampaignLogCaptureRefV1, ...]
+
+    _predecessor_hash = field_validator(
+        "predecessor_index_sha256", mode="before"
+    )(lambda value: None if value is None else _normalized_sha256(value))
+
+    @model_validator(mode="after")
+    def _validate_predecessor_pair(self) -> "ConnectorCampaignEvidenceIndexV1":
+        predecessor_present = self.predecessor_index_sha256 is not None
+        path_present = self.predecessor_index_relative_path is not None
+        if predecessor_present != path_present:
+            raise ValueError("predecessor digest and path must be present together")
+        if self.revision == 1 and predecessor_present:
+            raise ValueError("revision 1 cannot name a predecessor")
+        if self.revision > 1 and not predecessor_present:
+            raise ValueError("successor revision must name a predecessor")
+        return self
+
+
+class ConnectorCampaignLogFileV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    relative_path: str
+    stream_class: Literal["app", "http", "stdout", "stderr"]
+    byte_count: int = Field(ge=0)
+    sha256: str
+
+    _sha256 = field_validator("sha256", mode="before")(_normalized_sha256)
+
+
+class ConnectorCampaignLogManifestV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: Literal["project6.connector_campaign_log_manifest.v1"]
+    campaign_id: str
+    campaign_fingerprint: str
+    campaign_definition_sha256: str
+    code_revision: str
+    runtime_started_at: datetime
+    runtime_stopped_at: datetime
+    files: tuple[ConnectorCampaignLogFileV1, ...]
+
+    _campaign_id = field_validator("campaign_id", mode="before")(
+        _canonical_uuid4_text
+    )
+    _hashes = field_validator(
+        "campaign_fingerprint", "campaign_definition_sha256", mode="before"
+    )(_normalized_sha256)
+    _code_revision = field_validator("code_revision", mode="before")(
+        _normalized_code_revision
+    )
+    _times = field_validator("runtime_started_at", "runtime_stopped_at")(
+        _utc_datetime
+    )
+
+    @model_validator(mode="after")
+    def _validate_manifest(self) -> "ConnectorCampaignLogManifestV1":
+        if self.runtime_stopped_at < self.runtime_started_at:
+            raise ValueError("runtime_stopped_at cannot precede runtime_started_at")
+        expected_files = (
+            (f"logs/{self.campaign_fingerprint}/app.jsonl", "app"),
+            (f"logs/{self.campaign_fingerprint}/http.jsonl", "http"),
+            (f"logs/{self.campaign_fingerprint}/stdout.log", "stdout"),
+            (f"logs/{self.campaign_fingerprint}/stderr.log", "stderr"),
+        )
+        actual_files = tuple(
+            (item.relative_path, item.stream_class) for item in self.files
+        )
+        if actual_files != expected_files:
+            raise ValueError(
+                "manifest files must equal the exact campaign-bound four-stream paths"
+            )
+        return self
+
+
+class ConnectorCampaignLogSealV1(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: Literal["project6.connector_campaign_log_seal.v1"]
+    campaign_id: str
+    campaign_fingerprint: str
+    campaign_definition_sha256: str
+    campaign_introduction_index_revision: PositiveInt
+    campaign_introduction_index_sha256: str
+    code_revision: str
+    manifest_relative_path: str
+    manifest_sha256: str
+    file_set_hash: str
+    connector_run_ids: tuple[str, ...]
+    sealed_at: datetime
+
+    _campaign_id = field_validator("campaign_id", mode="before")(
+        _canonical_uuid4_text
+    )
+    _hashes = field_validator(
+        "campaign_fingerprint",
+        "campaign_definition_sha256",
+        "campaign_introduction_index_sha256",
+        "manifest_sha256",
+        "file_set_hash",
+        mode="before",
+    )(_normalized_sha256)
+    _code_revision = field_validator("code_revision", mode="before")(
+        _normalized_code_revision
+    )
+    _sealed_at = field_validator("sealed_at")(_utc_datetime)
+
+    @model_validator(mode="after")
+    def _validate_extant_runs(self) -> "ConnectorCampaignLogSealV1":
+        expected_manifest = (
+            f"logs/{self.campaign_fingerprint}/manifest.json"
+        )
+        if self.manifest_relative_path != expected_manifest:
+            raise ValueError(
+                "manifest_relative_path must equal the campaign-bound manifest path"
+            )
+        if len(self.connector_run_ids) not in {1, 2}:
+            raise ValueError("connector_run_ids must contain one or two extant runs")
+        if self.connector_run_ids != tuple(sorted(set(self.connector_run_ids))):
+            raise ValueError("connector_run_ids must be sorted and duplicate-free")
+        for run_id in self.connector_run_ids:
+            _validated_id(run_id)
+        return self
+
+
+def _reject_reserved_sciencebase_egress_input(value: Any) -> Any:
+    if not isinstance(value, Mapping):
+        return value
+    source_mode = value.get("source_mode")
+    idempotency_values = (
+        value.get("client_request_id"),
+        value.get("submission_idempotency_key"),
+        value.get("idempotency_key"),
+    )
+    if (
+        "connector_egress_arming" in value
+        or (
+            isinstance(source_mode, str)
+            and source_mode.strip().lower() == "strict_live_egress"
+        )
+        or any(
+            isinstance(item, str)
+            and item.strip().startswith("egress-arm:")
+            for item in idempotency_values
+        )
+    ):
+        raise ValueError(
+            "reserved egress provenance requires the protected arming API"
+        )
+    return value
+
+
 class ScienceBaseConnectorRunIn(BaseModel):
     q: str = "Mineral Commodity Summaries"
     filters: list[str] = Field(default_factory=list)
@@ -204,6 +874,11 @@ class ScienceBaseConnectorRunIn(BaseModel):
     client_request_id: str | None = None
     detect_seasonality: bool = True
     detect_stationarity: bool = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_reserved_egress_input(cls, value: Any) -> Any:
+        return _reject_reserved_sciencebase_egress_input(value)
 
 
 class ScienceBaseMcsConnectorRunIn(ScienceBaseConnectorRunIn):

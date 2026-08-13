@@ -72,3 +72,78 @@ After gate pass:
 1. Freeze connector changes.
 2. Tag release `v1.3.3`.
 3. Record pilot evidence bundle (validator output + report references).
+
+## Prospective exact fresh-byte campaign boundary (2026-07-29)
+
+The v1.3.3 pilot above and the proposed dual-live proof answer different
+questions. Neither supersedes the other.
+
+### Existing v1.3.3 pilot
+
+- Exercises a recurring operator workflow over multiple cycles.
+- Admits conditional requests, `304`, and unchanged-after-`200` no-op evidence.
+- Permits bounded resume.
+- Demonstrates recurrence, operator surfaces, and reconciliation behavior.
+
+### Proposed dual-live ScienceBase proof
+
+- Uses only exact item `63d1a3c6d34e06fef15006be`.
+- Requests exact filename `mcs2023-germa_salient.csv`; the authorized item JSON
+  must confirm exactly one match or the run stops.
+- Strictly decodes UTF-8 JSON with duplicate object-member rejection. The one
+  selected file must have exactly one nonblank untrimmed `downloadUri`; missing,
+  duplicate, `url` fallback/dual locator, whitespace/control, or disagreement
+  stops before URL normalization.
+- Admits only the exact returned file URL shape
+  `/catalog/file/get/63d1a3c6d34e06fef15006be` and raw ASCII query
+  `f=mcs2023-germa_salient.csv`, both byte-for-byte before strict UTF-8 pair
+  confirmation. Empty/trailing/repeated separators, `;`, `+`, `%` encoding,
+  missing/extra `=`, alternate keys, path encoding, raw `@` authority, or any
+  `#` delimiter stops before the artifact send; no permissive query-helper
+  normalization grants authority.
+- Makes no search request.
+- Sends no conditional header and rejects `304`.
+- Permits no resume, recurring sync, automatic retry, or automatic redirect.
+  A separately reserved redirect is considered only for
+  `301`/`302`/`303`/`307`/`308` with exactly one raw `Location` from a lossless
+  header multimap; every other `3xx` or missing/duplicate locator stops.
+- Requires a newly retrieved complete `200` CSV and binds its SHA-256 through
+  connector provenance, Layer 3C descriptive-summary execution, review, three
+  packages, package submission, and internal handoff preparation.
+- Requires a protected strict campaign definition/raw digest/rederived
+  fingerprint plus exact server-loaded owner grant bytes/digest, a separately
+  committed parent arming, hash/class-only derived artifact arming, and a
+  per-send physical-request ledger. The definition is deny-only correlation;
+  the connector grant remains egress authority.
+- Binds one UUID4 nonce and `max_armings=1` into a deterministic parent-run ID,
+  then atomically creates one digest-keyed no-overwrite consumption marker.
+  Another client key, run state, or isolated database cannot reuse the grant;
+  marker-only failure is spent and requires a new definition/campaign plus an
+  explicitly superseding grant. Same-campaign recovery is forbidden.
+- Preserves the verified non-secret definition/grant bytes through protected,
+  content-addressed campaign-evidence-index revisions. Exact predecessor links,
+  strict-superset successors, a unique-maximal-head check, and no-overwrite
+  creation make rollback/fork/drop fail closed. Each revision introduces exactly
+  one complete campaign slice, and arming requires that slice's earliest
+  revision to be the current head; a preserved ancestor is historical-only even
+  if unused. The arming, log seal, and both connector events bind that
+  introduction revision/digest. Later validation survives expiry/rotation
+  without letting historical evidence authorize another send.
+- Keeps the exact artifact URL process-memory-only. Strict-lane
+  `sciencebase_download_uri` and alias URL scalars remain null, raw item/`files[]`
+  snapshots and URL-bearing intake metadata do not persist, and only a URL
+  digest plus the admitted scheme/host/port/path/query class crosses a storage
+  boundary. Custody validation covers scalar, text, JSON, and generated
+  non-source files plus exactly four protected runtime log streams whose
+  manifest is anchored by a separate no-overwrite seal and matching events on
+  both connector runs, scanning raw and escaped forms. The acquired CSV remains
+  an opaque hash-bound source; OS/provider logs and cryptographic
+  nonrepudiation remain production-promotion boundaries.
+
+The proposed mode is documented in:
+
+- `docs/campaign-records/2026-07-29-dual-live-proof.md`;
+- `docs/superpowers/plans/2026-07-29-dual-live-proof.md`.
+
+Current status is planning only. This section is not an owner grant, does not
+enable the mode, and does not alter the v1.3.3 gate or tag.

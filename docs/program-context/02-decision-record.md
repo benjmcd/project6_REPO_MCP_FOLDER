@@ -933,3 +933,260 @@ The records-only alignment lane grants no implementation, schema, ORM,
 migration, runtime, build dispatch, B1b build PR, or B1b build merge authority.
 
 `B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
+
+> **Candidate block:** D35-D43 become durable program decisions only when this
+> block, the exact campaign record, and the exact implementation plan are
+> co-committed after M0 review. Until then they are design proposals and grant
+> no authority.
+
+## D35. Group campaign governance, not connector authority (07-29)
+
+- Context: proving fresh acquisition from ScienceBase and keyed NRC APS shares
+  one product milestone, acceptance matrix, review group, and downstream Layer
+  3 boundary, but the connectors have different hosts, credentials, targets,
+  unknowns, and failure consequences.
+- Alternatives: (a) one combined grant; (b) two unrelated campaigns; (c) one
+  protected strict campaign definition/raw digest/rederived fingerprint as a
+  deny-only correlation boundary, with connector-separated grants, armings,
+  budgets, outcomes, and derived artifact armings.
+- Decision: (c).
+- Why optimal: shared planning/review happens once and is mechanically bound,
+  while the definition cannot authorize egress and one connector cannot expand,
+  consume, or satisfy the other's grant. A combined closeout stays
+  reconstructable without merging blast radius.
+- Evidence:
+  `docs/campaign-records/2026-07-29-dual-live-proof.md` §§5, 11-13.
+- Revisit when: the proof becomes multi-operator, recurring, or production; a
+  normalized campaign/grant schema is then required.
+- Authority: design decision only; it grants no egress or implementation.
+
+## D36. Use the existing connector ledger for the serial experimental MVP (07-29)
+
+- Context: the first proof is local, single-process, single-operator, one-shot,
+  and finite. Existing `ConnectorRun`, `ConnectorRunSubmission`,
+  `ConnectorPolicySnapshot`, and `ConnectorRunEvent` already carry the needed
+  identity, idempotency, policy, status, and event primitives.
+- Alternatives: (a) new campaign/grant/reservation tables now; (b) in-memory
+  approval state; (c) immutable `ConnectorRun(status=armed)` plus policy and
+  deterministic committed events, with exact grant bytes remaining an
+  independently configured server input.
+- Decision: (c), with an explicit promotion trigger.
+- Why optimal: (b) cannot survive or explain crashes; (a) spends Tier-2 schema
+  cost before the experiment proves product value; (c) is durable and narrow
+  enough for a serial MVP without pretending to solve global budgets.
+- Limitation: DB JSON/event immutability is application-enforced. The evaluator
+  reconstructs state, and the design is inadmissible outside an exclusive
+  single-process proof.
+- Promotion trigger: multi-process, recurring/default-on, shared budget,
+  automatic resume, durable dispatch, production, or ledger/export ambiguity.
+- Evidence: baseline model fields and the companion implementation plan Tasks
+  1-3.
+- Authority: no migration or runtime change is authorized by this record.
+
+## D37. Reserve every physical request before sending (07-29)
+
+- Context: HTTP-library retries, redirects, credential fallbacks, and crashes
+  can make logical-call counts differ from actual network sends.
+- Alternatives: (a) count after response; (b) count logical connector calls;
+  (c) commit a deterministic physical-send reservation immediately before one
+  retry-disabled, redirect-disabled transport call.
+- Decision: (c). An unresolved reservation is spent/unknown and is never
+  replayed automatically.
+- Exact fence: every reservation transaction reloads/rederives the configured
+  campaign definition and connector grant, traverses the content-addressed
+  evidence-index chain, and requires the configured revision to remain its
+  unique maximal head, the campaign's earliest complete-slice introduction,
+  and the arming-bound revision/digest. It then
+  validates the definition/grant intersection, both half-open windows, pending
+  run/current lease/fingerprints, enforces the closed connector stage/ordinal
+  map and ceiling, requires terminal prior ordinals, and inserts one
+  deterministic event. The immediate pre-send check repeats the head/digest
+  equality. A canonical ordered terminal-ledger projection binds that index
+  revision/digest and defines `ledger_terminal_hash`.
+- Why optimal: it bounds the only event that matters for owner authority—the
+  physical request—even across failure. App-ledger plus instrumented transport
+  is adequate for the experimental single-process proof, not an independent
+  production egress audit.
+- Evidence: campaign record §7 and implementation plan Task 3.
+- Revisit when: production promotion requires proxy-, firewall-, or OS-level
+  independent accounting.
+
+## D38. Derive and arm an exact NRC public artifact after Get Document (07-29)
+
+- Context: the current official APS guide pins the keyed Get Document endpoint,
+  says it returns a `Url`, and shows sample artifacts at
+  `www.nrc.gov/docs/<prefix>/<accession>.pdf`. The current ADAMS page no longer
+  contains the earlier observed WBA-transition notice, so that unarchived
+  observation is not current authority.
+- Alternatives: (a) assume a historical `/wba/...` path; (b) pre-authorize
+  multiple NRC hosts/path classes; (c) owner-authorize one inferred exact
+  `www.nrc.gov` path, compare the live `Url`, commit only its hash/safe class,
+  then make one unkeyed artifact GET with no redirect follow.
+- Decision: (c), with proposed exact first-attempt path
+  `/docs/ML1712/ML17123A319.pdf`. The path is a narrow inference for owner
+  consideration, not a live fact. Any mismatch stops before artifact egress.
+  The key is admitted only to `adams-api.nrc.gov:443`; artifact redirect,
+  `401`, or `403` stops.
+- Why optimal: it uses the only current official artifact shape, makes no
+  wildcard or stale-transition assumption, avoids durable bearer-like URL
+  storage, and bounds the NRC campaign to two physical sends.
+- Evidence: current APS API guide and current ADAMS public-documents page
+  linked in campaign record §9.
+- Revisit when: an authorized Get Document response differs; that observation
+  requires new exact owner authority, not silent widening.
+- Authority: current-source design evidence only; no live response was sent or
+  received in this records lane.
+
+## D39. Resolve exact owner grant bytes independently of caller identity (07-29)
+
+- Context: identity/role proves who called; a feature flag proves process
+  posture; neither proves owner authorization for a target, host, method,
+  credential audience, budget, expiry, or code revision. A caller-supplied
+  `grant_ref` is self-assertion.
+- Alternatives: (a) role/flag only; (b) caller posts the grant; (c) a protected
+  strict campaign definition/raw digest/rederived fingerprint as deny-only
+  correlation plus protected connector-specific grant files, separately
+  configured SHA-256 values, strict parse, and per-send revalidation.
+- Decision: (c). The public arming request carries only expected campaign/grant
+  digests and connector identity; the server rederives the definition, then
+  materializes all egress authority exclusively from the matching grant.
+- Why optimal: it preserves practical local single-operator use while making
+  the named grant mechanically independent of the HTTP caller. Proxy-owner
+  deployments still require both owner role and the same grant verification.
+- Limitation/revisit: this is protected-process/file authority, not
+  cryptographic nonrepudiation. Multi-user/supported operation requires a
+  signed grant resolver or equivalent control plane.
+- Authority: design only; no definition/grant file currently exists or is
+  implied.
+
+## D40. Derive freshness and keep one canonical origin receipt (07-29)
+
+- Context: accepting `proof_class="fresh_live"` from a caller or copying full
+  receipt JSON into several mutable fields allows fixture/live relabeling and
+  competing authorities.
+- Alternatives: (a) trust stored labels/copies; (b) one receipt on
+  `ConnectorRunTarget` plus downstream ID/hash projections, with proof class
+  rederived from grant, terminal ledger, response facts, relationships, and
+  raw bytes; (c) add normalized receipt tables now.
+- Decision: (b) for the no-migration experiment.
+- Why optimal: it creates one reconstructable authority without Tier-2 schema
+  churn and makes fixture/live classification mechanical. Guards run before
+  every authoritative mutation; the evaluator independently reconstructs the
+  receipt.
+- Revisit when: production or multi-process support justifies normalized
+  immutable receipt/ledger tables.
+- Authority: design only; existing fixture evidence remains offline evidence.
+
+## D41. Separate current egress authority from historical campaign evidence (07-29)
+
+- Context: an evaluator that reloads only the currently configured,
+  presently-unexpired definition/grant makes campaign 1 unverifiable after
+  expiry or rotation to campaign 2. Letting expired archives flow through live
+  resolvers would instead risk reviving stale authority.
+- Alternatives: (a) validate only the newest current files; (b) copy fields
+  into ordinary DB JSON and trust them; (c) preserve exact non-secret
+  definition/grant bytes in a protected content-addressed root, resolve them
+  through immutable content-addressed campaign-evidence-index revisions with
+  exact predecessor links and strict-superset successors, and expose distinct
+  read-only historical evidence types.
+- Decision: (c). Send-capable paths require the current definition/grant
+  intersection and both unexpired windows; only the grant authorizes egress.
+  The configured index revision must be the unique maximal head of one
+  no-overwrite, gap-free linear chain; each successor preserves every prior
+  reference byte-for-byte and adds exactly one complete disjoint campaign
+  slice. Arming resolves the earliest revision containing that slice and
+  requires it to be the current head before marker creation; a preserved
+  ancestor is historical-only even if its grant remains unused. Rollback, fork,
+  gap, orphan, partial addition, or drop/relabel fails. Campaign armings, log seals, and the seal event(s) of every extant connector run (two on a passing dual run, one after an NRC-first stop) bind the introduction revision, superseding the former unconditional both-events wording. Historical validation accepts no archive/index path from the
+  caller, rehashes the whole chain and indexed original bytes, and proves each
+  recorded reservation/send timestamp satisfies both original half-open
+  windows. Historical evidence cannot arm, execute, reserve, transport, or
+  revive unused budget.
+- Why optimal: the split preserves both long-term auditability and the
+  fail-closed expiry boundary. The minimal predecessor/superset chain makes
+  preservation enforceable without a schema migration, signature, WORM store,
+  or transparency log. Head advancement deliberately abandons unused ancestor
+  grants and requires a new campaign rather than allowing stale authority to
+  acquire a new evidence identity. Grant/index rotation no longer erases a
+  valid prior proof, while an archive cannot become a second authorization
+  channel.
+- Evidence:
+  `docs/campaign-records/2026-07-29-dual-live-proof.md` sections 5.1 and 10-13,
+  plus
+  `docs/superpowers/plans/2026-07-29-dual-live-proof.md` Tasks 1, 6, 8, 11,
+  and 12.
+- Revisit when: a signed grant registry, normalized campaign schema, retention
+  policy, or supported multi-user operation replaces the protected-file
+  experimental mechanism.
+- Authority: design only; no archived campaign grant evidence or validated
+  live campaign is claimed.
+
+## D42. Bind one owner grant to one parent arming (07-29)
+
+- Context: the current submission uniqueness fence is keyed by connector plus
+  caller idempotency key. If the request ceiling is stored only per arming, two
+  different keys can mint two armings from one grant and multiply owner
+  authority.
+- Alternatives: (a) treat the grant as reusable and count per run; (b) add a
+  normalized global grant-consumption table/service now; (c) require one UUID4
+  nonce and `max_armings=1`, derive one deterministic parent-run ID, and
+  atomically create a no-overwrite digest-keyed consumption marker before the
+  no-migration DB transaction.
+- Decision: (c) for the exclusive local experiment. Marker existence consumes
+  the grant across client keys, run states, and isolated DBs sharing the
+  protected evidence root. A marker-only or claim-before-enqueue crash is
+  fail-closed. Recovery requires a fresh definition/raw digest/canonical
+  fingerprint and a fresh grant/digest/nonce explicitly naming the superseded
+  digest; same-campaign recovery is forbidden because the marker cannot prove
+  absence of old-run reservations across isolated DBs. Unused budget never
+  transfers implicitly.
+- Why optimal: (a) violates the reviewed physical-send ceiling; (b) is the
+  supported-operation architecture but is disproportionate before the
+  experiment proves value; (c) gives a durable one-way fence without a schema
+  migration. It intentionally trades availability for non-expansion of
+  authority.
+- Evidence:
+  `docs/campaign-records/2026-07-29-dual-live-proof.md` sections 5.1-6, 11-13
+  and `docs/superpowers/plans/2026-07-29-dual-live-proof.md` Tasks 1, 2, 8,
+  11, and 12.
+- Revisit when: multi-host/multi-operator use requires an independently signed
+  or normalized global consumption registry.
+- Authority: design only; no grant, marker, or arming currently exists.
+
+## D43. Keep strict derived URLs out of every persistence sink (07-29)
+
+- Context: current generic connector paths persist artifact URLs in scalar
+  target/provenance/alias columns, raw metadata snapshots, source-reference
+  JSON, and intake metadata. A JSON-only scan can therefore pass while the
+  exact ScienceBase selector or NRC artifact URL remains durable.
+- Alternatives: (a) accept public URLs as ordinary provenance; (b) add
+  encrypted normalized URL custody now; (c) use a separate strict safe
+  projection, leave URL scalar fields null, never persist raw metadata
+  responses, and audit every scalar/text/JSON, non-source-file, and protected
+  manifest/seal/event-bound runtime-log sink.
+- Decision: (c) for this proof. Persist only URL SHA-256, admitted
+  scheme/host/port/path/query class, response-body hash, and continuity IDs.
+  Exact URLs live only in a non-serializable in-memory request through one
+  send. Raw acquired CSV/PDF bytes remain unmodified opaque source artifacts;
+  all control-plane and generated surfaces remain redaction-scan eligible.
+  ScienceBase authority first requires strict duplicate-member JSON, one exact
+  untrimmed `downloadUri`, a closed redirect-status/single-`Location` rule, and
+  byte-for-byte raw ASCII path/query equality. The protected evidence index
+  also fixes one four-stream runtime-log capture; its manifest is bound by a
+  separate no-overwrite seal plus matching events on every extant connector run (one in an NRC-first failure state), and
+  raw/escaped forms are scanned without accepting a caller path. Machine-global
+  logs and cryptographic nonrepudiation remain outside the experiment.
+- Why optimal: it closes existing scalar and snapshot leaks without a
+  migration, preserves exact source bytes, and avoids weakening generic
+  recurrence behavior. Encryption/normalized custody remains the correct
+  supported-operation design if durable exact locators become necessary.
+- Evidence:
+  `backend/app/models/models.py` URL scalar fields,
+  `backend/app/services/connectors_sciencebase.py` generic target/snapshot
+  persistence, `backend/app/services/connectors_nrc_adams.py` generic
+  URL-bearing payloads, `backend/app/services/layer3_connector_source_intake.py`
+  intake metadata, and the strict contracts in the campaign/implementation
+  plan.
+- Revisit when: supported operation needs durable locator recovery under a
+  separately reviewed secret/URL-custody design.
+- Authority: design only; existing generic behavior remains unchanged.

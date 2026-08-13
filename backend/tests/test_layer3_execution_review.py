@@ -1,17 +1,24 @@
 from __future__ import annotations
 
+# ruff: noqa: E402
+
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 os.environ["DB_INIT_MODE"] = "none"
 
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
-from app.models.models import L3PassRun
+from app.db.session import Base
+from app.models.models import L3AnalysisPlan, L3PassRun, L3Session
 from app.services import layer3_execution_review as execution_review
 from app.services import layer3_workbench
 from app.services.layer3_pass_entry import (
@@ -195,6 +202,24 @@ def test_result_review_trace_summary_preserves_workbench_projection() -> None:
 
 def test_execution_result_review_response_preserves_workbench_projection() -> None:
     pass_run = _pass_run()
+    origin_integrity = {
+        "schema_id": "layer3.connector_origin_integrity.v1",
+        "connector_key": "sciencebase_mcs",
+        "connector_run_target_id": "target-review",
+        "connector_origin_receipt_hash": "a" * 64,
+        "proof_class": "offline_fixture",
+    }
+    output_integrity = {
+        "schema_id": "layer3.connector_output_integrity.v1",
+        **{
+            key: value
+            for key, value in origin_integrity.items()
+            if key != "schema_id"
+        },
+        "artifact_receipts": [],
+        "artifact_set_hash": "b" * 64,
+        "output_manifest_sha256": "c" * 64,
+    }
     review_state = {
         "review_state": "execution_result_review_approved",
         "operator_decision": "approved",
@@ -209,6 +234,8 @@ def test_execution_result_review_response_preserves_workbench_projection() -> No
         "source_gate": "source-gate-review",
         "source_dataset_version_ids": ["dataset-version-output"],
         "cohort_shape": "single_item",
+        "connector_origin_integrity_v1": origin_integrity,
+        "connector_output_integrity_v1": output_integrity,
     }
 
     assert layer3_workbench._execution_result_review_response is execution_review.execution_result_review_response
@@ -258,10 +285,129 @@ def test_execution_result_review_response_preserves_workbench_projection() -> No
     assert response["source_gate"] == "source-gate-review"
     assert response["source_dataset_version_ids"] == ["dataset-version-output"]
     assert response["cohort_shape"] == "single_item"
+    assert response["connector_origin_integrity_v1"] == origin_integrity
+    assert response["connector_output_integrity_v1"] == output_integrity
 
     review_state["trace_summary"]["nested"]["stable"] = False
     review_state["reviewed_output_items"][0]["trace_status"] = "mutated"
     review_state["source_dataset_version_ids"].append("mutated-dataset")
+    origin_integrity["connector_key"] = "mutated"
+    output_integrity["artifact_receipts"].append({"mutated": True})
     assert response["trace_summary"]["nested"]["stable"] is True
     assert response["reviewed_output_items"][0]["trace_status"] == "resolved"
     assert response["source_dataset_version_ids"] == ["dataset-version-output"]
+    assert response["connector_origin_integrity_v1"]["connector_key"] == "sciencebase_mcs"
+    assert response["connector_output_integrity_v1"]["artifact_receipts"] == []
+
+
+def test_result_review_rejects_prelock_output_drift_before_guard(
+    monkeypatch,
+) -> None:
+    engine = create_engine(
+        "sqlite:///:memory:",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(
+        bind=engine,
+        autocommit=False,
+        autoflush=False,
+        future=True,
+    )
+    stale_output = {
+        **_output_metadata_summary(),
+        "present": True,
+        "readable": True,
+        "analysis_run_id": "analysis-run-review",
+    }
+    fresh_output = {
+        **stale_output,
+        "selected_method_name": "descriptive_summary",
+    }
+    with SessionLocal() as db:
+        db.add(
+            L3Session(
+                session_id="session-review",
+                selection_manifest_id="manifest-review",
+                operator_context_json={},
+                summary_json={},
+            )
+        )
+        db.add(
+            L3AnalysisPlan(
+                analysis_plan_id="plan-review",
+                session_id="session-review",
+                analysis_set_ids_json=["set-review"],
+                status="approved",
+                approved_by_operator=True,
+                approved_at=datetime.now(timezone.utc),
+                plan_json={},
+            )
+        )
+        db.add(
+            _pass_run(
+                {
+                    "analysis_run_id": "analysis-run-review",
+                    "source_preview_id": "preview-review",
+                    "source_preview_hash": "hash-review",
+                }
+            )
+        )
+        db.commit()
+        monkeypatch.setattr(
+            layer3_workbench,
+            "execution_result_status",
+            lambda *args, **kwargs: {
+                "status": "available",
+                "result_status_available": True,
+                "analysis_run_id": "analysis-run-review",
+                "engine_family": (
+                    ENGINE_FAMILY_WRAPPED_QUANTITATIVE_ANALYSIS
+                ),
+                "output_metadata_summary": stale_output,
+            },
+        )
+        monkeypatch.setattr(
+            layer3_workbench,
+            "_source_intake_result_review_source_admitted",
+            lambda **kwargs: False,
+        )
+        monkeypatch.setattr(
+            layer3_workbench,
+            "_output_metadata_summary",
+            lambda pass_run: (fresh_output, None),
+        )
+        monkeypatch.setattr(
+            layer3_workbench,
+            "assert_pass_downstream_connector_origin",
+            lambda *args, **kwargs: pytest.fail(
+                "stale pre-lock authority reached the integrity guard"
+            ),
+        )
+
+        with pytest.raises(Layer3WorkbenchError) as excinfo:
+            layer3_workbench.execution_result_review(
+                db,
+                {
+                    "session_id": "session-review",
+                    "analysis_plan_id": "plan-review",
+                    "pass_run_id": "pass-run-review",
+                    "preview_id": "preview-review",
+                    "preview_hash": "hash-review",
+                    "operator_decision": "approved",
+                    "client_request_id": "request-review-drift",
+                    "reviewed_output_items": [],
+                },
+            )
+
+        assert (
+            excinfo.value.error_code
+            == "execution_result_review_authority_changed"
+        )
+        stored_pass = db.get(L3PassRun, "pass-run-review")
+        assert "execution_result_review" not in (
+            stored_pass.summary_json or {}
+        )
+    engine.dispose()

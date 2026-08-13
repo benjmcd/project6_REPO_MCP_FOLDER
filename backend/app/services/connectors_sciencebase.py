@@ -7,14 +7,16 @@ import os
 import random
 import re
 import socket
+import stat
 import threading
 import time
 import uuid
+from collections.abc import Mapping
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
-from typing import Any
-from urllib.parse import urlparse
+from typing import Any, Literal
+from urllib.parse import parse_qsl, urlparse, urlsplit
 
 import requests
 from sqlalchemy import and_
@@ -31,15 +33,16 @@ from app.models import (
     ConnectorRunPartitionCursor,
     ConnectorRunSubmission,
     ConnectorRunTarget,
+    Dataset,
     DatasetExternalIdentity,
     DatasetSourceProvenance,
+    DatasetVersion,
 )
+from app.models.models import L3ConnectorSourceIntakeRecord
 from app.services.sciencebase_connector.executor import ExecutorGuards, assert_lease_token, transition_target_state
 from app.services.sciencebase_connector.contracts import (
     ARTIFACT_DEDUP_POLICIES,
     DEFAULT_ALLOWED_HOST_PATTERNS,
-    ERROR_TAXONOMY,
-    PHASES,
     RECONCILIATION_STATUSES,
     RETRYABLE_HTTP_STATUSES,
     RUN_MODES,
@@ -49,13 +52,11 @@ from app.services.sciencebase_connector.contracts import (
     SURFACE_PRECEDENCE,
     TARGET_TERMINAL_STATUSES,
     ArtifactCandidate,
-    ConditionalFetchMetadata,
     DownloadResult,
     FetchPolicyBlockedError,
     ResolvedTargetPlan,
     RunNotFoundError,
     SearchPageNormalized,
-    StageResult,
     SubmissionConflictError,
     enum_value as contract_enum_value,
 )
@@ -67,12 +68,559 @@ from app.services.sciencebase_connector.planner import (
 from app.services.sciencebase_connector.reporting import report_refs as build_report_refs
 from app.services.sciencebase_connector.reconciliation import is_reconciliation_terminal
 from app.services.sciencebase_connector.serialization import serialize_run_event
+from app.services import connector_egress_arming
+from app.services.connector_egress_authorization import (
+    VerifiedConnectorGrant,
+    strict_json_loads,
+)
+from app.services.connector_egress_transport import (
+    BoundedConnectorResponse,
+    BoundedConnectorTransport,
+    FrozenPhysicalRequest,
+)
 from app.services.ingest import ingest_csv_bytes_to_dataset
+from app.services.layer3_connector_source_intake import (
+    _stage_strict_sciencebase_source_intake,
+)
 from app.services.profiling import profile_dataset_version
+from app.services.raw_storage_handles import (
+    StableRawStorageError,
+    hash_locked_raw_file,
+    persist_locked_raw_file,
+)
 from app.services.transforms import recommend_transformations
 
 
 EXECUTOR_GUARDS = ExecutorGuards(max_concurrent_runs=settings.connector_max_concurrent_runs)
+
+SCIENCEBASE_FRESH_ITEM_ID = "63d1a3c6d34e06fef15006be"
+SCIENCEBASE_FRESH_FILE_NAME = "mcs2023-germa_salient.csv"
+SCIENCEBASE_FRESH_HYDRATION_URL = (
+    "https://www.sciencebase.gov/catalog/item/"
+    f"{SCIENCEBASE_FRESH_ITEM_ID}?format=json"
+)
+SCIENCEBASE_FRESH_FILE_PATH = (
+    f"/catalog/file/get/{SCIENCEBASE_FRESH_ITEM_ID}"
+)
+SCIENCEBASE_FRESH_FILE_QUERY = f"f={SCIENCEBASE_FRESH_FILE_NAME}"
+SCIENCEBASE_FRESH_FILE_STORAGE_KEY = (
+    "__disk__7e/49/e8/7e49e8a4a53eb2219837f97defb22a25a286cdbc"
+)
+SCIENCEBASE_FRESH_FILE_STORAGE_QUERY = (
+    "f=" + SCIENCEBASE_FRESH_FILE_STORAGE_KEY.replace("/", "%2F")
+)
+SCIENCEBASE_FRESH_HYDRATION_CAP = 5 * 1024 * 1024
+SCIENCEBASE_FRESH_ARTIFACT_CAP = 64 * 1024 * 1024
+SCIENCEBASE_FRESH_HOSTS = frozenset(
+    {"sciencebase.gov", "www.sciencebase.gov"}
+)
+SCIENCEBASE_FRESH_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+_SCIENCEBASE_FRESH_SAFE_CODE = re.compile(r"^[a-z][a-z0-9_]{0,99}$")
+
+
+class ScienceBaseFreshAcquisitionError(RuntimeError):
+    """Safe, non-URL-bearing strict acquisition failure."""
+
+    def __init__(self, code: str) -> None:
+        if not _SCIENCEBASE_FRESH_SAFE_CODE.fullmatch(code):
+            code = "sciencebase_strict_internal_error"
+        self.code = code
+        super().__init__(code)
+
+
+def _fresh_failure_code(exc: Exception) -> str:
+    code = str(getattr(exc, "code", "") or "")
+    if _SCIENCEBASE_FRESH_SAFE_CODE.fullmatch(code):
+        return code
+    return "sciencebase_strict_internal_error"
+
+
+def _validate_fresh_sciencebase_url(raw_url: str) -> dict[str, Any]:
+    """Validate exact raw artifact URL before any permissive query parsing."""
+
+    if not isinstance(raw_url, str) or not raw_url:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_url_invalid"
+        )
+    try:
+        raw_url.encode("ascii", errors="strict")
+    except UnicodeEncodeError as exc:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_url_invalid"
+        ) from exc
+    if (
+        raw_url != raw_url.strip()
+        or any(ord(character) < 0x20 or ord(character) == 0x7F for character in raw_url)
+        or "\\" in raw_url
+        or "#" in raw_url
+        or raw_url.count("?") != 1
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_url_invalid"
+        )
+    try:
+        parsed = urlsplit(raw_url)
+        parsed_port = parsed.port
+    except ValueError as exc:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_url_invalid"
+        ) from exc
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname not in SCIENCEBASE_FRESH_HOSTS
+        or parsed.netloc not in SCIENCEBASE_FRESH_HOSTS
+        or parsed_port not in {None, 443}
+        or parsed.username is not None
+        or parsed.password is not None
+        or "@" in parsed.netloc
+        or parsed.fragment
+        or parsed.path != SCIENCEBASE_FRESH_FILE_PATH
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_url_invalid"
+        )
+    if parsed.query == SCIENCEBASE_FRESH_FILE_QUERY:
+        expected_locator = SCIENCEBASE_FRESH_FILE_NAME
+        query_class = "exact_single_f_expected_filename"
+    elif parsed.query == SCIENCEBASE_FRESH_FILE_STORAGE_QUERY:
+        expected_locator = SCIENCEBASE_FRESH_FILE_STORAGE_KEY
+        query_class = "exact_single_f_pinned_storage_key"
+    else:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_url_invalid"
+        )
+    try:
+        pairs = parse_qsl(
+            parsed.query,
+            keep_blank_values=True,
+            strict_parsing=True,
+            encoding="utf-8",
+            errors="strict",
+            separator="&",
+        )
+    except (UnicodeError, ValueError) as exc:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_url_invalid"
+        ) from exc
+    if pairs != [("f", expected_locator)]:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_url_invalid"
+        )
+    return {
+        "url_sha256": hashlib.sha256(raw_url.encode("ascii")).hexdigest(),
+        "scheme": "https",
+        "host": parsed.hostname,
+        "port": 443,
+        "path_rule_id": "sciencebase_file_exact_v1",
+        "query_class": query_class,
+    }
+
+
+def _validated_fresh_response_body(
+    response: BoundedConnectorResponse,
+    *,
+    stage: str,
+    cap: int,
+) -> bytes:
+    if response.outcome_class != "completed":
+        raise ScienceBaseFreshAcquisitionError(
+            f"sciencebase_{stage}_transport_rejected"
+        )
+    body = response.body
+    if (
+        not isinstance(body, bytes)
+        or len(body) > cap
+        or response.byte_count != len(body)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            f"sciencebase_{stage}_body_invalid"
+        )
+    digest = hashlib.sha256(body).hexdigest()
+    if response.body_sha256 != digest:
+        raise ScienceBaseFreshAcquisitionError(
+            f"sciencebase_{stage}_hash_mismatch"
+        )
+    return body
+
+
+def _parse_fresh_sciencebase_hydration(
+    response: BoundedConnectorResponse,
+) -> tuple[str, dict[str, Any]]:
+    if response.response_status != 200:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_hydration_status_rejected"
+        )
+    if response.safe_headers.get("content_type") != "application/json":
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_hydration_media_rejected"
+        )
+    body = _validated_fresh_response_body(
+        response,
+        stage="hydration",
+        cap=SCIENCEBASE_FRESH_HYDRATION_CAP,
+    )
+    if not body:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_hydration_body_invalid"
+        )
+    try:
+        hydrated = strict_json_loads(body)
+    except (TypeError, ValueError) as exc:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_hydration_json_invalid"
+        ) from exc
+    if not isinstance(hydrated, dict):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_hydration_shape_invalid"
+        )
+    files = hydrated.get("files")
+    if not isinstance(files, list):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_hydration_shape_invalid"
+        )
+    selected: list[dict[str, Any]] = []
+    for entry in files:
+        if not isinstance(entry, dict):
+            raise ScienceBaseFreshAcquisitionError(
+                "sciencebase_hydration_shape_invalid"
+            )
+        if entry.get("name") == SCIENCEBASE_FRESH_FILE_NAME:
+            selected.append(entry)
+    if len(selected) != 1:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_exact_file_not_unique"
+        )
+    file_entry = selected[0]
+    if (
+        not isinstance(file_entry.get("name"), str)
+        or file_entry["name"] != SCIENCEBASE_FRESH_FILE_NAME
+        or "downloadUri" not in file_entry
+        or not isinstance(file_entry["downloadUri"], str)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_exact_file_locator_invalid"
+        )
+    raw_url = file_entry["downloadUri"]
+    url_alias = file_entry.get("url")
+    if "url" in file_entry and (
+        not isinstance(url_alias, str) or url_alias != raw_url
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_exact_file_locator_invalid"
+        )
+    if (
+        not raw_url
+        or raw_url != raw_url.strip()
+        or any(ord(character) < 0x20 or ord(character) == 0x7F for character in raw_url)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_exact_file_locator_invalid"
+        )
+    url_projection = _validate_fresh_sciencebase_url(raw_url)
+    return raw_url, {
+        "schema_id": "project6.sciencebase_strict_safe_projection.v1",
+        "connector_key": "sciencebase_mcs",
+        "item_id": SCIENCEBASE_FRESH_ITEM_ID,
+        "exact_file_name": SCIENCEBASE_FRESH_FILE_NAME,
+        "surface": "files",
+        "hydration_response_body_sha256": hashlib.sha256(body).hexdigest(),
+        "artifact_url_sha256": url_projection["url_sha256"],
+        "artifact_request_class": {
+            key: url_projection[key]
+            for key in (
+                "scheme",
+                "host",
+                "port",
+                "path_rule_id",
+                "query_class",
+            )
+        },
+    }
+
+
+def _fresh_csv_shape_facts(body: bytes, *, media_type: str) -> dict[str, Any]:
+    """Perform bounded raw-admission shape checks, not CSV semantic parsing."""
+
+    admitted_media = {"text/csv", "application/csv"}
+    if media_type not in admitted_media | {"application/octet-stream"}:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_media_rejected"
+        )
+    stripped = body.lstrip()
+    lowered = stripped[:32].lower()
+    archive_signatures = (
+        b"PK\x03\x04",
+        b"PK\x05\x06",
+        b"PK\x07\x08",
+        b"\x1f\x8b",
+        b"7z\xbc\xaf\x27\x1c",
+        b"Rar!\x1a\x07",
+        b"BZh",
+        b"\xfd7zXZ\x00",
+    )
+    if (
+        not body
+        or b"\x00" in body
+        or stripped.startswith(archive_signatures)
+        or lowered.startswith(b"%pdf-")
+        or lowered.startswith(b"<html")
+        or lowered.startswith(b"<!doctype html")
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_signature_rejected"
+        )
+    try:
+        text = body.decode("utf-8-sig", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_text_invalid"
+        ) from exc
+    meaningful_lines = [line for line in text.splitlines() if line.strip()]
+    if len(meaningful_lines) < 2:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_shape_invalid"
+        )
+    header_cells = meaningful_lines[0].split(",")
+    data_cells = meaningful_lines[1].split(",")
+    if (
+        len(header_cells) < 2
+        or len(data_cells) != len(header_cells)
+        or any(not value.strip() for value in header_cells)
+        or not any(value.strip() for value in data_cells)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_shape_invalid"
+        )
+    return {
+        "media_class": (
+            "octet_stream_csv_shape"
+            if media_type == "application/octet-stream"
+            else "declared_csv_shape"
+        ),
+        "header_column_count": len(header_cells),
+        "nonempty_data_row_confirmed": True,
+    }
+
+
+def _path_is_reparse_or_symlink(path: Path) -> bool:
+    try:
+        path_stat = path.lstat()
+    except OSError:
+        return False
+    reparse_flag = int(getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0))
+    file_attributes = int(getattr(path_stat, "st_file_attributes", 0))
+    return stat.S_ISLNK(path_stat.st_mode) or bool(
+        reparse_flag and file_attributes & reparse_flag
+    )
+
+
+def _persist_fresh_sciencebase_raw_blob(content: bytes, digest: str) -> str:
+    if hashlib.sha256(content).hexdigest() != digest:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_artifact_hash_mismatch"
+        )
+    raw_root = Path(os.path.abspath(settings.connector_raw_dir))
+    if raw_root.exists() and _path_is_reparse_or_symlink(raw_root):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_unsafe"
+        )
+    content_dir = raw_root / "sha256"
+    content_dir.mkdir(parents=True, exist_ok=True)
+    if _path_is_reparse_or_symlink(content_dir):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_unsafe"
+        )
+    output = content_dir / f"{digest}.csv"
+    if output.parent != content_dir:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_unsafe"
+        )
+    if _path_is_reparse_or_symlink(content_dir):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_unsafe"
+        )
+    try:
+        size, stored_digest, resolved_ref = persist_locked_raw_file(
+            raw_root,
+            output,
+            content,
+        )
+    except StableRawStorageError as exc:
+        if exc.reason == "conflict":
+            code = "sciencebase_raw_content_conflict"
+        elif exc.reason in {"unsafe", "changed", "unsupported"}:
+            code = "sciencebase_raw_storage_unsafe"
+        else:
+            code = "sciencebase_raw_storage_failed"
+        raise ScienceBaseFreshAcquisitionError(code) from exc
+    if size != len(content) or stored_digest != digest:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_verification_failed"
+        )
+    return resolved_ref
+
+
+def _rehash_fresh_sciencebase_raw_blob(
+    storage_ref: str,
+    *,
+    expected_digest: str,
+) -> tuple[int, str, str]:
+    root = Path(os.path.abspath(settings.connector_raw_dir))
+    output = Path(os.path.abspath(storage_ref))
+    if (
+        output.parent != root / "sha256"
+        or output.name != f"{expected_digest}.csv"
+        or _path_is_reparse_or_symlink(root)
+        or _path_is_reparse_or_symlink(output.parent)
+        or _path_is_reparse_or_symlink(output)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_verification_failed"
+        )
+    try:
+        size, rehashed, resolved_ref = hash_locked_raw_file(
+            root,
+            output,
+        )
+    except StableRawStorageError as exc:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_verification_failed"
+        ) from exc
+    if rehashed != expected_digest:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_verification_failed"
+        )
+    return size, rehashed, resolved_ref
+
+
+def _resolve_current_sciencebase_egress_authority(
+    *,
+    db: Session,
+    run: ConnectorRun,
+) -> VerifiedConnectorGrant:
+    return connector_egress_arming.resolve_current_egress_authority(
+        db,
+        connector_run_id=run.connector_run_id,
+        now=datetime.now(timezone.utc),
+    )
+
+
+def _commit_sciencebase_derived_arming(
+    *,
+    db: Session,
+    run: ConnectorRun,
+    lease_token: str,
+    ordinal: int,
+    stage: str,
+    normalized_url: str,
+    verified_grant: VerifiedConnectorGrant,
+) -> Any:
+    return connector_egress_arming.commit_derived_url_arming(
+        db,
+        run=run,
+        lease_token=lease_token,
+        ordinal=ordinal,
+        stage=stage,
+        normalized_url=normalized_url,
+        verified_grant=verified_grant,
+    )
+
+
+def _finalize_sciencebase_strict_run(
+    *,
+    db: Session,
+    run: ConnectorRun,
+    lease_token: str,
+    terminal_status: Literal["completed", "failed"],
+    outcome_class: str,
+) -> None:
+    connector_egress_arming.finalize_strict_run(
+        db,
+        run=run,
+        lease_token=lease_token,
+        terminal_status=terminal_status,
+        outcome_class=outcome_class,
+        now=datetime.now(timezone.utc),
+    )
+
+
+def _sciencebase_http_counter_path(
+    verified_grant: VerifiedConnectorGrant,
+) -> Path:
+    campaign = verified_grant.verified_campaign
+    campaign_id = str(campaign.model.campaign_id)
+    captures = [
+        capture
+        for capture in campaign.index_chain.head.log_captures
+        if capture.campaign_id == campaign_id
+        and capture.campaign_fingerprint == campaign.canonical_fingerprint
+        and capture.campaign_definition_sha256 == campaign.raw_sha256
+    ]
+    if len(captures) != 1:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_counter_capture_invalid"
+        )
+    relative_dir = Path(captures[0].log_dir_relative_path)
+    if (
+        relative_dir.is_absolute()
+        or not relative_dir.parts
+        or any(part in {"", ".", ".."} for part in relative_dir.parts)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_counter_capture_invalid"
+        )
+    try:
+        evidence_root = Path(campaign.evidence_root).resolve(strict=True)
+        counter_dir = (evidence_root / relative_dir).resolve(strict=True)
+    except OSError as exc:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_counter_capture_unavailable"
+        ) from exc
+    if (
+        not counter_dir.is_relative_to(evidence_root)
+        or not counter_dir.is_dir()
+        or _path_is_reparse_or_symlink(counter_dir)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_counter_capture_unsafe"
+        )
+    counter_path = counter_dir / "http.jsonl"
+    if counter_path.exists() and (
+        _path_is_reparse_or_symlink(counter_path)
+        or not counter_path.is_file()
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_counter_capture_unsafe"
+        )
+    return counter_path
+
+
+def _build_sciencebase_strict_transport(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    lease_token: str,
+) -> BoundedConnectorTransport:
+    verified_grant = _resolve_current_sciencebase_egress_authority(
+        db=db,
+        run=run,
+    )
+    envelope = run.request_config_json.get("connector_egress_arming")
+    if not isinstance(envelope, dict):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_strict_run_invalid"
+        )
+    arming_fingerprint = envelope.get("arming_fingerprint")
+    if not isinstance(arming_fingerprint, str):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_strict_run_invalid"
+        )
+    return BoundedConnectorTransport(
+        connector_run_id=run.connector_run_id,
+        lease_token=lease_token,
+        arming_fingerprint=arming_fingerprint,
+        counter_path=_sciencebase_http_counter_path(verified_grant),
+    )
 
 
 def _utcnow() -> datetime:
@@ -540,7 +1088,40 @@ def _normalize_request_config(connector_key: str, payload: dict[str, Any], submi
     return config
 
 
+def _has_reserved_egress_submit_marker(
+    payload: Mapping[str, Any],
+    *,
+    idempotency_key: str | None,
+) -> bool:
+    source_mode = payload.get("source_mode")
+    submission_keys = (
+        idempotency_key,
+        payload.get("client_request_id"),
+        payload.get("submission_idempotency_key"),
+        payload.get("idempotency_key"),
+    )
+    return bool(
+        "connector_egress_arming" in payload
+        or (
+            isinstance(source_mode, str)
+            and source_mode.strip().lower() == "strict_live_egress"
+        )
+        or any(
+            isinstance(value, str)
+            and value.strip().startswith("egress-arm:")
+            for value in submission_keys
+        )
+    )
+
+
 def submit_connector_run(db: Session, *, connector_key: str, payload: dict[str, Any], idempotency_key: str | None) -> tuple[ConnectorRun, bool]:
+    if _has_reserved_egress_submit_marker(
+        payload,
+        idempotency_key=idempotency_key,
+    ):
+        raise SubmissionConflictError(
+            "reserved egress provenance requires the protected arming API"
+        )
     submitted_key = (idempotency_key or payload.get("client_request_id") or "").strip() or None
     config = _normalize_request_config(connector_key, payload, submitted_key)
     request_fingerprint = _stable_json_hash(config)
@@ -661,6 +1242,10 @@ def request_cancel_run(db: Session, connector_run_id: str) -> ConnectorRun:
     run = db.get(ConnectorRun, connector_run_id)
     if not run:
         raise RunNotFoundError("connector run not found")
+    if connector_egress_arming.has_reserved_egress_provenance(run):
+        raise SubmissionConflictError(
+            "reserved egress runs cannot use generic cancel"
+        )
     if run.status in RUN_TERMINAL_STATUSES:
         return run
     prior_status = run.status
@@ -683,6 +1268,10 @@ def request_resume_run(db: Session, connector_run_id: str) -> ConnectorRun:
     run = db.get(ConnectorRun, connector_run_id)
     if not run:
         raise RunNotFoundError("connector run not found")
+    if connector_egress_arming.has_reserved_egress_provenance(run):
+        raise SubmissionConflictError(
+            "reserved egress runs cannot use generic resume"
+        )
     if run.status == "completed":
         return run
     if run.status == "running":
@@ -974,6 +1563,48 @@ def _acquire_lease(db: Session, run: ConnectorRun) -> bool:
         run.status = "running"
     db.commit()
     return True
+
+
+def _acquire_strict_sciencebase_run_lease(
+    db: Session,
+    *,
+    run: ConnectorRun,
+) -> str | None:
+    if run.status != "pending" or run.cancellation_requested_at is not None:
+        return None
+    now = _utcnow()
+    lease_token = uuid.uuid4().hex
+    updated = (
+        db.query(ConnectorRun)
+        .filter(
+            ConnectorRun.connector_run_id == run.connector_run_id,
+            ConnectorRun.status == "pending",
+            ConnectorRun.source_mode == "strict_live_egress",
+            ConnectorRun.execution_lease_owner.is_(None),
+            ConnectorRun.execution_lease_token.is_(None),
+            ConnectorRun.cancellation_requested_at.is_(None),
+        )
+        .update(
+            {
+                ConnectorRun.status: "running",
+                ConnectorRun.execution_lease_owner: f"pid:{os.getpid()}",
+                ConnectorRun.execution_lease_token: lease_token,
+                ConnectorRun.execution_lease_expires_at: now
+                + timedelta(seconds=settings.connector_lease_ttl_seconds),
+                ConnectorRun.claimed_at: now,
+                ConnectorRun.heartbeat_at: now,
+                ConnectorRun.started_at: now,
+                ConnectorRun.attempt_number: int(run.attempt_number or 0) + 1,
+            },
+            synchronize_session=False,
+        )
+    )
+    if updated != 1:
+        db.rollback()
+        return None
+    db.commit()
+    db.refresh(run)
+    return lease_token
 
 
 def _renew_lease(db: Session, run: ConnectorRun) -> None:
@@ -2587,6 +3218,671 @@ def _run_target_pipeline(
     )
     _record_stage_checkpoint(db, run=run, target=target, config=config, phase="recommending")
 
+
+def _assert_fresh_response_integrity(
+    response: BoundedConnectorResponse,
+    *,
+    stage: str,
+    cap: int,
+) -> None:
+    if response.outcome_class != "completed":
+        raise ScienceBaseFreshAcquisitionError(
+            f"sciencebase_{stage}_transport_rejected"
+        )
+    if (
+        not isinstance(response.body, bytes)
+        or len(response.body) > cap
+        or response.byte_count != len(response.body)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            f"sciencebase_{stage}_body_invalid"
+        )
+    expected_hash = hashlib.sha256(response.body).hexdigest()
+    admitted_hashes: set[str | None] = {expected_hash}
+    if not response.body:
+        admitted_hashes.add(None)
+    if response.body_sha256 not in admitted_hashes:
+        raise ScienceBaseFreshAcquisitionError(
+            f"sciencebase_{stage}_hash_mismatch"
+        )
+
+
+def _assert_fresh_derived_arming(
+    derived: Any,
+    *,
+    ordinal: int,
+    stage: str,
+) -> tuple[str, dict[str, Any]]:
+    normalized_url = getattr(derived, "normalized_url", None)
+    if not isinstance(normalized_url, str):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_derived_arming_invalid"
+        )
+    projection = _validate_fresh_sciencebase_url(normalized_url)
+    expected = {
+        "ordinal": ordinal,
+        "stage": stage,
+        "url_sha256": projection["url_sha256"],
+        "scheme": projection["scheme"],
+        "host": projection["host"],
+        "port": projection["port"],
+        "path_rule_id": projection["path_rule_id"],
+        "query_class": projection["query_class"],
+    }
+    if any(
+        getattr(derived, key, None) != value
+        for key, value in expected.items()
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_derived_arming_invalid"
+        )
+    return normalized_url, projection
+
+
+def _create_fresh_sciencebase_target(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    safe_projection: dict[str, Any],
+) -> ConnectorRunTarget:
+    existing_count = (
+        db.query(ConnectorRunTarget)
+        .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
+        .count()
+    )
+    if existing_count:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_strict_resume_forbidden"
+        )
+    now = _utcnow()
+    source_artifact_key = (
+        f"sciencebase:{SCIENCEBASE_FRESH_ITEM_ID}:"
+        f"{SCIENCEBASE_FRESH_FILE_NAME}"
+    )
+    target = ConnectorRunTarget(
+        connector_run_id=run.connector_run_id,
+        ordinal=1,
+        stable_release_key=source_artifact_key,
+        sciencebase_item_id=SCIENCEBASE_FRESH_ITEM_ID,
+        sciencebase_item_url=None,
+        sciencebase_file_name=SCIENCEBASE_FRESH_FILE_NAME,
+        sciencebase_download_uri=None,
+        artifact_surface="files",
+        selection_source="strict_item_hydration",
+        selection_scope="exact_item",
+        selection_match_basis="exact_filename",
+        artifact_locator_type="downloadUri_hash_only",
+        source_artifact_key=source_artifact_key,
+        canonical_artifact_key=source_artifact_key,
+        fetch_policy_mode="strict_exact_egress",
+        redirect_count=0,
+        aliases_json=[],
+        source_reference_json=dict(safe_projection),
+        permission_snapshot_json={
+            "schema_id": "project6.sciencebase_strict_permission.v1",
+            "access_class": "public_anonymous",
+            "credential_audience": "none",
+            "raw_locator_persisted": False,
+        },
+        access_level_summary="public",
+        public_read_confirmed=False,
+        status="selected",
+        retry_eligible=False,
+        attempt_count=1,
+        discovered_at=now,
+        selected_at=now,
+        last_attempt_at=now,
+        last_stage_transition_at=now,
+        operator_reason_code="strict_exact_file_selected",
+        selection_reason_code="exact_filename_unique",
+        stable_release_identifier=SCIENCEBASE_FRESH_ITEM_ID,
+        identifiers_json=[
+            {
+                "scheme": "sciencebase_item_id",
+                "value": SCIENCEBASE_FRESH_ITEM_ID,
+            }
+        ],
+    )
+    db.add(target)
+    run.discovered_count = 1
+    run.selected_count = 1
+    run.query_plan_json = {
+        "schema_id": "project6.sciencebase_strict_plan.v1",
+        "item_id": SCIENCEBASE_FRESH_ITEM_ID,
+        "exact_file_name": SCIENCEBASE_FRESH_FILE_NAME,
+        "raw_admission_only": True,
+    }
+    db.commit()
+    db.refresh(target)
+    return target
+
+
+def _stage_fresh_sciencebase_phase_a_graph(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    target: ConnectorRunTarget,
+    raw_storage_ref: str,
+    artifact_sha256: str,
+    artifact_size: int,
+    upstream_media_class: str,
+    header_column_count: int,
+    nonempty_data_row_confirmed: bool,
+    redirect_projection: Mapping[str, Any] | None,
+) -> None:
+    if (
+        target.status != "selected"
+        or target.downloaded_sha256 is not None
+        or target.raw_storage_ref is not None
+        or target.dataset_id is not None
+        or target.dataset_version_id is not None
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_strict_graph_cardinality_conflict"
+        )
+    provenance_count = (
+        db.query(DatasetSourceProvenance)
+        .filter(
+            DatasetSourceProvenance.connector_run_id
+            == run.connector_run_id,
+            DatasetSourceProvenance.source_artifact_key
+            == target.source_artifact_key,
+        )
+        .count()
+    )
+    intake_count = (
+        db.query(L3ConnectorSourceIntakeRecord)
+        .filter(
+            L3ConnectorSourceIntakeRecord.connector_run_id
+            == run.connector_run_id,
+            L3ConnectorSourceIntakeRecord.connector_run_target_id
+            == target.connector_run_target_id,
+        )
+        .count()
+    )
+    if provenance_count or intake_count:
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_strict_graph_cardinality_conflict"
+        )
+    rehashed_size, rehashed_sha256, canonical_storage_ref = (
+        _rehash_fresh_sciencebase_raw_blob(
+            raw_storage_ref,
+            expected_digest=artifact_sha256,
+        )
+    )
+    if (
+        rehashed_size != artifact_size
+        or rehashed_sha256 != artifact_sha256
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_raw_storage_verification_failed"
+        )
+
+    current_reference = target.source_reference_json
+    request_class = (
+        current_reference.get("artifact_request_class")
+        if isinstance(current_reference, Mapping)
+        else None
+    )
+    if (
+        not isinstance(current_reference, Mapping)
+        or current_reference.get("schema_id")
+        != "project6.sciencebase_strict_safe_projection.v1"
+        or current_reference.get("connector_key") != "sciencebase_mcs"
+        or current_reference.get("item_id") != SCIENCEBASE_FRESH_ITEM_ID
+        or current_reference.get("exact_file_name")
+        != SCIENCEBASE_FRESH_FILE_NAME
+        or current_reference.get("surface") != "files"
+        or not isinstance(request_class, Mapping)
+    ):
+        raise ScienceBaseFreshAcquisitionError(
+            "sciencebase_strict_safe_projection_invalid"
+        )
+    safe_source_reference: dict[str, Any] = {
+        "schema_id": "project6.sciencebase_strict_safe_projection.v1",
+        "connector_key": "sciencebase_mcs",
+        "item_id": SCIENCEBASE_FRESH_ITEM_ID,
+        "exact_file_name": SCIENCEBASE_FRESH_FILE_NAME,
+        "surface": "files",
+        "hydration_response_body_sha256": str(
+            current_reference.get("hydration_response_body_sha256") or ""
+        ),
+        "artifact_url_sha256": str(
+            current_reference.get("artifact_url_sha256") or ""
+        ),
+        "artifact_request_class": {
+            key: request_class.get(key)
+            for key in (
+                "scheme",
+                "host",
+                "port",
+                "path_rule_id",
+                "query_class",
+            )
+        },
+        "artifact_response": {
+            "body_sha256": artifact_sha256,
+            "byte_count": artifact_size,
+            "media_class": upstream_media_class,
+            "header_column_count": header_column_count,
+            "nonempty_data_row_confirmed": nonempty_data_row_confirmed,
+        },
+    }
+    if redirect_projection is not None:
+        safe_source_reference["redirect_request_class"] = {
+            "url_sha256": redirect_projection.get("url_sha256"),
+            **{
+                key: redirect_projection.get(key)
+                for key in (
+                    "scheme",
+                    "host",
+                    "port",
+                    "path_rule_id",
+                    "query_class",
+                )
+            },
+        }
+
+    now = _utcnow()
+    dataset_id = str(uuid.uuid4())
+    dataset_version_id = str(uuid.uuid4())
+    dataset = Dataset(
+        dataset_id=dataset_id,
+        source_id=None,
+        name="ScienceBase MCS frozen raw artifact",
+        description=(
+            "Strict Phase-A raw CSV artifact; no semantic ingestion."
+        ),
+        domain_pack=None,
+        frequency_hint=None,
+        time_column=None,
+    )
+    version = DatasetVersion(
+        dataset_version_id=dataset_version_id,
+        dataset_id=dataset_id,
+        parent_version_id=None,
+        version_label="sciencebase_phase_a_raw_v1",
+        version_type="raw",
+        status="ready",
+        storage_ref=canonical_storage_ref,
+        row_count=0,
+        content_hash=artifact_sha256,
+        source_row_count=None,
+        dropped_row_count=None,
+        notes="Strict Phase-A raw artifact; no semantic ingestion.",
+    )
+    provenance = DatasetSourceProvenance(
+        dataset_version_id=dataset_version_id,
+        connector_run_id=run.connector_run_id,
+        source_system="sciencebase",
+        source_mode=run.source_mode,
+        source_artifact_key=str(target.source_artifact_key),
+        sciencebase_item_id=SCIENCEBASE_FRESH_ITEM_ID,
+        sciencebase_item_url=None,
+        sciencebase_file_name=SCIENCEBASE_FRESH_FILE_NAME,
+        sciencebase_download_uri=None,
+        artifact_surface="files",
+        artifact_locator_type="downloadUri_hash_only",
+        remote_checksum_type=None,
+        remote_checksum_value=None,
+        downloaded_sha256=artifact_sha256,
+        raw_storage_ref=canonical_storage_ref,
+        source_query_fingerprint=None,
+        source_reference_json={
+            "schema_id": "project6.sciencebase_phase_a_provenance.v1",
+            "connector_key": "sciencebase_mcs",
+            "connector_run_target_id": target.connector_run_target_id,
+            "item_id": SCIENCEBASE_FRESH_ITEM_ID,
+            "exact_file_name": SCIENCEBASE_FRESH_FILE_NAME,
+            "artifact_surface": "files",
+            "source_mode": run.source_mode,
+            "raw_sha256": artifact_sha256,
+            "storage_class": "connector_raw_sha256",
+        },
+        fetch_policy_mode="strict_exact_egress",
+        resolved_ip=None,
+        redirect_count=1 if redirect_projection is not None else 0,
+        blocked_reason=None,
+        etag=None,
+        last_modified=None,
+        retrieved_http_json={
+            "response_status": 200,
+            "content_size_bytes": artifact_size,
+            "admitted_media_type": "text/csv",
+            "upstream_media_class": upstream_media_class,
+        },
+        discovered_at=target.discovered_at,
+        downloaded_at=now,
+    )
+    db.add_all([dataset, version, provenance])
+
+    target.source_reference_json = safe_source_reference
+    target.sciencebase_item_url = None
+    target.sciencebase_download_uri = None
+    target.downloaded_sha256 = artifact_sha256
+    target.raw_storage_ref = canonical_storage_ref
+    target.status = "downloaded"
+    target.public_read_confirmed = True
+    target.retry_eligible = False
+    target.downloaded_at = now
+    target.ingested_at = None
+    target.profiled_at = None
+    target.recommended_at = None
+    target.last_stage_transition_at = now
+    target.operator_reason_code = "strict_raw_admitted"
+    target.versioning_reason_code = "phase_a_raw_admission_only"
+    target.dataset_id = dataset_id
+    target.dataset_version_id = dataset_version_id
+    target.redirect_count = 1 if redirect_projection is not None else 0
+    run.downloaded_count = 1
+    run.consumed_bytes = artifact_size
+    run.error_summary = None
+    _stage_strict_sciencebase_source_intake(
+        db,
+        run=run,
+        target=target,
+    )
+    db.flush()
+
+
+def _strict_terminal_event_exists(db: Session, run: ConnectorRun) -> bool:
+    return bool(
+        db.query(ConnectorRunEvent)
+        .filter(
+            ConnectorRunEvent.connector_run_id == run.connector_run_id,
+            ConnectorRunEvent.event_type == "egress_run_terminal",
+        )
+        .count()
+    )
+
+
+def _record_fresh_failure(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    code: str,
+) -> None:
+    target = (
+        db.query(ConnectorRunTarget)
+        .filter(ConnectorRunTarget.connector_run_id == run.connector_run_id)
+        .order_by(ConnectorRunTarget.ordinal.asc())
+        .first()
+    )
+    now = _utcnow()
+    if target is not None and target.raw_storage_ref is None:
+        target.status = "download_failed"
+        target.error_stage = "raw_admission"
+        target.error_message = code
+        target.last_error_class = code
+        target.retry_eligible = False
+        target.operator_reason_code = code
+        target.last_stage_transition_at = now
+    run.failed_count = 1
+    run.error_summary = code
+    _record_run_event(
+        db,
+        run=run,
+        target=target,
+        event_type="strict_acquisition_failed",
+        phase="execution",
+        stage="raw_admission",
+        status_before="running",
+        status_after="running",
+        reason_code=code,
+        error_class=code,
+        metrics_json={"retry_authorized": False},
+        commit=True,
+    )
+
+
+def _execute_fresh_exact_sciencebase_run(
+    db: Session,
+    *,
+    run: ConnectorRun,
+    lease_token: str,
+    transport: BoundedConnectorTransport,
+) -> None:
+    try:
+        if (
+            not connector_egress_arming.is_strict_egress_run(run)
+            or run.connector_key != "sciencebase_mcs"
+            or run.status != "running"
+            or run.execution_lease_token != lease_token
+        ):
+            raise ScienceBaseFreshAcquisitionError(
+                "sciencebase_strict_run_invalid"
+            )
+        verified_grant = _resolve_current_sciencebase_egress_authority(
+            db=db,
+            run=run,
+        )
+        connector_egress_arming.refresh_strict_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+            now=datetime.now(timezone.utc),
+        )
+        hydration_response = transport.send_once(
+            ordinal=1,
+            stage="item_hydration",
+            request=FrozenPhysicalRequest(
+                method="GET",
+                url=SCIENCEBASE_FRESH_HYDRATION_URL,
+                headers={},
+                body=None,
+                credential_audience="none",
+            ),
+        )
+        connector_egress_arming.refresh_strict_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+            now=datetime.now(timezone.utc),
+        )
+        raw_artifact_url, safe_projection = (
+            _parse_fresh_sciencebase_hydration(hydration_response)
+        )
+        target = _create_fresh_sciencebase_target(
+            db,
+            run=run,
+            safe_projection=safe_projection,
+        )
+        artifact_arming = _commit_sciencebase_derived_arming(
+            db=db,
+            run=run,
+            lease_token=lease_token,
+            ordinal=2,
+            stage="artifact",
+            normalized_url=raw_artifact_url,
+            verified_grant=verified_grant,
+        )
+        artifact_url, artifact_projection = _assert_fresh_derived_arming(
+            artifact_arming,
+            ordinal=2,
+            stage="artifact",
+        )
+        connector_egress_arming.refresh_strict_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+            now=datetime.now(timezone.utc),
+        )
+        artifact_response = transport.send_once(
+            ordinal=2,
+            stage="artifact",
+            request=FrozenPhysicalRequest(
+                method="GET",
+                url=artifact_url,
+                headers={},
+                body=None,
+                credential_audience="none",
+            ),
+            expected_derived_arming_hash=artifact_projection["url_sha256"],
+        )
+        connector_egress_arming.refresh_strict_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+            now=datetime.now(timezone.utc),
+        )
+        redirect_projection: dict[str, Any] | None = None
+        status = artifact_response.response_status
+        if status is not None and 300 <= status < 400:
+            _assert_fresh_response_integrity(
+                artifact_response,
+                stage="redirect",
+                cap=SCIENCEBASE_FRESH_ARTIFACT_CAP,
+            )
+            if (
+                status not in SCIENCEBASE_FRESH_REDIRECT_STATUSES
+                or len(artifact_response.location_values) != 1
+            ):
+                raise ScienceBaseFreshAcquisitionError(
+                    "sciencebase_redirect_not_authorized"
+                )
+            raw_redirect_url = artifact_response.location_values[0]
+            if (
+                not raw_redirect_url
+                or raw_redirect_url != raw_redirect_url.strip()
+                or any(
+                    ord(character) < 0x20 or ord(character) == 0x7F
+                    for character in raw_redirect_url
+                )
+            ):
+                raise ScienceBaseFreshAcquisitionError(
+                    "sciencebase_redirect_not_authorized"
+                )
+            _validate_fresh_sciencebase_url(raw_redirect_url)
+            redirect_arming = _commit_sciencebase_derived_arming(
+                db=db,
+                run=run,
+                lease_token=lease_token,
+                ordinal=3,
+                stage="artifact_redirect",
+                normalized_url=raw_redirect_url,
+                verified_grant=verified_grant,
+            )
+            redirect_url, redirect_projection = _assert_fresh_derived_arming(
+                redirect_arming,
+                ordinal=3,
+                stage="artifact_redirect",
+            )
+            connector_egress_arming.refresh_strict_run_lease(
+                db,
+                run=run,
+                lease_token=lease_token,
+                now=datetime.now(timezone.utc),
+            )
+            artifact_response = transport.send_once(
+                ordinal=3,
+                stage="artifact_redirect",
+                request=FrozenPhysicalRequest(
+                    method="GET",
+                    url=redirect_url,
+                    headers={},
+                    body=None,
+                    credential_audience="none",
+                ),
+                expected_derived_arming_hash=redirect_projection["url_sha256"],
+            )
+            connector_egress_arming.refresh_strict_run_lease(
+                db,
+                run=run,
+                lease_token=lease_token,
+                now=datetime.now(timezone.utc),
+            )
+        if artifact_response.response_status != 200:
+            raise ScienceBaseFreshAcquisitionError(
+                "sciencebase_artifact_status_rejected"
+            )
+        artifact_body = _validated_fresh_response_body(
+            artifact_response,
+            stage="artifact",
+            cap=SCIENCEBASE_FRESH_ARTIFACT_CAP,
+        )
+        shape_facts = _fresh_csv_shape_facts(
+            artifact_body,
+            media_type=str(
+                artifact_response.safe_headers.get("content_type") or ""
+            ),
+        )
+        artifact_sha256 = hashlib.sha256(artifact_body).hexdigest()
+        connector_egress_arming.refresh_strict_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+            now=datetime.now(timezone.utc),
+        )
+        raw_storage_ref = _persist_fresh_sciencebase_raw_blob(
+            artifact_body,
+            artifact_sha256,
+        )
+        connector_egress_arming.refresh_strict_run_lease(
+            db,
+            run=run,
+            lease_token=lease_token,
+            now=datetime.now(timezone.utc),
+        )
+        _stage_fresh_sciencebase_phase_a_graph(
+            db,
+            run=run,
+            target=target,
+            raw_storage_ref=raw_storage_ref,
+            artifact_sha256=artifact_sha256,
+            artifact_size=len(artifact_body),
+            upstream_media_class=str(shape_facts["media_class"]),
+            header_column_count=int(shape_facts["header_column_count"]),
+            nonempty_data_row_confirmed=bool(
+                shape_facts["nonempty_data_row_confirmed"]
+            ),
+            redirect_projection=redirect_projection,
+        )
+        _record_run_event(
+            db,
+            run=run,
+            target=target,
+            event_type="strict_raw_admitted",
+            phase="execution",
+            stage="raw_admission",
+            status_before="running",
+            status_after="running",
+            reason_code="sciencebase_raw_admitted",
+            metrics_json={
+                "artifact_sha256": artifact_sha256,
+                "byte_count": len(artifact_body),
+                "raw_admission_only": True,
+            },
+            commit=False,
+        )
+        _finalize_sciencebase_strict_run(
+            db=db,
+            run=run,
+            lease_token=lease_token,
+            terminal_status="completed",
+            outcome_class="sciencebase_raw_admitted",
+        )
+    except Exception as exc:
+        db.rollback()
+        persisted_run = db.get(ConnectorRun, run.connector_run_id)
+        if persisted_run is None:
+            raise
+        if _strict_terminal_event_exists(db, persisted_run):
+            return
+        code = _fresh_failure_code(exc)
+        _record_fresh_failure(
+            db,
+            run=persisted_run,
+            code=code,
+        )
+        _finalize_sciencebase_strict_run(
+            db=db,
+            run=persisted_run,
+            lease_token=lease_token,
+            terminal_status="failed",
+            outcome_class=code,
+        )
+
+
 def _recompute_run_totals(db: Session, run: ConnectorRun) -> dict[str, int]:
     targets = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == run.connector_run_id).all()
     statuses = [t.status for t in targets]
@@ -2796,6 +4092,31 @@ def _finalize_run(db: Session, run: ConnectorRun) -> None:
     db.commit()
 
 
+def _reject_malformed_reserved_egress_run(
+    db: Session,
+    *,
+    run: ConnectorRun,
+) -> None:
+    prior_status = run.status
+    run.status = "failed"
+    run.error_summary = "reserved_egress_provenance_invalid"
+    run.completed_at = _utcnow()
+    _release_lease(run)
+    _record_run_event(
+        db,
+        run=run,
+        event_type="reserved_egress_provenance_rejected",
+        phase="execution",
+        stage="pre_dispatch",
+        status_before=prior_status,
+        status_after="failed",
+        reason_code="reserved_egress_provenance_invalid",
+        error_class="reserved_egress_provenance_invalid",
+        metrics_json={"generic_execution_entered": False},
+        commit=True,
+    )
+
+
 def execute_connector_run(connector_run_id: str) -> None:
     db = SessionLocal()
     try:
@@ -2805,6 +4126,46 @@ def execute_connector_run(connector_run_id: str) -> None:
             if not run:
                 return
             if run.status in RUN_TERMINAL_STATUSES:
+                return
+            reserved_egress = (
+                connector_egress_arming.has_reserved_egress_provenance(run)
+            )
+            strict_egress = connector_egress_arming.is_strict_egress_run(run)
+            if reserved_egress and (
+                not strict_egress or run.connector_key != "sciencebase_mcs"
+            ):
+                _reject_malformed_reserved_egress_run(db, run=run)
+                return
+            if strict_egress:
+                lease_token = _acquire_strict_sciencebase_run_lease(
+                    db,
+                    run=run,
+                )
+                if lease_token is None:
+                    return
+                _record_run_event(
+                    db,
+                    run=run,
+                    event_type="lease_acquired",
+                    phase="planning",
+                    status_after=run.status,
+                    metrics_json={
+                        "lease_owner": run.execution_lease_owner,
+                        "strict_pending_claim": True,
+                    },
+                    commit=True,
+                )
+                transport = _build_sciencebase_strict_transport(
+                    db,
+                    run=run,
+                    lease_token=lease_token,
+                )
+                _execute_fresh_exact_sciencebase_run(
+                    db,
+                    run=run,
+                    lease_token=lease_token,
+                    transport=transport,
+                )
                 return
             if not _acquire_lease(db, run):
                 run.error_summary = "lease_conflict"
@@ -2973,8 +4334,30 @@ def execute_connector_run(connector_run_id: str) -> None:
                 commit=True,
             )
         except Exception as exc:
+            db.rollback()
             run = db.get(ConnectorRun, connector_run_id)
             if run:
+                if connector_egress_arming.has_reserved_egress_provenance(run):
+                    if _strict_terminal_event_exists(db, run):
+                        return
+                    if (
+                        connector_egress_arming.is_strict_egress_run(run)
+                        and run.status == "running"
+                        and run.execution_lease_token
+                    ):
+                        code = _fresh_failure_code(exc)
+                        lease_token = run.execution_lease_token
+                        _record_fresh_failure(db, run=run, code=code)
+                        _finalize_sciencebase_strict_run(
+                            db=db,
+                            run=run,
+                            lease_token=lease_token,
+                            terminal_status="failed",
+                            outcome_class=code,
+                        )
+                    else:
+                        _reject_malformed_reserved_egress_run(db, run=run)
+                    return
                 run.status = "failed"
                 if "lease_conflict" in str(exc):
                     run.error_summary = "lease_conflict"

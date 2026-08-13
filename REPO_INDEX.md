@@ -241,3 +241,33 @@ Partially verified:
 - This workspace copy does not include a `.git/` directory.
 - Connector runtime is intentionally in-process (no distributed worker queue).
 - Public-read ScienceBase workflows only; private/authenticated paths are out of scope.
+
+## 10) 2026-07-29 dual-live proof planning pointer
+
+This index is intentionally scoped and is not the live status ledger. For the
+current proposed ScienceBase + NRC APS connector-origin proof, read:
+
+1. `docs/campaign-records/2026-07-29-dual-live-proof.md` — comprehensive
+   campaign state, value, exact targets, governance, network contracts,
+   continuity requirements, milestones, risks, and non-claims.
+2. `docs/superpowers/plans/2026-07-29-dual-live-proof.md` — executable
+   implementation/test/review/owner-gate sequence, including protected
+   campaign-definition correlation, current-versus-historical grant separation,
+   one-grant/one-parent-arming consumption, strict duplicate-safe ScienceBase
+   locator plus byte-exact query admission, manifest/seal/event-bound runtime
+   logs and full-sink derived-URL custody, an immutable unique-maximal
+   one-campaign-per-revision evidence-index chain with head-only arming, and
+   two-campaign rotation/rollback validation.
+3. `docs/program-context/03-forward-plan.md` section
+   `M-DUAL-LIVE-PROOF` — canonical forward-state summary.
+
+Current claim:
+
+`DESIGN-DRAFTED; IMPLEMENTATION-NOT-LANDED; EGRESS-NOT-GRANTED;
+FRESH-LIVE-NOT-RUN; LAYER3-CONNECTOR-ORIGIN-HANDOFF-NOT-PROVEN.`
+
+The two files are an M0 candidate until co-committed after architecture/spec
+review; this pointer is not a completed planning freeze.
+
+The existing v1.3.3 ScienceBase recurrence pilot and NRC fixture/replay proofs
+remain useful but do not satisfy the proposed fresh-byte dual-source campaign.

@@ -32,10 +32,10 @@ BACKEND = Path(__file__).resolve().parents[1]
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-from app.core.config import bootstrap_storage_tree, settings
-from app.api.deps import get_db
-from app.db.session import Base
-from main import app
+from app.core.config import bootstrap_storage_tree, settings  # noqa: E402
+from app.api.deps import get_db  # noqa: E402
+from app.db.session import Base  # noqa: E402
+from main import app  # noqa: E402
 
 _API = "/api/v1"
 _IDENTITY_HEADER = "x-forwarded-user"
@@ -69,6 +69,7 @@ _GET_ROUTES = [
     f"{_API}/datasets/{_DS}",
     f"{_API}/datasets/{_DS}/versions/{_DSV}/annotations",
     f"{_API}/analysis-runs/{_RUN}",
+    f"{_API}/connectors/egress-armings/{_CRUN}",
     f"{_API}/connectors/runs/{_CRUN}",
     f"{_API}/connectors/runs/{_CRUN}/targets",
     f"{_API}/connectors/runs/{_CRUN}/events",
@@ -111,6 +112,24 @@ _POST_JSON_ROUTES: list[tuple[str, dict]] = [
         f"{_API}/analysis-runs",
         {"dataset_version_id": _DSV, "method_name": "arima"},
     ),
+    (
+        f"{_API}/connectors/egress-armings",
+        {
+            "schema_id": "project6.connector_egress_arming.v1",
+            "client_request_id": "auth-gate-probe",
+            "connector_key": "nrc_adams_aps",
+            "campaign_id": "7fe33e0a-c0e7-4f8e-9d55-8ba77a01ce23",
+            "campaign_fingerprint": "a" * 64,
+            "grant_sha256": "b" * 64,
+        },
+    ),
+    (
+        f"{_API}/connectors/egress-armings/{_CRUN}/execute",
+        {
+            "execution_idempotency_key": "auth-gate-probe",
+            "arming_fingerprint": "c" * 64,
+        },
+    ),
     (f"{_API}/connectors/sciencebase-public/runs", {}),
     (f"{_API}/connectors/sciencebase-mcs/runs", {}),
     (f"{_API}/connectors/nrc-adams-aps/runs", {}),
@@ -140,8 +159,8 @@ _POST_MULTIPART_ROUTES = [
     f"{_API}/sources/upload",
 ]
 
-assert len(_GET_ROUTES) == 20, f"Expected 20 GET routes, got {len(_GET_ROUTES)}"
-assert len(_POST_JSON_ROUTES) == 28, f"Expected 28 POST JSON routes, got {len(_POST_JSON_ROUTES)}"
+assert len(_GET_ROUTES) == 21, f"Expected 21 GET routes, got {len(_GET_ROUTES)}"
+assert len(_POST_JSON_ROUTES) == 30, f"Expected 30 POST JSON routes, got {len(_POST_JSON_ROUTES)}"
 assert len(_POST_MULTIPART_ROUTES) == 1, f"Expected 1 multipart POST route, got {len(_POST_MULTIPART_ROUTES)}"
 
 

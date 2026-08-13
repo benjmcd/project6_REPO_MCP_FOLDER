@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+import sys
 from typing import Literal
 import urllib.parse
 
@@ -222,6 +223,55 @@ class Settings(BaseSettings):
     connector_max_concurrent_runs: int = Field(default=1, alias="CONNECTOR_MAX_CONCURRENT_RUNS")
     connector_max_downloads_per_run: int = Field(default=1, alias="CONNECTOR_MAX_DOWNLOADS_PER_RUN")
     connector_per_host_fetch_limit: int = Field(default=2, alias="CONNECTOR_PER_HOST_FETCH_LIMIT")
+    connector_live_egress_enabled: bool = Field(
+        default=False,
+        alias="CONNECTOR_LIVE_EGRESS_ENABLED",
+    )
+    connector_egress_arming_max_ttl_seconds: int = Field(
+        default=86_400,
+        gt=0,
+        alias="CONNECTOR_EGRESS_ARMING_MAX_TTL_SECONDS",
+    )
+    connector_live_egress_exclusive_proof_mode: bool = Field(
+        default=True,
+        alias="CONNECTOR_LIVE_EGRESS_EXCLUSIVE_PROOF_MODE",
+    )
+    connector_campaign_definition_path: Path | None = Field(
+        default=None,
+        alias="CONNECTOR_CAMPAIGN_DEFINITION_PATH",
+    )
+    connector_campaign_definition_sha256: str | None = Field(
+        default=None,
+        alias="CONNECTOR_CAMPAIGN_DEFINITION_SHA256",
+    )
+    connector_sciencebase_grant_path: Path | None = Field(
+        default=None,
+        alias="CONNECTOR_SCIENCEBASE_GRANT_PATH",
+    )
+    connector_sciencebase_grant_sha256: str | None = Field(
+        default=None,
+        alias="CONNECTOR_SCIENCEBASE_GRANT_SHA256",
+    )
+    connector_nrc_aps_grant_path: Path | None = Field(
+        default=None,
+        alias="CONNECTOR_NRC_APS_GRANT_PATH",
+    )
+    connector_nrc_aps_grant_sha256: str | None = Field(
+        default=None,
+        alias="CONNECTOR_NRC_APS_GRANT_SHA256",
+    )
+    connector_campaign_evidence_root: Path | None = Field(
+        default=None,
+        alias="CONNECTOR_CAMPAIGN_EVIDENCE_ROOT",
+    )
+    connector_campaign_evidence_index_path: Path | None = Field(
+        default=None,
+        alias="CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_PATH",
+    )
+    connector_campaign_evidence_index_sha256: str | None = Field(
+        default=None,
+        alias="CONNECTOR_CAMPAIGN_EVIDENCE_INDEX_SHA256",
+    )
     layer3_route_authorization_mode: Literal["identity_presence", "role_enforcing"] = Field(
         default="identity_presence",
         alias="LAYER3_ROUTE_AUTHORIZATION_MODE",
@@ -454,7 +504,7 @@ class Settings(BaseSettings):
         return str(Path(self.storage_dir) / "layer3-outbox")
 
 
-settings = Settings()
+settings = Settings(_env_file=None) if sys.flags.isolated else Settings()
 
 
 def bootstrap_storage_tree(storage_dir: str | Path | None = None) -> None:

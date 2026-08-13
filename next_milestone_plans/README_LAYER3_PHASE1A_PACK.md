@@ -1712,3 +1712,55 @@ Doc `268_MOCKUP_THEME_FREEZE.md` records the corrected product/UX intent for a d
 - `Layer3_planning_docs/285_RUNTIME_FREEZE_INTAKE_CHECKLIST.md` records `runtime_freeze_intake_checklist`.
 - It admits no runtime behavior; it makes the next required boundary explicit: `exact_named_server_authoritative_runtime_use_case_freeze`.
 - Boundary is `no_runtime_implementation_without_named_use_case` for source, connector/destination, package mutation, broad qual/hybrid/RAG, full mockup activation, auth/security, and backend API/model/migration/service work.
+
+## Dual Live Connector-Origin Proof Planning Pointer
+
+- `docs/campaign-records/2026-07-29-dual-live-proof.md` selects a named
+  connector-origin proof campaign over one exact ScienceBase CSV and one exact
+  NRC APS PDF.
+- `docs/superpowers/plans/2026-07-29-dual-live-proof.md` specifies the
+  implementation, offline verification, owner arming, live execution, Layer
+  3C review/package/handoff, repeatability, and promotion sequence.
+- The ScienceBase vertical targets exact item
+  `63d1a3c6d34e06fef15006be` and desired exact file
+  `mcs2023-germa_salient.csv`, then one `descriptive_summary` result through
+  review, `canonical_internal`/`user_facing`/`review_facing` packages, package
+  submit, and handoff/export prepare.
+- The NRC vertical targets exact accession `ML17123A319`, derives and commits
+  a hash/class-only artifact arming only when the keyed Get Document response
+  matches the exact owner-granted `www.nrc.gov` PDF rule, follows no NRC
+  redirect, then binds the fresh PDF to the existing qualitative execution and
+  the same review/package/handoff boundary.
+- A protected strict campaign definition/raw digest rederives the shared
+  fingerprint as deny-only correlation; current unexpired connector grants
+  remain the only egress authority after intersection. A separate protected
+  content-addressed evidence-index revision chain preserves original
+  definition/grant bytes for post-expiry validation. Exact predecessor links,
+  strict-superset successors, a unique-maximal configured head, and
+  one-complete-campaign-per-revision semantics make rollback/fork/drop fail.
+  Arming requires the selected campaign's earliest complete-slice revision to
+  be that head; retained ancestors are historical-only. Arming/seal/event
+  introduction-digest bindings preserve verification, while historical types
+  are structurally barred from arming/reservation/transport.
+- Each exact grant is single-use for parent arming: one UUID4 nonce,
+  `max_armings=1`, one deterministic parent-run ID, and one atomic
+  no-overwrite digest-keyed consumption marker. Historical evidence cannot
+  restore the consumed budget; replacement requires a new definition/campaign
+  and explicitly superseding grant.
+- Exact derived URLs remain process-memory-only. Strict-lane URL scalar fields
+  are null, raw connector response snapshots are omitted, and Layer 3 receives
+  only target/receipt/storage/content identifiers plus closed safe projections.
+  ScienceBase rejects duplicate JSON members, admits one exact untrimmed
+  `downloadUri`, constrains its optional redirect to a closed status/single raw
+  `Location` rule, and checks raw path/query equality before permissive parsing.
+  The evaluator rehashes/scans exactly four protected runtime-log streams whose
+  manifest is bound by a separate no-overwrite seal and matching events on both
+  connector runs, plus every scalar/text/JSON/generated non-source-file sink;
+  machine-global logs and cryptographic nonrepudiation are not claimed.
+- This is the named candidate planning record for M0 architecture/spec review,
+  not a completed planning freeze and not the implementation authorization
+  required by the earlier runtime-freeze checklist. It does not change current
+  backend/runtime/source/connector, package, auth, or progress-manifest claims.
+- Exact current status:
+  `DESIGN-DRAFTED; IMPLEMENTATION-NOT-LANDED; EGRESS-NOT-GRANTED;
+  FRESH-LIVE-NOT-RUN; LAYER3-CONNECTOR-ORIGIN-HANDOFF-NOT-PROVEN.`

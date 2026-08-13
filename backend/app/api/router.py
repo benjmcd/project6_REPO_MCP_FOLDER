@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app._version import BUILD_INFO
 from app.api.deps import get_db
+from app.core.config import settings
 from app.models import AnalysisRun, AnnotationWindow, ConnectorRun, ConnectorRunTarget, Dataset, DatasetVersion, VariableProfile
 from app.schemas.api import (
     AnalysisRecommendationOut,
@@ -17,6 +19,8 @@ from app.schemas.api import (
     AnnotationWindowOut,
     BlsConnectorRunIn,
     CftcCotConnectorRunIn,
+    ConnectorEgressArmingIn,
+    ConnectorEgressExecuteIn,
     ConnectorRunOut,
     ConnectorRunEventsPageOut,
     ConnectorRunContentUnitsPageOut,
@@ -80,6 +84,8 @@ from app.services.connectors_cftc_cot import execute_cftc_cot_run, submit_cftc_c
 from app.services.connectors_bls import execute_bls_run, submit_bls_run
 from app.services.connectors_oecd import OecdSdmxSchemaValidationError, execute_oecd_sdmx_run, submit_oecd_sdmx_run
 from app.services import aps_retrieval_plane_read
+from app.services import connector_egress_arming
+from app.services import connector_egress_authorization
 from app.services import nrc_aps_content_index
 from app.services import nrc_aps_context_dossier
 from app.services import nrc_aps_context_packet
@@ -178,6 +184,164 @@ def _enqueue_connector_run(background_tasks: BackgroundTasks, connector_key: str
     if executor is None:
         raise HTTPException(status_code=409, detail=f"connector executor not configured for {connector_key}")
     background_tasks.add_task(executor, connector_run_id)
+
+
+def _egress_service_http_error(exc: Exception) -> HTTPException:
+    code = str(getattr(exc, "code", "connector_egress_request_rejected"))
+    message = str(getattr(exc, "message", str(exc)))
+    status_code = int(
+        getattr(exc, "http_status", getattr(exc, "status_code", 409))
+    )
+    return HTTPException(
+        status_code=status_code,
+        detail={"code": code, "message": message},
+    )
+
+
+def _safe_egress_arming_projection(
+    run: ConnectorRun,
+    *,
+    created: bool,
+) -> ConnectorRunSubmitOut:
+    return ConnectorRunSubmitOut.model_validate(
+        {
+            "connector_run_id": run.connector_run_id,
+            "status": run.status,
+            "created": created,
+            "submitted_at": run.submitted_at,
+            "poll_url": (
+                f"/api/v1/connectors/egress-armings/{run.connector_run_id}"
+            ),
+            "submission_idempotency_key": None,
+            "request_fingerprint": run.request_fingerprint,
+        }
+    )
+
+
+def _configured_code_revision() -> str:
+    return str(BUILD_INFO.get("source_sha") or "").strip().lower()
+
+
+def _resolve_egress_authority(
+    *,
+    connector_key: str,
+    campaign_id: str,
+    campaign_fingerprint: str,
+    grant_sha256: str,
+    now: datetime,
+):
+    code_revision = _configured_code_revision()
+    verified_campaign = (
+        connector_egress_authorization
+        .resolve_current_dual_live_campaign_definition(
+            expected_campaign_id=campaign_id,
+            expected_campaign_fingerprint=campaign_fingerprint,
+            code_revision=code_revision,
+            now=now,
+        )
+    )
+    verified_grant = (
+        connector_egress_authorization.resolve_current_connector_egress_grant(
+            verified_campaign=verified_campaign,
+            connector_key=connector_key,
+            expected_grant_sha256=grant_sha256,
+            campaign_id=campaign_id,
+            campaign_fingerprint=campaign_fingerprint,
+            code_revision=code_revision,
+            now=now,
+        )
+    )
+    return verified_grant
+
+
+def _strict_arming_envelope_for_route(run: ConnectorRun) -> dict:
+    config = run.request_config_json
+    raw_envelope = (
+        config.get("connector_egress_arming")
+        if isinstance(config, dict)
+        else None
+    )
+    envelope = dict(raw_envelope) if isinstance(raw_envelope, dict) else {}
+    if not connector_egress_arming.is_strict_egress_run(run):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "connector_reserved_egress_provenance_malformed",
+                "message": (
+                    "reserved egress provenance is not one valid strict arming"
+                ),
+            },
+        )
+    return envelope
+
+
+def _reject_strict_generic_read(run: ConnectorRun) -> None:
+    if connector_egress_arming.has_reserved_egress_provenance(run):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "connector_strict_generic_get_forbidden",
+                "message": (
+                    "strict egress runs are available only through the "
+                    "protected egress-arming projection"
+                ),
+            },
+        )
+
+
+def _strict_egress_executor(run: ConnectorRun):
+    if not connector_egress_arming.is_strict_egress_run(run):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "connector_reserved_egress_provenance_malformed",
+                "message": (
+                    "reserved egress provenance cannot select an executor"
+                ),
+            },
+        )
+    executors = {
+        "sciencebase_mcs": execute_connector_run,
+        "nrc_adams_aps": execute_nrc_adams_run,
+    }
+    executor = executors.get(run.connector_key)
+    if executor is None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "connector_strict_executor_not_configured",
+                "message": "strict egress connector has no admitted executor",
+            },
+        )
+    return executor
+
+
+def _exclusive_dual_live_proof_mode() -> bool:
+    return bool(
+        settings.connector_live_egress_enabled
+        and settings.connector_live_egress_exclusive_proof_mode
+    )
+
+
+def _reject_generic_connector_during_exclusive_proof(
+    *,
+    connector_key: str,
+) -> None:
+    if (
+        _exclusive_dual_live_proof_mode()
+        and connector_key
+        in {"sciencebase_public", "sciencebase_mcs", "nrc_adams_aps"}
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "connector_generic_route_blocked_by_exclusive_proof",
+                "message": (
+                    "generic ScienceBase/NRC connector routes are disabled "
+                    "during the exclusive dual-live proof"
+                ),
+            },
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +512,107 @@ def get_analysis_run(analysis_run_id: str, request: Request, db: Session = Depen
         return _legacy_api_auth_policy_error_response(exc)
 
 
+@api_router.post(
+    "/connectors/egress-armings",
+    status_code=status.HTTP_201_CREATED,
+    response_model=ConnectorRunSubmitOut,
+)
+def create_connector_egress_arming_route(
+    payload: ConnectorEgressArmingIn,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> ConnectorRunSubmitOut:
+    try:
+        _route_level_operator_identity(request, access="write")
+        now = datetime.now(UTC)
+        verified_grant = _resolve_egress_authority(
+            connector_key=payload.connector_key,
+            campaign_id=payload.campaign_id,
+            campaign_fingerprint=payload.campaign_fingerprint,
+            grant_sha256=payload.grant_sha256,
+            now=now,
+        )
+        operator_receipt = (
+            connector_egress_authorization.authorize_connector_egress_owner(
+                request,
+                verified_grant=verified_grant,
+                access="write",
+            )
+        )
+        run, created = connector_egress_arming.create_connector_egress_arming(
+            db,
+            payload=payload,
+            verified_grant=verified_grant,
+            operator_receipt=operator_receipt.model_dump(mode="json"),
+            code_revision=_configured_code_revision(),
+        )
+        return _safe_egress_arming_projection(run, created=created)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _legacy_api_auth_policy_error_response(exc)
+    except (
+        connector_egress_authorization.ConnectorEgressAuthorizationError,
+        connector_egress_arming.ConnectorEgressArmingError,
+    ) as exc:
+        raise _egress_service_http_error(exc) from exc
+
+
+@api_router.get(
+    "/connectors/egress-armings/{connector_run_id}",
+    response_model=ConnectorRunSubmitOut,
+)
+def get_connector_egress_arming_route(
+    connector_run_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> ConnectorRunSubmitOut:
+    try:
+        _route_level_operator_identity(request, access="read")
+        run = db.get(ConnectorRun, connector_run_id)
+        if run is None:
+            raise HTTPException(status_code=404, detail="egress arming not found")
+        _strict_arming_envelope_for_route(run)
+        return _safe_egress_arming_projection(run, created=False)
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _legacy_api_auth_policy_error_response(exc)
+
+
+@api_router.post(
+    "/connectors/egress-armings/{connector_run_id}/execute",
+    status_code=status.HTTP_409_CONFLICT,
+    response_model=None,
+    deprecated=True,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "description": (
+                "Strict egress execution is disabled over HTTP; use the "
+                "owned CLI acquisition child."
+            ),
+        },
+    },
+)
+def execute_connector_egress_arming_route(
+    connector_run_id: str,
+    payload: ConnectorEgressExecuteIn,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> ConnectorRunSubmitOut:
+    try:
+        _route_level_operator_identity(request, access="write")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "connector_strict_egress_http_execute_disabled",
+                "message": (
+                    "Strict egress execution is available only through the "
+                    "owned CLI acquisition child."
+                ),
+            },
+        )
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _legacy_api_auth_policy_error_response(exc)
+
+
 @api_router.post("/connectors/sciencebase-public/runs", status_code=status.HTTP_202_ACCEPTED, response_model=ConnectorRunSubmitOut)
 def create_sciencebase_public_run(
     payload: ScienceBaseConnectorRunIn,
@@ -358,6 +623,9 @@ def create_sciencebase_public_run(
 ) -> ConnectorRunSubmitOut:
     try:
         _route_level_operator_identity(request, access="write")
+        _reject_generic_connector_during_exclusive_proof(
+            connector_key="sciencebase_public"
+        )
         try:
             run, created = submit_connector_run(
                 db,
@@ -394,6 +662,9 @@ def create_sciencebase_mcs_run(
 ) -> ConnectorRunSubmitOut:
     try:
         _route_level_operator_identity(request, access="write")
+        _reject_generic_connector_during_exclusive_proof(
+            connector_key="sciencebase_mcs"
+        )
         try:
             run, created = submit_connector_run(
                 db,
@@ -430,6 +701,9 @@ def create_nrc_adams_aps_run(
 ) -> ConnectorRunSubmitOut:
     try:
         _route_level_operator_identity(request, access="write")
+        _reject_generic_connector_during_exclusive_proof(
+            connector_key="nrc_adams_aps"
+        )
         try:
             run, created = submit_nrc_adams_run(
                 db,
@@ -639,6 +913,7 @@ def get_connector_run(connector_run_id: str, request: Request, db: Session = Dep
         run = db.get(ConnectorRun, connector_run_id)
         if not run:
             raise HTTPException(status_code=404, detail="connector run not found")
+        _reject_strict_generic_read(run)
         return ConnectorRunOut.model_validate(serialize_connector_run(db, run))
     except SecXbrlInAppAuthPolicyError as exc:
         return _legacy_api_auth_policy_error_response(exc)
@@ -658,6 +933,7 @@ def get_connector_run_targets(
         run = db.get(ConnectorRun, connector_run_id)
         if not run:
             raise HTTPException(status_code=404, detail="connector run not found")
+        _reject_strict_generic_read(run)
         query = db.query(ConnectorRunTarget).filter(ConnectorRunTarget.connector_run_id == connector_run_id)
         if status_filter:
             query = query.filter(ConnectorRunTarget.status == status_filter)
@@ -689,6 +965,7 @@ def get_connector_run_events(
         run = db.get(ConnectorRun, connector_run_id)
         if not run:
             raise HTTPException(status_code=404, detail="connector run not found")
+        _reject_strict_generic_read(run)
         return ConnectorRunEventsPageOut.model_validate(
             list_connector_run_events(
                 db,
@@ -708,6 +985,7 @@ def get_connector_run_reports(connector_run_id: str, request: Request, db: Sessi
         run = db.get(ConnectorRun, connector_run_id)
         if not run:
             raise HTTPException(status_code=404, detail="connector run not found")
+        _reject_strict_generic_read(run)
         return ConnectorRunReportsOut.model_validate(serialize_connector_run_reports(run))
     except SecXbrlInAppAuthPolicyError as exc:
         return _legacy_api_auth_policy_error_response(exc)
@@ -726,6 +1004,7 @@ def get_connector_run_content_units(
         run = db.get(ConnectorRun, connector_run_id)
         if not run:
             raise HTTPException(status_code=404, detail="connector run not found")
+        _reject_strict_generic_read(run)
         payload = nrc_aps_content_index.list_content_units_for_run(
             db,
             run_id=connector_run_id,
@@ -785,6 +1064,7 @@ def get_connector_run_retrieval_content_units(
         run = db.get(ConnectorRun, connector_run_id)
         if not run:
             raise HTTPException(status_code=404, detail="connector run not found")
+        _reject_strict_generic_read(run)
         try:
             payload = aps_retrieval_plane_read.list_content_units_for_run(
                 db,
@@ -1336,6 +1616,20 @@ def resume_connector_run(
 ) -> ConnectorRunOut:
     try:
         _route_level_operator_identity(request, access="write")
+        current = db.get(ConnectorRun, connector_run_id)
+        if current is None:
+            raise HTTPException(status_code=404, detail="connector run not found")
+        if connector_egress_arming.has_reserved_egress_provenance(current):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "connector_strict_resume_forbidden",
+                    "message": "strict egress armings cannot use generic resume",
+                },
+            )
+        _reject_generic_connector_during_exclusive_proof(
+            connector_key=current.connector_key
+        )
         try:
             run = request_resume_run(db, connector_run_id)
         except RunNotFoundError as exc:
@@ -1351,6 +1645,17 @@ def resume_connector_run(
 def cancel_connector_run(connector_run_id: str, request: Request, db: Session = Depends(get_db)) -> ConnectorRunOut:
     try:
         _route_level_operator_identity(request, access="write")
+        current = db.get(ConnectorRun, connector_run_id)
+        if current is None:
+            raise HTTPException(status_code=404, detail="connector run not found")
+        if connector_egress_arming.has_reserved_egress_provenance(current):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "connector_strict_cancel_forbidden",
+                    "message": "strict egress armings cannot use generic cancel",
+                },
+            )
         try:
             run = request_cancel_run(db, connector_run_id)
         except RunNotFoundError as exc:

@@ -3567,6 +3567,50 @@ def test_connector_mcs_release_mode_requires_commodity_keywords():
     assert invalid.status_code == 409, invalid.text
 
 
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/api/v1/connectors/sciencebase-public/runs",
+        "/api/v1/connectors/sciencebase-mcs/runs",
+    ],
+)
+@pytest.mark.parametrize(
+    ("payload", "headers"),
+    [
+        ({"connector_egress_arming": {"schema_id": "reserved"}}, {}),
+        ({"source_mode": " strict_live_egress "}, {}),
+        ({"client_request_id": "egress-arm:client"}, {}),
+        ({"submission_idempotency_key": "egress-arm:submission"}, {}),
+        ({"idempotency_key": "egress-arm:payload"}, {}),
+        ({}, {"Idempotency-Key": "egress-arm:header"}),
+    ],
+)
+def test_sciencebase_generic_api_rejects_all_reserved_egress_markers(
+    monkeypatch,
+    path,
+    payload,
+    headers,
+):
+    from app.api import router as api_router
+    from app.models import ConnectorRun
+
+    monkeypatch.setattr(
+        api_router,
+        "_enqueue_connector_run",
+        lambda *_args, **_kwargs: pytest.fail(
+            "reserved ScienceBase request must not enqueue"
+        ),
+    )
+    with TestingSessionLocal() as db:
+        before = db.query(ConnectorRun).count()
+
+    response = client.post(path, json=payload, headers=headers)
+
+    assert response.status_code in {409, 422}, response.text
+    with TestingSessionLocal() as db:
+        assert db.query(ConnectorRun).count() == before
+
+
 def test_sciencebase_mcs_explicit_2026_item_ids_skip_search_and_dry_run(monkeypatch):
     from app.services import connectors_sciencebase as sb
 

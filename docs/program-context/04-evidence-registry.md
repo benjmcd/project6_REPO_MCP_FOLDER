@@ -508,3 +508,95 @@ The snapshot is intentionally scoped, not exhaustive (living coordination
 files and other lane payloads are excluded by design); it therefore records
 `BOUNDED-PREKEY-SNAPSHOT-COMPLETE; I12-OPEN` and is inadmissible for any
 `I12-EXHAUSTIVE-ARCHIVE-COMPLETE` selection.
+
+## 2026-07-29 Dual Live Proof Planning Evidence
+
+This section anchors design inputs only. It contains no live connector response,
+arming, owner grant, or acceptance evidence.
+
+Until this section, the campaign record, and the implementation plan are
+co-committed, all three are candidate working-tree material and carry no
+program authority. The eventual commit and exact campaign/plan blob IDs—not a
+local path or session assertion—must bind the durable record.
+
+### Repository authority
+
+| Evidence | Anchor | Meaning |
+|---|---|---|
+| Design baseline | `project6-origin/main` `c1fcd840b421ceafb560266858a75808207f4540` | source/test/docs state inspected for the campaign design |
+| Candidate standing rail | `docs/program-context/00-posture-and-invariants.md`, I14 | caller posture is not grant authority; becomes standing only on co-commit |
+| Candidate grouped-governance decision | `docs/program-context/02-decision-record.md`, D35 | one protected strict definition/raw digest/rederived fingerprint binds shared governance as deny-only correlation; connector grants remain separate egress authority |
+| Candidate lifecycle decision | `docs/program-context/02-decision-record.md`, D41 | sends require current definition/grant intersection and both unexpired windows; immutable index revisions form one unique-maximal strict-superset chain, each introduces exactly one complete campaign slice, arming requires that earliest slice revision to be the current head, and armings/seal/events bind it for non-executable historical validation after co-commit |
+| Candidate one-use decision | `docs/program-context/02-decision-record.md`, D42 | one UUID4 nonce, `max_armings=1`, a deterministic parent ID, and an atomic digest-keyed marker prevent one owner grant from multiplying across client keys, states, or databases; replacement requires a new definition/campaign and explicitly superseding grant |
+| Candidate URL-custody decision | `docs/program-context/02-decision-record.md`, D43 | strict lanes keep URL scalar fields null, persist only a safe closed projection, omit raw connector snapshots, and scan every scalar/text/JSON, non-source-file, and protected manifest/seal/event-bound runtime-log sink |
+| Campaign record candidate | `docs/campaign-records/2026-07-29-dual-live-proof.md` | campaign-specific state, decisions, contracts, risks, milestones, and non-claims; authoritative only after co-commit |
+| Implementation plan candidate | `docs/superpowers/plans/2026-07-29-dual-live-proof.md` | offline build/test/review/live-gate sequence; authoritative only after co-commit |
+| Existing connector program record | `docs/campaign-records/2026-07-08-connector-program.md` | frozen connector-breadth history; not edited or reinterpreted |
+
+### ScienceBase anchors
+
+| Evidence | Anchor | Meaning |
+|---|---|---|
+| Canonical first item ID | `tools/run_sciencebase_live_pilot_validation.py`, `DEFAULT_MCS_SCOPE_ITEM_IDS=("63d1a3c6d34e06fef15006be",)` | repository-backed exact item; no search needed |
+| Desired filename | `mcs2023-germa_salient.csv` | historical operator evidence only; authorized hydration must confirm exact presence or stop |
+| Connector runtime | `backend/app/services/connectors_sciencebase.py` | landed generic ScienceBase execution; currently permits behavior the strict proof must bypass or constrain |
+| Repository file-URL shape | `tests/test_api.py`, `MCS_2026_COMMODITIES_DOWNLOAD_URI` and `MCS_2026_TRENDS_DOWNLOAD_URI` | repo-confirmed `/catalog/file/get/<item>?f=<filename>` contract; strict proof rejects duplicate JSON members, admits one untrimmed `downloadUri`, and requires the exact raw ASCII path/query byte-for-byte before strict pair confirmation |
+| API schema | `backend/app/schemas/api.py`, `ScienceBaseConnectorRunIn` | currently lacks exact-filename and no-conditionals proof contract |
+| Layer 3 intake | `backend/app/services/layer3_connector_source_intake.py` | rehashes downloaded CSV and produces connector-source Gate B basis |
+| Intake tests | `backend/tests/test_layer3_connector_source_intake_pilot.py` | fixture/offline proof, not fresh-live proof |
+| Official model docs | `https://www.usgs.gov/sciencebase-instructions-and-documentation/api-and-web-services` and `https://www.usgs.gov/sciencebase-instructions-and-documentation/item-core-model` | current official support for item JSON via `?format=json` and file URL fields |
+
+### Persistence and URL-custody anchors
+
+| Evidence | Anchor | Meaning |
+|---|---|---|
+| Existing URL scalar sinks | `backend/app/models/models.py`, `ConnectorRunTarget.sciencebase_download_uri`, `DatasetSourceProvenance.sciencebase_download_uri`, and `ConnectorArtifactAlias.alias_url` | current generic schema can retain exact derived URLs; strict-lane implementations must leave these fields null rather than relying on JSON-only redaction |
+| ScienceBase generic persistence | `backend/app/services/connectors_sciencebase.py` | current generic target, provenance, alias, and raw item/`files[]` metadata flows establish the sinks the strict safe projection must bypass |
+| NRC generic persistence | `backend/app/services/connectors_nrc_adams.py` | current generic detail/artifact payloads can carry exact URL values; strict proof mode must persist only digest/class projections |
+| Layer 3 intake metadata | `backend/app/services/layer3_connector_source_intake.py` | current source-reference/intake metadata is a downstream URL sink; strict intake must accept only target, receipt, storage, and content identifiers |
+| Candidate custody contract | D43 plus `docs/campaign-records/2026-07-29-dual-live-proof.md` sections 5-10 and implementation-plan Tasks 1-6, 8, and 11 | exact URL exists only in a non-serializable in-memory physical request; acquired CSV/PDF bytes are opaque source exceptions while control-plane/generated surfaces and the indexed four-stream capture, manifest, separate seal, dual DB events, and their shared introduction-index binding remain scan/parity eligible |
+
+### NRC APS anchors
+
+| Evidence | Anchor | Meaning |
+|---|---|---|
+| Exact accession | `ML17123A319` | named proof target |
+| Representative fixture | `tests/fixtures/nrc_aps_docs/v1/ML17123A319.pdf` | downstream real-document fixture; not live acquisition |
+| Connector runtime | `backend/app/services/connectors_nrc_adams.py` | landed generic APS behavior; current automatic retry/redirect/auth fallback is outside the strict proof contract |
+| Focused connector tests | `tests/test_nrc_aps_safeguards.py`, `tests/test_nrc_aps_artifact_ingestion.py`, and connector-specific `backend/tests/` | fixture/replay or mocked-transport support; not fresh-live evidence |
+| Current API guide | `https://adams-search.nrc.gov/assets/APS-API-Guide.pdf` | `GET /aps/api/search/{accessionNumber}`, required API subscription-key header, returned document `Url`, and sample `www.nrc.gov/docs/...pdf` artifact shape |
+| Current ADAMS page | `https://www.nrc.gov/reading-rm/adams` | APS is the latest public interface and public documents are PDFs; it no longer contains the earlier observed WBA-transition notice |
+| Developer portal | `https://adams-api-developer.nrc.gov/` | current official APS API subscription/documentation front door |
+| Proposed first-attempt artifact rule | `https://www.nrc.gov/docs/ML1712/ML17123A319.pdf` | narrow inference from official sample grammar for owner consideration; not a live fact |
+| Empirical unknown | exact returned `Url` and whether it equals the proposed rule for `ML17123A319` | requires owner-armed Get Document response; mismatch stops before artifact egress |
+
+### Layer 3 anchors
+
+| Evidence | Anchor | Meaning |
+|---|---|---|
+| Pack front door | `next_milestone_plans/README_LAYER3_PHASE1A_PACK.md` | current source, execution, review, package, and handoff inventory |
+| Qualitative execution | `backend/app/services/layer3_qual_aps_execution.py` | existing NRC qualitative path |
+| Execution/review | `backend/app/services/layer3_execution_output.py`, `layer3_execution_review.py` | current output and result-review boundaries |
+| Package/handoff | `backend/app/services/layer3_package_entry.py`, `layer3_workbench.py`, `layer3_aps_handoff.py` | exactly-three-package and prepared-handoff machinery |
+| Focused workflow tests | `backend/tests/test_layer3_qual_aps_execution.py`, `test_layer3_execution_output.py`, `test_layer3_execution_review.py`, `test_layer3_package_entry.py`, `test_layer3_handoff_export_response.py` | existing offline workflow evidence; does not prove fresh connector origin |
+| Missing proof | one independently derived `fresh_live` connector-origin receipt per source retained through all boundaries | target of the campaign, not current evidence |
+
+The mutable Claude export is deliberately excluded from this canonical
+registry. Its bounded hash/tail observation remains coordination context in the
+candidate campaign record only; it is neither re-derivable program evidence nor
+connector authority.
+
+### Candidate working-tree byte bindings
+
+These bindings were measured after the final independent current-byte reviews.
+They identify the exact M0 candidate bytes only. They become durable program
+anchors only if the same blobs are co-committed with this registry section; any
+byte change invalidates the review disposition and requires remeasurement.
+
+| Candidate | SHA-256 | Git blob ID | Current-byte disposition |
+|---|---|---|---|
+| `docs/campaign-records/2026-07-29-dual-live-proof.md` | `e062033e110ce05499132b0b1f907720b6744dabb57fae8ceedbfc8ba40f1983` | `4947e21c1c647ab651f54552a79f1e2baa8d085c` | independent adversarial, lifecycle-chain, and cross-document reviews: PASS; no CRITICAL/MAJOR blocker |
+| `docs/superpowers/plans/2026-07-29-dual-live-proof.md` | `f1f5b4315d6cbf3f394299acea2c404f069ab358be4a89d99809604a29cba5cc` | `e9d465a6340f13a94fa9760c9d7e72f7dca1f038` | independent adversarial, lifecycle-chain, and cross-document reviews: PASS; no CRITICAL/MAJOR blocker |
+
+This review grants no commit, merge, implementation, owner acceptance, egress,
+fresh-live, delivery, supported-profile, or production authority.

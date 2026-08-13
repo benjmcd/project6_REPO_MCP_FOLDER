@@ -826,3 +826,215 @@ architecture/security programs per the support matrix — none is an A8 follow-o
   only, I3).
 - No second master-context document (D10 — this set + MASTER_CONTEXT with authority order).
 - No new SEC egress while retained artifacts satisfy the evidentiary need (D7).
+
+## 2026-07-29 Dual Live Proof Pursuit (M-DUAL-LIVE-PROOF)
+
+> **Candidate forward-plan addition:** this pursuit becomes canonical only when
+> co-committed with the exact campaign record and implementation plan. It is
+> not an owner grant or completed M0 freeze.
+
+### Status
+
+`DESIGN-DRAFTED; IMPLEMENTATION-NOT-LANDED; EGRESS-NOT-GRANTED;
+FRESH-LIVE-NOT-RUN; LAYER3-CONNECTOR-ORIGIN-HANDOFF-NOT-PROVEN.`
+
+The full campaign specification is
+`docs/campaign-records/2026-07-29-dual-live-proof.md`; the task-by-task build
+sequence is
+`docs/superpowers/plans/2026-07-29-dual-live-proof.md`.
+
+### Product objective
+
+Prove one exact newly retrieved ScienceBase CSV and one exact newly retrieved
+NRC APS PDF through connector identity, raw-byte provenance, the appropriate
+Layer 3C execution, result review, exactly three output packages, package review
+submission, and internal handoff/export preparation.
+
+This pursues analytical utility plus governed operability. “Two downloads” is
+insufficient: the value is showing that externally acquired bytes remain the
+same governed object while becoming reviewable and usable work products.
+
+### Current foundation
+
+- ScienceBase public connector, run/target/provenance/version machinery:
+  landed.
+- ScienceBase CSV connector-source intake through Gate B: fixture-proven.
+- NRC APS search/detail/artifact/document-processing stack: landed, with
+  fixture/replay validation.
+- NRC qualitative execution, review, exactly-three-package, submit, and
+  handoff path: substantially landed/proven.
+- Connector-specific first-use arming, physical-send reservation, strict
+  fresh-byte modes, and full connector-origin continuity: residual work.
+- Exact campaign-definition/owner-grant resolution is not yet implemented:
+  role/flags and caller-supplied references are insufficient. The design
+   requires one protected strict campaign definition/raw digest/rederived
+   fingerprint as deny-only correlation, protected server-loaded connector grant
+   bytes plus separately configured digests as egress authority, and a distinct
+   protected content-addressed evidence-index revision chain for post-expiry
+   read-only validation.
+
+### Named targets
+
+- ScienceBase:
+  item `63d1a3c6d34e06fef15006be`; desired exact file
+  `mcs2023-germa_salient.csv`. The item ID is tracked authority; the filename is
+  historical evidence and must be confirmed by the authorized hydration
+  response or the run stops.
+- NRC APS: accession `ML17123A319`. The repository PDF fixture proves
+  downstream behavior, not current live URL/host/auth behavior.
+
+### Milestone sequence
+
+1. M0 — freeze the reviewed campaign record and implementation plan.
+2. M1 — implement default-off arm/execute separation, strict protected
+   campaign-definition correlation, one-use grant consumption markers,
+   deterministic parent armings, CAS, durable physical request reservations,
+   exact server-grant resolution/revalidation, canonical terminal-ledger
+   hashing, one-campaign-per-revision immutable evidence-index lifecycle with
+   unique-maximal/head-equals-introduction validation, non-executable historical
+   evidence resolvers, and a retry/redirect-disabled one-send transport.
+3. M2 — implement exact fresh ScienceBase and exact-accession/derived-artifact
+   NRC state machines, including duplicate-member-safe JSON, sole untrimmed
+   ScienceBase `downloadUri`, closed redirect statuses/single `Location`,
+   byte-for-byte raw path/query admission, null strict-lane URL scalars, safe
+   projected metadata, and full scalar/text/JSON/non-source-file/runtime-log
+   custody checks.
+4. M3 — bind one connector-origin receipt through Layer 3 execution, review,
+   package, submit, and handoff preparation.
+5. M4 — pass offline crash, concurrency, redaction, negative, and independent
+   adversarial review.
+6. M5 — obtain one exact shared campaign definition plus connector-separated
+   owner grants, create one complete strict-superset evidence-index revision,
+   atomically consume each grant once, and persist its deterministic immutable
+   parent arming.
+7. M6 — run NRC first, then ScienceBase, under their own request ceilings.
+8. M7 — close both downstream verticals and pass the read-only combined
+   evaluator.
+9. M8 — repeat under a new definition/grants and direct strict-superset index
+   successor with no code changes; reject old-head rollback/fork and every
+   campaign-1 re-arming attempt, then independently re-evaluate both campaigns
+   without reviving old authority.
+10. M9 — explicitly remain experimental or open a separate Tier-2 production
+    promotion program.
+
+### Grouped governance
+
+Group the strict protected campaign definition, canonical fingerprint,
+acceptance matrix, code revision, reviewer policy, common expiry window, and
+combined closeout. Keep grants, armings, request ledgers, credential audiences,
+failure states, and technical outcomes connector-local. The definition is
+deny-only correlation and cannot widen a connector grant.
+Each exact grant carries one UUID4 nonce and `max_armings=1`; a deterministic
+parent-run ID plus an atomic no-overwrite digest-keyed consumption marker makes
+that grant unusable for any second parent arming, regardless of client key,
+run state, or isolated database.
+For both connectors, commit hash/class-only derived artifact armings before
+detail-derived sends. Exact derived URLs remain process-memory-only. The first
+NRC grant admits only the exact inferred `www.nrc.gov` path and follows no
+redirect.
+
+Preserve exact non-secret definition/grant bytes under content-addressed names
+in a protected root and resolve them later only through immutable
+content-addressed evidence-index revisions. Require one no-overwrite, gap-free
+linear predecessor chain, a unique maximal configured head, and strict-superset
+successors that each add exactly one complete disjoint campaign slice. Arming
+requires the selected campaign's earliest complete-slice revision to be that
+current head; a preserved ancestor is historical-only even if unused. Bind each
+campaign's introduction revision/digest into its armings, log seal, and the seal event(s) of every extant connector run (two on a passing dual run, one after an NRC-first stop) — formerly stated as both
+seal events.
+Current grant resolution remains the sole send authority after definition
+intersection; historical resolution validates both event-time windows and is
+structurally unusable by arming, reservation, or transport.
+
+This grouping reduces repeated milestone administration without letting one
+source authorize or satisfy the other.
+
+### Pass criteria
+
+- Every physical send has a prior committed reservation; unknown is spent.
+- The protected strict campaign-definition raw digest rederives the canonical
+  fingerprint, both grants match its deny-only governance intersection, and
+  each selected evidence-index slice is exactly one definition/two grants/one
+  capture. The configured index is the unique maximal head of a verified
+  strict-superset chain and the selected campaign's earliest complete-slice
+  revision at arming; additional complete disjoint historical slices remain
+  preserved but cannot arm, and rollback/fork/drop fails.
+- Each owner grant maps to one deterministic parent arming and one immutable
+  consumption marker; marker-only failure is spent and requires a new
+  definition/campaign plus an explicitly superseding grant. Same-campaign
+  recovery is forbidden.
+- Every reservation independently reloads/rederives the configured definition,
+  reloads the exact connector grant, traverses the protected index chain, and
+  requires its unique-maximal head to equal both the campaign's earliest
+  complete-slice introduction and the immutable arming binding. It validates
+  that predicate again immediately before send,
+  plus the definition/grant intersection, both half-open windows, current lease,
+  stage/ordinal, ceiling, and request rule.
+- Historical evaluation rehashes the indexed original definition/grant and
+  proves every recorded reservation/send occurred inside both original
+  half-open windows; neither file must remain current today.
+- ScienceBase sends anonymously to the exact item/file policy.
+  Hydration rejects duplicate JSON members and admits only one exact untrimmed
+  `downloadUri`; only 301/302/303/307/308 with exactly one raw `Location` can
+  consume the optional redirect ordinal.
+- The NRC key reaches only the exact APS API host; artifact sends are unkeyed.
+- Both artifacts are complete `200` responses within byte limits, and
+  `fresh_live` is independently derived from terminal ledger plus raw bytes.
+- Raw, target, provenance/version/linkage, Layer 3, artifact, manifest, and
+  package hashes reconcile.
+- Strict-lane URL scalar fields remain null; only the URL digest and closed
+  scheme/host/port/path/query-class projection persist. Raw connector metadata
+  snapshots do not persist. The protected index revision fixes a four-stream
+  runtime-log capture whose manifest is bound by a separate no-overwrite seal
+  and matching events on every extant connector run (one in an NRC-first failure state); the arming/seal/events bind the
+  same introduction revision/digest, and all scalar/text/JSON plus generated/
+  non-source-file/runtime-log sinks pass raw and escaped custody scans.
+  Machine-global logs, signed/WORM custody, and cryptographic nonrepudiation are
+  explicitly outside the experimental claim.
+- Each workflow reaches result review, exactly three packages, package submit,
+  and handoff prepared.
+- A read-only evaluator and independent review pass with no redaction hit or
+  blocking discrepancy.
+
+### Fail criteria
+
+Any authority, expiry, host/path/method, credential, request-ceiling,
+reservation, redirect, response-shape/type/size, target, hash, package-set,
+redaction, or evidence-parity mismatch fails closed. A pass from only one
+connector is a partial technical outcome and a combined campaign failure.
+
+### Resource sequencing relative to the live Claude lane
+
+The current exported Claude session remains in a separate B1b external
+re-audit/capture-review lane. Its latest inspected export ends with a re-audit
+waiter; it does not grant connector authority. M1 may proceed independently in
+collision-free resources. If the lanes would share a mutable worktree, runtime,
+port, evidence root, credential process, or sole operator attention, use an
+explicit scheduling mutex. That mutex has no authority effect. M5/M6 remain
+owner-gated.
+
+### SHOULD-NOTs
+
+- Do not reuse generic connector submit/resume as live-proof authority.
+- Do not use the unarchived historical WBA-transition observation as current
+  authority.
+- Do not persist an exact derived URL or accept caller-asserted campaign,
+  grant, or freshness.
+- Do not treat caller idempotency as a global one-grant/one-arming fence.
+- Do not persist raw ScienceBase item/`files[]` or NRC Get Document payloads,
+  URL-bearing intake metadata, or exact URLs in scalar columns.
+- Do not send the NRC key to an artifact host or redirect.
+- Do not treat fixture, replay, `304`, cache, or prior retained bytes as fresh.
+- Do not edit code mid-campaign and continue under an old grant.
+- Do not let a caller select an archive path or let historical
+  definition/grant evidence enter any send-capable API.
+- Do not call internal handoff preparation external delivery.
+- Do not promote keyed NRC into the supported profile from one experiment.
+- Do not edit Layer 3 progress manifests/board for this planning record alone.
+
+### Size and risk
+
+M1-M4 are medium, cross-cutting, offline implementation with high integrity and
+credential risk but bounded scope. M5-M7 are small in request count and high in
+authority sensitivity. Production promotion is a separate large Tier-2
+architecture/security program.

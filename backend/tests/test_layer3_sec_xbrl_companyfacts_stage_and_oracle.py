@@ -160,12 +160,22 @@ class TestFetchGates:
 class TestStageReceiptRedaction:
     """stage_sec_xbrl_companyfacts writes redacted receipt; raw store holds raw JSON."""
 
-    def test_stage_receipt_has_hashes_and_counts_not_raw_values(self, tmp_path):
+    def test_stage_receipt_has_hashes_and_counts_not_raw_values(
+        self,
+        tmp_path,
+        monkeypatch,
+    ):
         cik = "320193"
         connector_hash = _hash("a")
         content = json.dumps({"facts": _sample_companyfacts()}).encode("utf-8")
         content_sha256 = hashlib.sha256(content).hexdigest()
         _write_connector_receipt(tmp_path, cik=cik, connector_receipt_hash=connector_hash)
+        expected_recorded_at = "2026-07-31T12:17:15.420032+00:00"
+        monkeypatch.setattr(
+            stage_svc,
+            "_server_time",
+            lambda: expected_recorded_at,
+        )
 
         result = stage_svc.stage_sec_xbrl_companyfacts(
             companyfacts=_sample_companyfacts(),
@@ -188,9 +198,11 @@ class TestStageReceiptRedaction:
         assert receipt["operator_surface_exposure"] is False
 
         # Receipt must NOT contain raw values, CIK, accession, issuer name.
-        # Redact digest/id hex runs first so a hash that coincidentally contains a
-        # banned decimal substring (e.g. "200") cannot cause a false failure.
-        receipt_text = _redact_hash_runs(json.dumps(receipt))
+        # Exclude the server timestamp, whose fractional seconds can coincidentally
+        # contain a banned decimal substring, then redact digest/id hex runs.
+        receipt_for_leak_scan = dict(receipt)
+        assert receipt_for_leak_scan.pop("recorded_at") == expected_recorded_at
+        receipt_text = _redact_hash_runs(json.dumps(receipt_for_leak_scan))
         assert cik not in receipt_text  # raw CIK absent
         assert "320193" not in receipt_text
         assert "200" not in receipt_text  # raw financial value absent

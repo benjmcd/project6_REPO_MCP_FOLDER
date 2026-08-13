@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -9,7 +10,7 @@ from pathlib import Path
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import QueuePool, StaticPool
 
 os.environ["DB_INIT_MODE"] = "none"
 
@@ -26,11 +27,13 @@ from app.models.models import (
     ConnectorRun,
     ConnectorRunTarget,
     DatasetVersion,
+    L3Descriptor,
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
+    L3SelectionManifest,
 )
-from app.services import layer3_workbench
+from app.services import layer3_package_entry, layer3_pass_entry, layer3_workbench
 from app.services.layer3_qual_aps_execution import (
     ENGINE_FAMILY_QUAL_APS_DOCUMENT,
     PASS_SCOPE_SINGLE_APS_DOC_QUALITATIVE,
@@ -65,11 +68,40 @@ def db_session(tmp_path, monkeypatch):
         db.close()
 
 
+@pytest.fixture()
+def reserved_db_session(tmp_path, monkeypatch):
+    storage_dir = tmp_path / "reserved-storage"
+    monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
+    bootstrap_storage_tree(storage_dir)
+    engine = create_engine(
+        f"sqlite:///{(tmp_path / 'reserved.sqlite3').as_posix()}",
+        future=True,
+        connect_args={"check_same_thread": False},
+        poolclass=QueuePool,
+        pool_size=4,
+        max_overflow=0,
+    )
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(
+        bind=engine,
+        autocommit=False,
+        autoflush=False,
+        future=True,
+    )
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+        engine.dispose()
+
+
 def _seed_aps_content_document(
     db,
     tmp_path: Path,
     *,
     content_id: str = "content-qual-aps-001",
+    reserved_origin: bool = False,
     chunks: tuple[str, ...] = (
         "Inspection findings confirm stable cooling performance.",
         "No safety-significant degradation was identified during the interval.",
@@ -94,12 +126,33 @@ def _seed_aps_content_document(
 
     db.add_all(
         [
-            ConnectorRun(connector_run_id=run_id, connector_key="nrc_adams_aps", status="completed"),
+            ConnectorRun(
+                connector_run_id=run_id,
+                connector_key="nrc_adams_aps",
+                source_system=("nrc_adams" if reserved_origin else None),
+                source_mode=("strict_live_egress" if reserved_origin else None),
+                status="completed",
+            ),
             ConnectorRunTarget(
                 connector_run_target_id=target_id,
                 connector_run_id=run_id,
                 status="completed",
                 ordinal=0,
+                stable_release_key=("ML17123A319" if reserved_origin else None),
+                stable_release_identifier=(
+                    "adams_accession:ML17123A319"
+                    if reserved_origin
+                    else None
+                ),
+                selection_source=(
+                    "strict_exact_accession" if reserved_origin else None
+                ),
+                selection_scope=(
+                    "dual_live_proof_v1" if reserved_origin else None
+                ),
+                fetch_policy_mode=(
+                    "strict_live_egress" if reserved_origin else None
+                ),
             ),
             ApsContentDocument(
                 content_id=content_id,
@@ -111,7 +164,9 @@ def _seed_aps_content_document(
                 chunk_count=len(chunks),
                 content_status="indexed",
                 media_type="application/pdf",
-                document_class="inspection_report",
+                document_class=(
+                    "nrc_adams_aps" if reserved_origin else "inspection_report"
+                ),
                 quality_status="strong",
                 page_count=max(len(chunks), 1),
                 diagnostics_ref=diagnostics_ref,
@@ -121,7 +176,9 @@ def _seed_aps_content_document(
                 content_id=content_id,
                 run_id=run_id,
                 target_id=target_id,
-                accession_number="ML26001A001",
+                accession_number=(
+                    "ML17123A319" if reserved_origin else "ML26001A001"
+                ),
                 content_contract_id=content_contract_id,
                 chunking_contract_id=chunking_contract_id,
                 content_units_ref=content_units_ref,
@@ -158,8 +215,19 @@ def _seed_aps_content_document(
     return content_id
 
 
-def _commit_single_doc_plan(db, tmp_path: Path, *, content_id: str = "content-qual-aps-001") -> dict[str, object]:
-    _seed_aps_content_document(db, tmp_path, content_id=content_id)
+def _commit_single_doc_plan(
+    db,
+    tmp_path: Path,
+    *,
+    content_id: str = "content-qual-aps-001",
+    reserved_origin: bool = False,
+) -> dict[str, object]:
+    _seed_aps_content_document(
+        db,
+        tmp_path,
+        content_id=content_id,
+        reserved_origin=reserved_origin,
+    )
     preflight = layer3_workbench.preflight(
         {
             "client_request_id": f"req-preflight-{content_id}",
@@ -181,7 +249,13 @@ def _commit_single_doc_plan(db, tmp_path: Path, *, content_id: str = "content-qu
             "source_set_id": source["source_set_id"],
             "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
             "aps_content_document_ids": [content_id],
-            "query_basis": {"terms": ["aps", "document"]},
+            "query_basis": {
+                "terms": (
+                    ["dual-live-proof"]
+                    if reserved_origin
+                    else ["aps", "document"]
+                )
+            },
         },
         db,
     )
@@ -212,6 +286,16 @@ def _commit_single_doc_plan(db, tmp_path: Path, *, content_id: str = "content-qu
             "commit_reason": "pytest_single_aps_doc_qualitative",
             "actor": "pytest",
         },
+    )
+    descriptor = (
+        db.query(L3Descriptor)
+        .filter(L3Descriptor.session_id == gate_b["session_id"])
+        .one()
+    )
+    manifest = (
+        db.query(L3SelectionManifest)
+        .filter(L3SelectionManifest.session_id == gate_b["session_id"])
+        .one()
     )
     layer3_workbench.gate_c_preview(
         db,
@@ -255,6 +339,16 @@ def _commit_single_doc_plan(db, tmp_path: Path, *, content_id: str = "content-qu
         "preview_hash": preview["preview_hash"],
         "pass_run_id": selection["pass_run_ids"][0],
         "content_id": content_id,
+        "descriptor_selector": copy.deepcopy(
+            descriptor.selector_payload_json
+        ),
+        "manifest_selector": copy.deepcopy(
+            manifest.manifest_json["items"][0]["selector_payload"]
+        ),
+        "expected_selector": {
+            "candidate_id": candidate["candidate_id"],
+            "source_ref": f"aps_content_document:{content_id}",
+        },
     }
 
 
@@ -479,8 +573,65 @@ def test_single_aps_doc_qualitative_execution_rejects_forbidden_request_fields(d
     assert pass_run.output_payload_ref is None
 
 
-def test_single_aps_doc_qualitative_package_preview_construction_and_submit_guard(db_session, tmp_path) -> None:
-    flow = _commit_single_doc_plan(db_session, tmp_path, content_id="content-qual-aps-package")
+def test_single_aps_doc_qualitative_package_preview_construction_and_submit_guard(
+    reserved_db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    db_session = reserved_db_session
+    content_id = "content-qual-aps-package"
+    target_id = f"target-{content_id}"
+    origin_integrity = {
+        "schema_id": "layer3.connector_origin_integrity.v1",
+        "connector_key": "nrc_adams_aps",
+        "connector_run_target_id": target_id,
+        "connector_origin_receipt_hash": hashlib.sha256(
+            target_id.encode("utf-8")
+        ).hexdigest(),
+        "proof_class": "fresh_live",
+    }
+    origin_boundaries: list[str] = []
+
+    def resolve_origin(_db, *, session_id: str, boundary: str):
+        assert session_id
+        origin_boundaries.append(boundary)
+        return copy.deepcopy(origin_integrity)
+
+    def assert_pass_origin(_db, *, pass_run: L3PassRun, boundary: str):
+        assert pass_run.summary_json[
+            "connector_origin_integrity_v1"
+        ] == origin_integrity
+        origin_boundaries.append(boundary)
+        return copy.deepcopy(origin_integrity)
+
+    monkeypatch.setattr(
+        layer3_workbench,
+        "resolve_downstream_connector_origin",
+        resolve_origin,
+    )
+    monkeypatch.setattr(
+        layer3_workbench,
+        "assert_pass_downstream_connector_origin",
+        assert_pass_origin,
+    )
+    monkeypatch.setattr(
+        layer3_package_entry,
+        "assert_pass_downstream_connector_origin",
+        assert_pass_origin,
+    )
+    monkeypatch.setattr(
+        layer3_pass_entry,
+        "assert_pass_downstream_connector_origin",
+        assert_pass_origin,
+    )
+    flow = _commit_single_doc_plan(
+        db_session,
+        tmp_path,
+        content_id=content_id,
+        reserved_origin=True,
+    )
+    assert flow["descriptor_selector"] == flow["expected_selector"]
+    assert flow["manifest_selector"] == flow["expected_selector"]
     start = layer3_workbench.analysis_execution_start(
         db_session,
         {
@@ -492,6 +643,44 @@ def test_single_aps_doc_qualitative_package_preview_construction_and_submit_guar
             "preview_hash": flow["preview_hash"],
         },
     )
+    pass_run = db_session.get(L3PassRun, flow["pass_run_id"])
+    assert pass_run is not None
+    assert pass_run.summary_json[
+        "connector_origin_integrity_v1"
+    ] == origin_integrity
+    output_integrity = copy.deepcopy(
+        pass_run.summary_json["connector_output_integrity_v1"]
+    )
+    assert set(output_integrity) == {
+        "schema_id",
+        "connector_key",
+        "connector_run_target_id",
+        "connector_origin_receipt_hash",
+        "proof_class",
+        "artifact_receipts",
+        "artifact_set_hash",
+        "output_manifest_sha256",
+    }
+    assert output_integrity["schema_id"] == (
+        "layer3.connector_output_integrity.v1"
+    )
+    assert {
+        key: output_integrity[key]
+        for key in (
+            "connector_key",
+            "connector_run_target_id",
+            "connector_origin_receipt_hash",
+            "proof_class",
+        )
+    } == {
+        key: origin_integrity[key]
+        for key in (
+            "connector_key",
+            "connector_run_target_id",
+            "connector_origin_receipt_hash",
+            "proof_class",
+        )
+    }
     review = layer3_workbench.execution_result_review(
         db_session,
         {
@@ -505,6 +694,13 @@ def test_single_aps_doc_qualitative_package_preview_construction_and_submit_guar
             "reviewed_output_items": [],
         },
     )
+    db_session.expire(pass_run, ["summary_json"])
+    assert pass_run.summary_json["execution_result_review"][
+        "connector_origin_integrity_v1"
+    ] == origin_integrity
+    assert pass_run.summary_json["execution_result_review"][
+        "connector_output_integrity_v1"
+    ] == output_integrity
     alternate_chunk_text = "Reprocessed chunk from a later APS contract version."
     db_session.add(
         ApsContentChunk(
@@ -588,10 +784,24 @@ def test_single_aps_doc_qualitative_package_preview_construction_and_submit_guar
     assert len(commit["payload_hashes"]) == 3
     assert db_session.query(L3OutputPackage).count() == 3
     assert db_session.query(L3ReconciliationRecord).count() == 1
+    reconciliation = db_session.get(
+        L3ReconciliationRecord,
+        commit["reconciliation_record_id"],
+    )
+    assert reconciliation is not None
     for package in commit["output_packages"]:
         payload_path = Path(package["payload_ref"])
         assert payload_path.exists()
         assert hashlib.sha256(payload_path.read_bytes()).hexdigest() == package["payload_hash"]
+        package_payload = json.loads(
+            payload_path.read_text(encoding="utf-8")
+        )
+        assert package_payload["connector_origin_integrity_v1"] == (
+            origin_integrity
+        )
+        assert package_payload["connector_output_integrity_v1"] == (
+            output_integrity
+        )
 
     submit_payload = {
         "client_request_id": "req-qual-package-submit",
@@ -641,10 +851,143 @@ def test_single_aps_doc_qualitative_package_preview_construction_and_submit_guar
     assert "external_export_download" in submit["downstream_unavailable"]
     assert db_session.query(L3OutputPackage).count() == 3
     assert db_session.query(L3ReconciliationRecord).count() == 1
+    db_session.refresh(reconciliation)
+    submit_state = reconciliation.summary_json[
+        "package_review_submit"
+    ]
+    assert submit_state["connector_origin_integrity_v1"] == (
+        origin_integrity
+    )
+    assert submit_state["connector_output_integrity_v1"] == (
+        output_integrity
+    )
 
     replay = layer3_workbench.package_review_submit(db_session, submit_payload)
     assert replay["status"] == "already_submitted"
     assert replay["submit_record_ref"] == submit["submit_record_ref"]
+
+    handoff_payload = {
+        "client_request_id": "req-qual-handoff-prepare",
+        "session_id": flow["session_id"],
+        "analysis_plan_id": flow["analysis_plan_id"],
+        "pass_run_id": flow["pass_run_id"],
+        "preview_id": flow["preview_id"],
+        "preview_hash": flow["preview_hash"],
+        "result_review_record_ref": review["review_record_ref"],
+        "package_review_preview_hash": preview[
+            "package_review_preview_hash"
+        ],
+        "construction_basis_hash": commit["construction_basis_hash"],
+        "reconciliation_record_id": commit["reconciliation_record_id"],
+        "package_review_submit_record_ref": submit["submit_record_ref"],
+        "package_review_state": submit["package_review_state"],
+        "package_review_submit_schema_id": submit["schema_id"],
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+        "operator_decision": "authorize_prepare",
+        "output_package_ids": commit["output_package_ids"],
+        "payload_refs": commit["payload_refs"],
+        "payload_hashes": commit["payload_hashes"],
+    }
+    handoff = layer3_workbench.handoff_export_prepare(
+        db_session,
+        handoff_payload,
+    )
+    assert handoff["schema_id"] == (
+        "layer3.qual_aps_handoff_export_prepare.v1"
+    )
+    assert handoff["status"] == "prepared"
+    assert handoff["handoff_export_envelope"][
+        "connector_origin_integrity_v1"
+    ] == origin_integrity
+    assert handoff["handoff_export_envelope"][
+        "connector_output_integrity_v1"
+    ] == output_integrity
+
+    db_session.refresh(reconciliation)
+    original_summary = copy.deepcopy(reconciliation.summary_json)
+    prepare_state = original_summary["handoff_export_prepare"]
+    assert prepare_state["connector_origin_integrity_v1"] == (
+        origin_integrity
+    )
+    assert prepare_state["connector_output_integrity_v1"] == (
+        output_integrity
+    )
+    assert prepare_state["handoff_export_envelope"][
+        "connector_origin_integrity_v1"
+    ] == origin_integrity
+    assert prepare_state["handoff_export_envelope"][
+        "connector_output_integrity_v1"
+    ] == output_integrity
+
+    for corruption in ("one_sided_state", "mismatched_envelope"):
+        changed_summary = copy.deepcopy(original_summary)
+        changed_prepare = changed_summary["handoff_export_prepare"]
+        if corruption == "one_sided_state":
+            changed_prepare.pop("connector_output_integrity_v1")
+        else:
+            changed_prepare["handoff_export_envelope"][
+                "connector_output_integrity_v1"
+            ] = {
+                **output_integrity,
+                "output_manifest_sha256": "0" * 64,
+            }
+        reconciliation.summary_json = changed_summary
+        db_session.commit()
+
+        with pytest.raises(Layer3WorkbenchError) as replay_exc:
+            layer3_workbench.handoff_export_prepare(
+                db_session,
+                handoff_payload,
+            )
+        assert replay_exc.value.error_code == (
+            "handoff_export_prepare_integrity_mismatch"
+        )
+        db_session.rollback()
+
+    reconciliation.summary_json = original_summary
+    db_session.commit()
+    handoff_replay = layer3_workbench.handoff_export_prepare(
+        db_session,
+        handoff_payload,
+    )
+    assert handoff_replay["status"] == "already_prepared"
+    assert handoff_replay["prepare_record_ref"] == (
+        handoff["prepare_record_ref"]
+    )
+    assert {
+        "gate_c_typing",
+        "pass_selection",
+        "execution_output",
+        "result_review",
+        "package_commit",
+        "package_submit",
+        "handoff_prepare",
+    } <= set(origin_boundaries)
+
+
+def test_generic_handoff_integrity_state_remains_pair_free() -> None:
+    prepare_state = {
+        "operator_decision": "authorize_prepare",
+        "handoff_export_envelope": {
+            "schema_id": "layer3.handoff_export_envelope.v1",
+        },
+    }
+
+    layer3_workbench._assert_handoff_prepare_connector_integrity(  # type: ignore[attr-defined]
+        prepare_state=prepare_state,
+        connector_origin_integrity=None,
+        connector_output_integrity=None,
+    )
+
+    assert "connector_origin_integrity_v1" not in prepare_state
+    assert "connector_output_integrity_v1" not in prepare_state
+    assert "connector_origin_integrity_v1" not in prepare_state[
+        "handoff_export_envelope"
+    ]
+    assert "connector_output_integrity_v1" not in prepare_state[
+        "handoff_export_envelope"
+    ]
 
 
 def test_single_aps_doc_qualitative_plan_requires_chunks(db_session, tmp_path) -> None:
