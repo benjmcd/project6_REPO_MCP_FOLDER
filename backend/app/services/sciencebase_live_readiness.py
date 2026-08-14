@@ -37,6 +37,11 @@ MAX_OWNER_GO_SIGNATURE_BYTES = 16 * 1024
 _SHA256 = re.compile(r"sha256:[0-9a-f]{64}\Z")
 _COMMIT = re.compile(r"[0-9a-f]{40}\Z")
 _TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,254}\Z")
+SCIENCEBASE_CSV_HEADER = (
+    "DataSource,Commodity,Year,USprod_Primary_kg,USprod_Secondary_kg,"
+    "Imports_Metal_kg,Imports_GeO2_kg,Exports_kg,Shipments_Gov_kg,"
+    "Consump_kg,Price_Metal_dkg,Price_GeO2_dkg,NIR_pct"
+)
 _GO_FIELDS = frozenset(
     {
         "schema",
@@ -638,6 +643,8 @@ def _write_artifact(
         raise LiveReadinessHold("sciencebase_output_invalid")
     if _artifact_content_rejected(content):
         raise LiveReadinessHold("sciencebase_artifact_content_rejected")
+    if _artifact_positive_contract_rejected(content):
+        raise LiveReadinessHold("sciencebase_artifact_content_rejected")
     name = f"sciencebase-{authority.content_digest[7:]}-{digest}.bin"
     path = Path(store.canonical_root) / name
     store.verify_identity()
@@ -676,6 +683,29 @@ def _artifact_content_rejected(content: bytes) -> bool:
             ).lstrip()
             return not normalized or normalized.startswith(("<", "{", "["))
     return not leading or leading.startswith((b"<", b"{", b"["))
+
+
+def _artifact_positive_contract_rejected(content: bytes) -> bool:
+    leading = content.lstrip()
+    encoded_boms = (
+        (b"\xff\xfe\x00\x00", "utf-32-le"),
+        (b"\x00\x00\xfe\xff", "utf-32-be"),
+        (b"\xff\xfe", "utf-16-le"),
+        (b"\xfe\xff", "utf-16-be"),
+        (b"\xef\xbb\xbf", "utf-8"),
+    )
+    for bom, encoding in encoded_boms:
+        if leading.startswith(bom):
+            text = leading[len(bom) :].decode(encoding, errors="replace").lstrip()
+            break
+    else:
+        text = leading.decode("utf-8", errors="replace")
+    lines = text.splitlines()
+    return (
+        len(lines) < 2
+        or lines[0] != SCIENCEBASE_CSV_HEADER
+        or any(line.count(",") + 1 != 13 for line in lines[1:])
+    )
 
 
 def execute_sciencebase_live(
@@ -929,6 +959,10 @@ def verify_sciencebase_closeout(
                 "HOLD", "sciencebase_artifact_verification_failed", None
             )
         if _artifact_content_rejected(content):
+            return LiveExecutionResult(
+                "HOLD", "sciencebase_artifact_content_rejected", None
+            )
+        if _artifact_positive_contract_rejected(content):
             return LiveExecutionResult(
                 "HOLD", "sciencebase_artifact_content_rejected", None
             )

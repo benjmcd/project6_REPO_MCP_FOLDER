@@ -32,6 +32,30 @@ DIGESTS = {
         "manifest": "d",
     }.items()
 }
+_RATIFIED_SCIENCEBASE_HEADER = (
+    "DataSource,Commodity,Year,USprod_Primary_kg,USprod_Secondary_kg,"
+    "Imports_Metal_kg,Imports_GeO2_kg,Exports_kg,Shipments_Gov_kg,"
+    "Consump_kg,Price_Metal_dkg,Price_GeO2_dkg,NIR_pct"
+)
+_VALID_SCIENCEBASE_ROW = (
+    "MCS2023,Germanium,2022,0,W,14000,15000,5800,0,30000,1300,840,>50"
+)
+_VALID_ONE_ROW_CSV = (
+    _RATIFIED_SCIENCEBASE_HEADER + "\n" + _VALID_SCIENCEBASE_ROW + "\n"
+).encode("utf-8")
+_CHARACTERIZED_SCIENCEBASE_CSV = (
+    b"\xef\xbb\xbf"
+    + (
+        _RATIFIED_SCIENCEBASE_HEADER
+        + "\r\n"
+        + "MCS2023,Germanium,2018,0,W,10000,12000,3600,0,30000,1543,1084,>50\r\n"
+        + "MCS2023,Germanium,2019,0,W,14000,21000,4500,0,30000,1236,913,>50\r\n"
+        + "MCS2023,Germanium,2020,0,W,14000,12000,4800,0,30000,1046,724,>50\r\n"
+        + "MCS2023,Germanium,2021,0,W,13000,17000,7500,0,30000,1187,770,>50\r\n"
+        + _VALID_SCIENCEBASE_ROW
+        + "\r\n"
+    ).encode("utf-8")
+)
 
 
 class _IdentityProbe:
@@ -917,8 +941,15 @@ def test_success_records_artifact_and_terminal_only_after_containment(tmp_path: 
         events.append("go_consumed")
         _prepared.reservation_store.close()
         events.append("contained")
-        content = b"public-sciencebase-artifact"
-        return ScienceBaseOutput("item-1", "map.json", content, hashlib.sha256(content).hexdigest(), 3, 123)
+        content = _VALID_ONE_ROW_CSV
+        return ScienceBaseOutput(
+            "item-1",
+            "map.json",
+            content,
+            hashlib.sha256(content).hexdigest(),
+            3,
+            len(content),
+        )
 
     result = module.execute_sciencebase_live(
         prepared,
@@ -931,7 +962,7 @@ def test_success_records_artifact_and_terminal_only_after_containment(tmp_path: 
 
     assert result.status == "TERMINAL"
     assert result.code == "sciencebase_acquisition_succeeded"
-    assert result.artifact_path.read_bytes() == b"public-sciencebase-artifact"
+    assert result.artifact_path.read_bytes() == _VALID_ONE_ROW_CSV
     assert result.artifact_path.name == (
         f"sciencebase-{go_digest[7:]}-"
         f"{hashlib.sha256(result.artifact_path.read_bytes()).hexdigest()}.bin"
@@ -1119,7 +1150,7 @@ def test_post_containment_artifact_failure_still_records_terminal_hold(
     go_path = tmp_path / "owner-go.json"
     go_path.write_bytes(raw)
     go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
-    content = b"artifact-conflict"
+    content = _VALID_ONE_ROW_CSV
     content_digest = hashlib.sha256(content).hexdigest()
     conflict = tmp_path / f"sciencebase-{go_digest[7:]}-{content_digest}.bin"
     conflict.write_bytes(b"foreign")
@@ -1199,7 +1230,9 @@ def test_utf16_csv_artifact_writes_and_independent_closeout_verifies_exact_three
     go_path = tmp_path / "owner-go.json"
     go_path.write_bytes(raw)
     go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
-    csv_content = b"\xff\xfe" + "col1,col2\n1,2\n".encode("utf-16-le")
+    csv_content = b"\xff\xfe" + (
+        _RATIFIED_SCIENCEBASE_HEADER + "\n" + _VALID_SCIENCEBASE_ROW + "\n"
+    ).encode("utf-16-le")
 
     def run(_prepared, *, execution_authority):
         assert execution_authority.consume_exact(DIGESTS["envelope"]) is True
@@ -1217,7 +1250,7 @@ def test_utf16_csv_artifact_writes_and_independent_closeout_verifies_exact_three
             csv_content,
             hashlib.sha256(csv_content).hexdigest(),
             3,
-            321,
+            len(csv_content),
         )
 
     executed = module.execute_sciencebase_live(
@@ -1255,7 +1288,7 @@ def test_plain_utf8_no_bom_csv_writes_and_verifies(tmp_path: Path) -> None:
     go_path = tmp_path / "owner-go.json"
     go_path.write_bytes(raw)
     go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
-    csv_content = b"col1,col2\n1,2\n"
+    csv_content = _VALID_ONE_ROW_CSV
 
     def run(_prepared, *, execution_authority):
         assert execution_authority.consume_exact(DIGESTS["envelope"]) is True
@@ -1387,7 +1420,7 @@ def test_closeout_rejects_empty_whitespace_and_json_without_verified_event(
         ).fetchone()[0] == 0
 
 
-def test_closeout_rejects_zero_artifact_bytes_even_when_content_predicate_bypassed(
+def test_closeout_rejects_zero_artifact_bytes_even_when_content_predicates_bypassed(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1400,6 +1433,9 @@ def test_closeout_rejects_zero_artifact_bytes_even_when_content_predicate_bypass
     go_path.write_bytes(raw)
     go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
     monkeypatch.setattr(module, "_artifact_content_rejected", lambda _content: False)
+    monkeypatch.setattr(
+        module, "_artifact_positive_contract_rejected", lambda _content: False
+    )
 
     def run(_prepared, *, execution_authority):
         assert execution_authority.consume_exact(DIGESTS["envelope"]) is True
@@ -1526,9 +1562,14 @@ def test_closeout_holds_on_artifact_or_reservation_drift(tmp_path: Path) -> None
                 _plan(tmp_path.resolve(), ordinal, stage)
             ).disposition == "RESERVED"
         _prepared.reservation_store.close()
-        content = b"artifact-before-drift"
+        content = _VALID_ONE_ROW_CSV
         return ScienceBaseOutput(
-            "item-1", "map.json", content, hashlib.sha256(content).hexdigest(), 3, 222
+            "item-1",
+            "map.json",
+            content,
+            hashlib.sha256(content).hexdigest(),
+            3,
+            len(content),
         )
 
     executed = module.execute_sciencebase_live(
@@ -1555,3 +1596,170 @@ def test_closeout_holds_on_artifact_or_reservation_drift(tmp_path: Path) -> None
         assert connection.execute(
             "SELECT COUNT(*) FROM connector_run_event WHERE event_type = 'sciencebase_closeout_verified'"
         ).fetchone()[0] == 0
+
+
+_PHASE_2_REJECTED_CSVS = [
+    pytest.param(
+        (
+            _RATIFIED_SCIENCEBASE_HEADER.replace("DataSource", "WrongSource", 1)
+            + "\n"
+            + _VALID_SCIENCEBASE_ROW
+            + "\n"
+        ).encode("utf-8"),
+        id="wrong-header",
+    ),
+    pytest.param(
+        (_RATIFIED_SCIENCEBASE_HEADER + "\n").encode("utf-8"),
+        id="zero-data-rows",
+    ),
+    pytest.param(
+        (
+            _RATIFIED_SCIENCEBASE_HEADER
+            + "\n"
+            + "MCS2023,Germanium,2022,0,W,14000,15000,5800,0,30000,1300,840\n"
+        ).encode("utf-8"),
+        id="ragged-width",
+    ),
+]
+
+
+@pytest.mark.parametrize("content", _PHASE_2_REJECTED_CSVS)
+def test_phase_2_write_gate_rejects_non_ratified_csv_contract(
+    tmp_path: Path, content: bytes
+) -> None:
+    module = _load_module()
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    raw = _canonical(_go_document(module, prepared))
+    go_path = tmp_path / "owner-go.json"
+    go_path.write_bytes(raw)
+    authority = module.load_live_go_once(
+        go_path,
+        "sha256:" + hashlib.sha256(raw).hexdigest(),
+        prepared,
+        owner_authenticator=_owner_authenticator(),
+    )
+    output = ScienceBaseOutput(
+        "item-1",
+        "map.json",
+        content,
+        hashlib.sha256(content).hexdigest(),
+        3,
+        len(content),
+    )
+
+    with pytest.raises(
+        module.LiveReadinessHold, match="sciencebase_artifact_content_rejected"
+    ):
+        module._write_artifact(store, authority, output, prepared.producer_request)
+
+    assert list(tmp_path.glob("sciencebase-*.bin")) == []
+    store.close()
+
+
+def _execute_and_verify_phase_2_artifact(
+    module,
+    tmp_path: Path,
+    content: bytes,
+    *,
+    monkeypatch: pytest.MonkeyPatch | None = None,
+):
+    _database(tmp_path)
+    store = _store(tmp_path)
+    prepared = _prepared(tmp_path.resolve(), store)
+    raw = _canonical(_go_document(module, prepared))
+    go_path = tmp_path / "owner-go.json"
+    go_path.write_bytes(raw)
+    go_digest = "sha256:" + hashlib.sha256(raw).hexdigest()
+
+    if monkeypatch is not None:
+
+        def bypass_write_gate(store, authority, output, _expected_request):
+            digest = hashlib.sha256(output.content).hexdigest()
+            path = Path(store.canonical_root) / (
+                f"sciencebase-{authority.content_digest[7:]}-{digest}.bin"
+            )
+            path.write_bytes(output.content)
+            return path
+
+        monkeypatch.setattr(module, "_write_artifact", bypass_write_gate)
+
+    def run(_prepared, *, execution_authority):
+        assert execution_authority.consume_exact(DIGESTS["envelope"]) is True
+        for ordinal, stage in enumerate(
+            ("sciencebase_search", "sciencebase_hydrate", "sciencebase_download"),
+            start=1,
+        ):
+            assert _prepared.reservation_store.reserve(
+                _plan(tmp_path.resolve(), ordinal, stage)
+            ).disposition == "RESERVED"
+        _prepared.reservation_store.close()
+        return ScienceBaseOutput(
+            "item-1",
+            "map.json",
+            content,
+            hashlib.sha256(content).hexdigest(),
+            3,
+            len(content),
+        )
+
+    executed = module.execute_sciencebase_live(
+        prepared,
+        go_path=go_path,
+        go_digest=go_digest,
+        run=run,
+        store_factory=lambda root, path: _store(root),
+        owner_authenticator=_owner_authenticator(),
+    )
+    verified = module.verify_sciencebase_closeout(
+        canonical_root=tmp_path.resolve(),
+        reservation_database_path=tmp_path / "reservation.db",
+        connector_run_id=RUN_ID,
+        go_digest=go_digest,
+        store_factory=lambda root, path: _store(root),
+    )
+    return executed, verified
+
+
+@pytest.mark.parametrize("content", _PHASE_2_REJECTED_CSVS)
+def test_phase_2_verify_gate_holds_non_ratified_csv_without_verified_event(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, content: bytes
+) -> None:
+    module = _load_module()
+
+    executed, verified = _execute_and_verify_phase_2_artifact(
+        module, tmp_path, content, monkeypatch=monkeypatch
+    )
+
+    assert executed.status == "TERMINAL"
+    assert verified.status == "HOLD"
+    assert verified.code == "sciencebase_artifact_content_rejected"
+    with sqlite3.connect(tmp_path / "reservation.db") as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM connector_run_event "
+            "WHERE event_type = 'sciencebase_closeout_verified'"
+        ).fetchone()[0] == 0
+
+
+def test_phase_2_characterized_artifact_passes_write_and_verify_gates(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+
+    assert module.SCIENCEBASE_CSV_HEADER == _RATIFIED_SCIENCEBASE_HEADER
+    assert hashlib.sha256(module.SCIENCEBASE_CSV_HEADER.encode("utf-8")).hexdigest() == (
+        "048f103704744d4b39125ec28cb830ac94c0e18b9de93680f57844e5eec96394"
+    )
+    assert len(_CHARACTERIZED_SCIENCEBASE_CSV) == 510
+    assert hashlib.sha256(_CHARACTERIZED_SCIENCEBASE_CSV).hexdigest() == (
+        "c8eacb7b8df0aa12b45eeb383d79d5cf95d7e002dfed7c07736e5aad3dca930c"
+    )
+    executed, verified = _execute_and_verify_phase_2_artifact(
+        module, tmp_path, _CHARACTERIZED_SCIENCEBASE_CSV
+    )
+
+    assert executed.status == "TERMINAL"
+    assert executed.artifact_path.read_bytes() == _CHARACTERIZED_SCIENCEBASE_CSV
+    assert verified.status == "VERIFIED"
+    assert verified.code == "sciencebase_closeout_verified"
