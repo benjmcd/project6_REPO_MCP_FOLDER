@@ -344,7 +344,7 @@ if (
   $AmbientInterpreterSha256 -cne $WorkerInterpreterSha256
 ) { throw 'Resolved Python 3.12 and worker runtime binding are not byte-identical.' }
 $InterpreterIdentity = 'sha256:' + $WorkerInterpreterSha256
-$Query = 'Mineral Commodity Summaries'
+$Query = 'Mineral Commodity Summaries 2023 GERMANIUM'
 $ExpectedItemId = '63d1a3c6d34e06fef15006be'
 $ExpectedFileName = 'mcs2023-germa_salient.csv'
 .\project6.ps1 -Action initialize-dual-live -- reservation-store --canonical-root $CanonicalRoot --connector-run-id $ConnectorRunId
