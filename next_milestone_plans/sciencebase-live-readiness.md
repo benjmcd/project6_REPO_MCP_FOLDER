@@ -4,7 +4,7 @@
 
 This is the canonical prospective Lane B planning and status surface. It is not live authority, owner GO, an authority envelope, a launch token, credential authority, or permission to acquire from ScienceBase.
 
-The local `codex/sb-live-impl` subject is based on the owner-accepted B0 head and implements the bounded path described below. It remains local and unlanded. No live GO was issued or consumed, no ScienceBase request was made, no credential was placed or inspected, and egress was not activated. The waived B0 Windows proof remains `OWNER-WAIVED/UNPROVEN`, never PASS.
+The `codex/sb-live-impl` subject was pushed to `project6-origin` per the recorded push and remains unlanded on `main`. No live GO was issued or consumed and no signed live acquisition has occurred. Two non-authorizing characterization runs made one and three ScienceBase GETs respectively, per the recorded characterization records; no credential was placed or inspected, and production live-run egress was not activated. The waived B0 Windows proof remains `OWNER-WAIVED/UNPROVEN`, never PASS.
 
 ## Selected tranche
 
@@ -238,6 +238,8 @@ try {
 
       $HydrateRecord.DerivedDownloadUri = $DerivedDownloadUrl
       $DownloadRecord = Invoke-W5Stage $Attempt 'download' $DerivedDownloadUrl $DownloadBody $DownloadHeaders $DerivedDownloadUrl
+      & $Py -c "import pathlib,sys; c=pathlib.Path(sys.argv[1]).read_bytes().lstrip(); pairs=((b'\xff\xfe\x00\x00','utf-32-le'),(b'\x00\x00\xfe\xff','utf-32-be'),(b'\xff\xfe','utf-16-le'),(b'\xfe\xff','utf-16-be'),(b'\xef\xbb\xbf','utf-8')); b,e=next(((b,e) for b,e in pairs if c.startswith(b)),(b'','utf-8')); t=c[len(b):].decode(e,errors='replace'); t=t.lstrip() if b else t; lines=t.splitlines(); header='DataSource,Commodity,Year,USprod_Primary_kg,USprod_Secondary_kg,Imports_Metal_kg,Imports_GeO2_kg,Exports_kg,Shipments_Gov_kg,Consump_kg,Price_Metal_dkg,Price_GeO2_dkg,NIR_pct'; bad=not t or t.startswith(('<','{','[')); raise SystemExit(0 if not bad and len(lines)>=2 and lines[0]==header and all(line.count(',')+1==13 for line in lines[1:]) else 1)" $DownloadBody
+      if ($LASTEXITCODE -ne 0) { throw "W5 download content contract HOLD: attempt $Attempt" }
       $ObservationRecords.Add($SearchRecord)
       $ObservationRecords.Add($HydrateRecord)
       $ObservationRecords.Add($DownloadRecord)
@@ -295,8 +297,8 @@ $CampaignId = 'sciencebase-live-v2'
 $ConnectorRunId = '<OWNER-FILL fresh UUID>'
 if ($ConnectorRunId -like '<OWNER-FILL*') { throw 'ConnectorRunId requires a fresh UUID.' }
 $AuthorityEnvelope = 'C:\owner-controlled\project6\sciencebase-authority.json'
-$AuthorizationDigest = 'sha256:' + ('a' * 64) # replace with the exact prepared authorization digest
-$GrantDigest = 'sha256:' + ('b' * 64) # replace with the exact prepared grant digest
+$AuthorizationDigest = 'sha256:061102e5c209f4b426ac4c23d0a25514da9d29384e4e24c16306ef7ef587edb2' # B2 authorization label: UTF-8 sha256 of project6:sciencebase-live-v2:B2:authorization-non-authorizing
+$GrantDigest = 'sha256:199263280d7c0ea3a880091ebc6d0654d6abca72674bf800c94c11b3580d1ba5' # B2 grant label: UTF-8 sha256 of project6:sciencebase-live-v2:B2:grant-non-authorizing
 $W6PreAttempt = '<OWNER-FILL owner-budgeted attempt 1..5>'
 if ($W6PreAttempt -notin 1..5) { throw 'W6-PRE attempt must be within the owner-budgeted maximum of five.' }
 $AttemptNonce = [guid]::NewGuid().ToString('N')
@@ -313,6 +315,41 @@ if ($W6PreAttempt -gt 1) {
 $PythonArchive = 'C:\owner-controlled\project6\python-3.12.6-embed-amd64.zip'
 $Py = (& py -3.12 -c "import sys; print(sys.executable)").Trim()
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($Py)) { throw 'Exact Python 3.12 resolution failed.' }
+$CampaignRootWasPresent = Test-Path -LiteralPath $CanonicalRoot -PathType Container
+if (-not $CampaignRootWasPresent) {
+  $CampaignRootOwnerSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+  $CampaignRootSecurity = New-Object Security.AccessControl.DirectorySecurity
+  $CampaignRootSecurity.SetSecurityDescriptorSddlForm(
+    ('O:{0}D:P(A;;FA;;;{0})(A;;FA;;;SY)' -f $CampaignRootOwnerSid)
+  )
+  [IO.Directory]::CreateDirectory($CanonicalRoot, $CampaignRootSecurity) | Out-Null
+}
+$CampaignRootVerifier = @'
+from pathlib import Path
+import sys
+from backend.app.services.sciencebase_spent_marker import WindowsMarkerBackend, _valid_identity
+root = Path(sys.argv[1])
+backend = WindowsMarkerBackend()
+handle = None
+try:
+    handle = backend.open_existing_directory(root)
+    if (
+        not _valid_identity(backend.identity(handle), directory=True)
+        or backend.secure(handle) != (True, True, True)
+        or not backend.fixed_local(handle)
+    ):
+        raise SystemExit("campaign_root_custody_invalid")
+finally:
+    if handle is not None:
+        backend.close(handle)
+'@
+& $Py -c $CampaignRootVerifier $CanonicalRoot
+if ($LASTEXITCODE -ne 0) { throw 'Campaign root custody verification failed.' }
+if ($CampaignRootWasPresent) {
+  Write-Host "VERIFIED: secure campaign root $CanonicalRoot"
+} else {
+  Write-Host "CREATED: secure campaign root $CanonicalRoot"
+}
 $AmbientInterpreterRoot = Split-Path -Parent $Py
 $AmbientInterpreterSha256 = (Get-FileHash -LiteralPath $Py -Algorithm SHA256).Hash.ToLowerInvariant()
 $ProfileMoniker = 'Project6.ScienceBase.LiveV2.' + $AttemptNonce.Substring(0,8)
@@ -350,6 +387,118 @@ $ExpectedFileName = 'mcs2023-germa_salient.csv'
 .\project6.ps1 -Action initialize-dual-live -- reservation-store --canonical-root $CanonicalRoot --connector-run-id $ConnectorRunId
 .\project6.ps1 -Action initialize-dual-live -- authority-envelope --output $AuthorityEnvelope --campaign-id $CampaignId --canonical-root $CanonicalRoot --connector-run-id $ConnectorRunId --source-commit $SourceCommit --interpreter-identity $InterpreterIdentity --authorization-digest $AuthorizationDigest --grant-digest $GrantDigest
 $AuthorityEnvelopeDigest = 'sha256:' + (Get-FileHash -LiteralPath $AuthorityEnvelope -Algorithm SHA256).Hash.ToLowerInvariant()
+[pscustomobject]@{
+  SourceCommit = $SourceCommit
+  ConnectorRunId = $ConnectorRunId
+  AttemptNonce = $AttemptNonce
+  ProfileMoniker = $ProfileMoniker
+  ProfileBinding = $ProfileBinding
+  WorkerBinding = $WorkerBinding
+  WorkerBundleRoot = $WorkerBundleRoot
+  WorkerProvisioningRoot = $WorkerProvisioningRoot
+  AuthorityEnvelope = $AuthorityEnvelope
+  AuthorityEnvelopeDigest = $AuthorityEnvelopeDigest
+  InterpreterIdentity = $InterpreterIdentity
+  AmbientInterpreterRoot = $AmbientInterpreterRoot
+  AuthorizationDigest = $AuthorizationDigest
+  GrantDigest = $GrantDigest
+} | Format-List
+```
+
+The target values above are the complete bounded acquisition subject; changing any of them requires a fresh preparation and owner act. `CampaignRoot` is exactly the canonical campaign/evidence root, never the executable source checkout. The later ceremony uses a dedicated, quiesced checkout at the final reviewed commit, separate from `sb-impl`.
+
+Two external, non-authorizing inputs remain. The profile binding must be produced from an actually provisioned broker profile and AppContainer profile—not hand-filled—and contains exactly `profile_moniker`, `package_sid`, `broker_sid`, `appcontainer_profile_root`, `broker_profile_root`, and `user_data_root`. The explicit `initialize-dual-live authority-envelope` step emits canonical JSON with exactly `schema_version`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `authorization_digest`, `grant_digest`, and `wrapper_start_token_ref`. Its schema is `project6.connector_authority.v1`, and its mandatory non-caller-configurable sentinel is `wrapper_start_token_ref=retired:sciencebase-live-v2`. The source commit and worker-interpreter digest must be observed only after the final clean source and external worker closure exist; the two opaque authority/grant references do not themselves grant live authority. B0 does not create or issue either input, and neither substitutes for the later signed one-use owner GO.
+
+The `authorization_digest:B2` and `grant_digest:B2` labels are KNOWINGLY-RATIFIED non-authorizing attestations that bind nothing. `wrapper_start_token_ref` remains untouched.
+
+W6-PRE may create the output-binding parent and the dedicated campaign root under `C:\owner-controlled\project6`; both provisioners then run in an already-elevated Windows PowerShell 5.1 shell. Campaign-root creation is create-once: an absent root receives the custody implementation's exact current-token-owner/SYSTEM protected DACL, then identity, fixed-local volume, and `secure()==(True,True,True)` are immediately verified. An already-present root is verified without ACL mutation, so rerunning the step is idempotent and an insecure existing root fails closed. Do not pre-create the worker provisioning root, `C:\ProgramData\Project6`, or its Authority child, and do not add manual ACL steps for those paths: the provisioner remains the sole worker-root and ProgramData ACL mechanism. Each retry requires a fresh single-segment worker root, worker binding, profile binding, and moniker. There are at most five owner-budgeted elevated W6-PRE attempts; five is an operational stop, not a code ceiling, and failed-attempt state is retained. Capture the final Phase-1 record printed by the block before closing the elevated shell. W7 and template emission are non-elevated and never rerun either provisioner or either initializer.
+
+The worker provisioner invokes `git cat-file blob` once for each of the 8 worker files and explicitly treats any stderr as `worker_source_copy_failed`, even when Git exits 0 (`provision-dual-live-worker.ps1:23-31`, `:122-126`). Whether `2>$null` at `:227`, `:229`, `:247`, and `:248` can itself raise a terminating `NativeCommandError` on Windows PowerShell 5.1 under the script's `$ErrorActionPreference = 'Stop'` at `:13` is not asserted; verify locally before the sitting. A stderr-silent `git` on PATH is a hard prerequisite either way. CI corroborates topology and ACL sequencing only; it is not owner-host broker-identity or interpreter evidence.
+
+The still-HIGH DACL residual is accepted only for this public credential-free run and is not transferable to NRC or another credentialed tranche. The owner accepts the structural-burn risk only with same-sitting W5 and T1.6 pre-7 interruption invalidation; neither R19 nor the separately required characterization is waived.
+
+### Non-elevated Phase-1 rehydration and template emission
+
+Exit the elevated shell after recording the Phase-1 values above. In a fresh non-elevated Windows PowerShell 5.1 shell at the same exact reviewed checkout, assign every `<PHASE-1-RECORD ...>` value below from that output and the two durable binding records. Do not regenerate a nonce, rerun a provisioner, rerun an initializer, or carry an in-memory array across the elevation boundary. The fixed B2 values are the reviewed UTF-8 SHA-256 digests of the named non-authorizing labels; they bind nothing and grant nothing.
+
+```powershell
+$RepositoryRoot = (Get-Location).Path
+$ExpectedBranch = 'codex/sb-live-impl'
+$ExpectedSourceCommit = '<PHASE-1-RECORD source commit>'
+$ObservedBranch = (& git branch --show-current).Trim()
+$BranchExit = $LASTEXITCODE
+$SourceStatus = @(& git status --porcelain=v1 --untracked-files=all)
+$StatusExit = $LASTEXITCODE
+$SourceCommit = (& git rev-parse HEAD).Trim()
+$CommitExit = $LASTEXITCODE
+if (
+  $BranchExit -ne 0 -or $StatusExit -ne 0 -or $CommitExit -ne 0 -or
+  $ExpectedSourceCommit -like '<PHASE-1-RECORD*' -or
+  $ObservedBranch -cne $ExpectedBranch -or
+  $SourceStatus.Count -ne 0 -or
+  $SourceCommit -cne $ExpectedSourceCommit
+) { throw 'Non-elevated checkout is not the exact Phase-1 reviewed subject.' }
+$CanonicalRoot = 'C:\owner-controlled\project6\sciencebase-campaign'
+$CampaignId = 'sciencebase-live-v2'
+$ConnectorRunId = '<PHASE-1-RECORD connector run UUID>'
+$AttemptNonce = '<PHASE-1-RECORD attempt nonce>'
+$ProfileMoniker = '<PHASE-1-RECORD profile moniker>'
+$ProfileBinding = '<PHASE-1-RECORD profile binding path>'
+$WorkerBinding = '<PHASE-1-RECORD worker binding path>'
+$WorkerBundleRoot = '<PHASE-1-RECORD worker bundle root>'
+$WorkerProvisioningRoot = '<PHASE-1-RECORD worker provisioning root>'
+$AuthorityEnvelope = '<PHASE-1-RECORD authority envelope path>'
+$AuthorityEnvelopeDigest = '<PHASE-1-RECORD authority envelope digest>'
+$InterpreterIdentity = '<PHASE-1-RECORD interpreter identity>'
+$AmbientInterpreterRoot = '<PHASE-1-RECORD ambient interpreter root>'
+$AuthorizationDigest = 'sha256:061102e5c209f4b426ac4c23d0a25514da9d29384e4e24c16306ef7ef587edb2' # B2 authorization label: UTF-8 sha256 of project6:sciencebase-live-v2:B2:authorization-non-authorizing
+$GrantDigest = 'sha256:199263280d7c0ea3a880091ebc6d0654d6abca72674bf800c94c11b3580d1ba5' # B2 grant label: UTF-8 sha256 of project6:sciencebase-live-v2:B2:grant-non-authorizing
+$Query = 'Mineral Commodity Summaries 2023 GERMANIUM'
+$ExpectedItemId = '63d1a3c6d34e06fef15006be'
+$ExpectedFileName = 'mcs2023-germa_salient.csv'
+$RequiredPhase1Values = @(
+  $ConnectorRunId, $AttemptNonce, $ProfileMoniker, $ProfileBinding, $WorkerBinding,
+  $WorkerBundleRoot, $WorkerProvisioningRoot, $AuthorityEnvelope,
+  $AuthorityEnvelopeDigest, $InterpreterIdentity, $AmbientInterpreterRoot
+)
+if ($RequiredPhase1Values.Where({
+  [string]::IsNullOrWhiteSpace($_) -or $_ -like '<PHASE-1-RECORD*'
+}).Count -ne 0) { throw 'Non-elevated Phase-1 rehydration is incomplete.' }
+if (
+  (Split-Path -Leaf $ProfileBinding) -cne "sciencebase-profile-$AttemptNonce.json" -or
+  (Split-Path -Leaf $WorkerBinding) -cne "sciencebase-worker-$AttemptNonce.json"
+) { throw 'Recorded binding path/nonce mismatch.' }
+$Profile = Get-Content -Raw -LiteralPath $ProfileBinding | ConvertFrom-Json
+$Worker = Get-Content -Raw -LiteralPath $WorkerBinding | ConvertFrom-Json
+$WorkerProfileMoniker = $Worker.profile_moniker
+if (
+  [string]$Profile.profile_moniker -cne $ProfileMoniker -or
+  $WorkerProfileMoniker -ne $ProfileMoniker -or
+  [IO.Path]::GetFullPath([string]$Worker.root) -cne [IO.Path]::GetFullPath($WorkerBundleRoot) -or
+  [IO.Path]::GetFullPath([string]$Worker.provisioning_root) -cne [IO.Path]::GetFullPath($WorkerProvisioningRoot)
+) { throw 'Recorded worker/profile binding drift.' }
+$WorkerManifestDigest = $Worker.manifest_digest
+$WorkerInterpreter = Join-Path $WorkerBundleRoot $Worker.interpreter
+$WorkerEntrypoint = $Worker.entrypoint
+$WorkerPythonVersion = $Worker.python_version
+$WorkerArchitecture = $Worker.architecture
+$WorkerPackageSid = $Worker.package_sid
+$WorkerOwnerSid = $Worker.owner_sid
+$WorkerProvisionerSid = $Worker.provisioner_sid
+$WorkerBrokerSid = $Worker.broker_sid
+$BoundAmbientInterpreterRoot = $Worker.ambient_interpreter_root
+$CampaignRoot = $Worker.campaign_root
+$AppContainerProfileRoot = $Worker.appcontainer_profile_root
+$BrokerProfileRoot = $Worker.broker_profile_root
+$UserDataRoot = $Worker.user_data_root
+$ObservedInterpreterIdentity = 'sha256:' + (Get-FileHash -LiteralPath $WorkerInterpreter -Algorithm SHA256).Hash.ToLowerInvariant()
+$ObservedAuthorityEnvelopeDigest = 'sha256:' + (Get-FileHash -LiteralPath $AuthorityEnvelope -Algorithm SHA256).Hash.ToLowerInvariant()
+if (
+  [IO.Path]::GetFullPath($BoundAmbientInterpreterRoot) -cne [IO.Path]::GetFullPath($AmbientInterpreterRoot) -or
+  [IO.Path]::GetFullPath($CampaignRoot) -cne [IO.Path]::GetFullPath($CanonicalRoot) -or
+  $ObservedInterpreterIdentity -cne $InterpreterIdentity -or
+  $ObservedAuthorityEnvelopeDigest -cne $AuthorityEnvelopeDigest
+) { throw 'Recorded Phase-1 identity drift.' }
 $PreparedRuntimeArgs = @(
   '--authority-envelope', $AuthorityEnvelope,
   '--authority-envelope-sha256', $AuthorityEnvelopeDigest,
@@ -390,18 +539,6 @@ try {
 }
 ```
 
-The target values above are the complete bounded acquisition subject; changing any of them requires a fresh preparation and owner act. `CampaignRoot` is exactly the canonical campaign/evidence root, never the executable source checkout. The later ceremony uses a dedicated, quiesced checkout at the final reviewed commit, separate from `sb-impl`.
-
-Two external, non-authorizing inputs remain. The profile binding must be produced from an actually provisioned broker profile and AppContainer profile—not hand-filled—and contains exactly `profile_moniker`, `package_sid`, `broker_sid`, `appcontainer_profile_root`, `broker_profile_root`, and `user_data_root`. The explicit `initialize-dual-live authority-envelope` step emits canonical JSON with exactly `schema_version`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `authorization_digest`, `grant_digest`, and `wrapper_start_token_ref`. Its schema is `project6.connector_authority.v1`, and its mandatory non-caller-configurable sentinel is `wrapper_start_token_ref=retired:sciencebase-live-v2`. The source commit and worker-interpreter digest must be observed only after the final clean source and external worker closure exist; the two opaque authority/grant references do not themselves grant live authority. B0 does not create or issue either input, and neither substitutes for the later signed one-use owner GO.
-
-The `authorization_digest:B2` and `grant_digest:B2` labels are KNOWINGLY-RATIFIED non-authorizing attestations that bind nothing. `wrapper_start_token_ref` remains untouched.
-
-W6-PRE may create only the output-binding parent under `C:\owner-controlled\project6`; both provisioners then run in an already-elevated Windows PowerShell 5.1 shell. Do not pre-create the worker provisioning root, `C:\ProgramData\Project6`, or its Authority child, and do not add manual parent-ACL steps: the provisioner-owned ACL application is the sole worker-root ACL mechanism. Each retry requires a fresh single-segment root, worker binding, profile binding, and moniker. There are at most five owner-budgeted elevated W6-PRE attempts; five is an operational stop, not a code ceiling, and failed-attempt state is retained. W7 is non-elevated and never runs in this change-set.
-
-The worker provisioner invokes `git cat-file blob` once for each of the 8 worker files and explicitly treats any stderr as `worker_source_copy_failed`, even when Git exits 0 (`provision-dual-live-worker.ps1:23-31`, `:122-126`). Whether `2>$null` at `:227`, `:229`, `:247`, and `:248` can itself raise a terminating `NativeCommandError` on Windows PowerShell 5.1 under the script's `$ErrorActionPreference = 'Stop'` at `:13` is not asserted; verify locally before the sitting. A stderr-silent `git` on PATH is a hard prerequisite either way. CI corroborates topology and ACL sequencing only; it is not owner-host broker-identity or interpreter evidence.
-
-The still-HIGH DACL residual is accepted only for this public credential-free run and is not transferable to NRC or another credentialed tranche. The owner accepts the structural-burn risk only with same-sitting W5 and T1.6 pre-7 interruption invalidation; neither R19 nor the separately required characterization is waived.
-
 Place the template outside the canonical run root so run containment and closeout cannot modify owner-act bytes. On success, capture the printed `OWNER_GO_SHA256` value as `$GoDigest`; independently rehash the unchanged file before signing. The emitted document has exactly these canonical fields: `schema`, `go_id`, `envelope_digest`, `campaign_id`, `canonical_root`, `connector_run_id`, `source_commit`, `interpreter_identity`, `worker_manifest_digest`, `request_digest`, `authorization_digest`, `grant_digest`, `wrapper_start_token_ref`, `credential_mode`, and `egress_mode`. The fixed values are `schema=project6.sciencebase_live_go.v1`, `credential_mode=none_public`, and `egress_mode=capability_scoped_default_off`.
 
 If the create-once write succeeds but prepared-runtime cleanup fails, the launcher returns `HOLD: runtime_cleanup_failed` and reports `UNSIGNED_TEMPLATE_RETAINED_NON_AUTHORITATIVE_POSSIBLY_STALE`. It intentionally does not delete or overwrite those evidence bytes. That file must not be signed or used; investigate cleanup, then choose a fresh path and fresh `go_id` for a newly validated preparation.
@@ -432,7 +569,7 @@ After a terminal success, perform the separate no-live closeout verification. Ar
 .\project6.ps1 -Action run-dual-live -- --verify-closeout --canonical-root $CanonicalRoot --connector-run-id $ConnectorRunId --reservation-database (Join-Path $CanonicalRoot 'reservation.db') --owner-go-sha256 $GoDigest
 ```
 
-`--verify-closeout` checks internal consistency; it neither re-authenticates the GO nor measures containment. R5 remains OPEN; this is disclosure, not control.
+`--verify-closeout` checks internal consistency; it neither re-authenticates the GO nor measures containment. Its `sciencebase_closeout_verified` metrics carry `boundary_assurance=owner_waived_unproven`, so `containment_status=contained` is never presented as measured boundary proof. R5 remains OPEN; this is disclosure, not control.
 
 Keep the manual W7 belt-and-suspenders check: before accepting closeout, decode the artifact under any detected UTF-8, UTF-16LE/BE, or UTF-32LE/BE BOM, inspect its leading content, and confirm the expected CSV header/data shape rather than `<`, `<!DOCTYPE`, `<html`, or `<?xml`, even when the automated verifier returns `VERIFIED`.
 

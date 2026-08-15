@@ -15,6 +15,12 @@ def _preparation_block() -> str:
     return next(block for block in blocks if "$PreparedRuntimeArgs" in block)
 
 
+def _elevated_preparation_block() -> str:
+    text = READINESS.read_text(encoding="utf-8")
+    blocks = re.findall(r"```powershell\n(.*?)\n```", text, flags=re.DOTALL)
+    return next(block for block in blocks if "initialize-dual-live -- reservation-store" in block)
+
+
 def _w5_block() -> str:
     text = READINESS.read_text(encoding="utf-8")
     blocks = re.findall(r"```powershell\n(.*?)\n```", text, flags=re.DOTALL)
@@ -22,13 +28,14 @@ def _w5_block() -> str:
 
 
 def test_documented_preparation_initializes_store_and_envelope_before_prepare() -> None:
-    block = _preparation_block()
+    elevated = _elevated_preparation_block()
+    rehydration = _preparation_block()
 
-    store = block.index("-Action initialize-dual-live -- reservation-store")
-    envelope = block.index("-Action initialize-dual-live -- authority-envelope")
-    digest = block.index("$AuthorityEnvelopeDigest =")
-    prepare = block.index("$PreparedRuntimeArgs =")
-    assert store < envelope < digest < prepare
+    store = elevated.index("-Action initialize-dual-live -- reservation-store")
+    envelope = elevated.index("-Action initialize-dual-live -- authority-envelope")
+    digest = elevated.index("$AuthorityEnvelopeDigest =")
+    assert store < envelope < digest
+    assert "$PreparedRuntimeArgs =" in rehydration
     assert "retired:sciencebase-live-v2" in READINESS.read_text(encoding="utf-8")
 
 
@@ -109,9 +116,10 @@ def test_closeout_discloses_local_consistency_and_containment_limit() -> None:
 
     assert (
         "`--verify-closeout` checks internal consistency; it neither "
-        "re-authenticates the GO nor measures containment. R5 remains OPEN; "
-        "this is disclosure, not control."
+        "re-authenticates the GO nor measures containment."
     ) in text
+    assert "`boundary_assurance=owner_waived_unproven`" in text
+    assert "R5 remains OPEN; this is disclosure, not control." in text
 
 
 def test_w5_uses_saved_exact_chain_bytes_and_runtime_membership() -> None:
@@ -159,6 +167,23 @@ def test_w5_uses_saved_exact_chain_bytes_and_runtime_membership() -> None:
     assert derive < download
 
 
+def test_w5_download_applies_production_content_contract_before_recording() -> None:
+    block = _w5_block()
+
+    download = block.index("$DownloadRecord = Invoke-W5Stage")
+    contract = block.index("pathlib.Path(sys.argv[1]).read_bytes()")
+    failure = block.index("W5 download content contract HOLD")
+    record = block.index("$ObservationRecords.Add($SearchRecord)")
+    assert download < contract < failure < record
+    for token in (
+        "not t or t.startswith(('<','{','['))",
+        "len(lines)>=2",
+        "lines[0]==header",
+        "all(line.count(',')+1==13 for line in lines[1:])",
+    ):
+        assert token in block
+
+
 def test_w5_records_cleans_and_invalidates_observation_set() -> None:
     block = _w5_block()
 
@@ -190,9 +215,9 @@ def test_readiness_uses_single_segment_fresh_attempt_topology_and_exact_py312_in
         "$Py = (& py -3.12 -c \"import sys; print(sys.executable)\").Trim()",
         "$AmbientInterpreterRoot = Split-Path -Parent $Py",
         "$AmbientInterpreterSha256 -cne $WorkerInterpreterSha256",
-        "fresh single-segment root, worker binding, profile binding, and moniker",
+        "fresh single-segment worker root, worker binding, profile binding, and moniker",
         "at most five owner-budgeted elevated W6-PRE attempts",
-        "W7 is non-elevated",
+        "W7 and template emission are non-elevated",
         "git cat-file blob",
         "worker_source_copy_failed",
         "explicitly treats any stderr as `worker_source_copy_failed`, even when Git exits 0",
@@ -208,28 +233,73 @@ def test_readiness_uses_single_segment_fresh_attempt_topology_and_exact_py312_in
     assert "Get-Command python.exe" not in text
 
 
+def test_w6_pre_secures_campaign_root_before_worker_and_initializers() -> None:
+    block = _elevated_preparation_block()
+
+    create = block.index("$CampaignRootSecurity.SetSecurityDescriptorSddlForm")
+    verify = block.index("backend.secure(handle) != (True, True, True)")
+    worker = block.index("provision-dual-live-worker.ps1")
+    initialize = block.index("initialize-dual-live -- reservation-store")
+    assert create < verify < worker < initialize
+    for token in ("D:P(A;;FA;;;", "(A;;FA;;;SY)", "open_existing_directory"):
+        assert token in block
+
+
+def test_elevated_preparation_stops_before_non_elevated_rehydration() -> None:
+    elevated = _elevated_preparation_block()
+    rehydration = _preparation_block()
+
+    assert elevated != rehydration
+    assert "--emit-owner-go-template" not in elevated
+    assert "--emit-owner-go-template" in rehydration
+    assert "provision-dual-live-profile.ps1" not in rehydration
+    assert "provision-dual-live-worker.ps1" not in rehydration
+    assert "initialize-dual-live" not in rehydration
+    for token in (
+        "$ConnectorRunId = '<PHASE-1-RECORD connector run UUID>'",
+        "$AttemptNonce = '<PHASE-1-RECORD attempt nonce>'",
+        "$ProfileMoniker = '<PHASE-1-RECORD profile moniker>'",
+        "$ProfileBinding = '<PHASE-1-RECORD profile binding path>'",
+        "$WorkerBinding = '<PHASE-1-RECORD worker binding path>'",
+        "$WorkerBundleRoot = '<PHASE-1-RECORD worker bundle root>'",
+        "$WorkerProvisioningRoot = '<PHASE-1-RECORD worker provisioning root>'",
+        "$AuthorityEnvelope = '<PHASE-1-RECORD authority envelope path>'",
+        "$AuthorityEnvelopeDigest = '<PHASE-1-RECORD authority envelope digest>'",
+        "$InterpreterIdentity = '<PHASE-1-RECORD interpreter identity>'",
+        "$AmbientInterpreterRoot = '<PHASE-1-RECORD ambient interpreter root>'",
+        "$PreparedRuntimeArgs = @(",
+    ):
+        assert token in rehydration
+    assert "B2 authorization label:" in rehydration
+    assert "B2 grant label:" in rehydration
+
+
 def test_readiness_requires_exact_clean_reviewed_source_and_owner_fill_ids() -> None:
     text = READINESS.read_text(encoding="utf-8")
-    block = _preparation_block()
+    elevated = _elevated_preparation_block()
+    rehydration = _preparation_block()
 
     assert "`codex/sb-live-impl`" in text
-    assert "$ExpectedSourceCommit = '<OWNER-FILL reviewed head>'" in block
-    assert "git branch --show-current" in block
-    assert "git status --porcelain=v1 --untracked-files=all" in block
-    assert "git rev-parse HEAD" in block
-    for token in (
-        "$BranchExit = $LASTEXITCODE",
-        "$StatusExit = $LASTEXITCODE",
-        "$CommitExit = $LASTEXITCODE",
-        "$BranchExit -ne 0",
-        "$StatusExit -ne 0",
-        "$CommitExit -ne 0",
-    ):
-        assert token in block
-    assert "$SourceCommit -cne $ExpectedSourceCommit" in block
-    assert block.count("<OWNER-FILL fresh UUID>") == 2
-    assert "$ConnectorRunId -like '<OWNER-FILL*'" in block
-    assert "$GoId -like '<OWNER-FILL*'" in block
+    assert "$ExpectedSourceCommit = '<OWNER-FILL reviewed head>'" in elevated
+    assert "$ExpectedSourceCommit = '<PHASE-1-RECORD source commit>'" in rehydration
+    for block in (elevated, rehydration):
+        assert "git branch --show-current" in block
+        assert "git status --porcelain=v1 --untracked-files=all" in block
+        assert "git rev-parse HEAD" in block
+        for token in (
+            "$BranchExit = $LASTEXITCODE",
+            "$StatusExit = $LASTEXITCODE",
+            "$CommitExit = $LASTEXITCODE",
+            "$BranchExit -ne 0",
+            "$StatusExit -ne 0",
+            "$CommitExit -ne 0",
+        ):
+            assert token in block
+        assert "$SourceCommit -cne $ExpectedSourceCommit" in block
+    assert elevated.count("<OWNER-FILL fresh UUID>") == 1
+    assert rehydration.count("<OWNER-FILL fresh UUID>") == 1
+    assert "$ConnectorRunId -like '<OWNER-FILL*'" in elevated
+    assert "$GoId -like '<OWNER-FILL*'" in rehydration
 
 
 def test_pilot_runbook_disambiguates_without_supersession() -> None:

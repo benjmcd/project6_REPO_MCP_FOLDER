@@ -978,6 +978,7 @@ def verify_sciencebase_closeout(
             "credential_mode": "none_public",
             "egress_mode": "capability_scoped_default_off",
             "containment_status": "contained",
+            "boundary_assurance": BOUNDARY_ASSURANCE,
         }
         result = store.write_sciencebase_live_event(
             event_id=str(uuid5(LIVE_EVENT_NAMESPACE, f"closeout:{connector_run_id}")),

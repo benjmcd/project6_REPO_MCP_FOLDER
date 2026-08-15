@@ -1274,9 +1274,12 @@ def test_utf16_csv_artifact_writes_and_independent_closeout_verifies_exact_three
     assert result.status == "VERIFIED"
     assert result.code == "sciencebase_closeout_verified"
     with sqlite3.connect(tmp_path / "reservation.db") as connection:
-        assert connection.execute(
-            "SELECT COUNT(*) FROM connector_run_event WHERE event_type = 'sciencebase_closeout_verified'"
-        ).fetchone()[0] == 1
+        closeout_row = connection.execute(
+            "SELECT metrics_json FROM connector_run_event "
+            "WHERE event_type = 'sciencebase_closeout_verified'"
+        ).fetchone()
+    assert closeout_row is not None
+    assert json.loads(closeout_row[0])["boundary_assurance"] == "owner_waived_unproven"
 
 
 def test_plain_utf8_no_bom_csv_writes_and_verifies(tmp_path: Path) -> None:
