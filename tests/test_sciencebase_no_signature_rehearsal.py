@@ -188,10 +188,16 @@ def _reservation_plan(root: Path, ordinal: int, stage: str) -> PhysicalRequestPl
     )
 
 
-def _seed_closeout(root: Path, reservation_count: int) -> Path:
+def _seed_closeout(
+    root: Path, reservation_count: int, artifact: bytes | None = None
+) -> Path:
     readiness.initialize_reservation_database(root, RUN_ID)
     store = _store(root)
-    artifact = b"synthetic-closeout-artifact"
+    if artifact is None:
+        artifact = (
+            readiness.SCIENCEBASE_CSV_HEADER
+            + "\nsynthetic,synthetic,2026,1,2,3,4,5,6,7,8,9,10\n"
+        ).encode("utf-8")
     artifact_sha256 = hashlib.sha256(artifact).hexdigest()
     artifact_name = f"sciencebase-{GO_DIGEST[7:]}-{artifact_sha256}.bin"
     go_metrics = {
@@ -405,6 +411,17 @@ def test_sciencebase_no_signature_rehearsal(
             assert closeout_count == (1 if name == "valid" else 0)
         channel = "stdout" if code == 0 else "stderr"
         print(f"R4 {name} {channel}:\n{observed}", end="")
+
+    one_line_root = (tmp_path / "r4-one-line-artifact").resolve()
+    one_line_root.mkdir()
+    _seed_closeout(one_line_root, 3, b"synthetic-closeout-artifact")
+    code, stdout, stderr = _run_closeout(launcher, one_line_root)
+    assert (code, stdout, stderr) == (
+        2,
+        "",
+        "HOLD: sciencebase_artifact_content_rejected\n",
+    )
+    print("R4 one-line-artifact stderr:\n" + stderr, end="")
 
     # R0: initialize a fresh root, open it rw, and prepare through empty census only.
     r0_root = (tmp_path / "r0-root").resolve()
