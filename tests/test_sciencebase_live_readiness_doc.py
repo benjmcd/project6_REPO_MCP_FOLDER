@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import re
 
 
@@ -243,6 +243,25 @@ def test_w6_pre_secures_campaign_root_before_worker_and_initializers() -> None:
     assert create < verify < worker < initialize
     for token in ("D:P(A;;FA;;;", "(A;;FA;;;SY)", "open_existing_directory"):
         assert token in block
+
+
+def test_w6_pre_keeps_binding_parent_outside_campaign_root() -> None:
+    block = _elevated_preparation_block()
+    text = READINESS.read_text(encoding="utf-8")
+    campaign_match = re.search(r"^\$CanonicalRoot = '([^']+)'$", block, flags=re.MULTILINE)
+    binding_match = re.search(r"^\$BindingParent = '([^']+)'$", block, flags=re.MULTILINE)
+
+    assert campaign_match is not None
+    assert binding_match is not None
+    campaign_parts = tuple(part.casefold() for part in PureWindowsPath(campaign_match.group(1)).parts)
+    binding_parts = tuple(part.casefold() for part in PureWindowsPath(binding_match.group(1)).parts)
+
+    assert campaign_parts[: len(binding_parts)] != binding_parts
+    assert binding_parts[: len(campaign_parts)] != campaign_parts
+    assert (
+        "output-binding parent under `C:\\owner-controlled\\project6-bindings` and the dedicated "
+        "campaign root under `C:\\owner-controlled\\project6`"
+    ) in text
 
 
 def test_elevated_preparation_stops_before_non_elevated_rehydration() -> None:
