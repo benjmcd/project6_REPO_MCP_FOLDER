@@ -34,6 +34,11 @@ bundle-root op or any descriptor assertion below.
 Bottom-up ordering removes the exposure: each descendant already carries its
 own protected DACL before its ancestor is touched, so the ancestor's
 re-propagation has nothing left to strip.
+
+What is asserted below is the descriptor's *content*, keyed by principal, not
+its DACL order.  Windows canonicalizes explicit-ACE order when a descriptor is
+written, so the stored sequence is not something a provisioner establishes; see
+``_EXPECTED_ACES``.
 """
 
 import ctypes
@@ -71,8 +76,12 @@ _PACKAGE_SID = (
 
 _CONTROL_MASK = 0x001F01FF
 _RX_MASK = 0x001200A9
-# Insertion order is load-bearing: it is the DACL sequence the runtime compares
-# positionally, and the icacls argument order the provisioner grants in.
+# Keyed by principal.  The insertion order below is the icacls argument order the
+# provisioner grants in; it is NOT the order Windows stores.  Windows
+# canonicalizes explicit-ACE order when a descriptor is written -- measured as
+# ascending SID, and identical whether the DACL is written by one icacls call,
+# one per principal, in reverse argument order, or by .NET Set-Acl -- so DACL
+# position is not a property the provisioner can establish and is not asserted.
 _EXPECTED_ACES = {
     _SYSTEM_SID: _CONTROL_MASK,
     _ADMINISTRATORS_SID: _CONTROL_MASK,
@@ -94,6 +103,40 @@ _PRIVILEGE_START = "function Enable-RestorePrivilege {"
 _PRIVILEGE_END = "[Project6WorkerProvisionerPrivilege]::Enable()\n}\n"
 _ROUTINE_START = "$expectedAcl = [ordered]@{}"
 _ROUTINE_END = "\n$binding = [ordered]@{"
+
+
+def _posture_report(where: str, aces: list[dict]) -> str:
+    """Classify every observed ACE, so a failure names the offending field.
+
+    Rendered eagerly and passed as the assertion message: an elevated run is
+    expensive and one-shot, so a failure must not come back as a bare
+    ``assert False`` that needs another elevated run to interpret.
+    """
+
+    lines = [f"{where}: observed {len(aces)} explicit ACE(s)"]
+    for index, ace in enumerate(aces):
+        expected_mask = _EXPECTED_ACES.get(ace["sid"])
+        if expected_mask is None:
+            verdict = "UNEXPECTED PRINCIPAL"
+        elif (
+            ace["kind"] == "Allow"
+            and ace["mask"] == expected_mask
+            and ace["inherited"] is False
+            and ace["inheritance"] == "None"
+            and ace["propagation"] == "None"
+        ):
+            verdict = "ok"
+        else:
+            verdict = (
+                f"mask={ace['mask']:#010x} (expected {expected_mask:#010x}) "
+                f"kind={ace['kind']} inherited={ace['inherited']} "
+                f"inheritance={ace['inheritance']} propagation={ace['propagation']}"
+            )
+        lines.append(f"  [{index}] {ace['sid']} -> {verdict}")
+    missing = sorted(set(_EXPECTED_ACES) - {ace["sid"] for ace in aces})
+    if missing:
+        lines.append(f"  missing principals: {missing}")
+    return "\n".join(lines)
 
 
 def _privilege_function(source: str) -> str:
@@ -291,19 +334,20 @@ def test_production_acl_routine_hardens_a_disposable_tree() -> None:
             assert entry["protected"] is True, where
             assert entry["inheritedCount"] == 0, where
             aces = entry["aces"]
-            assert len(aces) == 6, where
-            # Positional, not set-wise: the runtime walks the DACL by ACE index
-            # and compares the result as an ordered tuple against a fixed
-            # sequence (backend/app/services/dual_live_worker_bundle.py:601
-            # against :580-589), so the right ACEs in the wrong order are a
-            # contract violation, not a cosmetic difference.
-            assert [ace["sid"] for ace in aces] == list(_EXPECTED_ACES), where
+            report = _posture_report(where, aces)
+            assert len(aces) == 6, report
+            # Keyed by principal, never by position: DACL order is imposed by
+            # Windows, not by the provisioner (see _EXPECTED_ACES above).  Every
+            # content requirement is still asserted per principal below.
+            observed_sids = [ace["sid"] for ace in aces]
+            assert len(set(observed_sids)) == len(observed_sids), report
+            assert set(observed_sids) == set(_EXPECTED_ACES), report
             for ace in aces:
-                assert ace["kind"] == "Allow", where
-                assert ace["mask"] == _EXPECTED_ACES[ace["sid"]], where
-                assert ace["inherited"] is False, where
-                assert ace["inheritance"] == "None", where
-                assert ace["propagation"] == "None", where
+                assert ace["kind"] == "Allow", report
+                assert ace["mask"] == _EXPECTED_ACES[ace["sid"]], report
+                assert ace["inherited"] is False, report
+                assert ace["inheritance"] == "None", report
+                assert ace["propagation"] == "None", report
     finally:
         _reclaim(disposable)
 
