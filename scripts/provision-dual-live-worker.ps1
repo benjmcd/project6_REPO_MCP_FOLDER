@@ -286,14 +286,61 @@ $bundleRoot = Join-Path $provisioning "sha256-$manifestDigest"
 if (Test-Path -LiteralPath $bundleRoot) { throw 'worker_bundle_exists' }
 Move-Item -LiteralPath $stage -Destination $bundleRoot
 
+$expectedAcl = [ordered]@{}
+foreach ($ace in @(
+    [pscustomobject]@{ Sid = $SystemSid; Mask = 0x001F01FF },
+    [pscustomobject]@{ Sid = $AdministratorsSid; Mask = 0x001F01FF },
+    [pscustomobject]@{ Sid = $OwnerSid; Mask = 0x001F01FF },
+    [pscustomobject]@{ Sid = $ProvisionerSid; Mask = 0x001F01FF },
+    [pscustomobject]@{ Sid = $profile.broker_sid; Mask = 0x001200A9 },
+    [pscustomobject]@{ Sid = $profile.package_sid; Mask = 0x001200A9 }
+)) {
+    if ([string]::IsNullOrWhiteSpace($ace.Sid) -or $expectedAcl.Contains($ace.Sid)) { throw 'worker_bundle_principals_ambiguous' }
+    $expectedAcl[$ace.Sid] = $ace.Mask
+}
+
 Enable-RestorePrivilege
-$aclTargets = @($provisioning, $bundleRoot) + @(Get-ChildItem -LiteralPath $bundleRoot -Recurse -Force | ForEach-Object FullName)
+# Bottom-up ACL application. An ancestor path is always an ordinal prefix of its
+# descendants, so reversed ordinal order applies every descendant before its
+# ancestor; the bundle root and then the provisioning root are hardened last.
+# The whole list is materialized before the first descriptor change, so
+# enumeration never depends on access an earlier iteration has already stripped.
+$aclDescendants = @(Get-ChildItem -LiteralPath $bundleRoot -Recurse -Force | ForEach-Object FullName)
+[Array]::Sort($aclDescendants, [StringComparer]::Ordinal)
+[Array]::Reverse($aclDescendants)
+$aclTargets = @($aclDescendants) + @($bundleRoot, $provisioning)
 foreach ($target in $aclTargets) {
     $acl = Get-Acl -LiteralPath $target
     $acl.SetOwner([Security.Principal.SecurityIdentifier]::new($OwnerSid))
     Set-Acl -LiteralPath $target -AclObject $acl
     & icacls.exe $target /inheritance:r /grant:r "*$SystemSid`:(F)" "*$AdministratorsSid`:(F)" "*$OwnerSid`:(F)" "*$ProvisionerSid`:(F)" "*$($profile.broker_sid)`:(RX)" "*$($profile.package_sid)`:(RX)" | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'worker_bundle_acl_failed' }
+}
+# Every final descriptor must match the bundle contract exactly before any
+# binding is emitted: Local Service owner, protected DACL, and precisely the six
+# explicit non-inherited ACEs with no inheritance or propagation flags.
+foreach ($target in $aclTargets) {
+    $finalAcl = Get-Acl -LiteralPath $target
+    if ($finalAcl.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $OwnerSid -or
+        -not $finalAcl.AreAccessRulesProtected -or
+        @($finalAcl.GetAccessRules($false, $true, [Security.Principal.SecurityIdentifier])).Count -ne 0) {
+        throw 'worker_bundle_acl_unverified'
+    }
+    $observedAces = @($finalAcl.GetAccessRules($true, $false, [Security.Principal.SecurityIdentifier]))
+    if ($observedAces.Count -ne $expectedAcl.Count) { throw 'worker_bundle_acl_unverified' }
+    $seenAces = @{}
+    foreach ($rule in $observedAces) {
+        $sid = $rule.IdentityReference.Value
+        if (-not $expectedAcl.Contains($sid) -or $seenAces.ContainsKey($sid) -or
+            $rule.AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow -or
+            [int]$rule.FileSystemRights -ne $expectedAcl[$sid] -or
+            $rule.IsInherited -or
+            $rule.InheritanceFlags -ne [Security.AccessControl.InheritanceFlags]::None -or
+            $rule.PropagationFlags -ne [Security.AccessControl.PropagationFlags]::None) {
+            throw 'worker_bundle_acl_unverified'
+        }
+        $seenAces[$sid] = $true
+    }
 }
 
 $binding = [ordered]@{
