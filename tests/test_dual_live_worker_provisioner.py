@@ -91,6 +91,44 @@ def test_local_worker_provisioner_requires_external_profile_and_archive_inputs()
         assert f".{field}" in source
 
 
+def test_local_worker_provisioner_hardens_bundle_acls_before_emitting_a_binding() -> None:
+    """Assert ACL *sequencing*, not just that ACL primitives are mentioned.
+
+    The presence-only checks above were satisfied by the parent-first
+    implementation that failed W6-PRE attempt 2 at ``worker_bundle_acl_failed``:
+    ``SetOwner`` and ``/inheritance:r`` were both present and both in the wrong
+    order.  These assertions pin the order instead.
+    """
+
+    source = PROVISIONER.read_text(encoding="utf-8")
+
+    # The parent-first target list must never come back.
+    assert "$aclTargets = @($provisioning, $bundleRoot)" not in source
+    # Nor may it be "fixed" by making the ancestor grants inheritable: the bundle
+    # contract requires zero inheritance flags on every explicit ACE.
+    assert "(OI)(CI)" not in source
+
+    enumerate_at = source.index("$aclDescendants = @(Get-ChildItem")
+    reverse_at = source.index("[Array]::Reverse($aclDescendants)")
+    targets_at = source.index(
+        "$aclTargets = @($aclDescendants) + @($bundleRoot, $provisioning)"
+    )
+    apply_at = source.index("foreach ($target in $aclTargets) {")
+    grant_at = source.index("/inheritance:r /grant:r")
+    verify_at = source.index("$finalAcl = Get-Acl -LiteralPath $target")
+    unverified_at = source.index("worker_bundle_acl_unverified")
+    binding_at = source.index("$binding = [ordered]@{")
+    emit_at = source.index("Write-CreateOnce ([IO.Path]::GetFullPath($OutputBinding))")
+
+    # The full target list is enumerated and reversed into descendant-first
+    # order before the first descriptor is touched.
+    assert enumerate_at < reverse_at < targets_at < apply_at < grant_at
+
+    # Every final descriptor is checked after the apply loop, and the worker
+    # binding is only built and written once that check has passed.
+    assert grant_at < verify_at < unverified_at < binding_at < emit_at
+
+
 @pytest.mark.skipif(os.name != "nt", reason="requires Windows PowerShell 5.1")
 def test_local_worker_provisioner_parses_with_powershell_51_apis() -> None:
     command = (
