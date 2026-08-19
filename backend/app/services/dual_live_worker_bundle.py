@@ -566,6 +566,10 @@ def _inside(path: Path, parent: Path) -> bool:
 
 
 def _expected_security(binding: BundleBinding) -> SecurityDescriptor:
+    """The contract descriptor.  The entry sequence below is presentational --
+    it is the order the provisioner grants in, not an ordering requirement; see
+    _security_matches, which compares these entries keyed by principal."""
+
     protected = {binding.package_sid, binding.broker_sid, _SYSTEM, _ADMINISTRATORS}
     controllers = {binding.owner_sid, binding.provisioner_sid}
     if (
@@ -590,15 +594,41 @@ def _expected_security(binding: BundleBinding) -> SecurityDescriptor:
     )
 
 
+def _keyed_entries(entries: tuple[AccessEntry, ...]) -> dict[str, AccessEntry] | None:
+    """Index ACEs by principal, or None if any principal repeats.
+
+    A repeated principal would collapse into a single key and hide an extra ACE,
+    so it is reported as uncomparable rather than silently merged.
+    """
+
+    keyed = {entry.principal: entry for entry in entries}
+    return keyed if len(keyed) == len(entries) else None
+
+
 def _security_matches(observed: SecurityDescriptor, binding: BundleBinding) -> bool:
+    """Compare the observed descriptor to the contract, keyed by principal.
+
+    Deliberately order-insensitive.  Windows canonicalizes explicit-ACE order
+    when a descriptor is written -- the stored order is ascending SID, and is
+    the same however the DACL was written (one icacls call, one per principal,
+    reversed argument order, or .NET Set-Acl) -- so DACL position is not a
+    property any provisioner can establish, and requiring one would reject every
+    correctly provisioned bundle.  Every content requirement still holds: the
+    principal set, and per principal the exact rights, mask, allow/deny, and
+    inherited and inheritance flags, all compared through AccessEntry equality.
+    """
+
     expected = _expected_security(binding)
+    expected_entries = _keyed_entries(expected.entries)
+    observed_entries = _keyed_entries(observed.entries)
     effective = {entry.principal: entry for entry in observed.effective_entries if entry.allow}
     broker = effective.get(binding.broker_sid)
     package = effective.get(binding.package_sid)
     return (
         observed.owner_sid == expected.owner_sid
         and observed.protected == expected.protected
-        and observed.entries == expected.entries
+        and expected_entries is not None and observed_entries is not None
+        and observed_entries == expected_entries
         and package is not None and package.rights == _RX and package.access_mask == _RX_MASK
         and broker is not None and broker.rights == _RX and broker.access_mask == _RX_MASK
     )

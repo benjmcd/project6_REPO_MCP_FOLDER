@@ -301,6 +301,84 @@ def test_holds_on_broad_inherited_or_unexpected_acl(principal: str, rights: froz
         validate_worker_bundle(binding, probe)
 
 
+# Windows canonicalizes explicit-ACE order when a descriptor is written: the
+# stored order is ascending SID -- sub-authority count first, then identifier
+# authority, then sub-authorities -- regardless of the order the grants were
+# issued in.  Measured on Windows 10.0.26100 / PowerShell 5.1 against disposable
+# NTFS trees, and identical for a single icacls call in grant order, a single
+# call in reversed order, one call per principal, and a pure .NET Set-Acl.  DACL
+# order is therefore not a property any provisioner can establish, so the
+# validator must not depend on it.
+_PRODUCTION_SIDS_BY_ROLE = {
+    "system": "S-1-5-18",
+    "administrators": "S-1-5-32-544",
+    "owner": "S-1-5-19",
+    "provisioner": "S-1-5-20",
+    "broker": "S-1-15-2-3624051433-2125758914-1423191267-1740899205-1073925389-3782572162-737981194",
+    "package": "S-1-15-2-1861897761-1695161497-2927542615-642690995-327840285-2659745135-2630312742",
+}
+_GRANT_ROLE_ORDER = ("system", "administrators", "owner", "provisioner", "broker", "package")
+
+
+def _sid_sort_key(sid: str) -> tuple[int, int, tuple[int, ...]]:
+    """The ordering Windows imposes on explicit ACEs, as measured."""
+
+    _, _, identifier_authority, *sub_authorities = sid.split("-")
+    return (
+        len(sub_authorities),
+        int(identifier_authority),
+        tuple(int(part) for part in sub_authorities),
+    )
+
+
+_CANONICAL_ROLE_ORDER = tuple(
+    sorted(_GRANT_ROLE_ORDER, key=lambda role: _sid_sort_key(_PRODUCTION_SIDS_BY_ROLE[role]))
+)
+
+
+def test_canonical_windows_dacl_order_differs_from_the_grant_order() -> None:
+    """Pins the measured ordering law, and that it is not the grant order.
+
+    If these two ever coincided the acceptance test below would prove nothing.
+    """
+
+    assert _CANONICAL_ROLE_ORDER == (
+        "system", "owner", "provisioner", "administrators", "package", "broker",
+    )
+    assert _CANONICAL_ROLE_ORDER != _GRANT_ROLE_ORDER
+
+
+def test_validates_bundle_whose_dacl_is_in_canonical_windows_order() -> None:
+    """A correctly provisioned bundle validates in the order Windows stores.
+
+    The six ACEs are exactly the contract's -- same principals, masks, types,
+    inheritance and propagation -- and only their DACL positions differ, which
+    is the only arrangement a real provisioned bundle can ever present.
+    """
+
+    from app.services.dual_live_worker_bundle import validate_worker_bundle
+
+    binding, probe = _valid_case()
+    role_to_sid = {
+        "system": "S-1-5-18",
+        "administrators": "S-1-5-32-544",
+        "owner": binding.owner_sid,
+        "provisioner": binding.provisioner_sid,
+        "broker": binding.broker_sid,
+        "package": binding.package_sid,
+    }
+    by_principal = {entry.principal: entry for entry in probe.security.entries}
+    reordered = tuple(by_principal[role_to_sid[role]] for role in _CANONICAL_ROLE_ORDER)
+    assert set(reordered) == set(probe.security.entries), "reordering must not change content"
+    assert reordered != probe.security.entries, "reordering must actually reorder"
+    probe.security = replace(probe.security, entries=reordered)
+
+    validated = validate_worker_bundle(binding, probe)
+
+    assert validated.root == binding.root
+    assert validated.manifest_digest == binding.manifest_digest
+
+
 def test_holds_when_actual_broker_token_can_mutate_bundle() -> None:
     from app.services.dual_live_worker_bundle import AccessEntry, BundleHold, validate_worker_bundle
 
