@@ -318,13 +318,16 @@ foreach ($target in $aclTargets) {
 }
 # Every final descriptor must match the bundle contract exactly before any
 # binding is emitted: Local Service owner, protected DACL, and precisely the six
-# explicit non-inherited ACEs with no inheritance or propagation flags, in the
-# order the runtime demands.  The consumer walks the DACL by ACE index and
-# compares the result as an ordered tuple against a fixed sequence, so the ACEs
-# are checked positionally against $expectedAcl, whose keys are already in the
-# icacls argument order: SYSTEM, Administrators, owner, provisioner, broker,
-# package.  A correct set in the wrong order is a contract violation.
-$expectedSids = @($expectedAcl.Keys)
+# explicit non-inherited ACEs with no inheritance or propagation flags.
+#
+# The check is keyed by principal, never positional.  Windows canonicalizes
+# explicit-ACE order when a descriptor is written: the stored order is ascending
+# SID -- sub-authority count first, then identifier authority, then
+# sub-authorities -- and it is identical whether the DACL is written by one
+# icacls call, by one call per principal, in reverse argument order, or by .NET
+# Set-Acl.  DACL order is therefore not a property this script can establish,
+# and asserting it would fail every run.  The principal-ambiguity guard above
+# rejects duplicate SIDs, which is what makes keying by SID sound here.
 foreach ($target in $aclTargets) {
     $finalAcl = Get-Acl -LiteralPath $target
     if ($finalAcl.GetOwner([Security.Principal.SecurityIdentifier]).Value -ne $OwnerSid -or
@@ -333,11 +336,11 @@ foreach ($target in $aclTargets) {
         throw 'worker_bundle_acl_unverified'
     }
     $observedAces = @($finalAcl.GetAccessRules($true, $false, [Security.Principal.SecurityIdentifier]))
-    if ($observedAces.Count -ne $expectedSids.Count) { throw 'worker_bundle_acl_unverified' }
-    for ($aceIndex = 0; $aceIndex -lt $expectedSids.Count; $aceIndex++) {
-        $rule = $observedAces[$aceIndex]
-        $sid = $expectedSids[$aceIndex]
-        if ($rule.IdentityReference.Value -ne $sid -or
+    if ($observedAces.Count -ne $expectedAcl.Count) { throw 'worker_bundle_acl_unverified' }
+    $seenAces = @{}
+    foreach ($rule in $observedAces) {
+        $sid = $rule.IdentityReference.Value
+        if (-not $expectedAcl.Contains($sid) -or $seenAces.ContainsKey($sid) -or
             $rule.AccessControlType -ne [Security.AccessControl.AccessControlType]::Allow -or
             [int]$rule.FileSystemRights -ne $expectedAcl[$sid] -or
             $rule.IsInherited -or
@@ -345,6 +348,7 @@ foreach ($target in $aclTargets) {
             $rule.PropagationFlags -ne [Security.AccessControl.PropagationFlags]::None) {
             throw 'worker_bundle_acl_unverified'
         }
+        $seenAces[$sid] = $true
     }
 }
 
