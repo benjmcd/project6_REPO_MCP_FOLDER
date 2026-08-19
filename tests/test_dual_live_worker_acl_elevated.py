@@ -71,6 +71,8 @@ _PACKAGE_SID = (
 
 _CONTROL_MASK = 0x001F01FF
 _RX_MASK = 0x001200A9
+# Insertion order is load-bearing: it is the DACL sequence the runtime compares
+# positionally, and the icacls argument order the provisioner grants in.
 _EXPECTED_ACES = {
     _SYSTEM_SID: _CONTROL_MASK,
     _ADMINISTRATORS_SID: _CONTROL_MASK,
@@ -290,7 +292,12 @@ def test_production_acl_routine_hardens_a_disposable_tree() -> None:
             assert entry["inheritedCount"] == 0, where
             aces = entry["aces"]
             assert len(aces) == 6, where
-            assert {ace["sid"] for ace in aces} == set(_EXPECTED_ACES), where
+            # Positional, not set-wise: the runtime walks the DACL by ACE index
+            # and compares the result as an ordered tuple against a fixed
+            # sequence (backend/app/services/dual_live_worker_bundle.py:601
+            # against :580-589), so the right ACEs in the wrong order are a
+            # contract violation, not a cosmetic difference.
+            assert [ace["sid"] for ace in aces] == list(_EXPECTED_ACES), where
             for ace in aces:
                 assert ace["kind"] == "Allow", where
                 assert ace["mask"] == _EXPECTED_ACES[ace["sid"]], where
