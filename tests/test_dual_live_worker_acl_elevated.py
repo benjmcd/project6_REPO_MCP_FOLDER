@@ -9,20 +9,27 @@ Why it needs elevation: the routine sets the owner to Local Service
 (``S-1-5-19``), which requires ``SeRestorePrivilege``.  Without elevation the
 test SKIPS; it never silently passes.
 
-Behaviour at the pre-repair parent (a10626bf): the target list there is
-``[provisioning root, bundle root, descendants...]``, so the provisioning root
-is hardened first.  Measured effect of that single first iteration on an
-otherwise identical tree: the provisioning root becomes protected with its six
-explicit ACEs, but because none of those ACEs is inheritable, the resulting
+Separately measured behaviour of the pre-repair parent (a10626bf), obtained by
+driving that script's own apply loop, not by anything below: the target list
+there is ``[provisioning root, bundle root, descendants...]``, so the
+provisioning root is hardened first.  Effect of that single first iteration on
+an otherwise identical tree: the provisioning root becomes protected with its
+six explicit ACEs, but because none of those ACEs is inheritable, the resulting
 re-propagation strips every inherited ACE from the still-unsecured children --
 the bundle root drops from seven inherited ACEs to an *empty* DACL, and every
 object beneath it becomes unreadable ("Access is denied").  The loop's next
 iteration then transfers the bundle root's ownership away to ``S-1-5-19``,
 surrendering the implicit owner rights that were the last way in, and its
 ``icacls`` call fails, aborting at ``worker_bundle_acl_failed``.  That is
-exactly where W6-PRE attempt 2 died.  Running this module against the parent
-script therefore fails at the bundle-root op rather than reaching any
-descriptor assertion below.
+exactly where W6-PRE attempt 2 died.
+
+This module cannot reproduce that measurement, because it cannot run against
+the parent at all: the parent carries no expectation table and no post-loop
+descriptor verification, so ``_ROUTINE_START``
+(``$expectedAcl = [ordered]@{}``) is absent from its text and ``_acl_routine``
+raises ``ValueError: substring not found`` while assembling the harness --
+before any PowerShell process is launched, and therefore long before the
+bundle-root op or any descriptor assertion below.
 
 Bottom-up ordering removes the exposure: each descendant already carries its
 own protected DACL before its ancestor is touched, so the ancestor's
