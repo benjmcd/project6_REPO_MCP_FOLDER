@@ -263,6 +263,29 @@ def test_w6_pre_keeps_binding_parent_outside_campaign_root() -> None:
         "campaign root under `C:\\owner-controlled\\project6`"
     ) in text
 
+    # Retries past the first take an attempt-scoped binding parent so retained
+    # failed-attempt binding state is never reused; it must satisfy the same
+    # containment rule as the base parent and must not collide with it.
+    scoped_match = re.search(r'^  \$BindingParent = "([^"]+)"$', block, flags=re.MULTILINE)
+    assert scoped_match is not None
+    assert (
+        "$BindingParent = 'C:\\owner-controlled\\project6-bindings'\n"
+        "if ($W6PreAttempt -gt 1) {\n"
+        '  $BindingParent = "C:\\owner-controlled\\project6-bindings-$W6PreAttempt"\n'
+        "}\n"
+    ) in block
+    scoped_parts = tuple(
+        part.casefold()
+        for part in PureWindowsPath(scoped_match.group(1).replace("$W6PreAttempt", "3")).parts
+    )
+
+    assert campaign_parts[: len(scoped_parts)] != scoped_parts
+    assert scoped_parts[: len(campaign_parts)] != campaign_parts
+    assert scoped_parts != binding_parts
+    assert binding_parts[: len(scoped_parts)] != scoped_parts
+    assert scoped_parts[: len(binding_parts)] != binding_parts
+    assert "attempt-scoped binding parent" in text
+
 
 def test_elevated_preparation_stops_before_non_elevated_rehydration() -> None:
     elevated = _elevated_preparation_block()
