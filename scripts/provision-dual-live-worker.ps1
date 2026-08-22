@@ -12,10 +12,15 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$PythonVersion = '3.12.6'
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+$PythonVersion = '3.12.10'
 $PythonArchitecture = 'amd64'
-$PythonArchiveName = 'python-3.12.6-embed-amd64.zip'
-$PythonArchiveSha256 = 'a86a2e28870967745d255cc597d1e4d19ae79e65e927cdc324baa0256202231c'
+$PythonArchiveName = 'python-3.12.10-embed-amd64.zip'
+$PythonArchiveBytes = 11133606
+$PythonArchiveUrl = 'https://www.python.org/ftp/python/3.12.10/python-3.12.10-embed-amd64.zip'
+$PythonArchiveSha256 = '4acbed6dd1c744b0376e3b1cf57ce906f9dc9e95e68824584c8099a63025a3c3'
 $OwnerSid = 'S-1-5-19'
 $ProvisionerSid = 'S-1-5-20'
 $SystemSid = 'S-1-5-18'
@@ -145,6 +150,181 @@ function Get-Sha256Hex([byte[]]$Bytes) {
     finally { $algorithm.Dispose() }
 }
 
+function Expand-ValidatedPythonArchive {
+    param(
+        [Parameter(Mandatory = $true)][string]$ArchivePath,
+        [Parameter(Mandatory = $true)][string]$DestinationPath,
+        [Parameter(Mandatory = $true)][string]$ExpectedArchiveName,
+        [Parameter(Mandatory = $true)][long]$ExpectedArchiveBytes,
+        [Parameter(Mandatory = $true)][string]$ExpectedArchiveSha256,
+        [scriptblock]$ArchiveHeldProbe = $null
+    )
+
+    if (-not (Test-FullyQualifiedLocalPath $ArchivePath) -or
+        -not (Test-FullyQualifiedLocalPath $DestinationPath) -or
+        $ExpectedArchiveBytes -lt 0 -or
+        $ExpectedArchiveSha256 -notmatch '\A[0-9a-f]{64}\z') {
+        throw 'worker_python_archive_invalid'
+    }
+
+    $archiveFull = [IO.Path]::GetFullPath($ArchivePath)
+    $archiveItem = Get-Item -LiteralPath $archiveFull -Force
+    if ($archiveItem.PSIsContainer -or
+        ($archiveItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+        -not [string]::Equals($archiveItem.FullName, $archiveFull, [StringComparison]::OrdinalIgnoreCase)) {
+        throw 'worker_python_archive_invalid'
+    }
+    $archiveParent = Split-Path -Parent $archiveFull
+    $null = Assert-StableDirectoryAncestors $archiveParent 'worker_python_archive_invalid'
+    $archiveVolume = [IO.DriveInfo]::new([IO.Path]::GetPathRoot($archiveFull))
+    if ($archiveVolume.DriveType -ne [IO.DriveType]::Fixed) { throw 'worker_python_archive_invalid' }
+
+    $destinationRoot = [IO.Path]::GetFullPath($DestinationPath)
+    $destinationParent = Split-Path -Parent $destinationRoot
+    if ([string]::IsNullOrWhiteSpace($destinationParent) -or (Test-Path -LiteralPath $destinationRoot)) {
+        throw 'worker_stage_invalid'
+    }
+    $destinationParentWasPresent = Test-Path -LiteralPath $destinationParent
+    if ($destinationParentWasPresent) {
+        $null = Assert-StableDirectoryAncestors $destinationParent 'worker_stage_invalid'
+    }
+    else {
+        $destinationGrandparent = Split-Path -Parent $destinationParent
+        if ([string]::IsNullOrWhiteSpace($destinationGrandparent) -or
+            -not (Test-Path -LiteralPath $destinationGrandparent)) {
+            throw 'worker_stage_invalid'
+        }
+        $null = Assert-StableDirectoryAncestors $destinationGrandparent 'worker_stage_invalid'
+    }
+
+    $stream = [IO.File]::Open(
+        $archiveFull,
+        [IO.FileMode]::Open,
+        [IO.FileAccess]::Read,
+        [IO.FileShare]::Read
+    )
+    try {
+        $algorithm = [Security.Cryptography.SHA256]::Create()
+        try {
+            $observedArchiveSha256 = ([BitConverter]::ToString($algorithm.ComputeHash($stream))).Replace('-', '').ToLowerInvariant()
+        }
+        finally { $algorithm.Dispose() }
+
+        if (-not [string]::Equals([IO.Path]::GetFileName($archiveFull), $ExpectedArchiveName, [StringComparison]::Ordinal) -or
+            $stream.Length -ne $ExpectedArchiveBytes -or
+            -not [string]::Equals($observedArchiveSha256, $ExpectedArchiveSha256, [StringComparison]::Ordinal)) {
+            throw 'worker_python_archive_mismatch'
+        }
+        if (-not $stream.CanSeek) { throw 'worker_python_archive_invalid' }
+        $stream.Position = 0
+
+        $zip = [System.IO.Compression.ZipArchive]::new($stream, [System.IO.Compression.ZipArchiveMode]::Read, $true)
+        try {
+            $validatedEntries = [Collections.Generic.List[object]]::new()
+            $destinations = [Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+            $invalidNameCharacters = [IO.Path]::GetInvalidFileNameChars()
+
+            foreach ($entry in $zip.Entries) {
+                $rawName = $entry.FullName
+                if ([string]::IsNullOrEmpty($rawName)) { throw 'worker_python_archive_entry_invalid' }
+
+                $portableName = $rawName.Replace('\', '/')
+                $windowsName = $portableName.Replace('/', '\')
+                if ($portableName.StartsWith('/', [StringComparison]::Ordinal) -or
+                    [IO.Path]::IsPathRooted($windowsName) -or
+                    $portableName.IndexOf(':') -ge 0) {
+                    throw 'worker_python_archive_entry_invalid'
+                }
+
+                $isDirectory = $portableName.EndsWith('/', [StringComparison]::Ordinal)
+                $trimmedName = if ($isDirectory) { $portableName.TrimEnd('/') } else { $portableName }
+                if ([string]::IsNullOrEmpty($trimmedName)) { throw 'worker_python_archive_entry_invalid' }
+
+                $components = @($trimmedName.Split([char[]]@('/'), [StringSplitOptions]::None))
+                foreach ($component in $components) {
+                    if ([string]::IsNullOrEmpty($component) -or $component -ceq '.' -or $component -ceq '..' -or
+                        $component.IndexOfAny($invalidNameCharacters) -ge 0 -or
+                        $component.EndsWith(' ', [StringComparison]::Ordinal) -or
+                        $component.EndsWith('.', [StringComparison]::Ordinal)) {
+                        throw 'worker_python_archive_entry_invalid'
+                    }
+                }
+
+                $unixType = (($entry.ExternalAttributes -shr 16) -band 0xF000)
+                $dosAttributes = ($entry.ExternalAttributes -band 0xFFFF)
+                if ($unixType -eq 0xA000 -or
+                    ($dosAttributes -band [int][IO.FileAttributes]::ReparsePoint) -ne 0) {
+                    throw 'worker_python_archive_entry_invalid'
+                }
+
+                $relativePath = [string]::Join('\', $components)
+                if (-not $destinations.Add($relativePath)) { throw 'worker_python_archive_entry_invalid' }
+                $validatedEntries.Add([pscustomobject]@{
+                    Entry = $entry
+                    IsDirectory = $isDirectory
+                    RelativePath = $relativePath
+                })
+            }
+
+            foreach ($record in $validatedEntries) {
+                if ($record.IsDirectory) { continue }
+                $prefix = $record.RelativePath + '\'
+                foreach ($candidate in $validatedEntries) {
+                    if ($candidate.RelativePath.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+                        throw 'worker_python_archive_entry_invalid'
+                    }
+                }
+            }
+
+            if ($null -ne $ArchiveHeldProbe) {
+                & $ArchiveHeldProbe $archiveFull $stream $zip
+            }
+
+            if (Test-Path -LiteralPath $destinationRoot) { throw 'worker_stage_invalid' }
+            if (-not $destinationParentWasPresent -and (Test-Path -LiteralPath $destinationParent)) {
+                throw 'worker_stage_invalid'
+            }
+            [void][IO.Directory]::CreateDirectory($destinationParent)
+            $null = Assert-StableDirectoryAncestors $destinationParent 'worker_stage_invalid'
+            [void][IO.Directory]::CreateDirectory($destinationRoot)
+            $stageItem = Get-Item -LiteralPath $destinationRoot -Force
+            if (-not $stageItem.PSIsContainer -or
+                ($stageItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+                -not [string]::Equals($stageItem.FullName, $destinationRoot, [StringComparison]::OrdinalIgnoreCase)) {
+                throw 'worker_stage_invalid'
+            }
+
+            $stagePrefix = $destinationRoot.TrimEnd('\') + '\'
+            foreach ($record in $validatedEntries) {
+                $destination = [IO.Path]::GetFullPath((Join-Path $destinationRoot $record.RelativePath))
+                if (-not $destination.StartsWith($stagePrefix, [StringComparison]::OrdinalIgnoreCase)) {
+                    throw 'worker_python_archive_entry_invalid'
+                }
+
+                if ($record.IsDirectory) {
+                    [void][IO.Directory]::CreateDirectory($destination)
+                    $null = Assert-StableDirectoryAncestors $destination 'worker_python_archive_entry_invalid'
+                    continue
+                }
+
+                $parent = Split-Path -Parent $destination
+                [void][IO.Directory]::CreateDirectory($parent)
+                $null = Assert-StableDirectoryAncestors $parent 'worker_python_archive_entry_invalid'
+                $entry = $record.Entry
+                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $destination, $false)
+                $fileItem = Get-Item -LiteralPath $destination -Force
+                if ($fileItem.PSIsContainer -or
+                    ($fileItem.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or
+                    -not [string]::Equals($fileItem.FullName, $destination, [StringComparison]::OrdinalIgnoreCase)) {
+                    throw 'worker_python_archive_entry_invalid'
+                }
+            }
+        }
+        finally { $zip.Dispose() }
+    }
+    finally { $stream.Dispose() }
+}
+
 function Enable-RestorePrivilege {
     Add-Type @'
 using System;
@@ -186,10 +366,6 @@ $archive = Resolve-ExactFile $PythonArchive 'worker_python_archive_invalid'
 $profilePath = Resolve-ExactFile $ProfileBinding 'worker_profile_binding_invalid'
 $campaign = Resolve-ExactDirectory $CampaignRoot 'worker_campaign_root_invalid'
 $ambient = Resolve-ExactDirectory $AmbientInterpreterRoot 'worker_ambient_interpreter_invalid'
-if ([IO.Path]::GetFileName($archive) -ne $PythonArchiveName -or
-    (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant() -ne $PythonArchiveSha256) {
-    throw 'worker_python_archive_mismatch'
-}
 
 $profile = Get-Content -Raw -LiteralPath $profilePath | ConvertFrom-Json
 $expectedProfileFields = @('appcontainer_profile_root', 'broker_profile_root', 'broker_sid', 'package_sid', 'profile_moniker', 'user_data_root')
@@ -233,9 +409,13 @@ foreach ($relative in $WorkerFiles) {
     if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw 'worker_source_file_missing' }
 }
 
-New-Item -ItemType Directory -Path $provisioning | Out-Null
 $stage = Join-Path $provisioning ("stage-" + [Guid]::NewGuid().ToString('N'))
-Expand-Archive -LiteralPath $archive -DestinationPath $stage
+Expand-ValidatedPythonArchive `
+    -ArchivePath $archive `
+    -DestinationPath $stage `
+    -ExpectedArchiveName $PythonArchiveName `
+    -ExpectedArchiveBytes $PythonArchiveBytes `
+    -ExpectedArchiveSha256 $PythonArchiveSha256
 Get-ChildItem -LiteralPath $stage -Recurse -Force -File | Unblock-File
 foreach ($relative in $WorkerFiles) {
     $destination = Join-Path $stage $relative

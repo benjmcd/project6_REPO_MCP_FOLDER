@@ -17,6 +17,10 @@ from uuid import UUID, uuid5
 
 from app.services.connector_egress_transport import ReservationHold
 from app.services.dual_live_sciencebase_producer import ScienceBaseOutput
+from app.services.sciencebase_reservation_security import (
+    ReservationSecurityHold,
+    WindowsReservationSecurity,
+)
 from app.services.sciencebase_spent_marker import (
     CustodyHold,
     SpentMarkerHold,
@@ -94,6 +98,8 @@ def initialize_reservation_database(
     connector_run_id: str,
     *,
     sqlite_connect: Callable[..., sqlite3.Connection] = sqlite3.connect,
+    journal_observer: Callable[[Path, Path], None] | None = None,
+    reservation_security_factory: Callable[[Path], Any] | None = None,
 ) -> Path:
     root = Path(canonical_root)
     if (
@@ -104,53 +110,73 @@ def initialize_reservation_database(
     ):
         raise LiveReadinessHold("reservation_database_binding_invalid")
     database = root / "reservation.db"
+    security_factory = reservation_security_factory or WindowsReservationSecurity
 
     def initialize(staging: Path) -> None:
-        with closing(
-            sqlite_connect(staging.as_uri() + "?mode=rw", uri=True, isolation_level=None)
-        ) as connection:
-            connection.execute("PRAGMA foreign_keys = ON")
-            connection.execute("PRAGMA synchronous = FULL")
-            connection.execute("PRAGMA journal_mode = DELETE")
-            connection.executescript(
-                """
-                BEGIN IMMEDIATE;
-                CREATE TABLE connector_run (
-                    connector_run_id VARCHAR(36) PRIMARY KEY
-                );
-                CREATE TABLE connector_run_event (
-                    connector_run_event_id VARCHAR(36) PRIMARY KEY,
-                    connector_run_id VARCHAR(36) NOT NULL REFERENCES connector_run(connector_run_id),
-                    connector_run_target_id VARCHAR(36),
-                    phase VARCHAR(100),
-                    stage VARCHAR(100),
-                    event_type VARCHAR(100) NOT NULL,
-                    status_before VARCHAR(50),
-                    status_after VARCHAR(50),
-                    reason_code VARCHAR(255),
-                    error_class VARCHAR(100),
-                    message TEXT,
-                    metrics_json JSON,
-                    created_at DATETIME
-                );
-                """
-            )
-            connection.execute(
-                "INSERT INTO connector_run(connector_run_id) VALUES (?)",
-                (connector_run_id,),
-            )
-            connection.commit()
-            observed = Path(
-                connection.execute("PRAGMA database_list").fetchone()[2]
-            ).resolve()
-            if observed != staging:
-                raise sqlite3.DatabaseError("reservation_store_path_ambiguous")
+        security = security_factory(root)
+        journal = staging.with_name(staging.name + "-journal")
+        with security.birth_scope():
+            try:
+                with closing(
+                    sqlite_connect(
+                        staging.as_uri() + "?mode=rw", uri=True, isolation_level=None
+                    )
+                ) as connection:
+                    connection.execute("PRAGMA foreign_keys = ON")
+                    connection.execute("PRAGMA synchronous = FULL")
+                    connection.execute("PRAGMA journal_mode = DELETE")
+                    connection.executescript(
+                        """
+                        BEGIN IMMEDIATE;
+                        CREATE TABLE connector_run (
+                            connector_run_id VARCHAR(36) PRIMARY KEY
+                        );
+                        CREATE TABLE connector_run_event (
+                            connector_run_event_id VARCHAR(36) PRIMARY KEY,
+                            connector_run_id VARCHAR(36) NOT NULL REFERENCES connector_run(connector_run_id),
+                            connector_run_target_id VARCHAR(36),
+                            phase VARCHAR(100),
+                            stage VARCHAR(100),
+                            event_type VARCHAR(100) NOT NULL,
+                            status_before VARCHAR(50),
+                            status_after VARCHAR(50),
+                            reason_code VARCHAR(255),
+                            error_class VARCHAR(100),
+                            message TEXT,
+                            metrics_json JSON,
+                            created_at DATETIME
+                        );
+                        """
+                    )
+                    connection.execute(
+                        "INSERT INTO connector_run(connector_run_id) VALUES (?)",
+                        (connector_run_id,),
+                    )
+                    security.verify_transient_journal(staging, journal)
+                    if journal_observer is not None:
+                        journal_observer(staging, journal)
+                    connection.commit()
+                    observed = Path(
+                        connection.execute("PRAGMA database_list").fetchone()[2]
+                    ).resolve()
+                    if observed != staging:
+                        raise sqlite3.DatabaseError("reservation_store_path_ambiguous")
+            finally:
+                security.verify_journal_absent(journal)
 
     try:
-        publish_new_initialized_file(database, initialize)
+        publish_new_initialized_file(
+            database,
+            initialize,
+            resecure_after_initialize=True,
+        )
+    except ReservationSecurityHold as exc:
+        raise LiveReadinessHold(exc.code) from None
     except CustodyHold as exc:
         if str(exc) == "custody_exists":
             raise LiveReadinessHold("reservation_database_exists") from None
+        if str(exc) == "custody_resecure_failed":
+            raise LiveReadinessHold("reservation_database_resecure_failed") from None
         if str(exc) in {
             "custody_binding_invalid",
             "custody_directory_invalid",

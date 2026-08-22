@@ -1,6 +1,7 @@
 # ScienceBase Python Binding Correction
 
-Status: R3 trimmed after independent R2 review; implementation remains owner-gated, 2026-08-21
+Status: R4 approved by owner; minimum test-first implementation tranche complete,
+with elevated exact-host acceptance still owner-gated, 2026-08-21
 
 Implementation base: `57c40338aff658bca0a692581fe62353138b6a69` (`codex/sb-live-impl`)
 
@@ -16,10 +17,12 @@ owner later chooses the explicitly open relaxation decision, close the archive
 hash-to-extraction race, and preserve both remaining attempts with protected,
 attempt-scoped custody families.
 
-This specification authorizes no implementation, custody creation, governing-
-record write, land, push, elevation, signing, key access, network access, W5
-observation, or live ScienceBase execution. Its own revision may change only
-this file and may be committed locally in the isolated specification lane.
+The specification alone authorized no implementation. The owner's later
+`APPROVE REVISED R4 SPEC AS WRITTEN` instruction authorizes only the minimum
+test-first R4 implementation tranche in the isolated implementation worktree.
+It does not authorize custody creation, governing-record writes, land, push,
+elevation, signing, key access, network access, W5 observation, an attempt
+spend, or live ScienceBase execution.
 
 ## Confirmed state
 
@@ -110,8 +113,8 @@ interpreter path; the five governed initializer/template/live/closeout calls
 invoke that exact path directly and never ask `project6.ps1` or `py.exe` to
 resolve Python again.
 
-This R3 specifies the strict `python.exe` byte-equality design and retains the
-post-provision comparison as defense in depth. A later owner decision must
+The Python-binding portion retains the strict `python.exe` byte-equality design
+and the post-provision comparison as defense in depth. A later owner decision must
 confirm acceptance of its per-host-patch re-cure cost before implementation; a
 decision to use a PSF-signed/same-minor/owner-ratified floor instead reopens this
 design and is not silently inferred.
@@ -123,7 +126,7 @@ names without changing the production mutex derivation. It mechanically
 serializes active governed actions in the same Windows session; the settled
 one-action/no-concurrent-sitting rule governs the disclosed gaps between shells.
 
-## Still owner-gated before implementation or sitting
+## Still owner-gated before sitting or broader implementation
 
 - D2: re-pin the required `dual-live-windows-boundary` B0 fixture, including its
   archive URL/hash, from 3.12.6 to 3.12.10.
@@ -134,9 +137,10 @@ one-action/no-concurrent-sitting rule governs the disclosed gaps between shells.
 - D5: place
   `C:\owner-controlled\project6\python-3.12.10-embed-amd64.zip` without changing
   the retained 3.12.6 archive.
-- Any implementation, external rehearsal, custody/governance write, land, push,
-  elevation, signature, key access, network request, Attempt-5 activation, or
-  live act requires its own later authority.
+- Any implementation outside the approved minimum R4 tranche, external
+  rehearsal, custody/governance write, land, push, elevation, signature, key
+  access, network request, Attempt-5 activation, or live act requires its own
+  later authority.
 
 ## Rejected alternatives
 
@@ -407,24 +411,85 @@ child is a HOLD, not a reason to mutate the DACL or delete the child. Attempt 5
 remains absent until separately activated. Never clean, rename, reuse, or delete
 a failed attempt family.
 
-The campaign child's stage-specific set is equally exact at callback boundaries.
-During the open SQLite transaction, the only permitted transient entries are
-`.reservation.db.<32-lowercase-hex>.tmp` and its exact `-journal` sibling;
-`-wal`, `-shm`, or any other child is forbidden. After success it contains only
-`reservation.db`. Success, expected create-once failure, and ordinary failure
-must leave neither staging nor journal leaf. `custody_cleanup_indeterminate`,
-multiple/malformed staging names, or a residual staging/journal leaf is terminal
-`ATTEMPT HOLD`; preserve the family and do not delete the residual to make a
-later check pass.
+### R4 SQLite custody correction
 
-While the DELETE-mode `-journal` exists, an observer/test hook must prove it is
-an ordinary, non-reparse, single-link file in the same directory and on the same
-volume as its staging database. It must capture owner SID, DACL protection,
-ordered SDDL, and sorted ACE tuples and compare them with a frozen safe posture
-characterized from the reviewed Windows/SQLite build before Attempt 4. A journal
-that is inaccessible, reparse-backed, cross-volume, multiply linked, or has an
-uncharacterized/insecure owner or DACL invalidates this strategy and reopens the
-design; final disappearance alone is not proof that the transient was safe.
+The campaign child's protected, non-inheritable D-AROOT descriptor is unchanged:
+
+```text
+O:<owner-sid>D:P(A;;FA;;;<owner-sid>)(A;;FA;;;SY)
+```
+
+ObjectInherit-only is rejected. The owner-host experiment proved that it creates
+inherited, unprotected children that fail the unchanged durable `secure()`
+oracle. Inheritance is therefore not an authority mechanism for either the
+durable database or its transient journal.
+
+During an open SQLite transaction, the only permitted transient entries are
+`.reservation.db.<32-lowercase-hex>.tmp` and its exact `-journal` sibling;
+`-wal`, `-shm`, master-journal, persistent-journal, or any other child is
+forbidden. `PRAGMA journal_mode=DELETE` remains mandatory; WAL, PERSIST,
+TRUNCATE, MEMORY, and OFF remain forbidden.
+
+Durable and transient files use distinct security oracles:
+
+1. After SQLite closes and before atomic publication, the pinned staging-file
+   handle is re-secured with a full, replacement DACL using native
+   `SetSecurityInfo`. Owner is the frozen owner SID and the descriptor is
+   `D:P(A;;FA;;;<owner-sid>)(A;;FA;;;SY)`. Every prior, inherited, logon,
+   Administrators, or unknown ACE is removed. The same pinned identity must then
+   satisfy unchanged `secure() == (True, True, True)` before it is flushed and
+   atomically published as `reservation.db`. Runtime transactions verify this
+   posture before and after writes and never repair drift. Path-based `Set-Acl`,
+   additive grants, and post-publication repair are forbidden.
+2. Every dirty SQLite transaction runs synchronously under a duplicate
+   thread-scoped impersonation token. Its `TokenUser` must equal the frozen
+   owner; only the duplicate's `TokenOwner` and `TokenDefaultDacl` are set and
+   read back as exactly two flag-zero FullControl allow ACEs for owner and
+   SYSTEM. The process token is snapshotted and must remain unchanged. The scope
+   starts before `sqlite3.connect`, remains through begin, mutation, journal
+   observation, commit or rollback, and connection close, and restores and
+   verifies the exact prior thread-token state in `finally`.
+3. A dedicated transient-journal oracle runs after the first dirty write and
+   before commit while SQLite is paused. Using no-follow handles without delete
+   sharing, it proves the exact `<active-database-name>-journal` binding, direct
+   parent, fixed-local volume, stable root/database/journal identities, ordinary
+   non-reparse type, link count one, frozen owner, DACL protection flag false,
+   and exactly two explicit non-inherited, non-inheritable flag-zero FullControl
+   allow ACEs for owner and SYSTEM. It does not weaken or special-case the
+   durable `secure()` oracle. A missing journal during a known dirty transaction
+   is HOLD; after commit or rollback it must be absent.
+
+The scope and journal oracle cover reservation initialization, GO consumption,
+all three physical-request reservations, the terminal event, and closeout. An
+existing-row/no-write branch may produce no journal and is handled separately.
+Observer failure forces rollback and connection closure; it cannot permit
+publication, reservation success, egress, or automatic retry. A residual or
+inaccessible journal is terminal HOLD and is preserved rather than deleted to
+make a later check pass.
+
+Stable R4 failure classifications are:
+
+```text
+reservation_birth_token_invalid
+reservation_birth_token_restore_failed
+reservation_database_resecure_failed
+reservation_database_security_invalid
+reservation_journal_missing
+reservation_journal_binding_invalid
+reservation_journal_security_invalid
+reservation_journal_cleanup_indeterminate
+```
+
+Initialization maps them to `LiveReadinessHold`; runtime maps them through the
+existing `ReservationHold/HOLD` boundary. Required non-live Windows coverage
+runs the same complete lifecycle under ordinary and elevated owner contexts,
+with zero skips in each context. It proves source-token immutability, duplicate
+owner/default-DACL correction, thread-token restoration, durable owner and DACL
+replacement, every journal's birth posture and disappearance, and absence of
+WAL/SHM or unknown children. Negative cases reject durable extra/inherited/
+unprotected ACLs and transient extra/inherited/deny/logon ACLs with the exact
+HOLD code and no publication, egress, automatic repair, or retry. Real elevated
+execution remains separately owner-authorized and is required before Attempt 4.
 
 At Attempt-4 closeout or HOLD, the head-bound runbook emits exactly one
 machine-readable disposition line to the selected non-elevated transcript before
@@ -686,7 +751,8 @@ Automated coverage must prove:
   production parameters, reparse/path/ZIP collision rejection, held-stream
   extraction, and unchanged stage-to-manifest-to-content-addressed move;
 - atomic custody DACL creation, exact binding-child stages, broker/ACL proof,
-  create-once initializer/template behavior, and live journal characterization;
+  create-once initializer/template behavior, pinned durable database re-securing,
+  thread-scoped journal birth security, and the dedicated transient oracle;
 - guard name parity/order, stale-error clearing, nonruntime/live composition,
   collisions, partial acquisition, cleanup, noninheritance, forced-GC/crash,
   cross-token behavior, and the disclosed same-session boundary; and
@@ -761,11 +827,11 @@ the full exact-host rehearsal; preserved Attempts 1-3 and governing bytes; one
 minimal Attempt-4 disposition record; and no future-attempt recovery or
 ProgramData consumer machinery.
 
-D2-D5, exact-host GREEN, rehearsal, implementation, governance writes,
-land/push, signing, key, network, live acts, and Attempt-5 activation remain
-separately owner-gated. Independent written-spec review must find no unresolved
-critical or major issue before implementation planning. No later test success is
-a GO, land token, signature authority, Attempt-5 activation, or live authority.
+D2-D5, exact-host elevated GREEN, rehearsal, implementation beyond the approved
+minimum R4 tranche, governance writes, land/push, signing, key, network, live
+acts, and Attempt-5 activation remain separately owner-gated. No later test
+success is a GO, land token, signature authority, Attempt-5 activation, or live
+authority.
 
 Reopen before implementation if the locator or token parity diverges; the
 owner-placed archive/member hashes fail; non-elevated broker validation fails;

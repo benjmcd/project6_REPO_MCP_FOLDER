@@ -55,6 +55,7 @@ class AtomicCustodyBackend(Protocol):
     def fixed_local(self, handle: Any) -> bool: ...
     def identity(self, handle: Any) -> MarkerIdentity: ...
     def secure(self, handle: Any) -> tuple[bool, bool, bool]: ...
+    def resecure(self, handle: Any) -> None: ...
     def flush(self, handle: Any) -> None: ...
     def publish_new(self, handle: Any, directory_handle: Any, final: Path) -> None: ...
     def discard(self, handle: Any) -> None: ...
@@ -111,6 +112,7 @@ def publish_new_initialized_file(
     initialize: Callable[[Path], None],
     *,
     backend: AtomicCustodyBackend | None = None,
+    resecure_after_initialize: bool = False,
 ) -> Path:
     """Initialize a protected sibling and atomically publish its pinned identity."""
 
@@ -146,6 +148,16 @@ def publish_new_initialized_file(
             raise CustodyHold("custody_security_invalid")
 
         initialize(staging)
+        if resecure_after_initialize:
+            try:
+                active.resecure(staging_handle)
+                if (
+                    active.identity(staging_handle) != staging_identity
+                    or active.secure(staging_handle) != (True, True, True)
+                ):
+                    raise OSError("staging custody changed during resecure")
+            except BaseException:
+                raise CustodyHold("custody_resecure_failed") from None
         observed_staging_handle = active.open_existing_file(staging)
         if (
             active.identity(observed_staging_handle) != staging_identity
@@ -400,6 +412,7 @@ class WindowsMarkerBackend:
     LOCKFILE_EXCLUSIVE_LOCK = 0x2
     OWNER_SECURITY_INFORMATION = 0x1
     DACL_SECURITY_INFORMATION = 0x4
+    PROTECTED_DACL_SECURITY_INFORMATION = 0x80000000
     SE_FILE_OBJECT = 1
     SE_DACL_PROTECTED = 0x1000
     INHERITED_ACE = 0x10
@@ -409,6 +422,8 @@ class WindowsMarkerBackend:
     SDDL_REVISION_1 = 1
     SECURITY_DESCRIPTOR_REVISION = 1
     FILE_ALL_ACCESS = 0x001F01FF
+    WRITE_DAC = 0x00040000
+    WRITE_OWNER = 0x00080000
     FILE_RENAME_INFO_CLASS = 3
     FILE_DISPOSITION_INFO_CLASS = 4
     FILE_RENAME_INFORMATION_NT = 10
@@ -532,6 +547,20 @@ class WindowsMarkerBackend:
             void_p, ctypes.POINTER(wintypes.WORD), dword_p,
         ]
         self.advapi32.GetSecurityDescriptorControl.restype = wintypes.BOOL
+        self.advapi32.GetSecurityDescriptorOwner.argtypes = [
+            void_p, ctypes.POINTER(void_p), ctypes.POINTER(wintypes.BOOL),
+        ]
+        self.advapi32.GetSecurityDescriptorOwner.restype = wintypes.BOOL
+        self.advapi32.GetSecurityDescriptorDacl.argtypes = [
+            void_p, ctypes.POINTER(wintypes.BOOL), ctypes.POINTER(void_p),
+            ctypes.POINTER(wintypes.BOOL),
+        ]
+        self.advapi32.GetSecurityDescriptorDacl.restype = wintypes.BOOL
+        self.advapi32.SetSecurityInfo.argtypes = [
+            wintypes.HANDLE, ctypes.c_int, wintypes.DWORD,
+            void_p, void_p, void_p, void_p,
+        ]
+        self.advapi32.SetSecurityInfo.restype = wintypes.DWORD
         self.advapi32.GetAce.argtypes = [void_p, wintypes.DWORD, ctypes.POINTER(void_p)]
         self.advapi32.GetAce.restype = wintypes.BOOL
 
@@ -666,7 +695,8 @@ class WindowsMarkerBackend:
         attributes, descriptor = self._security_attributes()
         try:
             handle = self.kernel32.CreateFileW(
-                str(path), self.GENERIC_READ | self.GENERIC_WRITE,
+                str(path),
+                self.GENERIC_READ | self.GENERIC_WRITE | self.WRITE_DAC | self.WRITE_OWNER,
                 self.FILE_SHARE_READ_WRITE | self.FILE_SHARE_DELETE,
                 ctypes.byref(attributes), self.CREATE_NEW,
                 self.FILE_FLAG_OPEN_REPARSE_POINT, None,
@@ -689,6 +719,44 @@ class WindowsMarkerBackend:
         if handle == self.INVALID_HANDLE:
             self._raise("CreateFileW(existing)")
         return handle
+
+    def resecure(self, handle: int) -> None:
+        attributes, descriptor = self._security_attributes()
+        del attributes
+        owner = ctypes.c_void_p()
+        owner_defaulted = wintypes.BOOL()
+        dacl = ctypes.c_void_p()
+        dacl_present = wintypes.BOOL()
+        dacl_defaulted = wintypes.BOOL()
+        try:
+            if not self.advapi32.GetSecurityDescriptorOwner(
+                descriptor, ctypes.byref(owner), ctypes.byref(owner_defaulted)
+            ):
+                self._raise("GetSecurityDescriptorOwner")
+            if not self.advapi32.GetSecurityDescriptorDacl(
+                descriptor,
+                ctypes.byref(dacl_present),
+                ctypes.byref(dacl),
+                ctypes.byref(dacl_defaulted),
+            ):
+                self._raise("GetSecurityDescriptorDacl")
+            if not dacl_present or not dacl:
+                raise OSError("protected custody descriptor has no DACL")
+            result = self.advapi32.SetSecurityInfo(
+                handle,
+                self.SE_FILE_OBJECT,
+                self.OWNER_SECURITY_INFORMATION
+                | self.DACL_SECURITY_INFORMATION
+                | self.PROTECTED_DACL_SECURITY_INFORMATION,
+                owner,
+                None,
+                dacl,
+                None,
+            )
+            if result:
+                raise OSError(result, "SetSecurityInfo")
+        finally:
+            self.kernel32.LocalFree(descriptor)
 
     def fixed_local(self, handle: int | _DirectoryHandles) -> bool:
         native_handle = handle.primary if isinstance(handle, _DirectoryHandles) else handle

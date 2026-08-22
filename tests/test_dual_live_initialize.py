@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import importlib.util
 from io import StringIO
 import json
@@ -30,7 +31,25 @@ def test_reservation_store_command_initializes_fresh_root_before_prepare(
 
     from app.services import sciencebase_live_readiness as readiness
 
-    def publish(final: Path, initialize) -> Path:
+    class ReservationSecurity:
+        def __init__(self, _root: Path) -> None:
+            pass
+
+        @contextmanager
+        def birth_scope(self):
+            yield
+
+        def verify_database(self, _database: Path) -> None:
+            pass
+
+        def verify_transient_journal(self, _database: Path, journal: Path) -> None:
+            assert journal.is_file()
+
+        def verify_journal_absent(self, journal: Path) -> None:
+            assert not journal.exists()
+
+    def publish(final: Path, initialize, **kwargs) -> Path:
+        assert kwargs == {"resecure_after_initialize": True}
         if final.exists():
             raise readiness.CustodyHold("custody_exists")
         stage = final.with_name(".reservation.db.test.tmp")
@@ -45,6 +64,7 @@ def test_reservation_store_command_initializes_fresh_root_before_prepare(
             raise
 
     monkeypatch.setattr(readiness, "publish_new_initialized_file", publish)
+    monkeypatch.setattr(readiness, "WindowsReservationSecurity", ReservationSecurity)
 
     code = tool.main(
         [
@@ -87,7 +107,11 @@ def test_reservation_store_command_initializes_fresh_root_before_prepare(
         def close(self) -> None:
             return None
 
-    store = ReservationStore(root, identity_probe=IdentityProbe())
+    store = ReservationStore(
+        root,
+        identity_probe=IdentityProbe(),
+        reservation_security=ReservationSecurity(root),
+    )
     try:
         assert store.assert_no_reservations(RUN_ID) is None
     finally:

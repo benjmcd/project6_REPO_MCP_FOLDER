@@ -111,6 +111,7 @@ class FakePublishBackend:
         self.before_publish = lambda _path: None
         self.substituted_identity: MarkerIdentity | None = None
         self.fixed_volume = True
+        self.resecure_error: BaseException | None = None
 
     def open_existing_directory(self, path: Path) -> _PublishHandle:
         assert path == self.root
@@ -156,6 +157,13 @@ class FakePublishBackend:
     def flush(self, handle: _PublishHandle) -> None:
         assert handle.kind == "file"
         self.operations.append("flush")
+
+    def resecure(self, handle: _PublishHandle) -> None:
+        assert handle.kind == "file"
+        self.operations.append("resecure")
+        if self.resecure_error is not None:
+            raise self.resecure_error
+        self.security["file"] = (True, True, True)
 
     def publish_new(
         self,
@@ -353,6 +361,52 @@ def test_publish_initialized_file_never_exposes_incomplete_canonical(
 
     assert observations == [False, False, False, False]
     assert final.read_bytes() == b"complete"
+
+
+def test_publish_initialized_file_resecures_pinned_identity_before_publish(
+    tmp_path: Path,
+) -> None:
+    final = tmp_path / "reservation.db"
+    backend = FakePublishBackend(tmp_path)
+
+    def initialize(stage: Path) -> None:
+        backend.operations.append("initialize")
+        stage.write_bytes(b"complete")
+        backend.security["file"] = (True, False, True)
+
+    assert publish_new_initialized_file(
+        final,
+        initialize,
+        backend=backend,
+        resecure_after_initialize=True,
+    ) == final
+
+    assert backend.operations.index("initialize") < backend.operations.index("resecure")
+    assert backend.operations.index("resecure") < backend.operations.index(
+        "open_existing_file"
+    )
+    assert backend.operations.index("resecure") < backend.operations.index("publish_new")
+    assert final.read_bytes() == b"complete"
+
+
+def test_publish_initialized_file_resecure_failure_discards_staging(
+    tmp_path: Path,
+) -> None:
+    final = tmp_path / "reservation.db"
+    backend = FakePublishBackend(tmp_path)
+    backend.resecure_error = OSError("injected resecure failure")
+
+    with pytest.raises(CustodyHold, match="custody_resecure_failed"):
+        publish_new_initialized_file(
+            final,
+            lambda stage: stage.write_bytes(b"complete"),
+            backend=backend,
+            resecure_after_initialize=True,
+        )
+
+    assert not final.exists()
+    assert "discard" in backend.operations
+    assert "publish_new" not in backend.operations
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows handle proof")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import ctypes
 from ctypes import wintypes
 from dataclasses import dataclass
@@ -11,11 +12,15 @@ import json
 import os
 from pathlib import Path
 import sqlite3
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Callable, Iterator, Mapping, Protocol
 from urllib.parse import urlsplit
 from uuid import UUID
 
 from app.services.connector_egress_contract import EffectResult, PhysicalRequestPlan
+from app.services.sciencebase_reservation_security import (
+    ReservationSecurityHold,
+    WindowsReservationSecurity,
+)
 
 
 @dataclass(frozen=True)
@@ -323,6 +328,7 @@ class ReservationStore:
         database_path: Path | None = None,
         *,
         identity_probe: ReservationIdentityProbe | None = None,
+        reservation_security: Any | None = None,
     ) -> None:
         self._probe = identity_probe or _WindowsReservationIdentityProbe()
         try:
@@ -350,10 +356,18 @@ class ReservationStore:
             self._database_identity = self._probe.identity(
                 self.database_path, directory=False
             )
+            self._security = (
+                reservation_security
+                if reservation_security is not None
+                else WindowsReservationSecurity(self.canonical_root)
+            )
             self._revalidate_identity()
         except EgressHold:
             self._probe.close()
             raise
+        except ReservationSecurityHold as exc:
+            self._probe.close()
+            raise EgressHold("HOLD", exc.code) from None
         except (OSError, TypeError, ValueError):
             self._probe.close()
             raise EgressHold("HOLD", "reservation_database_identity_invalid") from None
@@ -374,6 +388,7 @@ class ReservationStore:
             volume = self._probe.volume(self.canonical_root)
             root = self._probe.identity(self.canonical_root, directory=True)
             database = self._probe.identity(self.database_path, directory=False)
+            self._security.verify_database(self.database_path)
             valid = (
                 self._probe.canonicalize(self.canonical_root) == self.canonical_root
                 and self._probe.canonicalize(self.database_path) == self.database_path
@@ -394,6 +409,8 @@ class ReservationStore:
                 and bool(database.file_identity)
                 and database.volume_identity == volume.identity
             )
+        except ReservationSecurityHold as exc:
+            raise EgressHold("HOLD", exc.code) from None
         except (OSError, TypeError, ValueError):
             valid = False
         if not valid:
@@ -417,6 +434,23 @@ class ReservationStore:
             raise sqlite3.DatabaseError("reservation_store_path_ambiguous")
         self._revalidate_identity()
         return connection
+
+    @contextmanager
+    def _write_connection(self) -> Iterator[tuple[sqlite3.Connection, Path]]:
+        journal = self.database_path.with_name(self.database_path.name + "-journal")
+        with self._security.birth_scope():
+            connection = self._open()
+            try:
+                if connection.execute("PRAGMA journal_mode = DELETE").fetchone() != (
+                    "delete",
+                ):
+                    raise sqlite3.DatabaseError("reservation_store_journal_mode_invalid")
+                yield connection, journal
+            finally:
+                try:
+                    connection.close()
+                finally:
+                    self._security.verify_journal_absent(journal)
 
     @staticmethod
     def _metrics(plan: PhysicalRequestPlan) -> dict[str, object]:
@@ -445,7 +479,7 @@ class ReservationStore:
             self._metrics(plan), sort_keys=True, separators=(",", ":")
         )
         try:
-            with self._open() as connection:
+            with self._write_connection() as (connection, journal):
                 self._revalidate_identity()
                 connection.execute("BEGIN IMMEDIATE")
                 self._revalidate_identity()
@@ -498,12 +532,17 @@ class ReservationStore:
                         datetime.now(timezone.utc).isoformat(),
                     ),
                 )
+                self._security.verify_transient_journal(self.database_path, journal)
                 self._revalidate_identity()
                 connection.commit()
                 self._revalidate_identity()
         except EgressHold as exc:
             return ReservationHold(
                 "HOLD", exc.reason_code, plan.slot_uuid, plan.plan_digest
+            )
+        except ReservationSecurityHold as exc:
+            return ReservationHold(
+                "HOLD", exc.code, plan.slot_uuid, plan.plan_digest
             )
         except sqlite3.Error:
             return ReservationHold(
@@ -655,7 +694,7 @@ class ReservationStore:
             metrics_json,
         )
         try:
-            with self._open() as connection:
+            with self._write_connection() as (connection, journal):
                 connection.execute("BEGIN IMMEDIATE")
                 self._revalidate_identity()
                 existing = connection.execute(
@@ -693,11 +732,14 @@ class ReservationStore:
                         datetime.now(timezone.utc).isoformat(),
                     ),
                 )
+                self._security.verify_transient_journal(self.database_path, journal)
                 self._revalidate_identity()
                 connection.commit()
                 self._revalidate_identity()
         except EgressHold as exc:
             return ReservationHold("HOLD", exc.reason_code, event_id, None)
+        except ReservationSecurityHold as exc:
+            return ReservationHold("HOLD", exc.code, event_id, None)
         except sqlite3.Error:
             return ReservationHold("HOLD", "live_event_write_failed", event_id, None)
         try:

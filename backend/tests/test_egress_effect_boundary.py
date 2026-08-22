@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -36,6 +37,9 @@ from app.services.connector_egress_transport import (  # noqa: E402
     ReservationIdentityProbe,
     ReservationStore,
     ReservationVolumeIdentity,
+)
+from app.services.sciencebase_reservation_security import (  # noqa: E402
+    ReservationSecurityHold,
 )
 
 
@@ -120,14 +124,58 @@ def _store(
     database_path: Path,
     *,
     identity_probe: ReservationIdentityProbe | None = None,
+    reservation_security=None,
 ) -> ReservationStore:
-    return ReservationStore(
-        database_path.parent,
-        database_path,
-        identity_probe=(
+    kwargs: dict[str, object] = {
+        "identity_probe": (
             identity_probe if identity_probe is not None else _TestIdentityProbe()
         ),
-    )
+        "reservation_security": (
+            reservation_security
+            if reservation_security is not None
+            else _RecordingReservationSecurity()
+        ),
+    }
+    return ReservationStore(database_path.parent, database_path, **kwargs)
+
+
+class _RecordingReservationSecurity:
+    def __init__(self) -> None:
+        self.events: list[str] = []
+        self.database_failure: str | None = None
+        self.birth_failure: str | None = None
+        self.restore_failure: str | None = None
+        self.journal_failure: str | None = None
+        self.cleanup_failure: str | None = None
+
+    def verify_database(self, _database: Path) -> None:
+        self.events.append("database")
+        if self.database_failure is not None:
+            raise ReservationSecurityHold(self.database_failure)
+
+    @contextmanager
+    def birth_scope(self):
+        self.events.append("birth-enter")
+        if self.birth_failure is not None:
+            raise ReservationSecurityHold(self.birth_failure)
+        try:
+            yield
+        finally:
+            self.events.append("birth-exit")
+            if self.restore_failure is not None:
+                raise ReservationSecurityHold(self.restore_failure)
+
+    def verify_transient_journal(self, _database: Path, journal: Path) -> None:
+        self.events.append("journal")
+        assert journal.is_file()
+        if self.journal_failure is not None:
+            raise ReservationSecurityHold(self.journal_failure)
+
+    def verify_journal_absent(self, journal: Path) -> None:
+        self.events.append("absent")
+        assert not journal.exists()
+        if self.cleanup_failure is not None:
+            raise ReservationSecurityHold(self.cleanup_failure)
 
 
 class _TestIdentityProbe:
@@ -429,6 +477,114 @@ def test_reservation_is_committed_as_connector_run_event_and_independently_visib
     assert json.loads(row[2])["plan_digest"] == plan.plan_digest
 
 
+def test_reservation_and_live_event_writes_share_birth_and_journal_scope(
+    tmp_path: Path,
+) -> None:
+    database_path = _reservation_database(tmp_path)
+    security = _RecordingReservationSecurity()
+    store = _store(database_path, reservation_security=security)
+
+    reservation = store.reserve(_plan(tmp_path))
+    live_event = store.write_sciencebase_live_event(
+        event_id="22222222-2222-4222-8222-222222222222",
+        connector_run_id="11111111-1111-4111-8111-111111111111",
+        phase="live_authority",
+        stage="go",
+        event_type="sciencebase_live_go_consumed",
+        status_after="consumed",
+        reason_code="owner_go_consumed",
+        metrics={"schema": "project6.sciencebase_live_evidence.v1"},
+    )
+
+    assert isinstance(reservation, CommittedReservation)
+    assert live_event.disposition == "RECORDED"
+    lifecycle = [event for event in security.events if event != "database"]
+    assert lifecycle == [
+        "birth-enter",
+        "journal",
+        "absent",
+        "birth-exit",
+        "birth-enter",
+        "journal",
+        "absent",
+        "birth-exit",
+    ]
+
+
+def test_runtime_write_restores_delete_journal_mode_before_transaction(
+    tmp_path: Path,
+) -> None:
+    database_path = _reservation_database(tmp_path)
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute("PRAGMA journal_mode = WAL").fetchone() == ("wal",)
+    security = _RecordingReservationSecurity()
+
+    result = _store(database_path, reservation_security=security).reserve(
+        _plan(tmp_path)
+    )
+
+    assert isinstance(result, CommittedReservation)
+    with sqlite3.connect(database_path) as connection:
+        assert connection.execute("PRAGMA journal_mode").fetchone() == ("delete",)
+    assert security.events.count("journal") == 1
+
+
+def test_existing_reservation_rolls_back_without_demanding_a_journal(
+    tmp_path: Path,
+) -> None:
+    database_path = _reservation_database(tmp_path)
+    security = _RecordingReservationSecurity()
+    store = _store(database_path, reservation_security=security)
+    plan = _plan(tmp_path)
+    assert isinstance(store.reserve(plan), CommittedReservation)
+    security.events.clear()
+
+    result = store.reserve(plan)
+
+    assert isinstance(result, ReservationHold)
+    assert result.disposition == "SPENT"
+    assert [event for event in security.events if event != "database"] == [
+        "birth-enter",
+        "absent",
+        "birth-exit",
+    ]
+
+
+def test_durable_database_acl_failure_uses_stable_hold_code(tmp_path: Path) -> None:
+    database_path = _reservation_database(tmp_path)
+    security = _RecordingReservationSecurity()
+    security.database_failure = "reservation_database_security_invalid"
+
+    with pytest.raises(EgressHold, match="HOLD:reservation_database_security_invalid"):
+        _store(database_path, reservation_security=security)
+
+
+@pytest.mark.parametrize(
+    ("failure_field", "code"),
+    [
+        ("birth_failure", "reservation_birth_token_invalid"),
+        ("restore_failure", "reservation_birth_token_restore_failed"),
+        ("journal_failure", "reservation_journal_missing"),
+        ("journal_failure", "reservation_journal_binding_invalid"),
+        ("journal_failure", "reservation_journal_security_invalid"),
+        ("cleanup_failure", "reservation_journal_cleanup_indeterminate"),
+    ],
+)
+def test_reservation_security_failures_return_stable_holds(
+    tmp_path: Path, failure_field: str, code: str
+) -> None:
+    database_path = _reservation_database(tmp_path)
+    security = _RecordingReservationSecurity()
+    setattr(security, failure_field, code)
+    store = _store(database_path, reservation_security=security)
+
+    result = store.reserve(_plan(tmp_path))
+
+    assert isinstance(result, ReservationHold)
+    assert result.disposition == "HOLD"
+    assert result.reason_code == code
+
+
 @pytest.mark.parametrize(
     ("unsafe_form", "reason"),
     [
@@ -460,6 +616,7 @@ def test_unsafe_reservation_database_is_rejected_before_any_effect(
         store = ReservationStore(
             tmp_path.resolve(),
             asserted_path.resolve(),
+            reservation_security=_RecordingReservationSecurity(),
         )
         ConnectorEgressTransport(store, session_factory=forbidden_session).execute(
             _plan(tmp_path)
@@ -510,7 +667,11 @@ def test_reservation_identity_failure_suppresses_path_bearing_cause(
         EgressHold,
         match="HOLD:reservation_database_identity_invalid",
     ) as caught:
-        ReservationStore(tmp_path.resolve(), identity_probe=FailingProbe())
+        ReservationStore(
+            tmp_path.resolve(),
+            identity_probe=FailingProbe(),
+            reservation_security=_RecordingReservationSecurity(),
+        )
 
     rendered = "".join(
         traceback.format_exception(

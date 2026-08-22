@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import gc
 import json
 import multiprocessing
+import os
 from pathlib import Path
 import subprocess
 import sqlite3
@@ -43,6 +45,11 @@ _VALID_SCIENCEBASE_ROW = (
 _VALID_ONE_ROW_CSV = (
     _RATIFIED_SCIENCEBASE_HEADER + "\n" + _VALID_SCIENCEBASE_ROW + "\n"
 ).encode("utf-8")
+_WINDOWS_POWERSHELL = Path(
+    r"C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe"
+)
+_SYSTEM_SID = "S-1-5-18"
+_FILE_ALL_ACCESS = 0x001F01FF
 _CHARACTERIZED_SCIENCEBASE_CSV = (
     b"\xef\xbb\xbf"
     + (
@@ -56,6 +63,24 @@ _CHARACTERIZED_SCIENCEBASE_CSV = (
         + "\r\n"
     ).encode("utf-8")
 )
+
+
+class _PassthroughReservationSecurity:
+    def __init__(self, _root: Path) -> None:
+        pass
+
+    @contextmanager
+    def birth_scope(self):
+        yield
+
+    def verify_transient_journal(self, _database: Path, journal: Path) -> None:
+        assert journal.is_file()
+
+    def verify_journal_absent(self, journal: Path) -> None:
+        assert not journal.exists()
+
+    def verify_database(self, _database: Path) -> None:
+        pass
 
 
 class _IdentityProbe:
@@ -108,7 +133,12 @@ def _database(root: Path) -> Path:
 
 
 def _store(root: Path) -> ReservationStore:
-    return ReservationStore(root, root / "reservation.db", identity_probe=_IdentityProbe())
+    return ReservationStore(
+        root,
+        root / "reservation.db",
+        identity_probe=_IdentityProbe(),
+        reservation_security=_PassthroughReservationSecurity(root),
+    )
 
 
 def _producer_request(root: Path) -> ScienceBaseInput:
@@ -205,6 +235,67 @@ def _owner_authenticator():
     return SimpleNamespace(authenticate_exact=lambda _raw, _digest: True)
 
 
+def _windows_acl_posture(path: Path) -> dict[str, object]:
+    script = r"""
+$ErrorActionPreference = 'Stop'
+$sections = (
+    [Security.AccessControl.AccessControlSections]::Owner -bor
+    [Security.AccessControl.AccessControlSections]::Access
+)
+$acl = [IO.File]::GetAccessControl($env:PROJECT6_ACL_OBSERVED_PATH, $sections)
+$aces = @($acl.GetAccessRules(
+    $true,
+    $true,
+    [Security.Principal.SecurityIdentifier]
+) | ForEach-Object {
+    [ordered]@{
+        sid = $_.IdentityReference.Value
+        mask = [int]$_.FileSystemRights
+        kind = "$($_.AccessControlType)"
+        inherited = [bool]$_.IsInherited
+        inheritance = "$($_.InheritanceFlags)"
+        propagation = "$($_.PropagationFlags)"
+    }
+})
+[ordered]@{
+    owner = $acl.GetOwner([Security.Principal.SecurityIdentifier]).Value
+    protected = [bool]$acl.AreAccessRulesProtected
+    sddl = $acl.GetSecurityDescriptorSddlForm($sections)
+    aces = $aces
+} | ConvertTo-Json -Compress -Depth 5
+"""
+    completed = subprocess.run(
+        [
+            str(_WINDOWS_POWERSHELL),
+            "-NoLogo",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            script,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "PROJECT6_ACL_OBSERVED_PATH": str(path)},
+    )
+    assert completed.returncode == 0, completed.stderr
+    return json.loads(completed.stdout)
+
+
+def _sorted_ace_tuples(posture: dict[str, object]) -> list[tuple[object, ...]]:
+    return sorted(
+        (
+            ace["sid"],
+            ace["mask"],
+            ace["kind"],
+            ace["inherited"],
+            ace["inheritance"],
+            ace["propagation"],
+        )
+        for ace in posture["aces"]
+    )
+
+
 def _initialize_reservation_database_child(root: str, queue) -> None:
     module = _load_module()
     try:
@@ -231,7 +322,8 @@ def test_initialize_reservation_database_create_once_and_store_opens_rw(
     module = _load_module()
     root = tmp_path.resolve()
 
-    def publish(final: Path, initialize) -> Path:
+    def publish(final: Path, initialize, **kwargs) -> Path:
+        assert kwargs == {"resecure_after_initialize": True}
         if final.exists():
             raise module.CustodyHold("custody_exists")
         stage = final.with_name(".reservation.db.test.tmp")
@@ -247,7 +339,11 @@ def test_initialize_reservation_database_create_once_and_store_opens_rw(
 
     monkeypatch.setattr(module, "publish_new_initialized_file", publish)
 
-    database = module.initialize_reservation_database(root, RUN_ID)
+    database = module.initialize_reservation_database(
+        root,
+        RUN_ID,
+        reservation_security_factory=_PassthroughReservationSecurity,
+    )
 
     assert database == root / "reservation.db"
     store = _store(root)
@@ -256,7 +352,11 @@ def test_initialize_reservation_database_create_once_and_store_opens_rw(
     finally:
         store.close()
     with pytest.raises(module.LiveReadinessHold, match="reservation_database_exists"):
-        module.initialize_reservation_database(root, RUN_ID)
+        module.initialize_reservation_database(
+            root,
+            RUN_ID,
+            reservation_security_factory=_PassthroughReservationSecurity,
+        )
 
 
 def test_initialize_reservation_database_schema_failure_does_not_poison_retry(
@@ -266,7 +366,8 @@ def test_initialize_reservation_database_schema_failure_does_not_poison_retry(
     root = tmp_path.resolve()
     final = root / "reservation.db"
 
-    def publish(path: Path, initialize) -> Path:
+    def publish(path: Path, initialize, **kwargs) -> Path:
+        assert kwargs == {"resecure_after_initialize": True}
         stage = path.with_name(".reservation.db.test.tmp")
         stage.touch(exist_ok=False)
         try:
@@ -285,16 +386,42 @@ def test_initialize_reservation_database_schema_failure_does_not_poison_retry(
     with pytest.raises(
         module.LiveReadinessHold, match="reservation_database_initialize_failed"
     ):
-        module.initialize_reservation_database(root, RUN_ID, sqlite_connect=fail_after_creation)
+        module.initialize_reservation_database(
+            root,
+            RUN_ID,
+            sqlite_connect=fail_after_creation,
+            reservation_security_factory=_PassthroughReservationSecurity,
+        )
 
     assert not final.exists()
     assert not list(root.glob(".reservation.db.*.tmp"))
 
-    assert module.initialize_reservation_database(root, RUN_ID) == final
+    assert module.initialize_reservation_database(
+        root,
+        RUN_ID,
+        reservation_security_factory=_PassthroughReservationSecurity,
+    ) == final
     with sqlite3.connect(final) as connection:
         assert connection.execute(
             "SELECT connector_run_id FROM connector_run"
         ).fetchone() == (RUN_ID,)
+
+
+def test_initialize_reservation_database_maps_durable_resecure_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = _load_module()
+
+    def publish(_final: Path, _initialize, **kwargs) -> Path:
+        assert kwargs == {"resecure_after_initialize": True}
+        raise module.CustodyHold("custody_resecure_failed")
+
+    monkeypatch.setattr(module, "publish_new_initialized_file", publish)
+
+    with pytest.raises(
+        module.LiveReadinessHold, match="reservation_database_resecure_failed"
+    ):
+        module.initialize_reservation_database(tmp_path.resolve(), RUN_ID)
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows custody proof")
@@ -321,6 +448,152 @@ def test_windows_initializer_publishes_complete_database_with_native_custody(
     finally:
         native_store.close()
     assert not list(root.glob(".reservation.db.*.tmp"))
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows custody proof")
+def test_windows_initializer_observes_delete_journal_with_native_custody(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    from app.services.sciencebase_spent_marker import WindowsMarkerBackend
+
+    backend = WindowsMarkerBackend()
+    root = tmp_path / "Project6" / "Reservation"
+    directory = backend.open_directory(root)
+    backend.close(directory)
+    observations: list[tuple[Path, Path]] = []
+
+    def observe_journal(staging: Path, journal: Path) -> None:
+        assert staging.parent == root
+        assert journal == staging.with_name(staging.name + "-journal")
+        assert journal.parent == staging.parent
+        assert staging.is_file()
+        assert journal.is_file()
+
+        staging_handle = backend.open_existing_file(staging)
+        journal_handle = backend.open_existing_file(journal)
+        try:
+            staging_identity = backend.identity(staging_handle)
+            journal_identity = backend.identity(journal_handle)
+            assert journal_identity.directory is False
+            assert journal_identity.reparse is False
+            assert journal_identity.link_count == 1
+            assert journal_identity.volume == staging_identity.volume
+            journal_security = backend.secure(journal_handle)
+        finally:
+            backend.close(journal_handle)
+            backend.close(staging_handle)
+
+        staging_posture = _windows_acl_posture(staging)
+        journal_posture = _windows_acl_posture(journal)
+        owner = staging_posture["owner"]
+        safe_aces = sorted(
+            [
+                (owner, _FILE_ALL_ACCESS, "Allow", False, "None", "None"),
+                (_SYSTEM_SID, _FILE_ALL_ACCESS, "Allow", False, "None", "None"),
+            ]
+        )
+        assert journal_posture["owner"] == owner
+        assert journal_security == (True, False, True), json.dumps(
+            journal_posture, sort_keys=True, separators=(",", ":")
+        )
+        assert journal_posture["protected"] is False
+        assert _sorted_ace_tuples(staging_posture) == safe_aces
+        assert _sorted_ace_tuples(journal_posture) == safe_aces
+        observations.append((staging, journal))
+
+    assert module.initialize_reservation_database(
+        root,
+        RUN_ID,
+        journal_observer=observe_journal,
+    ) == root / "reservation.db"
+
+    assert len(observations) == 1
+    assert list(root.iterdir()) == [root / "reservation.db"]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows custody proof")
+def test_windows_full_reservation_lifecycle_observes_every_delete_journal(
+    tmp_path: Path,
+) -> None:
+    module = _load_module()
+    from app.services.sciencebase_reservation_security import (
+        WindowsReservationSecurity,
+    )
+    from app.services.sciencebase_spent_marker import WindowsMarkerBackend
+
+    backend = WindowsMarkerBackend()
+    root = tmp_path / "Project6" / "Reservation"
+    directory = backend.open_directory(root)
+    backend.close(directory)
+    initialization_journals: list[Path] = []
+
+    assert module.initialize_reservation_database(
+        root,
+        RUN_ID,
+        journal_observer=lambda _database, journal: initialization_journals.append(
+            journal
+        ),
+    ) == root / "reservation.db"
+
+    class RecordingSecurity(WindowsReservationSecurity):
+        def __init__(self, canonical_root: Path) -> None:
+            super().__init__(canonical_root)
+            self.journals: list[Path] = []
+
+        def verify_transient_journal(self, database: Path, journal: Path) -> None:
+            super().verify_transient_journal(database, journal)
+            self.journals.append(journal)
+
+    security = RecordingSecurity(root)
+    store = ReservationStore(root, reservation_security=security)
+    try:
+        assert store.write_sciencebase_live_event(
+            event_id="22222222-2222-4222-8222-222222222222",
+            connector_run_id=RUN_ID,
+            phase="live_authority",
+            stage="go",
+            event_type="sciencebase_live_go_consumed",
+            status_after="consumed",
+            reason_code="owner_go_consumed",
+            metrics={"schema": module.LIVE_EVIDENCE_SCHEMA},
+        ).disposition == "RECORDED"
+        for ordinal, stage in enumerate(
+            ("sciencebase_search", "sciencebase_hydrate", "sciencebase_download"),
+            start=1,
+        ):
+            assert store.reserve(_plan(root, ordinal, stage)).disposition == "RESERVED"
+        assert store.write_sciencebase_live_event(
+            event_id="33333333-3333-4333-8333-333333333333",
+            connector_run_id=RUN_ID,
+            phase="acquisition",
+            stage="terminal",
+            event_type="sciencebase_acquisition_terminal",
+            status_after="succeeded",
+            reason_code="sciencebase_acquisition_succeeded",
+            metrics={"schema": module.LIVE_EVIDENCE_SCHEMA},
+        ).disposition == "RECORDED"
+        assert store.write_sciencebase_live_event(
+            event_id="44444444-4444-4444-8444-444444444444",
+            connector_run_id=RUN_ID,
+            phase="verification",
+            stage="closeout",
+            event_type="sciencebase_closeout_verified",
+            status_after="verified",
+            reason_code="sciencebase_closeout_verified",
+            metrics={"schema": module.LIVE_EVIDENCE_SCHEMA},
+        ).disposition == "RECORDED"
+    finally:
+        store.close()
+
+    assert len(initialization_journals) == 1
+    assert security.journals == [root / "reservation.db-journal"] * 6
+    assert sorted(path.name for path in root.iterdir()) == ["reservation.db"]
+    database_handle = backend.open_existing_file(root / "reservation.db")
+    try:
+        assert backend.secure(database_handle) == (True, True, True)
+    finally:
+        backend.close(database_handle)
 
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Windows custody proof")

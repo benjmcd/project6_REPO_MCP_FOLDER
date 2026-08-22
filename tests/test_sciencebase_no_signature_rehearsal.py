@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 import hashlib
 import importlib.util
 from io import StringIO
@@ -36,6 +37,24 @@ ENVELOPE_DIGEST = "sha256:" + "a" * 64
 AUTHORIZATION_DIGEST = "sha256:" + "b" * 64
 GRANT_DIGEST = "sha256:" + "c" * 64
 MANIFEST_DIGEST = "sha256:" + "d" * 64
+
+
+class _PassthroughReservationSecurity:
+    def __init__(self, _root: Path) -> None:
+        pass
+
+    @contextmanager
+    def birth_scope(self):
+        yield
+
+    def verify_database(self, _database: Path) -> None:
+        pass
+
+    def verify_transient_journal(self, _database: Path, journal: Path) -> None:
+        assert journal.is_file()
+
+    def verify_journal_absent(self, journal: Path) -> None:
+        assert not journal.exists()
 
 
 class _IdentityProbe:
@@ -164,7 +183,10 @@ def _prepared(root: Path, source_root: Path, close_calls: list[str]):
 
 def _store(root: Path, database: Path | None = None) -> ReservationStore:
     return ReservationStore(
-        root, database or root / "reservation.db", identity_probe=_IdentityProbe()
+        root,
+        database or root / "reservation.db",
+        identity_probe=_IdentityProbe(),
+        reservation_security=_PassthroughReservationSecurity(root),
     )
 
 
@@ -282,7 +304,8 @@ def test_sciencebase_no_signature_rehearsal(
 ) -> None:
     monkeypatch.delenv("DUAL_LIVE_RUNTIME_ENABLED", raising=False)
 
-    def publish(final: Path, initialize) -> Path:
+    def publish(final: Path, initialize, **kwargs) -> Path:
+        assert kwargs == {"resecure_after_initialize": True}
         if final.exists():
             raise readiness.CustodyHold("custody_exists")
         stage = final.with_name(".reservation.db.rehearsal.tmp")
@@ -297,6 +320,11 @@ def test_sciencebase_no_signature_rehearsal(
             raise
 
     monkeypatch.setattr(readiness, "publish_new_initialized_file", publish)
+    monkeypatch.setattr(
+        readiness,
+        "WindowsReservationSecurity",
+        _PassthroughReservationSecurity,
+    )
     spent_marker = tmp_path / "authority" / "spent.jsonl"
     monkeypatch.setattr(readiness, "LIVE_GO_SPENT_MARKER", spent_marker)
     launcher = _load_tool("sciencebase_rehearsal_launcher", REPO_ROOT / "tools" / "dual_live_run.py")

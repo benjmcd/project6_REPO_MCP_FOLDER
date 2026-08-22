@@ -894,7 +894,7 @@ jobs:
         if ($Mode -eq 'deny') {
           & $Python -m pytest -p no:cacheprovider ./tests/test_dual_live_worker_bundle.py::test_windows_probe_validates_preprovisioned_fixture -q *>&1 | Tee-Object -LiteralPath $Output
         } else {
-          & $Python -m pytest -p no:cacheprovider ./backend/tests/test_egress_effect_boundary.py ./backend/tests/test_dual_live_sciencebase_producer.py ./backend/tests/test_sciencebase_live_readiness.py ./backend/tests/test_sciencebase_spent_marker.py ./tests/test_dual_live_effect_guard.py ./tests/test_dual_live_worker_bundle.py ./tests/test_dual_live_runtime.py ./tests/test_sciencebase_no_signature_rehearsal.py -q *>&1 | Tee-Object -LiteralPath $Output
+          & $Python -m pytest -p no:cacheprovider ./backend/tests/test_egress_effect_boundary.py ./backend/tests/test_dual_live_sciencebase_producer.py ./backend/tests/test_sciencebase_live_readiness.py ./backend/tests/test_sciencebase_spent_marker.py ./tests/test_dual_live_effect_guard.py ./tests/test_dual_live_family_guard.py ./tests/test_dual_live_preservation_receipts.py ./tests/test_dual_live_python_binding.py ./tests/test_dual_live_worker_acl_filtered.py ./tests/test_dual_live_worker_bundle.py ./tests/test_dual_live_runtime.py ./tests/test_sciencebase_no_signature_rehearsal.py -q *>&1 | Tee-Object -LiteralPath $Output
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & $Python $ScienceBaseProof $Binding
         }
