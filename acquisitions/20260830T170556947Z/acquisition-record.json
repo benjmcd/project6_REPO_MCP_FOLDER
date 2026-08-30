@@ -1,0 +1,70 @@
+{
+    "schema":  "project6.instrument-acquisition.v1",
+    "doi":  "10.5066/P9WCYUI6",
+    "doi_source":  "asserted",
+    "item_id":  "63d1a3c6d34e06fef15006be",
+    "filename":  "mcs2023-germa_salient.csv",
+    "observed_download_uri":  "https://www.sciencebase.gov/catalog/file/get/63d1a3c6d34e06fef15006be?f=__disk__7e%2F49%2Fe8%2F7e49e8a4a53eb2219837f97defb22a25a286cdbc",
+    "license":  "CC0-1.0",
+    "license_source":  "asserted",
+    "stages":  {
+                   "search":  {
+                                  "url":  "https://www.sciencebase.gov/catalog/items?q=Mineral%20Commodity%20Summaries%202023%20GERMANIUM\u0026format=json",
+                                  "url_effective":  "https://www.sciencebase.gov/catalog/items?q=Mineral%20Commodity%20Summaries%202023%20GERMANIUM\u0026format=json",
+                                  "http_status":  200,
+                                  "header_lines":  22,
+                                  "location_lines":  0,
+                                  "body_bytes":  738,
+                                  "size_download":  738,
+                                  "body_sha256":  "6817903166e90184559f0c758e2b0a04a173614dc03e3342713b6989060224c6",
+                                  "started_at":  "2026-08-30T17:05:57.334Z",
+                                  "ended_at":  "2026-08-30T17:05:57.574Z"
+                              },
+                   "hydrate":  {
+                                   "url":  "https://www.sciencebase.gov/catalog/item/63d1a3c6d34e06fef15006be?format=json",
+                                   "url_effective":  "https://www.sciencebase.gov/catalog/item/63d1a3c6d34e06fef15006be?format=json",
+                                   "http_status":  200,
+                                   "header_lines":  23,
+                                   "location_lines":  0,
+                                   "body_bytes":  8996,
+                                   "size_download":  8996,
+                                   "body_sha256":  "aca8d6f4284122f307414d5173031f048ac4640a63febb0522bc215de061e114",
+                                   "started_at":  "2026-08-30T17:05:57.752Z",
+                                   "ended_at":  "2026-08-30T17:05:57.983Z"
+                               },
+                   "download":  {
+                                    "url":  "https://www.sciencebase.gov/catalog/file/get/63d1a3c6d34e06fef15006be?f=__disk__7e%2F49%2Fe8%2F7e49e8a4a53eb2219837f97defb22a25a286cdbc",
+                                    "url_effective":  "https://www.sciencebase.gov/catalog/file/get/63d1a3c6d34e06fef15006be?f=__disk__7e%2F49%2Fe8%2F7e49e8a4a53eb2219837f97defb22a25a286cdbc",
+                                    "http_status":  200,
+                                    "header_lines":  26,
+                                    "location_lines":  0,
+                                    "body_bytes":  510,
+                                    "size_download":  510,
+                                    "body_sha256":  "c8eacb7b8df0aa12b45eeb383d79d5cf95d7e002dfed7c07736e5aad3dca930c",
+                                    "started_at":  "2026-08-30T17:05:58.193Z",
+                                    "ended_at":  "2026-08-30T17:05:58.459Z"
+                                }
+               },
+    "redirect_posture":  "max-redirs=0, no Location observed",
+    "artifact_finalized_name":  "mcs2023-germa_salient.c8eacb7b8df0aa12b45eeb383d79d5cf95d7e002dfed7c07736e5aad3dca930c.csv",
+    "artifact_sha256":  "c8eacb7b8df0aa12b45eeb383d79d5cf95d7e002dfed7c07736e5aad3dca930c",
+    "artifact_bytes":  510,
+    "encoding":  "utf-8",
+    "bom":  "efbbbf",
+    "content_contract":  {
+                             "header_match":  true,
+                             "columns":  13,
+                             "rows":  5,
+                             "uniform_width":  true,
+                             "header_sha256":  "048f103704744d4b39125ec28cb830ac94c0e18b9de93680f57844e5eec96394"
+                         },
+    "authorizing_owner_token":  "M8, then commit after confirmed successful",
+    "reviewer":  "opus-independent-APPROVE-WITH-CORRECTIONS+codex-internal-READY-2026-08-30",
+    "source_commit":  "e846201c11f310818a54db7b081beced8f676175",
+    "curl_sha256":  "73d24149ff289afc49ec41f08918ef9faa727d39ad993e929757dc2ddafab805",
+    "curl_bytes":  818512,
+    "python_used":  false,
+    "no_credential":  true,
+    "cookies_redacted":  true,
+    "powershell_version":  "5.1.26100.9168"
+}
