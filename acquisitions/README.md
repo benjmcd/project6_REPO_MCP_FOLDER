@@ -8,3 +8,7 @@ Provenance-safe live acquisitions of the public CC0 germanium CSV (DOI 10.5066/P
 Runs: 20260830T163609868Z (initial acquisition), 20260830T170556947Z (M8 repeatability).
 
 No one-use-signature / AppContainer / spent-marker ceremony (right-sized for this public, no-credential target). Raw stage bodies/headers retained out-of-repo under the run roots as provenance evidence.
+
+## Status: TERMINAL (2026-08-30)
+
+This lane is declared TERMINAL by owner ruling. The artifact + provenance records here are the terminal work product of the ScienceBase public-target acquisition: connector-origin bytes with provenance intact, in git custody. The full signed-GO harness (Attempt-5 packet, sitting runbook, etc.) is preserved and earmarked for the credentialed NRC acquisition-#2; the one-use owner signature was never used (a public CC0 no-credential fetch needed none). M7 (Layer-3 handoff) was assessed NOT-READY/ill-defined and not started.
