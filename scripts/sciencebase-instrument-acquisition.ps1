@@ -139,7 +139,9 @@ function Write-BytesCreateOnce {
       [System.IO.FileShare]::None
     )
   } catch {
-    if (Test-Path -LiteralPath $Path) { Stop-Hold 'output_collision' }
+    if (Test-Path -LiteralPath $Path) {
+      Stop-Terminal 'hold:output_collision' 'output_collision'
+    }
     throw
   }
   try {
@@ -579,14 +581,24 @@ function Measure-Csv {
     HasAtLeastTwoColumns = ($rows[0].FieldCount -ge 2)
   }
 }
+
 function Assert-DownloadAuthority {
   param([Parameter(Mandatory = $true)][string]$RawUrl)
-  $hasControl = @($RawUrl.ToCharArray() | Where-Object { ([int]$_ -lt 0x20) -or ([int]$_ -eq 0x7F) }).Count -ne 0
-  if ([string]::IsNullOrWhiteSpace($RawUrl) -or $RawUrl -cne $RawUrl.Trim() -or $hasControl -or $RawUrl.Contains([string][char]92)) {
-    Stop-Hold 'downloadUri_authority_rejected'
+  $hasControlCharacter = @($RawUrl.ToCharArray() | Where-Object {
+    ([int]$_ -lt 0x20) -or ([int]$_ -eq 0x7F)
+  }).Count -ne 0
+  if (
+    [string]::IsNullOrWhiteSpace($RawUrl) -or
+    $RawUrl -cne $RawUrl.Trim() -or
+    $hasControlCharacter -or
+    $RawUrl.Contains([string][char]92)
+  ) {
+    Stop-Terminal 'hold:downloadUri_authority_rejected' 'downloadUri_authority_rejected'
   }
   $parsed = $null
-  if (-not [uri]::TryCreate($RawUrl, [System.UriKind]::Absolute, [ref]$parsed)) { Stop-Hold 'downloadUri_authority_rejected' }
+  if (-not [uri]::TryCreate($RawUrl, [System.UriKind]::Absolute, [ref]$parsed)) {
+    Stop-Terminal 'hold:downloadUri_authority_rejected' 'downloadUri_authority_rejected'
+  }
   if (
     $parsed.Scheme -cne 'https' -or
     $parsed.DnsSafeHost -cne 'www.sciencebase.gov' -or
@@ -596,7 +608,7 @@ function Assert-DownloadAuthority {
     $parsed.Fragment.Length -ne 0 -or
     $parsed.AbsoluteUri -cne $RawUrl
   ) {
-    Stop-Hold 'downloadUri_authority_rejected'
+    Stop-Terminal 'hold:downloadUri_authority_rejected' 'downloadUri_authority_rejected'
   }
 }
 
@@ -1015,14 +1027,12 @@ function Invoke-NativeSeparated {
     Stderr = $stderr
   }
 }
+
 function Get-MetricValue {
-  param(
-    [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Text,
-    [Parameter(Mandatory = $true)][string]$Name
-  )
-  $match = [regex]::Match($Text, ('(?m)^' + [regex]::Escape($Name) + '=([^\r\n]*)$'))
-  if (-not $match.Success) { return '' }
-  return $match.Groups[1].Value
+  param([string]$Text, [string]$Name)
+  $match = [regex]::Match($Text, ('(?m)^' + [regex]::Escape($Name) + '=(.*)$'))
+  if (-not $match.Success) { return $null }
+  return $match.Groups[1].Value.Trim()
 }
 
 function Invoke-Stage {
@@ -1168,13 +1178,13 @@ function New-StageRecord {
 }
 
 function Add-StageBytes {
-  param([ref]$TotalResponseBytes, [long]$StageBytes)
-  if ($StageBytes -gt $ArtifactMaxBytes) {
-    Stop-Terminal 'hold:stage_byte_cap_exceeded' 'stage_byte_cap_exceeded'
+  param([ref]$TotalBytes, [long]$StageBytes)
+  if ($StageBytes -lt 0 -or $StageBytes -gt $ArtifactMaxBytes) {
+    Stop-Terminal 'hold:stage_response_too_large' 'stage_response_too_large'
   }
-  $TotalResponseBytes.Value += $StageBytes
-  if ($TotalResponseBytes.Value -gt $SessionMaxBytes) {
-    Stop-Terminal 'hold:session_byte_cap_exceeded' 'session_byte_cap_exceeded'
+  $TotalBytes.Value += $StageBytes
+  if ($TotalBytes.Value -gt $SessionMaxBytes) {
+    Stop-Terminal 'hold:session_total_bytes_exceeded' 'session_total_bytes_exceeded'
   }
 }
 
