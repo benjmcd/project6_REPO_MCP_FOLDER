@@ -2,3 +2,8 @@ patches/*.patch -text
 # Deploy files are consumed inside Linux containers (nginx config, htpasswd,
 # compose YAML); keep them LF on every checkout regardless of core.autocrlf.
 deploy/** text eol=lf
+
+# Content-addressed acquisition artifact + provenance records: store the EXACT
+# retained bytes (CRLF as downloaded/written), never normalized, on every platform.
+acquisitions/artifact/** -text
+acquisitions/**/acquisition-record.json -text
