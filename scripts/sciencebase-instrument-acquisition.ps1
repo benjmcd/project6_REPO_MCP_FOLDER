@@ -8,6 +8,13 @@ param(
   [Parameter(Mandatory = $true, ParameterSetName = 'Validate')]
   [switch]$ValidateOnly,
 
+  [Parameter(Mandatory = $true, ParameterSetName = 'Live')]
+  [Parameter(Mandatory = $true, ParameterSetName = 'Validate')]
+  [string]$ExpectedScriptSha256,
+
+  [Parameter(ParameterSetName = 'Validate')]
+  [switch]$SimulateElevated,
+
   [Parameter(ParameterSetName = 'Live')]
   [string]$OutputRoot,
 
@@ -65,6 +72,7 @@ $MetadataStageSeconds = 30
 $ArtifactStageSeconds = 30
 $MaximumRequests = 3
 $Notice = 'Public ScienceBase acquisition; no credential is used.'
+$script:ResolvedOutputRoot = ''
 
 function Stop-Hold {
   param([Parameter(Mandatory = $true)][string]$Code)
@@ -124,6 +132,49 @@ function Get-Sha256Bytes {
 function Get-Sha256File {
   param([Parameter(Mandatory = $true)][string]$Path)
   return Get-Sha256Bytes ([System.IO.File]::ReadAllBytes($Path))
+}
+
+function Assert-NonElevated {
+  param([Nullable[bool]]$AdministratorOverride)
+  $isAdministrator = $false
+  if ($PSBoundParameters.ContainsKey('AdministratorOverride')) {
+    $isAdministrator = [bool]$AdministratorOverride
+  } else {
+    $identity = $null
+    $privilegeCheckFailed = $false
+    try {
+      $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+      $principal = New-Object System.Security.Principal.WindowsPrincipal -ArgumentList $identity
+      $isAdministrator = $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    } catch {
+      $privilegeCheckFailed = $true
+    } finally {
+      if ($null -ne $identity) { $identity.Dispose() }
+    }
+    if ($privilegeCheckFailed) {
+      Stop-Terminal 'hold:privilege_check_failed' 'privilege_check_failed'
+    }
+  }
+  if ($isAdministrator) {
+    Stop-Terminal 'hold:elevated_process_rejected' 'elevated_process_rejected'
+  }
+  return $true
+}
+
+function Assert-ScriptIdentity {
+  param([Parameter(Mandatory = $true)][string]$ExpectedSha256)
+  if ($ExpectedSha256 -notmatch '^[0-9a-f]{64}$') {
+    Stop-Terminal 'hold:script_identity_invalid' 'script_identity_invalid'
+  }
+  try {
+    $actualSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $PSCommandPath).Hash.ToLowerInvariant()
+  } catch {
+    Stop-Terminal 'hold:script_identity_unverified' 'script_identity_unverified'
+  }
+  if ($actualSha256 -cne $ExpectedSha256.ToLowerInvariant()) {
+    Stop-Terminal 'hold:script_identity_mismatch' 'script_identity_mismatch'
+  }
+  return $actualSha256
 }
 
 function Write-BytesCreateOnce {
@@ -1095,7 +1146,8 @@ function Invoke-Stage {
   if ($unexpectedCurlFiles.Count -ne 0) {
     Stop-Terminal 'hold:output_collision' 'output_collision'
   }
-  Write-BytesCreateOnce -Path $headerPath -Bytes $native.StdoutBytes
+  $sanitizedHeaders = ConvertTo-SanitizedHeaders $native.StdoutBytes
+  Write-BytesCreateOnce -Path $headerPath -Bytes $sanitizedHeaders.Bytes
   Write-Utf8CreateOnce -Path $metricsPath -Text $metricsText
   Write-Utf8CreateOnce -Path $stderrPath -Text $diagnosticText
   $redactedHeaders = Redact-HeaderDump -Path $headerPath
@@ -1278,7 +1330,8 @@ function Assert-RecordSchema {
       [int]$stage.http_status -ne 200 -or
       [int]$stage.location_lines -ne 0 -or
       [long]$stage.body_bytes -ne [long]$stage.size_download -or
-      [string]::IsNullOrWhiteSpace([string]$stage.url_effective)
+      [string]::IsNullOrWhiteSpace([string]$stage.url_effective) -or
+      [string]$stage.url_effective -cne [string]$stage.url
     ) {
       Stop-Terminal 'hold:record_schema_invalid' 'record_schema_invalid'
     }
@@ -1357,6 +1410,12 @@ function New-ProbeStageRecord {
 }
 
 function Invoke-ValidateOnly {
+  if ($SimulateElevated) {
+    [void](Assert-NonElevated -AdministratorOverride $true)
+  } else {
+    [void](Assert-NonElevated)
+  }
+  [void](Assert-ScriptIdentity -ExpectedSha256 $ExpectedScriptSha256)
   $searchHeaderInfo = Get-HeaderInfoFromPath $SearchHeaders
   $hydrateHeaderInfo = Get-HeaderInfoFromPath $HydrateHeaders
   $downloadHeaderInfo = Get-HeaderInfoFromPath $DownloadHeaders
@@ -1474,11 +1533,14 @@ function Assert-SourceCommit {
 
 function Invoke-LiveAcquisition {
   Assert-LiveInputs
+  [void](Assert-NonElevated)
+  [void](Assert-ScriptIdentity -ExpectedSha256 $ExpectedScriptSha256)
   if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $runId = [DateTime]::UtcNow.ToString('yyyyMMddTHHmmssfffZ', [System.Globalization.CultureInfo]::InvariantCulture) + '-' + [guid]::NewGuid().ToString('N')
     $script:OutputRoot = Join-Path $OutputBase $runId
   }
   $preflight = Invoke-Preflight
+  $script:ResolvedOutputRoot = $preflight.OutputRoot
   $observedSourceCommit = Assert-SourceCommit -RepoRoot $preflight.RepoRoot -ExpectedCommit $SourceCommit
   New-OutputRootOnce $preflight.OutputRoot
   $requestCount = 0
@@ -1545,6 +1607,9 @@ try {
 } catch {
   $terminal = Get-ExceptionTerminal $_.Exception
   $code = Get-ExceptionCode $_.Exception
+  if (-not [string]::IsNullOrWhiteSpace($script:ResolvedOutputRoot)) {
+    Write-Output ('run_root=' + $script:ResolvedOutputRoot)
+  }
   Write-Output ('terminal=' + $terminal)
   Write-Output ('code=' + $code)
   exit 2

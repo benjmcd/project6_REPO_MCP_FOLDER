@@ -97,12 +97,15 @@ function Invoke-Subject {
     [Parameter(Mandatory = $true)][string]$DownloadBody,
     [Parameter(Mandatory = $true)][string]$SearchHeaders,
     [Parameter(Mandatory = $true)][string]$HydrateHeaders,
-    [Parameter(Mandatory = $true)][string]$DownloadHeaders
+    [Parameter(Mandatory = $true)][string]$DownloadHeaders,
+    [string]$ExpectedScriptSha256 = $ExpectedSubjectSha256,
+    [switch]$SimulateElevated
   )
   $arguments = @(
     '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass',
     '-File', $Subject,
     '-ValidateOnly',
+    '-ExpectedScriptSha256', $ExpectedScriptSha256,
     '-SearchBody', $SearchBody,
     '-HydrateBody', $HydrateBody,
     '-DownloadBody', $DownloadBody,
@@ -110,6 +113,7 @@ function Invoke-Subject {
     '-HydrateHeaders', $HydrateHeaders,
     '-DownloadHeaders', $DownloadHeaders
   )
+  if ($SimulateElevated) { $arguments += '-SimulateElevated' }
   $raw = @(& $PowerShellExe @arguments)
   $exitCode = $LASTEXITCODE
   $text = (@($raw | ForEach-Object { [string]$_ }) -join [Environment]::NewLine).Trim()
@@ -130,6 +134,7 @@ function Assert-Hold {
 
 Assert-True (Test-Path -LiteralPath $Subject -PathType Leaf) ("RED: production script missing: {0}" -f $Subject)
 Assert-True (Test-Path -LiteralPath $PowerShellExe -PathType Leaf) 'Windows PowerShell 5.1 executable is unavailable.'
+$ExpectedSubjectSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $Subject).Hash.ToLowerInvariant()
 
 Assert-Fixture -Path $PositiveSearch -Bytes 737 -Sha256 '55e3c10d928ef29a51a4bdd31c3863a321b12035f04a6ca857ab4088440aa215'
 Assert-Fixture -Path $PositiveHydrate -Bytes 8991 -Sha256 '56efa301bab2a0b589c6df5b305838ab4cae25edc4f54dea35093ddcf566509a'
@@ -140,15 +145,19 @@ Assert-Fixture -Path $PositiveHydrateHeaders -Bytes 3280 -Sha256 '8471a6c3a94f5f
 Assert-Fixture -Path $PositiveDownloadHeaders -Bytes 3401 -Sha256 '5fcfe79d0add22df6f6658121174f67e1ef9b5bbfd82d2b4389d9a6f95bc68d3'
 
 $source = [System.IO.File]::ReadAllText($Subject)
-foreach ($forbidden in @('dual_live_', 'AppContainer', 'spent-marker', 'harness', 'signature', 'provisioning', 'elevation', 'Assert-NonElevated', 'Invoke-WebRequest', 'Start-BitsTransfer', '$ValidatorCode', 'Invoke-PythonValidator', 'PythonPath', 'python.exe', 'python -', 'py -', '2>&1', '--retry')) {
+foreach ($forbidden in @('dual_live_', 'AppContainer', 'spent-marker', 'harness', 'signature', 'provisioning', 'Invoke-WebRequest', 'Start-BitsTransfer', '$ValidatorCode', 'Invoke-PythonValidator', 'PythonPath', 'python.exe', 'python -', 'py -', '2>&1', '--retry')) {
   Assert-True ($source.IndexOf($forbidden, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) ("Forbidden dependency or path present: {0}." -f $forbidden)
 }
 Assert-True (-not [regex]::IsMatch($source, '(?im)&\s*\$[A-Za-z][A-Za-z0-9_]*\s+-c(?:\s|$)')) 'Validator uses the forbidden native python -c form.'
 foreach ($requiredSourceToken in @(
   "[switch]`$Live",
   "[switch]`$ValidateOnly",
+  '[string]$ExpectedScriptSha256',
+  '[switch]$SimulateElevated',
   '[string]$SourceCommit',
   'Set-StrictMode -Version Latest',
+  'function Assert-NonElevated',
+  'function Assert-ScriptIdentity',
   'function Read-StrictJsonString',
   'function Read-StrictJsonValue',
   'function Read-StrictJsonArray',
@@ -166,6 +175,9 @@ foreach ($requiredSourceToken in @(
   'function Require-Clean200',
   'function Assert-DownloadAuthority',
   'function Assert-SourceCommit',
+  '$script:ResolvedOutputRoot',
+  '[string]$stage.url_effective -cne [string]$stage.url',
+  "Write-Output ('run_root=' + `$script:ResolvedOutputRoot)",
   "`$CurlVersionFirstLine = 'curl 8.21.0 (Windows) libcurl/8.21.0 Schannel zlib/1.3.2 WinIDN WinLDAP'",
   'IsNullOrWhiteSpace($AuthorizingOwnerToken)',
   "'--disable'", "'--silent'", "'--show-error'", "'--proto', '=https'", "'--noproxy', '*'",
@@ -192,12 +204,46 @@ $productionFunctions = @($productionAst.FindAll({
   param($node)
   $node -is [System.Management.Automation.Language.FunctionDefinitionAst]
 }, $true))
+
+function Get-ProductionFunctionAst {
+  param([Parameter(Mandatory = $true)][string]$Name)
+  $matches = @($productionFunctions | Where-Object { $_.Name -ceq $Name })
+  Assert-Equal $matches.Count 1 ("Expected exactly one function definition: {0}." -f $Name)
+  return $matches[0]
+}
+
 foreach ($functionName in @('Invoke-ValidateOnly', 'Assert-SearchContract', 'Assert-HydrateContract', 'Assert-ArtifactContract')) {
-  $matches = @($productionFunctions | Where-Object { $_.Name -ceq $functionName })
-  Assert-Equal $matches.Count 1 ("Expected exactly one function definition: {0}." -f $functionName)
+  $functionAst = Get-ProductionFunctionAst $functionName
   foreach ($forbiddenCall in @('Invoke-Stage', 'Invoke-NativeSeparated', 'Invoke-Preflight', 'New-OutputRootOnce', 'Get-CurlIdentity')) {
-    Assert-True (-not $matches[0].Extent.Text.Contains($forbiddenCall)) ("{0} reaches forbidden live/native call {1}." -f $functionName, $forbiddenCall)
+    Assert-True (-not $functionAst.Extent.Text.Contains($forbiddenCall)) ("{0} reaches forbidden live/native call {1}." -f $functionName, $forbiddenCall)
   }
+}
+
+$liveText = (Get-ProductionFunctionAst 'Invoke-LiveAcquisition').Extent.Text
+$liveInputIndex = $liveText.IndexOf('Assert-LiveInputs', [System.StringComparison]::Ordinal)
+$nonElevatedIndex = $liveText.IndexOf('Assert-NonElevated', [System.StringComparison]::Ordinal)
+$scriptIdentityIndex = $liveText.IndexOf('Assert-ScriptIdentity', [System.StringComparison]::Ordinal)
+$preflightIndex = $liveText.IndexOf('Invoke-Preflight', [System.StringComparison]::Ordinal)
+$outputRootIndex = $liveText.IndexOf('New-OutputRootOnce', [System.StringComparison]::Ordinal)
+$firstStageIndex = $liveText.IndexOf('Invoke-Stage', [System.StringComparison]::Ordinal)
+Assert-True (
+  $liveInputIndex -ge 0 -and
+  $nonElevatedIndex -gt $liveInputIndex -and
+  $scriptIdentityIndex -gt $nonElevatedIndex -and
+  $preflightIndex -gt $scriptIdentityIndex -and
+  $outputRootIndex -gt $preflightIndex -and
+  $firstStageIndex -gt $outputRootIndex
+) 'Live execution gates do not precede preflight, output creation, and all request stages.'
+
+$stageText = (Get-ProductionFunctionAst 'Invoke-Stage').Extent.Text
+$sanitizeIndex = $stageText.IndexOf('$sanitizedHeaders = ConvertTo-SanitizedHeaders $native.StdoutBytes', [System.StringComparison]::Ordinal)
+$sanitizedWriteIndex = $stageText.IndexOf('Write-BytesCreateOnce -Path $headerPath -Bytes $sanitizedHeaders.Bytes', [System.StringComparison]::Ordinal)
+$redactIndex = $stageText.IndexOf('Redact-HeaderDump -Path $headerPath', [System.StringComparison]::Ordinal)
+Assert-True ($sanitizeIndex -ge 0 -and $sanitizedWriteIndex -gt $sanitizeIndex -and $redactIndex -gt $sanitizedWriteIndex) 'Live header bytes are not sanitized in memory before their first disk write.'
+Assert-True (-not $stageText.Contains('Write-BytesCreateOnce -Path $headerPath -Bytes $native.StdoutBytes')) 'Live stage persists raw header bytes before redaction.'
+
+foreach ($helperName in @('Stop-Hold', 'Get-PhysicalLineCount', 'ConvertTo-SanitizedHeaders')) {
+  Invoke-Expression (Get-ProductionFunctionAst $helperName).Extent.Text
 }
 Assert-True ([regex]::IsMatch($source, '(?s)Parameter\(Mandatory\s*=\s*\$true,\s*ParameterSetName\s*=\s*''Live''\).*?\[switch\]\$Live')) 'Live switch is not mandatory in its own parameter set.'
 Assert-True ([regex]::IsMatch($source, '(?s)Parameter\(Mandatory\s*=\s*\$true,\s*ParameterSetName\s*=\s*''Validate''\).*?\[switch\]\$ValidateOnly')) 'ValidateOnly switch is not mandatory in its own parameter set.'
@@ -238,6 +284,26 @@ Assert-Equal ([int]$summary.headers.download.header_lines) 26 'Download header-l
 Assert-Equal ([int]$summary.headers.search.location_lines) 0 'Unexpected retained search Location.'
 Assert-True ([bool]$summary.headers.search.cookies_redacted) 'Search cookie-redaction claim is false.'
 
+$identityMismatch = Invoke-Subject `
+  -SearchBody $PositiveSearch `
+  -HydrateBody $PositiveHydrate `
+  -DownloadBody $PositiveDownload `
+  -SearchHeaders $PositiveSearchHeaders `
+  -HydrateHeaders $PositiveHydrateHeaders `
+  -DownloadHeaders $PositiveDownloadHeaders `
+  -ExpectedScriptSha256 ('0' * 64)
+Assert-Hold $identityMismatch 'script_identity_mismatch'
+
+$elevated = Invoke-Subject `
+  -SearchBody $PositiveSearch `
+  -HydrateBody $PositiveHydrate `
+  -DownloadBody $PositiveDownload `
+  -SearchHeaders $PositiveSearchHeaders `
+  -HydrateHeaders $PositiveHydrateHeaders `
+  -DownloadHeaders $PositiveDownloadHeaders `
+  -SimulateElevated
+Assert-Hold $elevated 'elevated_process_rejected'
+
 $broadSearch = Invoke-Subject `
   -SearchBody $NegativeSearch `
   -HydrateBody $PositiveHydrate `
@@ -249,6 +315,17 @@ Assert-Hold $broadSearch 'search_expected_item_not_unique'
 
 $syntheticRoot = Join-Path ([System.IO.Path]::GetTempPath()) ('p6-acq-offline-' + [guid]::NewGuid().ToString('N'))
 [void](New-Item -ItemType Directory -Path $syntheticRoot -ErrorAction Stop)
+$persistedHeaderPath = Join-Path $syntheticRoot 'sanitized.headers'
+$secretHeaderText = "HTTP/1.1 200 OK`r`nSet-Cookie: OFFLINE-SECRET=must-never-reach-disk`r`n`r`n"
+$latin1 = [System.Text.Encoding]::GetEncoding(28591)
+$secretHeaderBytes = $latin1.GetBytes($secretHeaderText)
+$sanitizedHeader = ConvertTo-SanitizedHeaders $secretHeaderBytes
+Write-BytesCreateOnce -Path $persistedHeaderPath -Bytes $sanitizedHeader.Bytes
+$persistedHeaderBytes = [System.IO.File]::ReadAllBytes($persistedHeaderPath)
+$persistedHeaderText = $latin1.GetString($persistedHeaderBytes)
+Assert-Equal $persistedHeaderBytes.Length $secretHeaderBytes.Length 'Sanitized persisted header byte length drift.'
+Assert-True (-not $persistedHeaderText.Contains('OFFLINE-SECRET')) 'A cookie value reached the persisted header probe.'
+Assert-Equal ([int]$sanitizedHeader.CookieHeadersObserved) 1 'In-memory header sanitizer missed the cookie header.'
 $wrongHeaderPath = Join-Path $syntheticRoot 'wrong-header.csv'
 $wrongHeaderHydratePath = Join-Path $syntheticRoot 'wrong-header.json'
 $shortRowPath = Join-Path $syntheticRoot 'row-12.csv'
