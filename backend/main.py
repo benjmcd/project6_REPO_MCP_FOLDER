@@ -118,6 +118,7 @@ def _build_static_pre_body_routes(
         (f"{L}/handoff/aps/dispatch", "write"),
         (f"{L}/handoff/export/download/readiness", "write"),
         (f"{L}/handoff/export/download/prepare", "write"),
+        (f"{L}/handoff/connector/dataset", "write"),
         (f"{L}/handoff/connector/record", "write"),
         (f"{L}/handoff/connector/local-destination/receipt", "write"),
         (f"{L}/handoff/connector/local-outbox/fake-target", "write"),

@@ -130,6 +130,7 @@ __all__ = [
     "APS_HANDOFF_DISPATCH_REQUEST_SCHEMA",
     "MIXED_SOURCE_EXTERNAL_EXPORT_DOWNLOAD_READINESS_REQUEST_SCHEMA",
     "EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUEST_SCHEMA",
+    "CONNECTOR_DATASET_HANDOFF_REQUEST_SCHEMA",
     "CONNECTOR_DISPATCH_RECORD_REQUEST_SCHEMA",
     "CONNECTOR_LOCAL_DESTINATION_RECEIPT_REQUEST_SCHEMA",
     "SERVER_OWNED_LOCAL_OUTBOX_FAKE_TARGET_REQUEST_SCHEMA",
@@ -3206,6 +3207,17 @@ EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUEST_SCHEMA: dict[str, Any] = {
         "local_upload": _forbidden_request_field_schema(),
         "local_directory": _forbidden_request_field_schema(),
         "schema_migration": _forbidden_request_field_schema(),
+    },
+}
+
+
+CONNECTOR_DATASET_HANDOFF_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["client_request_id", "session_id"],
+    "properties": {
+        "client_request_id": {"type": "string", "minLength": 1},
+        "session_id": {"type": "string", "minLength": 1},
     },
 }
 
