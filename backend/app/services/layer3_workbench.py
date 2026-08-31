@@ -255,6 +255,7 @@ from app.services.layer3_source_intake import (
     validate_source_intake_gate_b_decision_basis,
 )
 from app.services.layer3_connector_source_intake import (
+    ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY,
     CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
     ConnectorSourceIntakeError,
     validate_connector_intake_gate_b_decision_basis,
@@ -2164,9 +2165,9 @@ def _gate_b_response_from_session(
     approved_source_classes = sorted(
         {item["source_class"] for item in decisions if item["decision"] == "approved"}
     )
-    connector_only_gate_b_admission = approved_source_classes == [
-        CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
-    ]
+    connector_only_gate_b_admission = _connector_only_gate_b_source_classes(
+        approved_source_classes
+    )
     next_state = (
         "connector_source_intake_gate_b_admitted"
         if connector_only_gate_b_admission
@@ -2344,7 +2345,10 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
                     or ["candidate_decisions.decision_basis"],
                     next_allowed_actions=["refresh_source_directory_material_preview"],
                 ) from exc
-        if source_class == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY:
+        if source_class in {
+            CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+            ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY,
+        }:
             try:
                 validate_connector_intake_gate_b_decision_basis(
                     db,
@@ -2623,9 +2627,9 @@ def gate_b_decision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             }
         )
     approved_source_classes = sorted({item["source_class"] for item in approved})
-    connector_only_gate_b_admission = approved_source_classes == [
-        CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
-    ]
+    connector_only_gate_b_admission = _connector_only_gate_b_source_classes(
+        approved_source_classes
+    )
     current_gate = "gate_b" if connector_only_gate_b_admission else "gate_c"
 
     session, manifest = commit_selection(
@@ -2798,9 +2802,13 @@ def _source_classes_from_latest_manifest(db: Session, session_id: str) -> list[s
 
 
 def _connector_only_gate_b_source_classes(source_classes: list[str]) -> bool:
-    return sorted({str(item).strip() for item in source_classes if str(item).strip()}) == [
-        CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
-    ]
+    normalized = sorted(
+        {str(item).strip() for item in source_classes if str(item).strip()}
+    )
+    return len(normalized) == 1 and normalized[0] in {
+        CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+        ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY,
+    }
 
 
 def _gate_b_snapshot_material_basis(

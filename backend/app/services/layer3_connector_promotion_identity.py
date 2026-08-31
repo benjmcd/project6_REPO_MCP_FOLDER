@@ -12,6 +12,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.models.models import (
     ConnectorRun,
     ConnectorRunTarget,
@@ -23,10 +24,15 @@ from app.models.models import (
     uuid_str,
 )
 from app.services.layer3_connector_source_intake import (
+    ADOPTED_EXTERNAL_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX,
+    ADOPTED_EXTERNAL_SOURCE_INTAKE_OPERATOR_DECISION,
+    ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY,
     CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX,
+    CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION,
     CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
     ConnectorSourceIntakeError,
     _storage_path_from_ref,
+    validate_adopted_external_carrier,
     validate_connector_intake_gate_b_decision_basis,
 )
 from app.services.layer3_gate_b_state import gate_b_decision_manifest_id
@@ -118,20 +124,30 @@ def _stable_hash(value: object) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _candidate_prefixes() -> tuple[str, ...]:
+    prefixes = [CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX]
+    if settings.layer3_adopted_external_source_intake_enabled:
+        prefixes.append(ADOPTED_EXTERNAL_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX)
+    return tuple(prefixes)
+
+
+def _candidate_prefix(record: L3ConnectorSourceIntakeRecord) -> str:
+    if record.source_family == ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY:
+        return ADOPTED_EXTERNAL_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX
+    return CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX
+
+
 def _record_id(candidate: Mapping[str, Any]) -> str:
     candidate_id = str(candidate.get("candidate_id") or "").strip()
-    if not candidate_id.startswith(CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX):
-        raise ConnectorPromotionIdentityError(
-            "connector_promotion_not_eligible",
-            "Connector promotion candidate is not eligible.",
-        )
-    record_id = candidate_id[len(CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX) :].strip()
-    if not record_id:
-        raise ConnectorPromotionIdentityError(
-            "connector_promotion_not_eligible",
-            "Connector promotion candidate is not eligible.",
-        )
-    return record_id
+    for prefix in _candidate_prefixes():
+        if candidate_id.startswith(prefix):
+            record_id = candidate_id[len(prefix) :].strip()
+            if record_id:
+                return record_id
+    raise ConnectorPromotionIdentityError(
+        "connector_promotion_not_eligible",
+        "Connector promotion candidate is not eligible.",
+    )
 
 
 def possible_exact_candidate(raw_decisions: object) -> Mapping[str, Any] | None:
@@ -141,9 +157,10 @@ def possible_exact_candidate(raw_decisions: object) -> Mapping[str, Any] | None:
         decision
         for decision in raw_decisions
         if isinstance(decision, Mapping)
-        and str(decision.get("candidate_id") or "")
-        .strip()
-        .startswith(CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX)
+        and any(
+            str(decision.get("candidate_id") or "").strip().startswith(prefix)
+            for prefix in _candidate_prefixes()
+        )
     ]
     if not connector_decisions:
         return None
@@ -162,13 +179,24 @@ def _server_rows(
     record = db.get(L3ConnectorSourceIntakeRecord, record_id)
     run = db.get(ConnectorRun, record.connector_run_id) if record is not None else None
     target = db.get(ConnectorRunTarget, record.connector_run_target_id) if record is not None else None
+    connector_family_eligible = bool(
+        record is not None
+        and record.operator_decision == CONNECTOR_SOURCE_INTAKE_OPERATOR_DECISION
+        and record.source_family == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+    )
+    adopted_family_eligible = bool(
+        settings.layer3_adopted_external_source_intake_enabled
+        and record is not None
+        and record.operator_decision
+        == ADOPTED_EXTERNAL_SOURCE_INTAKE_OPERATOR_DECISION
+        and record.source_family == ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY
+    )
     eligible = bool(
         record is not None
         and run is not None
         and target is not None
         and record.status == "recorded"
-        and record.operator_decision == "record_connector_produced_source"
-        and record.source_family == CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+        and (connector_family_eligible or adopted_family_eligible)
         and record.connector_run_id == run.connector_run_id
         and record.connector_run_target_id == target.connector_run_target_id
         and record.connector_key == run.connector_key
@@ -186,6 +214,26 @@ def _server_rows(
             "Connector promotion candidate is not eligible.",
         )
     assert record is not None and run is not None and target is not None
+    if adopted_family_eligible:
+        adoption_provenance = (record.provenance_json or {}).get(
+            "adoption_provenance"
+        )
+        if not isinstance(adoption_provenance, Mapping):
+            raise ConnectorPromotionIdentityError(
+                "connector_promotion_not_eligible",
+                "Connector promotion candidate is not eligible.",
+            )
+        try:
+            validate_adopted_external_carrier(
+                run,
+                target,
+                adoption_provenance=adoption_provenance,
+            )
+        except ConnectorSourceIntakeError as exc:
+            raise ConnectorPromotionIdentityError(
+                "connector_promotion_not_eligible",
+                "Connector promotion candidate is not eligible.",
+            ) from exc
     try:
         storage_path = _storage_path_from_ref(record.storage_ref)
         if not storage_path.is_file():
@@ -207,6 +255,12 @@ def _server_rows(
 def derive_candidate_identity(db: Session, candidate: Mapping[str, Any]) -> CandidateIdentity:
     record_id = _record_id(candidate)
     record, run, target = _server_rows(db, record_id)
+    expected_candidate_id = f"{_candidate_prefix(record)}{record_id}"
+    if str(candidate.get("candidate_id") or "").strip() != expected_candidate_id:
+        raise ConnectorPromotionIdentityError(
+            "connector_promotion_not_eligible",
+            "Connector promotion candidate is not eligible.",
+        )
     metadata_hash = _stable_hash(
         {
             "fields": {
@@ -357,7 +411,7 @@ def replay_result(db: Session, *, session_id: str) -> dict[str, str]:
         )
     candidate = {
         "candidate_id": (
-            f"{CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX}"
+            f"{_candidate_prefix(record)}"
             f"{receipt.connector_source_intake_record_id}"
         )
     }

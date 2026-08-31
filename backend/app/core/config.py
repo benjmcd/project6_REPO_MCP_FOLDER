@@ -233,6 +233,10 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_CONNECTOR_PROMOTION_IDENTITY_ENABLED",
     )
+    layer3_adopted_external_source_intake_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_ADOPTED_EXTERNAL_SOURCE_INTAKE_ENABLED",
+    )
     layer3_connector_dataset_handoff_enabled: bool = Field(
         default=False,
         alias="LAYER3_CONNECTOR_DATASET_HANDOFF_ENABLED",
@@ -312,8 +316,12 @@ class Settings(BaseSettings):
         _excluded = {"LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED"}
         return [name for name in self._armed_value_reveal_flags() if name not in _excluded]
 
-    def _armed_raw_bearing_sec_flags(self) -> list[str]:
+    def _armed_raw_bearing_flags(self) -> list[str]:
         checks = [
+            (
+                "LAYER3_ADOPTED_EXTERNAL_SOURCE_INTAKE_ENABLED",
+                self.layer3_adopted_external_source_intake_enabled,
+            ),
             ("LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED", self.layer3_sec_edgar_live_network_enabled),
             ("LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED", self.layer3_sec_edgar_arelle_internal_value_store_enabled),
             ("LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED", self.layer3_sec_edgar_arelle_corpus_validation_enabled),
@@ -356,7 +364,7 @@ class Settings(BaseSettings):
         return True
 
     def _validate_raw_bearing_sec_storage_containment(self) -> None:
-        armed = self._armed_raw_bearing_sec_flags()
+        armed = self._armed_raw_bearing_flags()
         if not armed:
             return
 
@@ -372,7 +380,7 @@ class Settings(BaseSettings):
             return
 
         raise ValueError(
-            "Raw-bearing SEC egress/value-reveal flag(s) cannot be armed while storage or database "
+            "Raw-bearing intake/egress/value-reveal flag(s) cannot be armed while storage or database "
             "containment is unsafe. Armed flags: "
             + ", ".join(armed)
             + ". Unsafe surface(s): "

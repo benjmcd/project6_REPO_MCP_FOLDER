@@ -1077,6 +1077,23 @@ def test_honesty_contract(client: TestClient, monkeypatch: pytest.MonkeyPatch):
                 payload["connector_source_summary"]["source_provenance"]
             )
 
+        swapped_candidate_id = (
+            "mat-connector_source_intake_record-"
+            f"{record.connector_source_intake_record_id}"
+        )
+        decision_basis = _decision_basis(admitted["preview"]["material_candidate"])
+        with pytest.raises(ConnectorSourceIntakeError):
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=swapped_candidate_id,
+                decision_basis=decision_basis,
+            )
+        with pytest.raises(promotion_identity.ConnectorPromotionIdentityError):
+            promotion_identity.derive_candidate_identity(
+                db,
+                {"candidate_id": swapped_candidate_id},
+            )
+
     def basis_with(**overrides: Any) -> dict[str, Any]:
         basis = _adoption_basis(ADOPTION_PROVENANCE)
         basis.update(overrides)
@@ -1488,6 +1505,72 @@ def test_connector_lane_nonregression(
         assert source_summary["source_provenance"]["connector_key"] == "sciencebase_public"
         assert "adoption_provenance" not in source_summary["source_provenance"]
 
+    _set_flag(monkeypatch, ADOPT_FLAG, True)
+    swapped_candidate_id = (
+        f"{ADOPT_CANDIDATE_PREFIX}{record['connector_source_intake_record_id']}"
+    )
+    with client.layer3_session_factory() as db:
+        with pytest.raises(ConnectorSourceIntakeError):
+            validate_connector_intake_gate_b_decision_basis(
+                db,
+                candidate_id=swapped_candidate_id,
+                decision_basis=_decision_basis(candidate),
+            )
+        with pytest.raises(promotion_identity.ConnectorPromotionIdentityError):
+            promotion_identity.derive_candidate_identity(
+                db,
+                {"candidate_id": swapped_candidate_id},
+            )
+
+
+def test_owner_script_accepts_connection_bound_session(client: TestClient):
+    owner_script = _load_owner_script()
+    with client.layer3_session_factory() as outer_session:
+        connection = outer_session.connection()
+        with Session(bind=connection) as connection_session:
+            raw_root = owner_script._assert_safe_runtime_storage(connection_session)
+    assert raw_root == Path(settings.connector_raw_dir).resolve()
+
+
+def test_owner_script_resolves_exact_mirror_root(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    owner_script = _load_owner_script()
+    source_root = tmp_path / "source-custody"
+    source_record, synthetic_record_sha = _write_synthetic_custody(source_root)
+    for constant_name in (
+        "ACQUISITION_RECORD_SHA256",
+        "EXPECTED_ACQUISITION_RECORD_SHA256",
+    ):
+        monkeypatch.setattr(
+            owner_script,
+            constant_name,
+            synthetic_record_sha,
+            raising=False,
+        )
+
+    mirror_root = tmp_path / owner_script.EXACT_MIRROR_RUN
+    mirror_root.mkdir(parents=True)
+    mirror_record = mirror_root / "acquisition-record.json"
+    mirror_record.write_bytes(source_record.read_bytes())
+    source_artifact = next((source_root / "acquisitions" / "artifact").glob("*.csv"))
+    mirror_artifact = mirror_root / source_artifact.name
+    mirror_artifact.write_bytes(source_artifact.read_bytes())
+
+    selected_record = owner_script._resolve_acquisition_record(
+        mirror_root,
+        ACQUISITION_RECORD_PATH,
+    )
+    parsed_record = owner_script._validated_record(selected_record)
+    selected_artifact = owner_script._resolve_artifact(
+        mirror_root,
+        selected_record,
+        parsed_record,
+    )
+    assert selected_record == mirror_record.resolve()
+    assert selected_artifact == mirror_artifact.resolve()
+
 
 def test_owner_script_core_is_explicit_inert_and_atomic(
     client: TestClient,
@@ -1599,6 +1682,68 @@ def test_owner_script_core_is_explicit_inert_and_atomic(
             / ARTIFACT_SHA256[:8]
             / ORIGINAL_FILENAME
         )
+
+    flag_off_destination = set_case_storage("flag-off")
+    _set_flag(monkeypatch, ADOPT_FLAG, False)
+    with client.layer3_session_factory() as db:
+        with pytest.raises(ConnectorSourceIntakeError) as disabled:
+            call_adopt(
+                db,
+                custody_root=custody_root,
+                client_request_id="script-flag-off",
+            )
+        db.rollback()
+        assert disabled.value.code == "adopted_external_source_intake_unavailable"
+        assert _row_counts(db) == rows_before
+    assert not flag_off_destination.exists()
+    _set_flag(monkeypatch, ADOPT_FLAG, True)
+
+    original_resolve = Path.resolve
+
+    raw_root_destination = set_case_storage("raw-root-escape")
+    configured_raw_root = Path(settings.connector_raw_dir)
+    outside_raw_root = tmp_path / "outside-raw-root"
+
+    def redirect_raw_root_resolve(path: Path, strict: bool = False) -> Path:
+        if path == configured_raw_root:
+            return original_resolve(outside_raw_root, strict=strict)
+        return original_resolve(path, strict=strict)
+
+    with monkeypatch.context() as raw_root_fault:
+        raw_root_fault.setattr(Path, "resolve", redirect_raw_root_resolve)
+        with client.layer3_session_factory() as db:
+            with pytest.raises(RuntimeError, match="(?i)(outside|escape|storage)"):
+                call_adopt(
+                    db,
+                    custody_root=custody_root,
+                    client_request_id="script-raw-root-escape",
+                )
+            db.rollback()
+            assert _row_counts(db) == rows_before
+    assert not raw_root_destination.exists()
+    assert not outside_raw_root.exists()
+
+    escaped_destination = set_case_storage("resolved-escape")
+    outside_destination = tmp_path / "outside-storage" / ORIGINAL_FILENAME
+
+    def redirect_destination_resolve(path: Path, strict: bool = False) -> Path:
+        if path == escaped_destination:
+            return outside_destination
+        return original_resolve(path, strict=strict)
+
+    with monkeypatch.context() as escape_fault:
+        escape_fault.setattr(Path, "resolve", redirect_destination_resolve)
+        with client.layer3_session_factory() as db:
+            with pytest.raises(RuntimeError, match="(?i)(outside|escape|storage)"):
+                call_adopt(
+                    db,
+                    custody_root=custody_root,
+                    client_request_id="script-resolved-escape",
+                )
+            db.rollback()
+            assert _row_counts(db) == rows_before
+    assert not escaped_destination.exists()
+    assert not outside_destination.exists()
 
     corrupt_custody = tmp_path / "corrupt-custody"
     _write_synthetic_custody(corrupt_custody)
