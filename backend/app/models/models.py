@@ -2297,7 +2297,7 @@ class L3ConnectorSourceIntakeRecord(Base):
             name="uq_l3_connector_source_intake_authority_basis",
         ),
         CheckConstraint(
-            "operator_decision = 'record_connector_produced_source'",
+            "operator_decision IN ('record_connector_produced_source', 'record_adopted_external_source')",
             name="ck_l3_connector_source_intake_operator_decision",
         ),
         CheckConstraint(

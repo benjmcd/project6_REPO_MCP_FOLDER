@@ -21,8 +21,10 @@ from app.services.layer3_connector_promotion_identity import (
     derive_candidate_identity,
 )
 from app.services.layer3_connector_source_intake import (
+    ADOPTED_EXTERNAL_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX,
+    ADOPTED_EXTERNAL_SOURCE_INTAKE_MODE,
+    ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY,
     CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX,
-    CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
 )
 from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
@@ -97,6 +99,12 @@ def _not_eligible() -> NoReturn:
     )
 
 
+def _candidate_prefix(intake_record: L3ConnectorSourceIntakeRecord) -> str:
+    if intake_record.source_family == ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY:
+        return ADOPTED_EXTERNAL_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX
+    return CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX
+
+
 def _validate_durable_lineage(
     db: Session,
     *,
@@ -117,15 +125,16 @@ def _validate_durable_lineage(
         or manifest.session_id != session.session_id
         or session.selection_manifest_id != manifest.selection_manifest_id
         or material_snapshot.session_id != session.session_id
-        or material_snapshot.source_shape != CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY
+        or material_snapshot.source_shape != intake_record.source_family
     ):
         _not_eligible()
 
+    candidate_prefix = _candidate_prefix(intake_record)
     identity = derive_candidate_identity(
         db,
         {
             "candidate_id": (
-                f"{CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX}"
+                f"{candidate_prefix}"
                 f"{intake_record.connector_source_intake_record_id}"
             )
         },
@@ -172,6 +181,17 @@ def _validate_durable_lineage(
         for field, value in expected_snapshot_provenance.items()
     ):
         _not_eligible()
+    if intake_record.source_family == ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY:
+        expected_adopted_provenance = {
+            **_json_clone(intake_record.provenance_json or {}),
+            "mode": ADOPTED_EXTERNAL_SOURCE_INTAKE_MODE,
+            "source_ref": (
+                "connector_source_intake_record:"
+                f"{intake_record.connector_source_intake_record_id}"
+            ),
+        }
+        if snapshot_provenance != expected_adopted_provenance:
+            _not_eligible()
 
     _validated_load_summary(material_snapshot)
 
@@ -200,6 +220,29 @@ def _connector_source_summary(
     manifest: L3SelectionManifest,
 ) -> dict[str, Any]:
     intake_record_id = intake_record.connector_source_intake_record_id
+    source_provenance = {
+        "source_ref": f"connector_source_intake_record:{intake_record_id}",
+        "provenance_ref": (
+            f"connector_source_intake_record:{intake_record_id}:"
+            f"metadata:{intake_record.metadata_hash}"
+        ),
+        "connector_source_intake_record_id": intake_record_id,
+        "connector_key": intake_record.connector_key,
+        "connector_run_id": intake_record.connector_run_id,
+        "connector_run_target_id": intake_record.connector_run_target_id,
+        "content_sha256": intake_record.content_sha256,
+        "metadata_hash": intake_record.metadata_hash,
+        "authority_basis_hash": intake_record.authority_basis_hash,
+    }
+    if intake_record.source_family == ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY:
+        adoption_provenance = (intake_record.provenance_json or {}).get(
+            "adoption_provenance"
+        )
+        if not isinstance(adoption_provenance, dict):
+            _not_eligible()
+        source_provenance["adoption_provenance"] = _json_clone(
+            adoption_provenance
+        )
     return {
         "session_id": session.session_id,
         "selection_manifest_id": manifest.selection_manifest_id,
@@ -208,10 +251,10 @@ def _connector_source_summary(
         "source_shape": material_snapshot.source_shape,
         "source_identity": {
             "candidate_id": (
-                f"{CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX}"
+                f"{_candidate_prefix(intake_record)}"
                 f"{intake_record_id}"
             ),
-            "source_class": CONNECTOR_SOURCE_INTAKE_SOURCE_FAMILY,
+            "source_class": intake_record.source_family,
             "connector_source_intake_record_id": intake_record_id,
             "connector_run_id": intake_record.connector_run_id,
             "connector_run_target_id": intake_record.connector_run_target_id,
@@ -219,20 +262,7 @@ def _connector_source_summary(
             "source_family": intake_record.source_family,
             "metadata_hash": intake_record.metadata_hash,
         },
-        "source_provenance": {
-            "source_ref": f"connector_source_intake_record:{intake_record_id}",
-            "provenance_ref": (
-                f"connector_source_intake_record:{intake_record_id}:"
-                f"metadata:{intake_record.metadata_hash}"
-            ),
-            "connector_source_intake_record_id": intake_record_id,
-            "connector_key": intake_record.connector_key,
-            "connector_run_id": intake_record.connector_run_id,
-            "connector_run_target_id": intake_record.connector_run_target_id,
-            "content_sha256": intake_record.content_sha256,
-            "metadata_hash": intake_record.metadata_hash,
-            "authority_basis_hash": intake_record.authority_basis_hash,
-        },
+        "source_provenance": source_provenance,
         "load_summary": _validated_load_summary(material_snapshot),
         "material_payload_hash": material_snapshot.payload_hash,
         "connector_source_intake_record_id": intake_record_id,
@@ -278,7 +308,12 @@ def _package_payload(
             canonical_package_key=canonical_package_key,
             source_gate=SOURCE_CONNECTOR_DATASET_HANDOFF_FREEZE,
         ),
-        "package_family": "connector_dataset_handoff",
+        "package_family": (
+            "adopted_external_dataset_handoff"
+            if connector_source_summary["source_shape"]
+            == ADOPTED_EXTERNAL_SOURCE_INTAKE_SOURCE_FAMILY
+            else "connector_dataset_handoff"
+        ),
         "authority_basis": _json_clone(authority_basis),
         "authority_basis_hash": authority_basis_hash,
         "connector_source_summary": _json_clone(connector_source_summary),

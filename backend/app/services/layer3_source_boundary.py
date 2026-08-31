@@ -16,6 +16,8 @@ SOURCE_DIRECTORY_GATE_B_CANDIDATE_PREFIX = "mat-server_configured_directory_file
 CONNECTOR_SOURCE_INTAKE_GATE_B_MATERIAL_ADMISSION_MODE = "connector_source_intake_gate_b_material_admission"
 CONNECTOR_SOURCE_INTAKE_GATE_B_SOURCE_CLASS = "connector_produced_single_source"
 CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX = "mat-connector_source_intake_record-"
+ADOPTED_EXTERNAL_GATE_B_SOURCE_CLASS = "adopted_external_single_source"
+ADOPTED_EXTERNAL_GATE_B_CANDIDATE_PREFIX = "mat-adopted_source_intake_record-"
 SOURCE_INTAKE_SUPPORTED_MODES = (
     "operator_single_upload_source_intake",
     "operator_source_intake_inventory_read_only",
@@ -81,6 +83,8 @@ def source_class_from_material_candidate_id(candidate_id: str) -> str | None:
         return SOURCE_DIRECTORY_GATE_B_SOURCE_CLASS
     if candidate_id.startswith(CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX):
         return CONNECTOR_SOURCE_INTAKE_GATE_B_SOURCE_CLASS
+    if candidate_id.startswith(ADOPTED_EXTERNAL_GATE_B_CANDIDATE_PREFIX):
+        return ADOPTED_EXTERNAL_GATE_B_SOURCE_CLASS
     return None
 
 
