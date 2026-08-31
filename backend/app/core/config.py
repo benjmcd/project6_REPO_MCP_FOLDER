@@ -233,6 +233,10 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_CONNECTOR_PROMOTION_IDENTITY_ENABLED",
     )
+    layer3_connector_dataset_handoff_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_CONNECTOR_DATASET_HANDOFF_ENABLED",
+    )
 
     model_config = SettingsConfigDict(env_file=str(BACKEND_ENV_FILE), env_file_encoding="utf-8", extra="ignore")
 

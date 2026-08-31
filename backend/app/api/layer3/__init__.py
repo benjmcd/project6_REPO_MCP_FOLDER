@@ -3462,6 +3462,13 @@ class Layer3ProviderPublicUrlDeliveryUseRequest(BaseModel):
     browser_durable_authority: Any | None = None
 
 
+class Layer3ConnectorDatasetHandoffRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str
+    session_id: str
+
+
 class Layer3ConnectorDispatchRecordRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -10619,6 +10626,30 @@ class Layer3ExternalExportDownloadPrepareResponse(Layer3BaseResponse):
     delivery_ui: dict[str, Any] | None = None
     next_state: str
     authority_rail: dict[str, Any]
+
+
+class Layer3ConnectorDatasetHandoffResponse(Layer3BaseResponse):
+    session_id: str
+    error_code: str | None = None
+    message: str | None = None
+    recoverable: bool | None = None
+    next_allowed_actions: list[str] | None = None
+    connector_promotion_receipt_id: str | None = None
+    canonical_identity_key_hash: str | None = None
+    reconciliation_record_id: str | None = None
+    construction_basis_hash: str | None = None
+    output_packages: list[dict[str, Any]] | None = None
+    output_package_ids: list[str] | None = None
+    package_kinds: list[str] | None = None
+    payload_refs: list[str] | None = None
+    payload_hashes: list[str] | None = None
+    source_gate: str | None = None
+    handoff_enabled: bool | None = None
+    downstream_unavailable: dict[str, bool] | None = None
+    negative_invariants: dict[str, bool] | None = None
+    replayed: bool | None = None
+    next_state: str
+    authority_rail: dict[str, Any] | None = None
 
 
 class Layer3ConnectorDispatchRecordResponse(Layer3BaseResponse):

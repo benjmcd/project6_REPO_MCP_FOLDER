@@ -26,6 +26,8 @@ from app.api.layer3._shared import *  # noqa: F401,F403
 from app.api.layer3 import (  # Pydantic models still defined in __init__
     Layer3ApsHandoffDispatchRequest,
     Layer3ApsHandoffDispatchResponse,
+    Layer3ConnectorDatasetHandoffRequest,
+    Layer3ConnectorDatasetHandoffResponse,
     Layer3ConnectorDispatchRecordRequest,
     Layer3ConnectorDispatchRecordResponse,
     Layer3ConnectorLocalDestinationReceiptRequest,
@@ -141,6 +143,30 @@ def post_external_export_download_prepare(
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(
         lambda: layer3_workbench.external_export_download_prepare(db, payload.model_dump(exclude_unset=True))
+    )
+
+
+@router.post(
+    "/handoff/connector/dataset",
+    response_model=Layer3ConnectorDatasetHandoffResponse,
+    response_model_exclude_unset=True,
+    openapi_extra={"requestBody": _json_request_body(CONNECTOR_DATASET_HANDOFF_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_connector_dataset_handoff(
+    request: Request,
+    payload: Layer3ConnectorDatasetHandoffRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request, access="write")
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    return _json_or_error(
+        lambda: layer3_workbench.connector_dataset_handoff(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
     )
 
 

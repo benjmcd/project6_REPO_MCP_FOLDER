@@ -32,6 +32,8 @@ from app.models.models import (
     L3AnalysisSet,
     L3AnalysisUnit,
     L3ConnectorLocalDestinationReceipt,
+    L3ConnectorPromotionReceipt,
+    L3ConnectorSourceIntakeRecord,
     L3ExternalLocalExportAuditEvent,
     L3ExternalLocalExportReceipt,
     L3InternalWebhookDispatchAuditEvent,
@@ -54,6 +56,7 @@ from app.models.models import (
     uuid_str,
 )
 from app.services import layer3_connector_promotion_identity as connector_promotion_identity
+from app.services import layer3_connector_dataset_handoff as connector_dataset_handoff_service
 from app.services import layer3_artifact_ingestion_facade as nrc_aps_artifact_ingestion
 from app.services.layer3_pass_entry import (
     COHORT_REQUESTED_METHOD_SOURCE,
@@ -3006,6 +3009,192 @@ def gate_c_override_unavailable(payload: dict[str, Any]) -> dict[str, Any]:
         "message": "Typing override is not enabled in this first slice.",
         "recoverable": False,
         "next_allowed_actions": ["review_typing", "finish_first_slice"],
+    }
+
+
+def connector_dataset_handoff(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    request_id = str(payload.get("client_request_id") or "").strip()
+    session_id = str(payload.get("session_id") or "").strip()
+    if not request_id:
+        raise Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for connector dataset handoff.",
+            blocked_fields=["client_request_id"],
+        )
+    if not session_id:
+        raise Layer3WorkbenchError(
+            "session_not_found",
+            "session_id is required for connector dataset handoff.",
+            http_status=404,
+        )
+
+    session = _load_session(db, session_id)
+    if not settings.layer3_connector_dataset_handoff_enabled:
+        return {
+            **_base_response(
+                "layer3.connector_dataset_handoff_unavailable.v1",
+                request_id=request_id,
+                status="unavailable",
+            ),
+            "session_id": session.session_id,
+            "error_code": "connector_dataset_handoff_unavailable",
+            "message": "Connector dataset handoff is not enabled.",
+            "recoverable": False,
+            "next_allowed_actions": ["review_connector_gate_b_admission"],
+            "next_state": "connector_source_intake_gate_b_admitted",
+        }
+
+    manifest = _latest_selection_manifest_for_session(db, session=session)
+    source_classes = _source_classes_from_manifest(manifest)
+    if not _connector_only_gate_b_source_classes(source_classes):
+        raise Layer3WorkbenchError(
+            "connector_dataset_handoff_not_eligible",
+            "Connector dataset handoff requires connector-only Gate-B material.",
+            status="blocked",
+            http_status=409,
+            recoverable=False,
+        )
+
+    try:
+        connector_promotion_identity.replay_result(db, session_id=session.session_id)
+    except connector_promotion_identity.ConnectorPromotionIdentityError as exc:
+        raise _connector_promotion_workbench_error(db, exc) from exc
+
+    receipts = (
+        db.query(L3ConnectorPromotionReceipt)
+        .filter(L3ConnectorPromotionReceipt.gate_b_session_id == session.session_id)
+        .all()
+    )
+    if len(receipts) != 1:
+        db.rollback()
+        raise Layer3WorkbenchError(
+            "connector_promotion_identity_conflict",
+            "Connector dataset handoff does not match one durable promotion receipt.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+        )
+    promotion_receipt = receipts[0]
+    intake_record = db.get(
+        L3ConnectorSourceIntakeRecord,
+        promotion_receipt.connector_source_intake_record_id,
+    )
+    material_snapshot = db.get(
+        L3MaterialSnapshot,
+        promotion_receipt.gate_b_material_snapshot_id,
+    )
+    receipt_manifest = db.get(
+        L3SelectionManifest,
+        promotion_receipt.gate_b_selection_manifest_id,
+    )
+    if (
+        intake_record is None
+        or material_snapshot is None
+        or receipt_manifest is None
+        or receipt_manifest.selection_manifest_id != manifest.selection_manifest_id
+    ):
+        db.rollback()
+        raise Layer3WorkbenchError(
+            "connector_promotion_identity_conflict",
+            "Connector dataset handoff conflicts with durable promotion state.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+        )
+
+    try:
+        result = connector_dataset_handoff_service.build_connector_dataset_handoff(
+            db,
+            session=session,
+            promotion_receipt=promotion_receipt,
+            intake_record=intake_record,
+            material_snapshot=material_snapshot,
+            manifest=receipt_manifest,
+            client_request_id=request_id,
+        )
+        db.commit()
+    except connector_promotion_identity.ConnectorPromotionIdentityError as exc:
+        raise _connector_promotion_workbench_error(db, exc) from exc
+    except Layer3PackageEntryError as exc:
+        db.rollback()
+        raise Layer3WorkbenchError(
+            "connector_dataset_handoff_conflict",
+            str(exc),
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+        ) from exc
+    except (IntegrityError, DBAPIError) as exc:
+        db.rollback()
+        raise Layer3WorkbenchError(
+            "connector_dataset_handoff_conflict",
+            "Connector dataset handoff conflicts with durable package state.",
+            status="conflict",
+            http_status=409,
+            recoverable=False,
+        ) from exc
+
+    reconciliation = result.reconciliation_record
+    packages = list(result.output_packages)
+    commit_summary = (reconciliation.summary_json or {}).get(
+        "workbench_package_commit"
+    ) or {}
+    next_state = "connector_dataset_handoff_ready"
+    authority_rail = _authority_rail(
+        session_id=session.session_id,
+        current_gate="package",
+        persistence_mode="durable_connector_dataset_handoff",
+        source_classes=source_classes,
+        counts=gate_b_summary_from_session(session),
+        downstream_unavailable=list(
+            connector_dataset_handoff_service.DOWNSTREAM_UNAVAILABLE_ACTIONS
+        ),
+        execution_enabled=False,
+        package_review_enabled=False,
+    )
+    authority_rail["next_state"] = next_state
+    return {
+        **_base_response(
+            "layer3.connector_dataset_handoff_result.v1",
+            request_id=request_id,
+            status="already_ready" if result.replayed else "ready",
+        ),
+        "session_id": session.session_id,
+        "connector_promotion_receipt_id": (
+            promotion_receipt.connector_promotion_receipt_id
+        ),
+        "canonical_identity_key_hash": (
+            promotion_receipt.canonical_identity_key_hash
+        ),
+        "reconciliation_record_id": reconciliation.reconciliation_record_id,
+        "construction_basis_hash": commit_summary.get("construction_basis_hash"),
+        "output_packages": [
+            {
+                "output_package_id": package.output_package_id,
+                "package_kind": package.package_kind,
+                "status": package.status,
+                "payload_ref": package.payload_ref,
+                "payload_hash": package.payload_hash,
+            }
+            for package in packages
+        ],
+        "output_package_ids": [package.output_package_id for package in packages],
+        "package_kinds": [package.package_kind for package in packages],
+        "payload_refs": [package.payload_ref for package in packages],
+        "payload_hashes": [package.payload_hash for package in packages],
+        "source_gate": (
+            connector_dataset_handoff_service.SOURCE_CONNECTOR_DATASET_HANDOFF_FREEZE
+        ),
+        "handoff_enabled": False,
+        "downstream_unavailable": dict(
+            connector_dataset_handoff_service.DOWNSTREAM_UNAVAILABLE
+        ),
+        "negative_invariants": dict(
+            connector_dataset_handoff_service.NEGATIVE_INVARIANTS
+        ),
+        "replayed": result.replayed,
+        "next_state": next_state,
+        "authority_rail": authority_rail,
     }
 
 
