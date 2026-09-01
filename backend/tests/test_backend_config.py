@@ -47,6 +47,7 @@ def test_main_uses_settings_db_init_mode_instead_of_direct_env_reads() -> None:
 
 def test_public_dataset_analysis_flags_default_off_and_value_reveal_is_registered(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     monkeypatch.delenv("LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED", raising=False)
     monkeypatch.delenv("LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED", raising=False)
@@ -59,8 +60,8 @@ def test_public_dataset_analysis_flags_default_off_and_value_reveal_is_registere
     armed = Settings(
         _env_file=None,
         STORAGE_EXPOSURE="disabled",
-        STORAGE_DIR="C:/p6-test-storage",
-        DATABASE_URL="sqlite:///C:/p6-test-storage/config.db",
+        STORAGE_DIR=str(tmp_path / "private-storage"),
+        DATABASE_URL=f"sqlite:///{(tmp_path / 'private.db').as_posix()}",
         LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED="true",
     )
 

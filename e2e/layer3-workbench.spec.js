@@ -175,16 +175,17 @@ async function expectNoDeferredRawMixedControls(page) {
     'input[name*="upload"]',
     'input[name*="directory"]',
     'input[name*="provider"]',
-    'input[name*="public"]',
+    'input[name*="public"]:not(#public-sciencebase-panel *)',
     'input[name*="rag"]',
     'input[name*="vector"]',
     'textarea[name*="upload"]',
     'textarea[name*="directory"]',
     'textarea[name*="provider"]',
-    'textarea[name*="public"]',
+    'textarea[name*="public"]:not(#public-sciencebase-panel *)',
     'textarea[name*="rag"]',
     'textarea[name*="vector"]',
   ].join(','))).toHaveCount(0);
+  await expect(page.locator('#public-sciencebase-panel')).toBeHidden();
   const uploadButtonIds = await page.getByRole('button', { name: /upload/i }).evaluateAll((buttons) => (
     buttons.map((button) => button.id).sort()
   ));

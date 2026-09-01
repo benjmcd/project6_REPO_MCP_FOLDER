@@ -974,7 +974,7 @@ def readiness_contract() -> dict[str, Any]:
 
 
 def bootstrap() -> dict[str, Any]:
-    contract = build_bootstrap_contract(
+    return build_bootstrap_contract(
         route=ROUTE,
         api_root=API_ROOT,
         supported_source_classes=SUPPORTED_SOURCE_CLASSES,
@@ -990,13 +990,6 @@ def bootstrap() -> dict[str, Any]:
             browser_only_state=["expanded_rows", "hidden_uncommitted_candidates", "selected_tab"],
         ),
     )
-    contract["layer3_public_dataset_analysis_enabled"] = bool(
-        settings.layer3_public_dataset_analysis_enabled
-    )
-    contract["layer3_public_connector_value_reveal_enabled"] = bool(
-        settings.layer3_public_connector_value_reveal_enabled
-    )
-    return contract
 
 
 def preflight(payload: dict[str, Any]) -> dict[str, Any]:

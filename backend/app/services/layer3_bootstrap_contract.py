@@ -150,6 +150,8 @@ def build_bootstrap_contract(
         # runtime settings-derived flag read from `settings`; BOOTSTRAP_FEATURE_FLAGS
         # is a module-level constant of static compile-time flags and cannot read settings.
         "analysis_product_package_inventory_enabled": bool(settings.layer3_analysis_product_package_inventory_enabled),
+        "layer3_public_dataset_analysis_enabled": bool(settings.layer3_public_dataset_analysis_enabled),
+        "layer3_public_connector_value_reveal_enabled": bool(settings.layer3_public_connector_value_reveal_enabled),
         "execution_readiness": {
             "schema_id": EXECUTION_READINESS_SCHEMA_ID,
             "execution_admitted": False,
