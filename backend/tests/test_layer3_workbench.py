@@ -2370,6 +2370,57 @@ def test_public_connector_result_values_projects_each_selected_method_and_n_arti
     assert "_plot" not in serialized
 
 
+def test_public_connector_result_values_accepts_low_ratio_column_pair_keys(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    # Regression: run_analysis selects cross-correlation columns by per-value
+    # coercibility (>= 2 coercible values), while VariableDefinition.is_numeric
+    # is ratio-based — a legitimately produced pair key naming a low-ratio
+    # (is_numeric=False) column must not be refused as an identity mismatch.
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(
+        db_session,
+        tmp_path,
+        method_name="cross_correlation",
+    )
+    db_session.add(
+        VariableDefinition(
+            variable_id="var-public-mostly-text-001",
+            dataset_version_id="dv-public-values-001",
+            variable_name="mostly_text",
+            dtype="string",
+            role="dimension",
+            is_numeric=False,
+            is_time_index=False,
+            ordinal_position=3,
+        )
+    )
+    artifact = (
+        db_session.query(AnalysisArtifact)
+        .filter(
+            AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id,
+            AnalysisArtifact.artifact_type == "cross_correlation_result",
+        )
+        .one()
+    )
+    artifact_path = analysis_service._artifact_storage_path(artifact.storage_ref)
+    artifact_payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    artifact_payload["results"]["series_a__vs__mostly_text"] = next(
+        iter(artifact_payload["results"].values())
+    )
+    artifact_path.write_text(json.dumps(artifact_payload), encoding="utf-8")
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    result = layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    artifacts = result["values"]["method_outputs"]["methods"]["cross_correlation"]["artifacts"]
+    assert len(artifacts) == 1
+    assert "series_a__vs__mostly_text" in artifacts[0]["results"]
+
+
 def test_public_connector_result_values_refuses_manifest_identity_mismatch_without_partial_values(
     db_session,
     tmp_path,

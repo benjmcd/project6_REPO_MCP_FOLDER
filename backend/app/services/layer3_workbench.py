@@ -1389,13 +1389,13 @@ def _public_result_artifact_identity_matches(
     if artifact_type in {"decomposition_components", "structural_break_result"}:
         return payload.get("variable_name") in numeric_variable_names
     if artifact_type == "cross_correlation_result":
-        results = payload.get("results")
-        admitted_pairs = {
-            f"{left}__vs__{right}"
-            for index, left in enumerate(numeric_variable_names)
-            for right in numeric_variable_names[index + 1:]
-        }
-        return isinstance(results, dict) and set(results).issubset(admitted_pairs)
+        # Pair membership is deliberately NOT checked: run_analysis selects
+        # cross-correlation columns by a per-value coercibility predicate that
+        # differs from VariableDefinition.is_numeric (ratio-based), so a pair
+        # subset test falsely rejects legitimately produced artifacts on
+        # messy public CSVs. Ownership, run identity, and storage-ref shape
+        # are still enforced by the surrounding checks.
+        return isinstance(payload.get("results"), dict)
     return False
 
 
