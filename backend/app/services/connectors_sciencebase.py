@@ -1336,6 +1336,53 @@ def _resolve_resume_target_ordinal(db: Session, run: ConnectorRun) -> int:
     return int(target.ordinal or 0) if target else 0
 
 
+def _duplicate_candidate_indexes(candidates: list[ArtifactCandidate]) -> set[int]:
+    winner_by_key: dict[str, int] = {}
+    duplicates: set[int] = set()
+    for i, cand in enumerate(candidates):
+        existing_idx = winner_by_key.get(cand.canonical_artifact_key)
+        if existing_idx is None:
+            winner_by_key[cand.canonical_artifact_key] = i
+            continue
+        old = candidates[existing_idx]
+        if SURFACE_PRECEDENCE.get(cand.artifact_surface, 99) < SURFACE_PRECEDENCE.get(old.artifact_surface, 99):
+            duplicates.add(existing_idx)
+            winner_by_key[cand.canonical_artifact_key] = i
+        else:
+            duplicates.add(i)
+    return duplicates
+
+
+def _capped_selection_indexes(
+    candidates: list[ArtifactCandidate],
+    *,
+    max_files: int,
+    selection_mode: str,
+    seed: int,
+    duplicates: set[int],
+    surface_policy: str,
+    allowed_extensions: list[str],
+) -> tuple[set[int], bool]:
+    # max_files counts only QUALIFYING candidates (non-duplicate, surface-enabled,
+    # extension-allowed). A leading non-tabular file must not consume a selection
+    # slot — otherwise an item whose first file is metadata can never yield its CSV.
+    eligible = [
+        i
+        for i, cand in enumerate(candidates)
+        if i not in duplicates
+        and _surface_enabled(cand.artifact_surface, surface_policy)
+        and _extension_allowed(cand.sciencebase_file_name, allowed_extensions)
+    ]
+    if max_files <= 0 or len(eligible) <= max_files:
+        return set(eligible), False
+    if selection_mode == "sample":
+        rng = random.Random(seed)
+        chosen = sorted(rng.sample(eligible, max_files))
+    else:
+        chosen = eligible[:max_files]
+    return set(chosen), True
+
+
 def _discover_targets(db: Session, run: ConnectorRun, adapter: ScienceBaseAdapter) -> None:
     config = dict(run.request_config_json or {})
     fetch_policy = _build_fetch_policy(config)
@@ -1603,33 +1650,21 @@ def _discover_targets(db: Session, run: ConnectorRun, adapter: ScienceBaseAdapte
 
     candidates = _order_candidates(candidates, ordering_strategy=ordering_strategy)
 
-    selected_indexes = list(range(len(candidates)))
-    if max_files > 0 and len(selected_indexes) > max_files:
-        if str(config.get("selection_mode", "first_n")) == "sample":
-            rng = random.Random(int(config.get("seed", 0)))
-            selected_indexes = sorted(rng.sample(selected_indexes, max_files))
-        else:
-            selected_indexes = selected_indexes[:max_files]
-        if str(run.search_exhaustion_reason or "no_more_pages") == "no_more_pages":
-            run.search_exhaustion_reason = "max_files_cap"
-    selected_index_set = set(selected_indexes)
-
     surface_policy = str(config.get("surface_policy", "files_only"))
     allowed_extensions = [str(ext).lower() for ext in config.get("allowed_extensions", [".csv"])]
 
-    winner_by_key: dict[str, int] = {}
-    duplicates: set[int] = set()
-    for i, cand in enumerate(candidates):
-        existing_idx = winner_by_key.get(cand.canonical_artifact_key)
-        if existing_idx is None:
-            winner_by_key[cand.canonical_artifact_key] = i
-            continue
-        old = candidates[existing_idx]
-        if SURFACE_PRECEDENCE.get(cand.artifact_surface, 99) < SURFACE_PRECEDENCE.get(old.artifact_surface, 99):
-            duplicates.add(existing_idx)
-            winner_by_key[cand.canonical_artifact_key] = i
-        else:
-            duplicates.add(i)
+    duplicates = _duplicate_candidate_indexes(candidates)
+    selected_index_set, cap_truncated = _capped_selection_indexes(
+        candidates,
+        max_files=max_files,
+        selection_mode=str(config.get("selection_mode", "first_n")),
+        seed=int(config.get("seed", 0)),
+        duplicates=duplicates,
+        surface_policy=surface_policy,
+        allowed_extensions=allowed_extensions,
+    )
+    if cap_truncated and str(run.search_exhaustion_reason or "no_more_pages") == "no_more_pages":
+        run.search_exhaustion_reason = "max_files_cap"
 
     created: list[ConnectorRunTarget] = []
     selection_scope = _selection_scope_from_config(config)
@@ -1648,11 +1683,6 @@ def _discover_targets(db: Session, run: ConnectorRun, adapter: ScienceBaseAdapte
             plan.operator_reason_code = "deduped_same_checksum"
             plan.selection_reason_code = None
             plan.dedup_reason_code = "deduped_same_checksum"
-        elif i not in selected_index_set:
-            plan.target_status = "ignored_by_policy"
-            plan.operator_reason_code = "ignored_selection_cap"
-            plan.selection_reason_code = None
-            plan.ignore_reason_code = "ignored_selection_cap"
         elif not _surface_enabled(cand.artifact_surface, surface_policy):
             plan.target_status = "unsupported_artifact_surface"
             plan.operator_reason_code = "ignored_external_webLink_policy"
@@ -1663,6 +1693,11 @@ def _discover_targets(db: Session, run: ConnectorRun, adapter: ScienceBaseAdapte
             plan.operator_reason_code = "ignored_non_tabular_extension"
             plan.selection_reason_code = None
             plan.ignore_reason_code = "ignored_non_tabular_extension"
+        elif i not in selected_index_set:
+            plan.target_status = "ignored_by_policy"
+            plan.operator_reason_code = "ignored_selection_cap"
+            plan.selection_reason_code = None
+            plan.ignore_reason_code = "ignored_selection_cap"
         else:
             resolved_ip, blocked_reason = _precheck_download_url(cand.sciencebase_download_uri, fetch_policy)
             if blocked_reason:
@@ -1734,7 +1769,7 @@ def _discover_targets(db: Session, run: ConnectorRun, adapter: ScienceBaseAdapte
             created=True,
         )
 
-    winners = [created[idx] for idx in selected_indexes if idx < len(created) and idx not in duplicates]
+    winners = [created[idx] for idx in sorted(selected_index_set) if idx < len(created)]
     winner_map = {w.canonical_artifact_key: w for w in winners if w.canonical_artifact_key}
     for i, target in enumerate(created):
         if i not in duplicates:
