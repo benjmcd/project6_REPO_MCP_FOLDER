@@ -18,6 +18,7 @@ BACKEND_SHARD_PATTERNS = (
     "test_aps_retrieval_*.py",
     "test_backend_config.py",
     "test_ci_coverage_completeness.py",
+    "test_connectors_sciencebase_*.py",
     "test_deployment_profile_*.py",
     "test_diagnostics_ref_*.py",
     "test_honesty_*.py",
