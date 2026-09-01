@@ -338,6 +338,9 @@ def test_flag_off_is_unavailable_and_preserves_gate_b_zero_downstream(client, mo
     body = response.json()
     assert body["status"] == "unavailable"
     assert body["error_code"] == "connector_dataset_handoff_unavailable"
+    # Assert the OFF-path response's OWN next_state (not just the captured gate-b value below),
+    # proving the unavailable envelope preserves the gate-b admission state.
+    assert body["next_state"] == "connector_source_intake_gate_b_admitted"
     assert seeded["gate_b"]["next_state"] == "connector_source_intake_gate_b_admitted"
     assert seeded["gate_b"]["authority_rail"]["current_gate"] == "gate_b"
     with client.layer3_session_factory() as db:
