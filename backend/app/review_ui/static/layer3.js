@@ -665,6 +665,10 @@ const State = {
     publicScienceBaseRunTargetsError: null,
     publicScienceBaseRunPollCount: 0,
     publicScienceBaseSelectedIds: new Set(),
+    publicScienceBaseValues: null,
+    publicScienceBaseValuesError: null,
+    publicScienceBaseValuesPending: false,
+    publicScienceBaseValuesRequestToken: 0,
     apsContentDocumentCandidates: null,
     apsContentDocumentCandidateError: null,
     refusedArtifactTraces: null,
@@ -1286,6 +1290,9 @@ const elements = {
     publicScienceBaseRunStatus: document.getElementById('public-sciencebase-run-status'),
     publicScienceBaseDatasetVersionCandidates: document.getElementById('public-sciencebase-dataset-version-candidates'),
     publicScienceBaseDatasetVersionIds: document.getElementById('public-sciencebase-dataset-version-ids'),
+    publicScienceBaseValuesInspect: document.getElementById('public-sciencebase-values-inspect'),
+    publicScienceBaseValuesStatus: document.getElementById('public-sciencebase-values-status'),
+    publicScienceBaseValues: document.getElementById('public-sciencebase-values'),
     apsContentDocumentCandidates: document.getElementById('aps-content-document-candidates'),
     apsContentDocumentIds: document.getElementById('aps-content-document-ids'),
     runPreflight: document.getElementById('run-preflight'),
@@ -3036,6 +3043,11 @@ function publicScienceBaseControlsEnabled() {
     return State.bootstrap?.layer3_public_dataset_analysis_enabled === true;
 }
 
+function publicScienceBaseValueRevealEnabled() {
+    return State.bootstrap?.layer3_public_dataset_analysis_enabled === true
+        && State.bootstrap?.layer3_public_connector_value_reveal_enabled === true;
+}
+
 function publicScienceBaseLineValues(value) {
     return String(value || '')
         .split(/[\n,;]+/)
@@ -3062,8 +3074,8 @@ function publicScienceBaseConnectorPayload() {
         sort: 'title',
         order: 'asc',
         page_size: 100,
-        max_items: 0,
-        max_files: 0,
+        max_items: 25,
+        max_files: 1,
         selection_mode: 'first_n',
         run_mode: 'one_shot_import',
         surface_policy: 'files_only',
@@ -3971,6 +3983,24 @@ function clearCandidateBFinalProofInspectionState() {
     State.candidateBDefaultPromotionFinalProofStatusPending = false;
 }
 
+function clearPublicScienceBaseValuesState() {
+    State.publicScienceBaseValuesRequestToken += 1;
+    State.publicScienceBaseValues = null;
+    State.publicScienceBaseValuesError = null;
+    State.publicScienceBaseValuesPending = false;
+    if (elements.publicScienceBaseValuesInspect) {
+        setBusy(elements.publicScienceBaseValuesInspect, false, 'Inspect result values');
+    }
+    if (elements.publicScienceBaseValuesStatus) {
+        elements.publicScienceBaseValuesStatus.hidden = true;
+        elements.publicScienceBaseValuesStatus.textContent = '';
+    }
+    if (elements.publicScienceBaseValues) {
+        elements.publicScienceBaseValues.hidden = true;
+        elements.publicScienceBaseValues.innerHTML = '';
+    }
+}
+
 function clearResultReviewState({ keepSummary = false } = {}) {
     if (!keepSummary) {
         State.sessionSummary = null;
@@ -3983,6 +4013,7 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.executionStartPending = false;
     State.resultStatus = null;
     State.resultStatusError = null;
+    clearPublicScienceBaseValuesState();
     State.resultReview = null;
     State.resultReviewError = null;
     State.resultReviewPending = false;
@@ -27930,6 +27961,36 @@ function resultStatusPayload(authority = selectedResultAuthority()) {
     return payload;
 }
 
+function publicScienceBaseResultValuesPayload(authority = selectedResultAuthority()) {
+    return {
+        session_id: authority.sessionId,
+        analysis_plan_id: authority.analysisPlanId,
+        pass_run_id: authority.passRunId,
+        preview_id: authority.previewId,
+        preview_hash: authority.previewHash,
+    };
+}
+
+function publicScienceBaseAuthorityKey(payload) {
+    return JSON.stringify([
+        payload.session_id,
+        payload.analysis_plan_id,
+        payload.pass_run_id,
+        payload.preview_id,
+        payload.preview_hash,
+    ]);
+}
+
+function publicScienceBaseResultAuthorityKey(result) {
+    return JSON.stringify([
+        result?.session_id,
+        result?.analysis_plan_id,
+        result?.pass_run_id,
+        result?.preview_identity?.preview_id,
+        result?.preview_identity?.preview_hash,
+    ]);
+}
+
 function resultReviewPayload(authority = selectedResultAuthority()) {
     const payload = {
         client_request_id: requestId(),
@@ -29046,6 +29107,7 @@ async function selectExecution() {
 
 async function startExecution() {
     if (!canStartExecution()) return;
+    clearPublicScienceBaseValuesState();
     State.executionStartPending = true;
     State.executionStartError = null;
     setBusy(elements.executionStart, true, 'Start Execution');
@@ -29956,6 +30018,7 @@ function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel() {
 
 async function inspectResultStatus() {
     if (!canInspectResultStatus()) return;
+    clearPublicScienceBaseValuesState();
     setBusy(elements.resultStatusInspect, true, 'Inspect Result Status');
     try {
         State.resultStatus = await postJson('/execution/result/status', resultStatusPayload());
@@ -29989,6 +30052,52 @@ async function inspectResultStatus() {
     } finally {
         setBusy(elements.resultStatusInspect, false, 'Inspect Result Status');
         setGateControls();
+    }
+}
+
+async function inspectPublicScienceBaseResultValues() {
+    if (!publicScienceBaseValueRevealEnabled() || !canInspectResultStatus()) return;
+    const authority = selectedResultAuthority();
+    const payload = publicScienceBaseResultValuesPayload(authority);
+    const authorityKey = publicScienceBaseAuthorityKey(payload);
+    State.publicScienceBaseValuesRequestToken += 1;
+    const requestToken = State.publicScienceBaseValuesRequestToken;
+    State.publicScienceBaseValuesPending = true;
+    State.publicScienceBaseValues = null;
+    State.publicScienceBaseValuesError = null;
+    setBusy(elements.publicScienceBaseValuesInspect, true, 'Inspect result values');
+    renderPublicScienceBaseValues();
+    try {
+        const result = await postJson('/execution/result/public-values', payload);
+        const currentAuthorityKey = publicScienceBaseAuthorityKey(
+            publicScienceBaseResultValuesPayload(selectedResultAuthority()),
+        );
+        const resultAuthorityKey = publicScienceBaseResultAuthorityKey(result);
+        if (
+            requestToken !== State.publicScienceBaseValuesRequestToken
+            || authorityKey !== currentAuthorityKey
+            || !publicScienceBaseValueRevealEnabled()
+        ) return;
+        if (resultAuthorityKey !== authorityKey) {
+            throw new Error('Public ScienceBase result values returned a mismatched authority identity.');
+        }
+        State.publicScienceBaseValues = result;
+        State.publicScienceBaseValuesError = null;
+        addEvent('Public ScienceBase result values and provenance loaded.');
+    } catch (error) {
+        if (requestToken !== State.publicScienceBaseValuesRequestToken) return;
+        State.publicScienceBaseValues = null;
+        State.publicScienceBaseValuesError = error.payload || {
+            error_code: 'public_sciencebase_result_values_request_failed',
+            message: error.message,
+        };
+        addEvent(`Public ScienceBase result values blocked: ${error.message}`);
+    } finally {
+        if (requestToken === State.publicScienceBaseValuesRequestToken) {
+            State.publicScienceBaseValuesPending = false;
+            setBusy(elements.publicScienceBaseValuesInspect, false, 'Inspect result values');
+            renderAll();
+        }
     }
 }
 
@@ -31765,10 +31874,172 @@ function renderPublicDatasetVersionCandidates() {
     }).join('');
 }
 
+function renderPublicScienceBaseValues() {
+    if (
+        !elements.publicScienceBaseValuesInspect
+        || !elements.publicScienceBaseValuesStatus
+        || !elements.publicScienceBaseValues
+    ) return;
+    const enabled = publicScienceBaseValueRevealEnabled();
+    if (
+        !enabled
+        && (
+            State.publicScienceBaseValues
+            || State.publicScienceBaseValuesError
+            || State.publicScienceBaseValuesPending
+        )
+    ) {
+        clearPublicScienceBaseValuesState();
+    }
+    elements.publicScienceBaseValuesInspect.hidden = !enabled;
+    elements.publicScienceBaseValuesInspect.disabled = !enabled
+        || !canInspectResultStatus()
+        || State.publicScienceBaseValuesPending;
+    elements.publicScienceBaseValuesStatus.hidden = !enabled;
+    if (!enabled) {
+        elements.publicScienceBaseValuesStatus.textContent = '';
+        elements.publicScienceBaseValues.hidden = true;
+        elements.publicScienceBaseValues.innerHTML = '';
+        return;
+    }
+    if (State.publicScienceBaseValuesPending) {
+        elements.publicScienceBaseValuesStatus.textContent = 'Loading public ScienceBase result values and provenance.';
+        elements.publicScienceBaseValues.hidden = true;
+        elements.publicScienceBaseValues.innerHTML = '';
+        return;
+    }
+    if (State.publicScienceBaseValuesError) {
+        const error = State.publicScienceBaseValuesError;
+        elements.publicScienceBaseValuesStatus.innerHTML = `Public ScienceBase result values blocked: ${escapeHtml(error.message || error.error_code || 'request failed')}`;
+        elements.publicScienceBaseValues.hidden = true;
+        elements.publicScienceBaseValues.innerHTML = '';
+        return;
+    }
+    let result = State.publicScienceBaseValues;
+    if (
+        result
+        && publicScienceBaseResultAuthorityKey(result) !== publicScienceBaseAuthorityKey(
+            publicScienceBaseResultValuesPayload(selectedResultAuthority()),
+        )
+    ) {
+        clearPublicScienceBaseValuesState();
+        result = null;
+    }
+    if (!result) {
+        elements.publicScienceBaseValuesStatus.textContent = 'Result values have not been inspected.';
+        elements.publicScienceBaseValues.hidden = true;
+        elements.publicScienceBaseValues.innerHTML = '';
+        return;
+    }
+
+    const variables = Array.isArray(result.values?.variable_profiles)
+        ? result.values.variable_profiles
+        : [];
+    const variableRows = variables.map((variable) => {
+        const profile = variable?.profile || {};
+        const descriptiveSummary = variable?.descriptive_summary;
+        return `
+            <tr>
+                <td>${escapeHtml(displayValue(variable?.variable_name || 'unknown variable'))}</td>
+                <td>${escapeHtml(displayValue(variable?.profile_state))}</td>
+                <td>${escapeHtml(displayValue(variable?.dtype))}</td>
+                <td>${escapeHtml(displayValue(variable?.role))}</td>
+                <td>${escapeHtml(displayValue(variable?.is_numeric))}</td>
+                <td>${escapeHtml(displayValue(variable?.is_time_index))}</td>
+                <td>${escapeHtml(displayValue(profile.missingness_rate))}</td>
+                <td>${escapeHtml(displayValue(profile.mean_value))}</td>
+                <td>${escapeHtml(displayValue(profile.median_value))}</td>
+                <td>${escapeHtml(displayValue(profile.min_value))}</td>
+                <td>${escapeHtml(displayValue(profile.max_value))}</td>
+                <td>${escapeHtml(displayValue(profile.std_dev))}</td>
+                <td>${escapeHtml(displayValue(profile.stationarity_hint))}</td>
+                <td>${descriptiveSummary ? `<pre>${escapeHtml(JSON.stringify(descriptiveSummary, null, 2))}</pre>` : 'none'}</td>
+            </tr>
+        `;
+    }).join('');
+    const methods = result.values?.method_outputs?.methods || {};
+    const methodRows = [
+        'cross_correlation',
+        'decomposition',
+        'structural_break',
+        'descriptive_summary',
+    ].map((methodName) => {
+        const method = methods[methodName] || { status: 'not_produced_by_selected_run', artifacts: [] };
+        const artifacts = Array.isArray(method.artifacts) ? method.artifacts : [];
+        const artifactRows = artifacts.map((artifact, index) => `
+            <section class="public-sciencebase-artifact">
+                <strong>${escapeHtml(`${humanizeToken(methodName)} artifact ${index + 1}`)}</strong>
+                <pre>${escapeHtml(JSON.stringify(artifact, null, 2))}</pre>
+            </section>
+        `).join('');
+        return `
+            <section class="result-review-card">
+                <strong>${escapeHtml(humanizeToken(methodName))}</strong>
+                <ul>${fieldItem('status', method.status)}</ul>
+                ${artifactRows || '<p class="dataset-version-empty">No JSON result artifact was produced by this selected run.</p>'}
+            </section>
+        `;
+    }).join('');
+    const provenance = result.provenance || {};
+    elements.publicScienceBaseValuesStatus.textContent = 'Public ScienceBase result values and provenance loaded.';
+    elements.publicScienceBaseValues.hidden = false;
+    elements.publicScienceBaseValues.innerHTML = `
+        <section class="public-sciencebase-values-section" aria-labelledby="public-sciencebase-values-heading">
+            <h4 id="public-sciencebase-values-heading">Values</h4>
+            <ul>
+                ${fieldItem('dataset version', result.dataset_version_id, { code: true })}
+                ${fieldItem('analysis run', result.analysis_run_id, { code: true })}
+                ${fieldItem('selected method', result.selected_method_name)}
+            </ul>
+            <div class="table-wrap">
+                <table class="material-table">
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Profile state</th>
+                            <th>Data type</th>
+                            <th>Role</th>
+                            <th>Numeric</th>
+                            <th>Time index</th>
+                            <th>Missingness</th>
+                            <th>Mean</th>
+                            <th>Median</th>
+                            <th>Minimum</th>
+                            <th>Maximum</th>
+                            <th>Std dev</th>
+                            <th>Stationarity</th>
+                            <th>Descriptive summary</th>
+                        </tr>
+                    </thead>
+                    <tbody>${variableRows || '<tr><td colspan="14">No variable definitions were returned.</td></tr>'}</tbody>
+                </table>
+            </div>
+            <div class="result-review-grid">${methodRows}</div>
+        </section>
+        <section class="public-sciencebase-values-section" aria-labelledby="public-sciencebase-provenance-heading">
+            <h4 id="public-sciencebase-provenance-heading">Provenance</h4>
+            <ul>
+                ${fieldItem('source family', provenance.source_family)}
+                ${fieldItem('source family label', provenance.source_family_label)}
+                ${fieldItem('source system', provenance.source_system)}
+                ${fieldItem('source mode', provenance.source_mode)}
+                ${fieldItem('source artifact key', provenance.source_artifact_key, { code: true })}
+                ${fieldItem('ScienceBase item ID', provenance.sciencebase_item_id, { code: true })}
+                ${fieldItem('ScienceBase item URL', provenance.sciencebase_item_url)}
+                ${fieldItem('ScienceBase download URI', provenance.sciencebase_download_uri)}
+                ${fieldItem('ScienceBase file name', provenance.sciencebase_file_name)}
+                ${fieldItem('downloaded SHA-256', provenance.downloaded_sha256, { code: true })}
+                ${fieldItem('downloaded at', provenance.downloaded_at)}
+            </ul>
+        </section>
+    `;
+}
+
 function renderPublicScienceBasePanel() {
     if (!elements.publicScienceBasePanel) return;
     const enabled = publicScienceBaseControlsEnabled();
     elements.publicScienceBasePanel.hidden = !enabled;
+    renderPublicScienceBaseValues();
     if (!enabled) return;
     renderPublicScienceBaseRunStatus();
     renderPublicDatasetVersionCandidates();
@@ -31780,6 +32051,9 @@ function bindPublicScienceBaseControls() {
     }
     if (elements.publicScienceBaseDatasetVersionCandidates) {
         elements.publicScienceBaseDatasetVersionCandidates.addEventListener('change', selectPublicDatasetVersionCandidate);
+    }
+    if (elements.publicScienceBaseValuesInspect) {
+        elements.publicScienceBaseValuesInspect.addEventListener('click', inspectPublicScienceBaseResultValues);
     }
 }
 

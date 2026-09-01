@@ -159,6 +159,30 @@ def _assert_raw_string_not_projected(value, raw_value: str) -> None:
         assert value != raw_value
 
 
+def _assert_public_result_value_keys_absent(value) -> None:
+    forbidden_value_keys = {
+        "value",
+        "values",
+        "value_text",
+        "fact_value",
+        "raw_fact_value",
+        "result_values",
+        "rows",
+        "series",
+        "provenance",
+    }
+    pending = [value]
+    observed_keys: set[str] = set()
+    while pending:
+        item = pending.pop()
+        if isinstance(item, dict):
+            observed_keys.update(item)
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+    assert forbidden_value_keys.isdisjoint(observed_keys)
+
+
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     storage_dir = tmp_path / "storage"
@@ -10646,6 +10670,34 @@ def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
         "dataset_version_id",
     } <= set(status_schema["required"])
 
+    public_values_request_schema = spec["paths"][
+        "/api/v1/layer3/execution/result/public-values"
+    ]["post"]["requestBody"]["content"]["application/json"]["schema"]
+    assert public_values_request_schema == status_request_schema
+
+    public_values_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/execution/result/public-values",
+        "post",
+    )
+    assert public_values_schema["title"] == "Layer3PublicConnectorExecutionResultValuesResponse"
+    assert {
+        "schema_id",
+        "schema_version",
+        "request_id",
+        "server_time",
+        "status",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "preview_identity",
+        "analysis_run_id",
+        "dataset_version_id",
+        "selected_method_name",
+        "provenance",
+        "values",
+    } <= set(public_values_schema["required"])
+
     review_request_schema = spec["paths"]["/api/v1/layer3/execution/result/review"]["post"]["requestBody"]["content"][
         "application/json"
     ]["schema"]
@@ -10696,6 +10748,31 @@ def test_layer3_execution_result_openapi_contracts(client: TestClient) -> None:
         "review_notes_recorded",
         "engine_family",
     } <= set(review_schema["required"])
+
+
+def test_public_connector_result_values_route_is_value_free_when_flags_are_off(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", False)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", False)
+
+    response = client.post(
+        "/api/v1/layer3/execution/result/public-values",
+        json={
+            "session_id": "session-public-values-off",
+            "analysis_plan_id": "plan-public-values-off",
+            "pass_run_id": "pass-public-values-off",
+            "preview_id": "preview-public-values-off",
+            "preview_hash": "preview-hash-public-values-off",
+        },
+    )
+
+    assert response.status_code == 404, response.text
+    body = response.json()
+    assert body["error_code"] == "public_connector_value_reveal_disabled"
+    _assert_public_result_value_keys_absent(body)
+    assert "/storage/" not in response.text
 
 
 def test_layer3_package_openapi_contracts(client: TestClient) -> None:
@@ -12706,6 +12783,7 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("/api/v1/layer3/execution/select", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/execution/start", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/execution/result/status", "post"): ("400", "404", "409"),
+        ("/api/v1/layer3/execution/result/public-values", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/execution/result/review", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/review/preview", "post"): ("400", "404", "409"),
         ("/api/v1/layer3/package/review/commit", "post"): ("400", "404", "409"),
@@ -12823,6 +12901,12 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
         ("execution_selection", "post", "/api/v1/layer3/execution/select", {}),
         ("analysis_execution_start", "post", "/api/v1/layer3/execution/start", {}),
         ("execution_result_status", "post", "/api/v1/layer3/execution/result/status", {}),
+        (
+            "public_connector_execution_result_values",
+            "post",
+            "/api/v1/layer3/execution/result/public-values",
+            {},
+        ),
         ("execution_result_review", "post", "/api/v1/layer3/execution/result/review", {}),
         ("package_review_preview", "post", "/api/v1/layer3/package/review/preview", {}),
         ("package_construction_commit", "post", "/api/v1/layer3/package/review/commit", {}),
@@ -22810,6 +22894,7 @@ def test_layer3_api_execution_result_status_reads_terminal_pass_without_writes(c
     assert status_body["downstream_unavailable"] == ["result_review", "package", "handoff"]
     assert status_body["next_state"] == "execution_result_status_available"
     assert status_body["operator_view_mode"] == "status_only"
+    _assert_public_result_value_keys_absent(status_body)
 
     duplicate = client.post(
         "/api/v1/layer3/execution/result/status",
@@ -22834,6 +22919,120 @@ def test_layer3_api_execution_result_status_reads_terminal_pass_without_writes(c
             "passes": db.query(L3PassRun).count(),
             "runs": db.query(AnalysisRun).count(),
             "artifacts": db.query(AnalysisArtifact).count(),
+        } == counts_before
+    finally:
+        db.close()
+
+
+def test_layer3_api_public_connector_result_values_reads_with_provenance_without_writes(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    session_id, preview_body, approval_body, selection_body = _select_quant_pass(
+        client,
+        tmp_path,
+        request_id="api-public-values-selection-success",
+    )
+    pass_run_id = selection_body["pass_run_ids"][0]
+    start = client.post(
+        "/api/v1/layer3/execution/start",
+        json={
+            "client_request_id": "api-public-values-start-success",
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+    assert start.status_code == 200
+    start_body = start.json()
+
+    db = client.layer3_session_factory()
+    try:
+        analysis_run = db.get(AnalysisRun, start_body["analysis_run_id"])
+        assert analysis_run is not None
+        db.add(
+            DatasetSourceProvenance(
+                dataset_version_id=analysis_run.dataset_version_id,
+                connector_run_id=None,
+                source_system="sciencebase",
+                source_mode="public_api",
+                source_artifact_key="sciencebase/api-test/item-001/fixture.csv",
+                sciencebase_item_id="sciencebase-api-item-001",
+                sciencebase_item_url=(
+                    "https://www.sciencebase.gov/catalog/item/sciencebase-api-item-001"
+                ),
+                sciencebase_download_uri=(
+                    "https://www.sciencebase.gov/catalog/file/get/sciencebase-api-item-001"
+                ),
+                sciencebase_file_name="fixture.csv",
+                downloaded_sha256="b" * 64,
+                downloaded_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+        stored_pass = db.query(L3PassRun).one()
+        pass_summary_before = copy.deepcopy(stored_pass.summary_json)
+        counts_before = {
+            "plans": db.query(L3AnalysisPlan).count(),
+            "passes": db.query(L3PassRun).count(),
+            "runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "provenance": db.query(DatasetSourceProvenance).count(),
+        }
+    finally:
+        db.close()
+
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+    response = client.post(
+        "/api/v1/layer3/execution/result/public-values",
+        json={
+            "session_id": session_id,
+            "analysis_plan_id": approval_body["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_body["preview_id"],
+            "preview_hash": preview_body["preview_hash"],
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.public_connector_execution_result_values.v1"
+    assert body["status"] == "available"
+    assert body["analysis_run_id"] == start_body["analysis_run_id"]
+    assert body["selected_method_name"] == start_body["selected_method_name"]
+    assert body["values"]["variable_profiles"]
+    assert body["values"]["method_outputs"]["methods"][start_body["selected_method_name"]][
+        "status"
+    ] in {"available", "not_produced"}
+    assert body["provenance"]["source_system"] == "sciencebase"
+    assert body["provenance"]["source_mode"] == "public_api"
+    assert body["provenance"]["sciencebase_item_id"] == "sciencebase-api-item-001"
+    serialized = json.dumps(body, sort_keys=True)
+    assert "/storage/" not in serialized
+    for forbidden in (
+        "storage_ref",
+        "raw_storage_ref",
+        "input_payload_ref",
+        "output_payload_ref",
+        "artifact_refs",
+        "artifact_types",
+    ):
+        assert forbidden not in serialized
+
+    db = client.layer3_session_factory()
+    try:
+        stored_pass = db.query(L3PassRun).one()
+        assert stored_pass.summary_json == pass_summary_before
+        assert {
+            "plans": db.query(L3AnalysisPlan).count(),
+            "passes": db.query(L3PassRun).count(),
+            "runs": db.query(AnalysisRun).count(),
+            "artifacts": db.query(AnalysisArtifact).count(),
+            "provenance": db.query(DatasetSourceProvenance).count(),
         } == counts_before
     finally:
         db.close()

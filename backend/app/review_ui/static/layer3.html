@@ -564,7 +564,7 @@
                     <section id="public-sciencebase-panel" class="dataset-version-selector public-sciencebase-panel" hidden aria-labelledby="public-sciencebase-heading" aria-live="polite">
                         <div>
                             <h3 id="public-sciencebase-heading">Public ScienceBase DatasetVersion selection</h3>
-                            <p>Retrieve a public ScienceBase CSV, inspect connector progress, and select admitted DatasetVersion IDs for the existing Layer 3 status-only analysis walk. No dataset values are rendered here.</p>
+                            <p>Retrieve a public ScienceBase CSV, inspect connector progress, and select admitted DatasetVersion IDs for the existing Layer 3 analysis walk. Result values stay hidden unless both public-analysis and value-reveal gates are armed, and are then shown only with provenance.</p>
                         </div>
                         <div id="public-sciencebase-connector-form" class="public-sciencebase-connector-form">
                             <div class="source-intake-grid">
@@ -593,6 +593,11 @@
                         </div>
                         <label for="public-sciencebase-dataset-version-ids">Explicit public DatasetVersion IDs</label>
                         <textarea id="public-sciencebase-dataset-version-ids" name="public-sciencebase-dataset-version-ids" rows="2" readonly aria-readonly="true" placeholder="Select admitted public candidates above"></textarea>
+                        <div class="public-sciencebase-values-actions">
+                            <button id="public-sciencebase-values-inspect" class="secondary-btn" type="button" hidden>Inspect result values</button>
+                            <div id="public-sciencebase-values-status" class="public-sciencebase-values-status" aria-live="polite" hidden></div>
+                        </div>
+                        <div id="public-sciencebase-values" class="public-sciencebase-values" aria-live="polite" hidden></div>
                     </section>
                     <section class="aps-content-document-selector" aria-labelledby="aps-content-document-selector-heading">
                         <div>

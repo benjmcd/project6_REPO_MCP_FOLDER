@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session, aliased
 
 from app.core.config import settings
 from app.models.models import (
+    AnalysisArtifact,
     AnalysisRun,
     ApsContentChunk,
     ApsContentDocument,
@@ -53,8 +54,10 @@ from app.models.models import (
     L3SourceIntakeRecord,
     L3TypingRecord,
     VariableDefinition,
+    VariableProfile,
     uuid_str,
 )
+from app.services import analysis as analysis_service
 from app.services import layer3_connector_promotion_identity as connector_promotion_identity
 from app.services import layer3_connector_dataset_handoff as connector_dataset_handoff_service
 from app.services import layer3_artifact_ingestion_facade as nrc_aps_artifact_ingestion
@@ -1222,6 +1225,196 @@ def _serialize_aps_dataset_provenance(row: DatasetSourceProvenance) -> dict[str,
         "table_hash": source_reference.get("table_hash"),
         "diagnostics_ref": source_reference.get("diagnostics_ref"),
     }
+
+
+def _serialize_public_sciencebase_provenance(row: DatasetSourceProvenance) -> dict[str, Any]:
+    return {
+        "dataset_source_provenance_id": row.dataset_source_provenance_id,
+        "connector_run_id": row.connector_run_id,
+        "source_family": "sciencebase_public",
+        "source_family_label": "ScienceBase-derived public dataset",
+        "source_system": row.source_system,
+        "source_mode": row.source_mode,
+        "source_artifact_key": row.source_artifact_key,
+        "sciencebase_item_id": row.sciencebase_item_id,
+        "sciencebase_item_url": row.sciencebase_item_url,
+        "sciencebase_download_uri": row.sciencebase_download_uri,
+        "sciencebase_file_name": row.sciencebase_file_name,
+        "downloaded_sha256": row.downloaded_sha256,
+        "downloaded_at": row.downloaded_at.isoformat() if row.downloaded_at else None,
+    }
+
+
+def _public_variable_profile_projection(
+    *,
+    variable: VariableDefinition,
+    profile: VariableProfile | None,
+    descriptive_summary: dict[str, Any] | None,
+) -> dict[str, Any]:
+    profile_projection = None
+    if profile is not None:
+        profile_projection = {
+            "missingness_rate": profile.missingness_rate,
+            "mean_value": profile.mean_value,
+            "median_value": profile.median_value,
+            "min_value": profile.min_value,
+            "max_value": profile.max_value,
+            "std_dev": profile.std_dev,
+            "skewness": profile.skewness,
+            "outlier_fraction": profile.outlier_fraction,
+            "negative_values_flag": profile.negative_values_flag,
+            "zero_values_flag": profile.zero_values_flag,
+            "bounded_flag": profile.bounded_flag,
+            "seasonality_flag": profile.seasonality_flag,
+            "stationarity_hint": profile.stationarity_hint,
+        }
+    return {
+        "variable_id": variable.variable_id,
+        "variable_name": variable.variable_name,
+        "dtype": variable.dtype,
+        "role": variable.role,
+        "is_numeric": variable.is_numeric,
+        "is_time_index": variable.is_time_index,
+        "ordinal_position": variable.ordinal_position,
+        "profiled": profile is not None,
+        "profile_state": "profiled" if profile is not None else "unprofiled",
+        "profile": profile_projection,
+        "descriptive_summary": descriptive_summary,
+    }
+
+
+_PUBLIC_RESULT_ARTIFACT_METHOD = {
+    "cross_correlation_result": "cross_correlation",
+    "decomposition_components": "decomposition",
+    "structural_break_result": "structural_break",
+    "descriptive_summary_result": "descriptive_summary",
+}
+_PUBLIC_RESULT_ARTIFACT_FIELDS = {
+    "cross_correlation_result": ("results", "summary_stats"),
+    "decomposition_components": (
+        "variable_name",
+        "timestamps",
+        "observed",
+        "trend",
+        "seasonal",
+        "residual",
+        "summary_stats",
+    ),
+    "structural_break_result": (
+        "variable_name",
+        "working_series_source",
+        "penalty_used",
+        "model_used",
+        "breakpoints",
+        "summary_stats",
+    ),
+    "descriptive_summary_result": (
+        "dataset_version_id",
+        "dataset_id",
+        "method_id",
+        "columns",
+        "summary_stats",
+    ),
+}
+_PUBLIC_RESULT_PLOT_TYPES = frozenset(
+    {"cross_correlation_plot", "decomposition_plot", "structural_break_plot"}
+)
+_PUBLIC_RESULT_METHODS = (
+    "cross_correlation",
+    "decomposition",
+    "structural_break",
+    "descriptive_summary",
+)
+
+
+def _public_result_payload_has_storage_reference(value: Any) -> bool:
+    if isinstance(value, dict):
+        for key, nested_value in value.items():
+            normalized_key = str(key).lower()
+            if normalized_key in {
+                "storage_ref",
+                "raw_storage_ref",
+                "input_payload_ref",
+                "output_payload_ref",
+                "artifact_refs",
+                "artifact_types",
+            } or "/storage" in normalized_key:
+                return True
+            if _public_result_payload_has_storage_reference(nested_value):
+                return True
+        return False
+    if isinstance(value, list):
+        return any(_public_result_payload_has_storage_reference(item) for item in value)
+    return isinstance(value, str) and "/storage" in value.lower()
+
+
+def _public_result_output_manifest_has_strict_artifact_shape(pass_run: L3PassRun) -> bool:
+    try:
+        manifest = json.loads(Path(str(pass_run.output_payload_ref or "")).read_text(encoding="utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return False
+    artifact_refs = manifest.get("artifact_refs_json") if isinstance(manifest, dict) else None
+    artifact_types = manifest.get("artifact_types_json") if isinstance(manifest, dict) else None
+    return (
+        isinstance(artifact_refs, list)
+        and isinstance(artifact_types, list)
+        and len(artifact_refs) == len(artifact_types)
+    )
+
+
+def _public_result_artifact_identity_matches(
+    *,
+    artifact_type: str,
+    payload: dict[str, Any],
+    dataset_version: DatasetVersion,
+    variables: list[VariableDefinition],
+) -> bool:
+    variable_names = {variable.variable_name for variable in variables}
+    numeric_variable_names = [
+        variable.variable_name
+        for variable in variables
+        if variable.is_numeric and not variable.is_time_index
+    ]
+    if not isinstance(payload.get("summary_stats"), dict):
+        return False
+    if artifact_type == "descriptive_summary_result":
+        columns = payload.get("columns")
+        return (
+            payload.get("dataset_version_id") == dataset_version.dataset_version_id
+            and payload.get("dataset_id") == dataset_version.dataset_id
+            and payload.get("method_id") == "descriptive_summary"
+            and isinstance(columns, dict)
+            and set(columns) == variable_names
+        )
+    if artifact_type in {"decomposition_components", "structural_break_result"}:
+        return payload.get("variable_name") in numeric_variable_names
+    if artifact_type == "cross_correlation_result":
+        results = payload.get("results")
+        admitted_pairs = {
+            f"{left}__vs__{right}"
+            for index, left in enumerate(numeric_variable_names)
+            for right in numeric_variable_names[index + 1:]
+        }
+        return isinstance(results, dict) and set(results).issubset(admitted_pairs)
+    return False
+
+
+def _public_result_artifact_storage_ref_owned_by_run(
+    *,
+    artifact: AnalysisArtifact,
+    analysis_run_id: str,
+) -> bool:
+    extension = ".png" if artifact.artifact_type in _PUBLIC_RESULT_PLOT_TYPES else ".json"
+    filename = Path(artifact.storage_ref).name
+    prefix = f"{artifact.artifact_type}_{analysis_run_id}_"
+    if (
+        artifact.storage_ref != f"/storage/artifacts/{filename}"
+        or not filename.startswith(prefix)
+        or not filename.endswith(extension)
+    ):
+        return False
+    nonce = filename[len(prefix):-len(extension)]
+    return len(nonce) == 8 and all(character in "0123456789abcdef" for character in nonce.lower())
 
 
 def _dataset_version_source_trace(
@@ -6011,6 +6204,341 @@ def execution_result_status(db: Session, payload: dict[str, Any]) -> dict[str, A
         output_metadata_summary=output_summary,
         output_metadata_error=output_error,
     )
+
+
+def public_connector_execution_result_values(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
+    if not (
+        settings.layer3_public_dataset_analysis_enabled
+        and settings.layer3_public_connector_value_reveal_enabled
+    ):
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_disabled",
+            "Public connector result values are not enabled.",
+            status="not_found",
+            http_status=404,
+        )
+
+    status_result = execution_result_status(db, payload)
+    if status_result.get("status") != "available":
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_output_unavailable",
+            "Public connector result values require an available terminal analysis output.",
+            status="conflict",
+            http_status=409,
+        )
+
+    session_id = str(payload.get("session_id") or "").strip()
+    analysis_plan_id = str(payload.get("analysis_plan_id") or "").strip()
+    pass_run_id = str(payload.get("pass_run_id") or "").strip()
+    pass_run = db.get(L3PassRun, pass_run_id)
+    if pass_run is None:
+        raise Layer3WorkbenchError(
+            "pass_run_not_found",
+            "The selected pass run was not found.",
+            http_status=404,
+        )
+    analysis_run_id = str(_pass_run_analysis_run_id(pass_run) or "").strip()
+    analysis_run = db.get(AnalysisRun, analysis_run_id) if analysis_run_id else None
+    if analysis_run is None:
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_analysis_run_missing",
+            "Public connector result values require a bound AnalysisRun.",
+            status="conflict",
+            http_status=409,
+        )
+    if analysis_run.status not in {"completed", "completed_with_warnings"}:
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_analysis_run_not_completed",
+            "Public connector result values require a completed AnalysisRun.",
+            status="conflict",
+            http_status=409,
+        )
+
+    pass_summary = pass_run.summary_json or {}
+    planned_pass = pass_summary.get("planned_pass")
+    if not isinstance(planned_pass, dict):
+        planned_pass = {}
+    output_summary, output_error = _output_metadata_summary(pass_run)
+    if (
+        output_summary is None
+        or output_error is not None
+        or not _public_result_output_manifest_has_strict_artifact_shape(pass_run)
+    ):
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_output_unavailable",
+            "Public connector result values require readable output metadata.",
+            status="conflict",
+            http_status=409,
+        )
+
+    dataset_version_id = str(analysis_run.dataset_version_id or "").strip()
+    selected_method_name = str(analysis_run.method_name or "").strip()
+    dataset_version = db.get(DatasetVersion, dataset_version_id) if dataset_version_id else None
+    if dataset_version is None:
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_dataset_version_missing",
+            "Public connector result values require the bound DatasetVersion.",
+            status="conflict",
+            http_status=409,
+        )
+    variables = _dataset_version_variables(db, dataset_version_id=dataset_version_id)
+    identity_values = {
+        "analysis_run_id": (
+            analysis_run_id,
+            str(output_summary.get("analysis_run_id") or "").strip(),
+            str(pass_summary.get("analysis_run_id") or "").strip(),
+        ),
+        "dataset_version_id": (
+            dataset_version_id,
+            str(output_summary.get("dataset_version_id") or "").strip(),
+            str(pass_summary.get("dataset_version_id") or "").strip(),
+            str(planned_pass.get("dataset_version_id") or "").strip(),
+        ),
+        "selected_method_name": (
+            selected_method_name,
+            str(output_summary.get("selected_method_name") or "").strip(),
+            str(pass_summary.get("selected_method_name") or "").strip(),
+            str(planned_pass.get("selected_method_name") or "").strip(),
+        ),
+        "analysis_set_id": (
+            str(pass_run.analysis_set_id or "").strip(),
+            str(output_summary.get("analysis_set_id") or "").strip(),
+            str(planned_pass.get("analysis_set_id") or "").strip(),
+        ),
+    }
+    if (
+        selected_method_name not in _PUBLIC_RESULT_METHODS
+        or any(not values[0] or any(value != values[0] for value in values[1:]) for values in identity_values.values())
+    ):
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_output_identity_mismatch",
+            "Public connector result output identity does not match the selected pass authority.",
+            status="conflict",
+            http_status=409,
+        )
+
+    provenance_rows = _dataset_version_provenance_rows(
+        db,
+        dataset_version_id=dataset_version_id,
+    )
+    primary_provenance = provenance_rows[0] if provenance_rows else None
+    if primary_provenance is None or not _is_admitted_public_dataset_version_provenance(primary_provenance):
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_provenance_not_admitted",
+            "Public connector result values require newest-row ScienceBase public_api provenance.",
+            status="conflict",
+            http_status=409,
+        )
+    provenance = _serialize_public_sciencebase_provenance(primary_provenance)
+    required_provenance_fields = (
+        "source_system",
+        "source_mode",
+        "source_artifact_key",
+        "sciencebase_item_id",
+        "sciencebase_item_url",
+        "sciencebase_download_uri",
+        "sciencebase_file_name",
+        "downloaded_sha256",
+        "downloaded_at",
+    )
+    if any(not str(provenance.get(field) or "").strip() for field in required_provenance_fields):
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_provenance_incomplete",
+            "Public connector result values require complete public ScienceBase provenance.",
+            status="conflict",
+            http_status=409,
+        )
+    if _public_result_payload_has_storage_reference(provenance):
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_provenance_not_admitted",
+            "Public connector result values require public provenance without storage references.",
+            status="conflict",
+            http_status=409,
+        )
+
+    artifacts = (
+        db.query(AnalysisArtifact)
+        .filter(AnalysisArtifact.analysis_run_id == analysis_run_id)
+        .order_by(AnalysisArtifact.created_at.asc(), AnalysisArtifact.artifact_id.asc())
+        .all()
+    )
+    authoritative_refs = [artifact.storage_ref for artifact in artifacts]
+    authoritative_types = [artifact.artifact_type for artifact in artifacts]
+    manifest_refs = output_summary.get("artifact_refs")
+    manifest_types = output_summary.get("artifact_types")
+    summary_refs = pass_summary.get("artifact_refs_json")
+    summary_types = pass_summary.get("artifact_types_json")
+    if (
+        not isinstance(manifest_refs, list)
+        or not isinstance(manifest_types, list)
+        or not isinstance(summary_refs, list)
+        or not isinstance(summary_types, list)
+        or manifest_refs != authoritative_refs
+        or manifest_types != authoritative_types
+        or summary_refs != authoritative_refs
+        or summary_types != authoritative_types
+        or len(set(authoritative_refs)) != len(authoritative_refs)
+    ):
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_output_identity_mismatch",
+            "Public connector result artifact identity does not match database authority.",
+            status="conflict",
+            http_status=409,
+        )
+
+    method_artifacts: dict[str, list[dict[str, Any]]] = {
+        method_name: [] for method_name in _PUBLIC_RESULT_METHODS
+    }
+    artifact_root = Path(settings.artifact_storage_dir)
+    if not artifact_root.is_dir():
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_artifact_unreadable",
+            "Public connector result output requires an existing artifact store.",
+            status="conflict",
+            http_status=409,
+        )
+    for artifact in artifacts:
+        if not _public_result_artifact_storage_ref_owned_by_run(
+            artifact=artifact,
+            analysis_run_id=analysis_run_id,
+        ):
+            raise Layer3WorkbenchError(
+                "public_connector_value_reveal_artifact_identity_mismatch",
+                "Public connector result artifact storage ownership does not match the selected run.",
+                status="conflict",
+                http_status=409,
+            )
+        if artifact.artifact_type in _PUBLIC_RESULT_PLOT_TYPES:
+            continue
+        artifact_method = _PUBLIC_RESULT_ARTIFACT_METHOD.get(artifact.artifact_type)
+        if artifact_method is None or artifact_method != selected_method_name:
+            raise Layer3WorkbenchError(
+                "public_connector_value_reveal_artifact_type_not_admitted",
+                "Public connector result output contains a non-admitted artifact type.",
+                status="conflict",
+                http_status=409,
+            )
+        try:
+            artifact_path = analysis_service._artifact_storage_path(artifact.storage_ref)
+            artifact_payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError):
+            raise Layer3WorkbenchError(
+                "public_connector_value_reveal_artifact_unreadable",
+                "Public connector result output contains an unreadable JSON artifact.",
+                status="conflict",
+                http_status=409,
+            ) from None
+        admitted_fields = _PUBLIC_RESULT_ARTIFACT_FIELDS[artifact.artifact_type]
+        if (
+            not isinstance(artifact_payload, dict)
+            or set(artifact_payload) != set(admitted_fields)
+            or _public_result_payload_has_storage_reference(artifact_payload)
+        ):
+            raise Layer3WorkbenchError(
+                "public_connector_value_reveal_artifact_payload_not_admitted",
+                "Public connector result output contains a non-admitted JSON payload.",
+                status="conflict",
+                http_status=409,
+            )
+        if not _public_result_artifact_identity_matches(
+            artifact_type=artifact.artifact_type,
+            payload=artifact_payload,
+            dataset_version=dataset_version,
+            variables=variables,
+        ):
+            raise Layer3WorkbenchError(
+                "public_connector_value_reveal_artifact_identity_mismatch",
+                "Public connector result artifact content does not match dataset authority.",
+                status="conflict",
+                http_status=409,
+            )
+        method_artifacts[artifact_method].append(
+            {field: artifact_payload[field] for field in admitted_fields}
+        )
+
+    descriptive_columns: dict[str, Any] = {}
+    descriptive_artifacts = method_artifacts["descriptive_summary"]
+    if descriptive_artifacts and isinstance(descriptive_artifacts[0].get("columns"), dict):
+        descriptive_columns = descriptive_artifacts[0]["columns"]
+    profile_rows = (
+        db.query(VariableDefinition, VariableProfile)
+        .outerjoin(VariableProfile, VariableProfile.variable_id == VariableDefinition.variable_id)
+        .filter(VariableDefinition.dataset_version_id == dataset_version_id)
+        .order_by(VariableDefinition.ordinal_position.asc(), VariableDefinition.variable_id.asc())
+        .all()
+    )
+    variable_profiles: list[dict[str, Any]] = []
+    seen_variable_ids: set[str] = set()
+    for variable, profile in profile_rows:
+        if profile is not None and profile.dataset_version_id != dataset_version_id:
+            raise Layer3WorkbenchError(
+                "public_connector_value_reveal_profile_identity_mismatch",
+                "Public connector result values found a cross-dataset variable profile.",
+                status="conflict",
+                http_status=409,
+            )
+        if variable.variable_id in seen_variable_ids:
+            raise Layer3WorkbenchError(
+                "public_connector_value_reveal_profile_ambiguous",
+                "Public connector result values found ambiguous variable profiles.",
+                status="conflict",
+                http_status=409,
+            )
+        seen_variable_ids.add(variable.variable_id)
+        column_summary = descriptive_columns.get(variable.variable_name)
+        variable_profiles.append(
+            _public_variable_profile_projection(
+                variable=variable,
+                profile=profile,
+                descriptive_summary=column_summary if isinstance(column_summary, dict) else None,
+            )
+        )
+
+    method_outputs = {
+        method_name: {
+            "status": (
+                "available"
+                if method_name == selected_method_name and method_artifacts[method_name]
+                else (
+                    "not_produced"
+                    if method_name == selected_method_name
+                    else "not_produced_by_selected_run"
+                )
+            ),
+            "artifacts": method_artifacts[method_name],
+        }
+        for method_name in _PUBLIC_RESULT_METHODS
+    }
+    response = {
+        **_base_response(
+            "layer3.public_connector_execution_result_values.v1",
+            request_id=str(payload.get("client_request_id") or "").strip() or None,
+            status="available",
+        ),
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_identity": status_result["preview_identity"],
+        "analysis_run_id": analysis_run_id,
+        "dataset_version_id": dataset_version_id,
+        "selected_method_name": selected_method_name,
+        "provenance": provenance,
+        "values": {
+            "variable_profiles": variable_profiles,
+            "method_outputs": {
+                "selected_method_name": selected_method_name,
+                "methods": method_outputs,
+            },
+        },
+    }
+    if _public_result_payload_has_storage_reference(response):
+        raise Layer3WorkbenchError(
+            "public_connector_value_reveal_response_not_admitted",
+            "Public connector result values failed the storage-reference invariant.",
+            status="conflict",
+            http_status=409,
+        )
+    return response
 
 
 def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, Any]:

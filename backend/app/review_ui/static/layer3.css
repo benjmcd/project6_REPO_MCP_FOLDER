@@ -3331,6 +3331,39 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     display: none;
 }
 
+.public-sciencebase-values[hidden] {
+    display: none;
+}
+
+.public-sciencebase-values-status[hidden] {
+    display: none;
+}
+
+.public-sciencebase-values-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.public-sciencebase-values-status {
+    color: var(--muted-text);
+    font-size: 0.82rem;
+}
+
+.public-sciencebase-values {
+    display: grid;
+    gap: 10px;
+}
+
+.public-sciencebase-values pre {
+    margin: 8px 0 0;
+    max-height: 280px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 .dataset-version-selector h3,
 .dataset-version-selector p,
 .aps-content-document-selector h3,

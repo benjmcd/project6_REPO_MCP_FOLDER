@@ -94,6 +94,27 @@ def test_legacy_json_route_rejects_missing_identity_before_body_validation(monke
     assert "workspace-canary" not in response.text
 
 
+def test_public_connector_result_values_rejects_missing_identity_before_body_validation(
+    monkeypatch,
+) -> None:
+    _configure_proxy(monkeypatch)
+    client = TestClient(main.app, raise_server_exceptions=False)
+
+    response = client.post(
+        "/api/v1/layer3/execution/result/public-values",
+        content="{not-json",
+        headers={
+            "content-type": "application/json",
+            "x-forwarded-groups": "workspace-canary",
+        },
+    )
+
+    assert response.status_code == 401, response.text
+    body = response.json()
+    assert body["error_code"] == "sec_xbrl_in_app_auth_policy_missing_identity_authority"
+    assert "workspace-canary" not in response.text
+
+
 def test_legacy_json_write_route_rejects_auditor_before_body_validation(monkeypatch) -> None:
     _configure_proxy(monkeypatch, role_enforcing=True)
     client = TestClient(main.app, raise_server_exceptions=False)

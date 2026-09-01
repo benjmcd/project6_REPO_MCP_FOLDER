@@ -108,6 +108,7 @@ def _build_static_pre_body_routes(
         (f"{L}/execution/select", "write"),
         (f"{L}/execution/start", "write"),
         (f"{L}/execution/result/status", "read"),
+        (f"{L}/execution/result/public-values", "read"),
         (f"{L}/execution/result/review", "write"),
         (f"{L}/analysis-product/draft", "write"),
         (f"{L}/working-set", "write"),
