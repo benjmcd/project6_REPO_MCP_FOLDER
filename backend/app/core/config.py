@@ -237,6 +237,14 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_ADOPTED_EXTERNAL_SOURCE_INTAKE_ENABLED",
     )
+    layer3_public_dataset_analysis_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED",
+    )
+    layer3_public_connector_value_reveal_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED",
+    )
     layer3_connector_dataset_handoff_enabled: bool = Field(
         default=False,
         alias="LAYER3_CONNECTOR_DATASET_HANDOFF_ENABLED",
@@ -293,8 +301,8 @@ class Settings(BaseSettings):
     def _armed_value_reveal_flags(self) -> list[str]:
         """Return names of value-reveal conjunction flags that are currently true.
 
-        Used for warning emission in any deployment mode.  Includes all five flags
-        from the value-reveal conjunction documented in .env.example.
+        Used for warning emission in any deployment mode. Includes every registered
+        value-reveal conjunction flag.
         """
         checks = [
             ("LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED", self.layer3_sec_edgar_arelle_internal_value_store_enabled),
@@ -302,6 +310,10 @@ class Settings(BaseSettings):
             ("LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED", self.layer3_sec_edgar_arelle_fact_authority_nonlocal_authorized),
             ("LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED", self.layer3_sec_edgar_arelle_value_reveal_enabled),
             ("LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED", self.layer3_sec_xbrl_controlled_value_reveal_submit_enabled),
+            (
+                "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED",
+                self.layer3_public_connector_value_reveal_enabled,
+            ),
         ]
         return [name for name, armed in checks if armed]
 
@@ -327,6 +339,10 @@ class Settings(BaseSettings):
             ("LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED", self.layer3_sec_edgar_arelle_corpus_validation_enabled),
             ("LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED", self.layer3_sec_edgar_arelle_value_reveal_enabled),
             ("LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED", self.layer3_sec_xbrl_controlled_value_reveal_submit_enabled),
+            (
+                "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED",
+                self.layer3_public_connector_value_reveal_enabled,
+            ),
         ]
         return [name for name, armed in checks if armed]
 

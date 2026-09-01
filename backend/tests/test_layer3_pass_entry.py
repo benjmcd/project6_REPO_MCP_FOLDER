@@ -22,6 +22,7 @@ from app.models.models import (
     AnalysisArtifact,
     AnalysisRun,
     Dataset,
+    DatasetSourceProvenance,
     DatasetVersion,
     L3AnalysisPlan,
     L3AnalysisSet,
@@ -31,7 +32,7 @@ from app.models.models import (
     VariableDefinition,
     VariableProfile,
 )
-from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services import layer3_pass_entry as layer3_pass_entry_module, layer3_workbench
 from app.services.dataframe_io import load_version_dataframe
 from app.services.layer3_pass_entry import (
     Layer3PassEntryError,
@@ -1710,3 +1711,206 @@ def test_gatec_pass_entry_excludes_unknown_recommended_method_and_fails_closed(t
         assert db.query(AnalysisRun).count() == 0
     finally:
         settings.storage_dir = original_storage_dir
+
+
+def test_sciencebase_public_dataset_walk_executes_quantitative_analysis_and_returns_status_only(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path / "storage"))
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", False)
+    db = _make_session()
+    dataset_version_id = "dv-sciencebase-public-walk-001"
+    numeric_sentinels = [901.25 + index for index in range(24)]
+    _seed_timeseries_dataset_version(
+        db,
+        tmp_path,
+        dataset_id="ds-sciencebase-public-walk-001",
+        dataset_version_id=dataset_version_id,
+        values=numeric_sentinels,
+    )
+    db.add(
+        DatasetSourceProvenance(
+            dataset_version_id=dataset_version_id,
+            connector_run_id=None,
+            source_system="sciencebase",
+            source_mode="public_api",
+            source_artifact_key="sciencebase/run-public-walk/fixture.csv",
+            sciencebase_file_name="fixture.csv",
+            downloaded_sha256="7" * 64,
+            raw_storage_ref="sciencebase/run-public-walk/fixture.csv",
+            source_reference_json={"target_id": "sciencebase-public-walk"},
+        )
+    )
+    db.flush()
+
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "public-walk-preflight",
+            "natural_language_intent": "Analyze a retrieved public ScienceBase time series.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "public-walk-source",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        }
+    )
+    source_candidate_ids = [source["source_candidates"][0]["source_candidate_id"]]
+    material = layer3_workbench.material_preview(
+        {
+            "client_request_id": "public-walk-material",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": source_candidate_ids,
+            "dataset_version_ids": [dataset_version_id],
+            "query_basis": {"terms": ["sciencebase", "public", "timeseries"]},
+        },
+        db,
+    )
+    assert source_candidate_ids
+    assert material["material_candidates"][0]["source_class"] == "dataset_version"
+    candidate = material["material_candidates"][0]
+    gate_b = layer3_workbench.gate_b_decision(
+        db,
+        {
+            "client_request_id": "public-walk-gate-b",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": candidate["source_ref"],
+                        "query_basis": candidate["query_basis"],
+                        "provenance_ref": candidate["provenance_ref"],
+                        "source_identity": candidate["source_identity"],
+                        "source_provenance": candidate["source_provenance"],
+                        "payload": candidate["payload"],
+                        "load_summary": candidate["load_summary"],
+                    },
+                }
+            ],
+            "commit_reason": "pytest_public_science_walk",
+            "actor": "pytest",
+        },
+    )
+    summary = layer3_workbench.session_summary(db, gate_b["session_id"])
+    assert summary["current_gate"] == "gate_c"
+
+    gate_c = layer3_workbench.gate_c_preview(
+        db,
+        {
+            "client_request_id": "public-walk-gate-c",
+            "session_id": gate_b["session_id"],
+            "commit_typing": True,
+        },
+    )
+    assert gate_c["typing_records"][0]["planning_shape_family"] == "tabular_numeric"
+    assert gate_c["analysis_units"][0]["analysis_modality"] == "quantitative"
+
+    plan = layer3_workbench.plan_preview(
+        db,
+        {"client_request_id": "public-walk-plan", "session_id": gate_b["session_id"]},
+    )
+    planned_pass = plan["plan_preview"]["planned_passes"][0]
+    assert planned_pass["dataset_version_id"] == dataset_version_id
+    assert planned_pass["selected_method_name"] in {
+        "decomposition",
+        "cross_correlation",
+    }
+    approval = layer3_workbench.plan_approval(
+        db,
+        {
+            "client_request_id": "public-walk-approval",
+            "session_id": gate_b["session_id"],
+            "preview_id": plan["preview_id"],
+            "preview_hash": plan["preview_hash"],
+            "operator_confirmation": True,
+            "approval_scope": "owner_service_default",
+        },
+    )
+    selection = layer3_workbench.execution_selection(
+        db,
+        {
+            "client_request_id": "public-walk-selection",
+            "session_id": gate_b["session_id"],
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "preview_id": plan["preview_id"],
+            "preview_hash": plan["preview_hash"],
+        },
+    )
+    pass_run_id = selection["pass_run_ids"][0]
+    start = layer3_workbench.analysis_execution_start(
+        db,
+        {
+            "client_request_id": "public-walk-start",
+            "session_id": gate_b["session_id"],
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": plan["preview_id"],
+            "preview_hash": plan["preview_hash"],
+        },
+    )
+    assert start["dataset_version_id"] == dataset_version_id
+    assert start["analysis_run_id"]
+    analysis_run = db.get(AnalysisRun, start["analysis_run_id"])
+    artifacts = (
+        db.query(AnalysisArtifact)
+        .filter(AnalysisArtifact.analysis_run_id == start["analysis_run_id"])
+        .all()
+    )
+    assert analysis_run is not None
+    assert analysis_run.status in {"completed", "completed_with_warnings"}
+    assert analysis_run.method_name == planned_pass["selected_method_name"]
+    assert artifacts
+    assert all(
+        (Path(settings.artifact_storage_dir) / Path(artifact.storage_ref).name).is_file()
+        for artifact in artifacts
+    )
+
+    status = layer3_workbench.execution_result_status(
+        db,
+        {
+            "client_request_id": "public-walk-status",
+            "session_id": gate_b["session_id"],
+            "analysis_plan_id": approval["analysis_plan_id"],
+            "pass_run_id": pass_run_id,
+            "preview_id": plan["preview_id"],
+            "preview_hash": plan["preview_hash"],
+            "analysis_run_id": start["analysis_run_id"],
+            "operator_view_mode": "status_only",
+        },
+    )
+    assert status["operator_view_mode"] == "status_only"
+    assert status["result_review_enabled"] is False
+    assert status["package_review_enabled"] is False
+    assert status["handoff_enabled"] is False
+    forbidden_value_keys = {
+        "value",
+        "values",
+        "value_text",
+        "fact_value",
+        "raw_fact_value",
+        "result_values",
+        "rows",
+        "series",
+    }
+    pending = [status]
+    observed_keys: set[str] = set()
+    while pending:
+        item = pending.pop()
+        if isinstance(item, dict):
+            observed_keys.update(item)
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+    assert forbidden_value_keys.isdisjoint(observed_keys)
+    serialized_status = json.dumps(status, sort_keys=True)
+    assert all(str(sentinel) not in serialized_status for sentinel in numeric_sentinels)

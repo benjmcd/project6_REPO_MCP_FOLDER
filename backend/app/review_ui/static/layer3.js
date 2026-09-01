@@ -1,4 +1,18 @@
 const API_ROOT = '/api/v1/layer3';
+const CONNECTOR_API_ROOT = '/api/v1';
+const PUBLIC_SCIENCEBASE_RUNS_PATH = '/connectors/sciencebase-public/runs';
+const PUBLIC_CONNECTOR_RUN_PATH = '/connectors/runs/';
+const PUBLIC_CONNECTOR_TARGETS_PATH = '/connectors/runs/';
+const PUBLIC_DATASET_VERSION_CANDIDATES_PATH = '/public-dataset-version-candidates';
+const PUBLIC_CONNECTOR_TERMINAL_STATUSES = new Set([
+    'completed',
+    'completed_with_errors',
+    'failed',
+    'cancelled',
+]);
+const PUBLIC_CONNECTOR_MAX_POLLS = 300;
+const PUBLIC_CONNECTOR_POLL_INTERVAL_MS = 1000;
+const PUBLIC_CONNECTOR_STALE_RUN_MS = 5 * 60 * 1000;
 const THEME_STORAGE_KEY = 'nrc_aps_review_theme';
 const LAYER3_THEME_STORAGE_KEY = 'layer3_workbench_theme';
 const LAYER3_MOCKUP_WORKBENCH_THEME = 'layer3_mockup_workbench_theme';
@@ -642,6 +656,15 @@ const State = {
     bootstrap: null,
     datasetVersionCandidates: null,
     datasetVersionCandidateError: null,
+    publicDatasetVersionCandidates: null,
+    publicDatasetVersionCandidateError: null,
+    publicScienceBaseRun: null,
+    publicScienceBaseRunError: null,
+    publicScienceBaseRunPending: false,
+    publicScienceBaseRunTargets: null,
+    publicScienceBaseRunTargetsError: null,
+    publicScienceBaseRunPollCount: 0,
+    publicScienceBaseSelectedIds: new Set(),
     apsContentDocumentCandidates: null,
     apsContentDocumentCandidateError: null,
     refusedArtifactTraces: null,
@@ -1254,6 +1277,15 @@ const elements = {
     rawMixedMaterializationStatus: document.getElementById('raw-mixed-materialization-status'),
     datasetVersionCandidates: document.getElementById('dataset-version-candidates'),
     datasetVersionIds: document.getElementById('dataset-version-ids'),
+    publicScienceBasePanel: document.getElementById('public-sciencebase-panel'),
+    publicScienceBaseQuery: document.getElementById('public-sciencebase-query'),
+    publicScienceBaseScopeMode: document.getElementById('public-sciencebase-scope-mode'),
+    publicScienceBaseScopeValues: document.getElementById('public-sciencebase-scope-values'),
+    publicScienceBaseFilters: document.getElementById('public-sciencebase-filters'),
+    publicScienceBaseRetrieve: document.getElementById('public-sciencebase-retrieve'),
+    publicScienceBaseRunStatus: document.getElementById('public-sciencebase-run-status'),
+    publicScienceBaseDatasetVersionCandidates: document.getElementById('public-sciencebase-dataset-version-candidates'),
+    publicScienceBaseDatasetVersionIds: document.getElementById('public-sciencebase-dataset-version-ids'),
     apsContentDocumentCandidates: document.getElementById('aps-content-document-candidates'),
     apsContentDocumentIds: document.getElementById('aps-content-document-ids'),
     runPreflight: document.getElementById('run-preflight'),
@@ -2600,6 +2632,26 @@ async function postJson(path, body) {
     return parseResponse(res);
 }
 
+async function getConnectorJson(path) {
+    const res = await fetch(`${CONNECTOR_API_ROOT}${path}`, {
+        headers: devInjectedFetchHeaders(),
+    });
+    return parseResponse(res);
+}
+
+async function postConnectorJson(path, body) {
+    const res = await fetch(`${CONNECTOR_API_ROOT}${path}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Idempotency-Key': body?.client_request_id || requestId(),
+            ...devInjectedFetchHeaders(),
+        },
+        body: JSON.stringify(body),
+    });
+    return parseResponse(res);
+}
+
 // ---------------------------------------------------------------------------
 // W1-S6: Operator identity projection
 // ---------------------------------------------------------------------------
@@ -2980,6 +3032,238 @@ function selectedSourceClasses() {
         .map((input) => input.value);
 }
 
+function publicScienceBaseControlsEnabled() {
+    return State.bootstrap?.layer3_public_dataset_analysis_enabled === true;
+}
+
+function publicScienceBaseLineValues(value) {
+    return String(value || '')
+        .split(/[\n,;]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+function publicScienceBaseFormValues() {
+    return {
+        q: String(elements.publicScienceBaseQuery?.value || '').trim() || 'Mineral Commodity Summaries',
+        scope_mode: elements.publicScienceBaseScopeMode?.value || 'keyword_search',
+        scope_values: publicScienceBaseLineValues(elements.publicScienceBaseScopeValues?.value),
+        filters: publicScienceBaseLineValues(elements.publicScienceBaseFilters?.value),
+    };
+}
+
+function publicScienceBaseConnectorPayload() {
+    const form = publicScienceBaseFormValues();
+    return {
+        q: form.q,
+        scope_mode: form.scope_mode,
+        scope_values: form.scope_values,
+        filters: form.filters,
+        sort: 'title',
+        order: 'asc',
+        page_size: 100,
+        max_items: 0,
+        max_files: 0,
+        selection_mode: 'first_n',
+        run_mode: 'one_shot_import',
+        surface_policy: 'files_only',
+        external_fetch_policy: 'sciencebase_only',
+        allowed_extensions: ['.csv'],
+        allow_distribution_links: false,
+        allow_web_links: false,
+        fetch_policy_mode: 'strict_public_safe',
+        client_request_id: requestId(),
+    };
+}
+
+function publicDatasetVersionCandidateIsAdmitted(candidate) {
+    return candidate?.source_admission_state === 'admitted_materialized_dataset_version'
+        && Boolean(String(candidate?.dataset_version_id || '').trim());
+}
+
+function checkedPublicDatasetVersionCandidateIds() {
+    return Array.from(document.querySelectorAll('input[name="public-dataset-version-candidate"]:checked'))
+        .map((input) => input.value)
+        .filter(Boolean);
+}
+
+function syncPublicDatasetVersionSelection() {
+    if (!elements.datasetVersionIds || !elements.publicScienceBaseDatasetVersionIds) return;
+    const selectedPublicIds = checkedPublicDatasetVersionCandidateIds();
+    const previouslySelectedPublicIds = State.publicScienceBaseSelectedIds || new Set();
+    const selectionChanged = previouslySelectedPublicIds.size !== selectedPublicIds.length
+        || selectedPublicIds.some((id) => !previouslySelectedPublicIds.has(id));
+    const existingIds = parseDatasetVersionIds(elements.datasetVersionIds.value);
+    const retainedIds = existingIds.filter((id) => !previouslySelectedPublicIds.has(id));
+    const mergedIds = [...new Set([...retainedIds, ...selectedPublicIds])];
+    State.publicScienceBaseSelectedIds = new Set(selectedPublicIds);
+    elements.datasetVersionIds.value = mergedIds.join('\n');
+    elements.publicScienceBaseDatasetVersionIds.value = selectedPublicIds.join('\n');
+    if (selectionChanged) clearLayer3FlowStateForSourceChange();
+}
+
+async function retrievePublicScienceBaseRun(event) {
+    event.preventDefault();
+    if (!publicScienceBaseControlsEnabled() || State.publicScienceBaseRunPending) return;
+    State.publicScienceBaseRunPending = true;
+    State.publicScienceBaseRunError = null;
+    State.publicScienceBaseRun = null;
+    State.publicScienceBaseRunTargets = null;
+    State.publicScienceBaseRunTargetsError = null;
+    document.querySelectorAll('input[name="public-dataset-version-candidate"]')
+        .forEach((input) => { input.checked = false; });
+    syncPublicDatasetVersionSelection();
+    State.publicDatasetVersionCandidates = null;
+    State.publicDatasetVersionCandidateError = null;
+    State.publicScienceBaseRunPollCount = 0;
+    renderAll();
+    setBusy(elements.publicScienceBaseRetrieve, true, 'Retrieve public ScienceBase CSV');
+    try {
+        const submission = await postConnectorJson(
+            PUBLIC_SCIENCEBASE_RUNS_PATH,
+            publicScienceBaseConnectorPayload(),
+        );
+        const runId = String(submission?.connector_run_id || '').trim();
+        if (!runId) {
+            throw new Error('Public ScienceBase connector did not return a run ID.');
+        }
+        await pollPublicScienceBaseRun(runId);
+        const terminalStatus = State.publicScienceBaseRun?.status;
+        if (PUBLIC_CONNECTOR_TERMINAL_STATUSES.has(terminalStatus)) {
+            const targetsLoaded = await loadPublicScienceBaseRunTargets(runId);
+            if (targetsLoaded && (terminalStatus === 'completed' || terminalStatus === 'completed_with_errors')) {
+                await loadPublicDatasetVersionCandidates();
+            }
+        }
+    } catch (error) {
+        State.publicScienceBaseRunError = error.payload || {
+            error_code: 'public_sciencebase_connector_request_failed',
+            message: error.message,
+        };
+        addEvent(`Public ScienceBase retrieval blocked: ${error.message}`);
+    } finally {
+        State.publicScienceBaseRunPending = false;
+        setBusy(elements.publicScienceBaseRetrieve, false, 'Retrieve public ScienceBase CSV');
+        renderAll();
+    }
+}
+
+function publicConnectorCount(value) {
+    const count = Number(value);
+    return Number.isFinite(count) && count >= 0 ? String(Math.trunc(count)) : '0';
+}
+
+function publicConnectorRunIsStale(run) {
+    const timestamp = run?.started_at || run?.submitted_at;
+    const parsed = timestamp ? Date.parse(timestamp) : NaN;
+    return Number.isFinite(parsed) && Date.now() - parsed > PUBLIC_CONNECTOR_STALE_RUN_MS;
+}
+
+function renderPublicScienceBaseRunStatus() {
+    if (!elements.publicScienceBaseRunStatus) return;
+    const error = State.publicScienceBaseRunError;
+    if (error) {
+        elements.publicScienceBaseRunStatus.innerHTML = `<span class="dataset-version-empty">Public ScienceBase retrieval blocked: ${escapeHtml(error.message || error.error_code || 'request failed')}</span>`;
+        return;
+    }
+    const run = State.publicScienceBaseRun;
+    if (!run) {
+        elements.publicScienceBaseRunStatus.innerHTML = '<span class="dataset-version-empty">Public ScienceBase retrieval has not started.</span>';
+        return;
+    }
+    const stale = run.stale === true;
+    const statusLabel = stale ? 'stale' : (run.status || 'unknown');
+    const countRows = [
+        ['discovered_count', run.discovered_count],
+        ['selected_count', run.selected_count],
+        ['downloaded_count', run.downloaded_count],
+        ['ingested_count', run.ingested_count],
+        ['profiled_count', run.profiled_count],
+        ['recommended_count', run.recommended_count],
+        ['failed_count', run.failed_count],
+    ];
+    elements.publicScienceBaseRunStatus.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${stale || run.status === 'failed' ? 'blocked' : (PUBLIC_CONNECTOR_TERMINAL_STATUSES.has(run.status) ? 'ok' : 'preview')}">${escapeHtml(humanizeToken(statusLabel))}</span>
+            <span class="rail-label">Current phase: ${escapeHtml(run.current_phase || 'unknown')}</span>
+        </div>
+        <div class="result-review-grid">
+            ${countRows.map(([label, value]) => `
+                <section class="result-review-card">
+                    <strong>${escapeHtml(label.replace(/_/g, ' '))}</strong>
+                    <p>${escapeHtml(publicConnectorCount(value))}</p>
+                </section>
+            `).join('')}
+        </div>
+        ${stale ? '<p class="dataset-version-empty">Run polling stopped because the connector run is stale or exceeded the bounded poll window.</p>' : ''}
+    `;
+}
+
+async function pollPublicScienceBaseRun(runId) {
+    for (let poll = 0; poll < PUBLIC_CONNECTOR_MAX_POLLS; poll += 1) {
+        State.publicScienceBaseRunPollCount = poll + 1;
+        const run = await getConnectorJson(
+            `${PUBLIC_CONNECTOR_RUN_PATH}${encodeURIComponent(runId)}`,
+        );
+        State.publicScienceBaseRun = run;
+        renderPublicScienceBaseRunStatus();
+        if (PUBLIC_CONNECTOR_TERMINAL_STATUSES.has(run?.status)) return run;
+        if (publicConnectorRunIsStale(run)) {
+            State.publicScienceBaseRun = {
+                ...run,
+                stale: true,
+                stale_reason: 'connector_run_age_exceeded',
+            };
+            renderPublicScienceBaseRunStatus();
+            return State.publicScienceBaseRun;
+        }
+        await new Promise((resolve) => setTimeout(resolve, PUBLIC_CONNECTOR_POLL_INTERVAL_MS));
+    }
+    State.publicScienceBaseRun = {
+        ...(State.publicScienceBaseRun || {}),
+        stale: true,
+        stale_reason: 'connector_run_poll_budget_exceeded',
+    };
+    renderPublicScienceBaseRunStatus();
+    return State.publicScienceBaseRun;
+}
+
+async function loadPublicScienceBaseRunTargets(runId) {
+    try {
+        const targets = [];
+        let offset = 0;
+        let total = 1;
+        let connectorRunId = runId;
+        while (offset < total) {
+            const page = await getConnectorJson(
+                `${PUBLIC_CONNECTOR_TARGETS_PATH}${encodeURIComponent(runId)}/targets?limit=500&offset=${offset}`,
+            );
+            const pageTargets = page.targets || [];
+            connectorRunId = page.connector_run_id || connectorRunId;
+            total = Number.isFinite(Number(page.total)) ? Number(page.total) : pageTargets.length;
+            targets.push(...pageTargets.map((target) => ({
+                dataset_version_id: target.dataset_version_id || null,
+                status: target.status || null,
+            })));
+            if (!pageTargets.length) break;
+            offset += pageTargets.length;
+        }
+        State.publicScienceBaseRunTargets = {
+            connector_run_id: connectorRunId,
+            total,
+            targets,
+        };
+        State.publicScienceBaseRunTargetsError = null;
+        addEvent(`Loaded ${State.publicScienceBaseRunTargets.targets.filter((target) => target.dataset_version_id).length} public DatasetVersion target ID(s).`);
+        return true;
+    } catch (error) {
+        State.publicScienceBaseRunTargets = null;
+        State.publicScienceBaseRunTargetsError = error.message;
+        addEvent(`Public ScienceBase target lookup blocked: ${error.message}`);
+        return false;
+    }
+}
+
 function parseDatasetVersionIds(value) {
     const result = [];
     String(value || '')
@@ -3156,8 +3440,14 @@ function selectedSourceClassLabels() {
         .map((label) => label.replace(/\s+/g, ' ').trim())
         .filter(Boolean);
     const datasetVersionIds = selectedDatasetVersionIds();
-    if (datasetVersionIds.length) {
-        labels.push(`${datasetVersionIds.length} APS-derived DatasetVersion ID${datasetVersionIds.length === 1 ? '' : 's'}`);
+    const selectedPublicIds = State.publicScienceBaseSelectedIds || new Set();
+    const apsDatasetVersionIds = datasetVersionIds.filter((id) => !selectedPublicIds.has(id));
+    const publicDatasetVersionIds = datasetVersionIds.filter((id) => selectedPublicIds.has(id));
+    if (apsDatasetVersionIds.length) {
+        labels.push(`${apsDatasetVersionIds.length} APS-derived DatasetVersion ID${apsDatasetVersionIds.length === 1 ? '' : 's'}`);
+    }
+    if (publicDatasetVersionIds.length) {
+        labels.push(`${publicDatasetVersionIds.length} ScienceBase-derived public DatasetVersion ID${publicDatasetVersionIds.length === 1 ? '' : 's'}`);
     }
     const apsContentDocumentIds = selectedApsContentDocumentIds();
     if (apsContentDocumentIds.length) {
@@ -27531,6 +27821,7 @@ function renderAll() {
     renderAuthority();
     renderRawMixedMaterializationPanel();
     renderDatasetVersionCandidates();
+    renderPublicScienceBasePanel();
     renderApsContentDocumentCandidates();
     renderSublayerMap();
     renderUnavailable(currentDownstreamUnavailable());
@@ -31393,6 +31684,105 @@ async function loadDatasetVersionCandidates() {
     }
 }
 
+async function loadPublicDatasetVersionCandidates() {
+    if (!publicScienceBaseControlsEnabled()) return false;
+    try {
+        State.publicDatasetVersionCandidates = await getJson('/public-dataset-version-candidates');
+        State.publicDatasetVersionCandidateError = null;
+        addEvent(`Loaded ${State.publicDatasetVersionCandidates.candidate_count || 0} public ScienceBase DatasetVersion candidate(s).`);
+        return true;
+    } catch (error) {
+        State.publicDatasetVersionCandidateError = error.message;
+        addEvent(`Public ScienceBase DatasetVersion candidate lookup blocked: ${error.message}`);
+        return false;
+    }
+}
+
+function selectPublicDatasetVersionCandidate(event) {
+    const input = event.target?.closest?.('input[name="public-dataset-version-candidate"]');
+    if (!input) return;
+    const candidate = (State.publicDatasetVersionCandidates?.dataset_version_candidates || [])
+        .find((item) => String(item.dataset_version_id || '') === String(input.value || ''));
+    if (!publicDatasetVersionCandidateIsAdmitted(candidate)) {
+        input.checked = false;
+        addEvent('Public DatasetVersion selection blocked: only admitted returned candidates can enter the existing selection.');
+    }
+    syncPublicDatasetVersionSelection();
+    renderAll();
+}
+
+function publicScienceBaseRunTargetDatasetVersionIds() {
+    return new Set(
+        (State.publicScienceBaseRunTargets?.targets || [])
+            .map((target) => String(target.dataset_version_id || '').trim())
+            .filter(Boolean),
+    );
+}
+
+function renderPublicDatasetVersionCandidates() {
+    if (!elements.publicScienceBaseDatasetVersionCandidates) return;
+    if (!publicScienceBaseControlsEnabled()) {
+        elements.publicScienceBaseDatasetVersionCandidates.innerHTML = '<span class="dataset-version-empty">Public DatasetVersion candidates are unavailable.</span>';
+        return;
+    }
+    if (State.publicDatasetVersionCandidateError) {
+        elements.publicScienceBaseDatasetVersionCandidates.innerHTML = `
+            <span class="dataset-version-empty">Public DatasetVersion candidate lookup failed: ${escapeHtml(State.publicDatasetVersionCandidateError)}</span>
+        `;
+        return;
+    }
+    const admittedCandidates = (State.publicDatasetVersionCandidates?.dataset_version_candidates || [])
+        .filter(publicDatasetVersionCandidateIsAdmitted);
+    const targetDatasetVersionIds = publicScienceBaseRunTargetDatasetVersionIds();
+    const candidates = State.publicScienceBaseRunTargets === null
+        ? admittedCandidates
+        : admittedCandidates.filter((candidate) => (
+            targetDatasetVersionIds.has(String(candidate.dataset_version_id || ''))
+        ));
+    const selectedIds = new Set(checkedPublicDatasetVersionCandidateIds());
+    if (!candidates.length) {
+        elements.publicScienceBaseDatasetVersionCandidates.innerHTML = '<span class="dataset-version-empty">No admitted public ScienceBase DatasetVersion candidates are available yet.</span>';
+        return;
+    }
+    elements.publicScienceBaseDatasetVersionCandidates.innerHTML = candidates.map((candidate) => {
+        const datasetVersionId = String(candidate.dataset_version_id || '');
+        const title = candidate.dataset_name || candidate.version_label || datasetVersionId;
+        const detail = [
+            candidate.source_family_label || 'ScienceBase-derived public dataset',
+            candidate.source_admission_state,
+            candidate.version_type,
+        ].filter(Boolean).join(' / ');
+        return `
+            <label class="dataset-version-candidate public-sciencebase-dataset-version-candidate">
+                <input type="checkbox" name="public-dataset-version-candidate" value="${escapeHtml(datasetVersionId)}" ${selectedIds.has(datasetVersionId) ? 'checked' : ''}>
+                <span>
+                    <strong>${escapeHtml(title)}</strong>
+                    <code>${escapeHtml(datasetVersionId)}</code>
+                    <span>${escapeHtml(detail)}</span>
+                </span>
+            </label>
+        `;
+    }).join('');
+}
+
+function renderPublicScienceBasePanel() {
+    if (!elements.publicScienceBasePanel) return;
+    const enabled = publicScienceBaseControlsEnabled();
+    elements.publicScienceBasePanel.hidden = !enabled;
+    if (!enabled) return;
+    renderPublicScienceBaseRunStatus();
+    renderPublicDatasetVersionCandidates();
+}
+
+function bindPublicScienceBaseControls() {
+    if (elements.publicScienceBaseRetrieve) {
+        elements.publicScienceBaseRetrieve.addEventListener('click', retrievePublicScienceBaseRun);
+    }
+    if (elements.publicScienceBaseDatasetVersionCandidates) {
+        elements.publicScienceBaseDatasetVersionCandidates.addEventListener('change', selectPublicDatasetVersionCandidate);
+    }
+}
+
 async function loadApsContentDocumentCandidates() {
     try {
         State.apsContentDocumentCandidates = await getJson('/aps-content-document-candidates');
@@ -31429,6 +31819,9 @@ async function init() {
         await loadDatasetVersionCandidates();
         await loadApsContentDocumentCandidates();
         await loadApsRefusedArtifactTraces();
+        if (publicScienceBaseControlsEnabled()) {
+            await loadPublicDatasetVersionCandidates();
+        }
         const sessionRecovered = await recoverSessionFromStorage();
         if (!sessionRecovered) {
             restoreGateBDraftSnapshot();
@@ -31514,6 +31907,7 @@ elements.datasetVersionIds.addEventListener('input', renderAll);
 elements.datasetVersionCandidates.addEventListener('change', renderAll);
 elements.apsContentDocumentIds.addEventListener('input', renderAll);
 elements.apsContentDocumentCandidates.addEventListener('change', renderAll);
+bindPublicScienceBaseControls();
 elements.gateBSubmit.addEventListener('click', commitGateB);
 elements.gateCPreview.addEventListener('click', previewGateC);
 elements.gateCCommit.addEventListener('click', commitGateC);

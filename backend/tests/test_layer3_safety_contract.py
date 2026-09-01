@@ -129,7 +129,7 @@ def test_sec_xbrl_storage_root_hygiene_override_ack_defaults_off_and_is_env_gate
 # (b) Nonlocal Settings rejects armed value-reveal flags (fail-closed validator)
 # ---------------------------------------------------------------------------
 
-# The four footgun flags forbidden in nonlocal posture.
+# Value-reveal footgun flags forbidden in nonlocal posture.
 # LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED is intentionally excluded:
 # it is a required authorization gate in nonlocal deployments (not a footgun).
 _NONLOCAL_FORBIDDEN_FLAGS = [
@@ -137,6 +137,7 @@ _NONLOCAL_FORBIDDEN_FLAGS = [
     "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
     "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
     "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
+    "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED",
 ]
 
 _RAW_BEARING_STORAGE_CONTAINMENT_FLAGS = [
@@ -145,6 +146,7 @@ _RAW_BEARING_STORAGE_CONTAINMENT_FLAGS = [
     "LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED",
     "LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
     "LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED",
+    "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED",
 ]
 
 

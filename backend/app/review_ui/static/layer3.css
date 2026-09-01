@@ -3327,6 +3327,10 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     background: var(--panel-bg);
 }
 
+.public-sciencebase-panel[hidden] {
+    display: none;
+}
+
 .dataset-version-selector h3,
 .dataset-version-selector p,
 .aps-content-document-selector h3,

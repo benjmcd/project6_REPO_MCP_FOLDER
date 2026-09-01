@@ -43,3 +43,29 @@ def test_main_uses_settings_db_init_mode_instead_of_direct_env_reads() -> None:
     assert "settings.db_init_mode" in main_source
     assert 'os.getenv("DB_INIT_MODE"' not in main_source
     assert "load_dotenv" not in main_source
+
+
+def test_public_dataset_analysis_flags_default_off_and_value_reveal_is_registered(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.delenv("LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED", raising=False)
+    monkeypatch.delenv("LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED", raising=False)
+
+    defaults = Settings(_env_file=None)
+
+    assert defaults.layer3_public_dataset_analysis_enabled is False
+    assert defaults.layer3_public_connector_value_reveal_enabled is False
+
+    armed = Settings(
+        _env_file=None,
+        STORAGE_EXPOSURE="disabled",
+        STORAGE_DIR=str(tmp_path / "private-storage"),
+        DATABASE_URL=f"sqlite:///{(tmp_path / 'private.db').as_posix()}",
+        LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED="true",
+    )
+
+    assert "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED" in armed._armed_value_reveal_flags()
+    assert "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED" in armed._armed_value_reveal_flags_nonlocal_forbidden()
+    assert "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED" in armed._armed_raw_bearing_flags()
+    assert "LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED" not in armed._armed_value_reveal_flags()

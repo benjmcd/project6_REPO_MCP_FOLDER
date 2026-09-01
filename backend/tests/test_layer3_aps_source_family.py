@@ -75,6 +75,25 @@ def test_source_family_for_provenance_keeps_parser_family_for_regular_aps_tables
     assert metadata["source_family_label"] == "CSV table"
 
 
+def test_source_family_for_provenance_labels_public_sciencebase_without_aps_claim() -> None:
+    metadata = source_family_for_provenance(
+        {
+            "source_system": "sciencebase",
+            "source_mode": "public_api",
+            "parser_family": None,
+        }
+    )
+
+    assert metadata == {
+        "parser_family": None,
+        "source_family": "sciencebase_public",
+        "source_family_label": "ScienceBase-derived public dataset",
+        "typed_content_contract_id": None,
+        "admission_state": "admitted_materialized_dataset_version",
+        "scope": "public ScienceBase CSV materialized through existing connector DatasetVersion authority",
+    }
+
+
 def test_source_family_guardrail_trace_marks_refused_family_non_selectable() -> None:
     family = APS_NOT_ADMITTED_SOURCE_FAMILIES[0]
     trace = source_family_guardrail_trace(family)

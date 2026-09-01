@@ -96,6 +96,10 @@ def test_core_workbench_post_fails_closed_before_service(proxy_untrusted_client,
     ("path", "service_name"),
     [
         ("/dataset-version-candidates", "aps_dataset_version_candidates"),
+        (
+            "/public-dataset-version-candidates",
+            "public_connector_dataset_version_candidates",
+        ),
         ("/session/session-1", "session_summary"),
     ],
 )
