@@ -125,6 +125,12 @@ def _stable_hash(value: object) -> str:
 
 
 def _candidate_prefixes() -> tuple[str, ...]:
+    # Parse-then-gate design (deliberate): this promotion-side recognizer is flag-gated,
+    # while the intake and source-boundary candidate-id parsers recognize the adopt prefix
+    # unconditionally. Admission is enforced flag-gated deeper (_server_rows / _assert_record_admitted
+    # / record_adopted_external_source_intake), so no adopt material is admitted when the flag is off.
+    # The only flags-off observable difference vs. pre-adopt is that a *nonexistent* adopt-prefixed
+    # candidate id surfaces as 404 record-not-found rather than 400 not-admitted — harmless, no leak.
     prefixes = [CONNECTOR_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX]
     if settings.layer3_adopted_external_source_intake_enabled:
         prefixes.append(ADOPTED_EXTERNAL_SOURCE_INTAKE_GATE_B_CANDIDATE_PREFIX)

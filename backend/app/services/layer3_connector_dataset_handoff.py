@@ -247,6 +247,10 @@ def _connector_source_summary(
         "session_id": session.session_id,
         "selection_manifest_id": manifest.selection_manifest_id,
         "material_snapshot_id": material_snapshot.material_snapshot_id,
+        # source_plane is a system-set lineage label carried from the gate-b candidate (not external
+        # or CSV data); it is not value-projection. Value-safety rides on the source_shape ==
+        # intake_record.source_family check in _validate_durable_lineage plus the no-value review-only
+        # packages, so projecting the plane label verbatim is safe.
         "source_plane": material_snapshot.source_plane,
         "source_shape": material_snapshot.source_shape,
         "source_identity": {
