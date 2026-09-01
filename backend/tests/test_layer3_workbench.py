@@ -1314,7 +1314,7 @@ def _seed_aps_derived_dataset_version(
         row_count=3,
     )
     observed_at = VariableDefinition(
-        variable_id="var-time-aps-csv-001",
+        variable_id=f"var-time-{dataset_version_id}",
         dataset_version_id=dataset_version_id,
         variable_name="observed_at",
         dtype="datetime64[ns]",
@@ -1324,7 +1324,7 @@ def _seed_aps_derived_dataset_version(
         ordinal_position=0,
     )
     value = VariableDefinition(
-        variable_id="var-value-aps-csv-001",
+        variable_id=f"var-value-{dataset_version_id}",
         dataset_version_id=dataset_version_id,
         variable_name="value",
         dtype="float64",
@@ -1908,6 +1908,325 @@ def test_aps_derived_dataset_version_flows_from_material_preview_to_plan_preview
     )
     assert plan["plan_preview"]["admitted_sets"][0]["readiness"] == "admitted"
     assert plan["plan_preview"]["planned_passes"][0]["dataset_version_id"] == dataset_version_id
+
+
+def test_public_sciencebase_dataset_version_admission_is_default_off_narrow_and_not_aps_labeled(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-sciencebase-public-001",
+        source_system="sciencebase",
+        source_mode="public_api",
+        parser_family="",
+        typed_content_contract_id="",
+        parser_contract_id="",
+    )
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-sciencebase-public",
+            "natural_language_intent": "Analyze a retrieved public ScienceBase CSV.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-sciencebase-public",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        }
+    )
+    payload = {
+        "client_request_id": "req-material-sciencebase-public",
+        "preflight_id": preflight["preflight_id"],
+        "source_set_id": source["source_set_id"],
+        "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+        "dataset_version_ids": [dataset_version_id],
+        "query_basis": {"terms": ["sciencebase", "public"]},
+    }
+
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", False)
+    with pytest.raises(layer3_workbench.Layer3WorkbenchError) as exc:
+        layer3_workbench.material_preview(payload, db_session)
+    assert exc.value.error_code == "dataset_version_provenance_not_admitted"
+
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    material = layer3_workbench.material_preview(payload, db_session)
+
+    candidate = material["material_candidates"][0]
+    provenance = candidate["source_provenance"]
+    trace = candidate["source_trace"]
+    assert candidate["source_family"] == "sciencebase_public"
+    assert candidate["source_family_label"] == "ScienceBase-derived public dataset"
+    assert provenance["aps_derived"] is False
+    assert provenance["sciencebase_derived"] is True
+    assert "aps_source_provenance" not in provenance
+    assert provenance["sciencebase_source_provenance"][0]["source_system"] == "sciencebase"
+    assert trace["trace_readiness"] == "traceable_sciencebase_dataset_version"
+    assert "aps_trace_refs" not in trace
+    assert trace["sciencebase_trace_refs"]["source_artifact_key"]
+
+
+@pytest.mark.parametrize(
+    ("dataset_version_id", "seed_kwargs"),
+    [
+        ("dv-aps-byte-stable-001", {}),
+        (
+            "dv-raw-mixed-byte-stable-001",
+            {
+                "source_system": "local_operator_staged_server_owned_manifest",
+                "source_mode": "raw_mixed_materialized",
+                "artifact_locator_type": "server_owned_ref",
+                "fetch_policy_mode": "server_owned_manifest",
+            },
+        ),
+    ],
+)
+def test_public_analysis_flag_does_not_change_legacy_material_candidate_payloads(
+    db_session,
+    tmp_path,
+    monkeypatch,
+    dataset_version_id,
+    seed_kwargs,
+) -> None:
+    _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id=dataset_version_id,
+        **seed_kwargs,
+    )
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": f"req-preflight-byte-stable-{dataset_version_id}",
+            "natural_language_intent": "Prove legacy DatasetVersion material output is flag-stable.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": f"req-source-byte-stable-{dataset_version_id}",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        }
+    )
+    payload = {
+        "client_request_id": f"req-material-byte-stable-{dataset_version_id}",
+        "preflight_id": preflight["preflight_id"],
+        "source_set_id": source["source_set_id"],
+        "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+        "dataset_version_ids": [dataset_version_id],
+        "query_basis": {"terms": ["byte", "stable"]},
+    }
+    candidates_by_flag = []
+    serialized_candidates_by_flag = []
+    for enabled in (False, True):
+        monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", enabled)
+        candidates = layer3_workbench.material_preview(payload, db_session)[
+            "material_candidates"
+        ]
+        candidates_by_flag.append(candidates)
+        serialized_candidates_by_flag.append(
+            json.dumps(candidates, separators=(",", ":")).encode("utf-8")
+        )
+    assert candidates_by_flag[0] == candidates_by_flag[1]
+    assert serialized_candidates_by_flag[0] == serialized_candidates_by_flag[1]
+
+
+@pytest.mark.parametrize("public_analysis_enabled", [False, True])
+def test_public_sciencebase_admission_keeps_shared_aps_raw_mixed_predicate_closed(
+    monkeypatch,
+    public_analysis_enabled,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", public_analysis_enabled)
+    aps = DatasetSourceProvenance(
+        dataset_version_id="dv-aps-predicate",
+        source_system="nrc_adams_aps",
+        source_mode="artifact_csv_parser",
+    )
+    raw_mixed = DatasetSourceProvenance(
+        dataset_version_id="dv-raw-mixed-predicate",
+        source_system="local_operator_staged_server_owned_manifest",
+        source_mode="raw_mixed_materialized",
+        artifact_locator_type="server_owned_ref",
+        fetch_policy_mode="server_owned_manifest",
+    )
+    public_sciencebase = DatasetSourceProvenance(
+        dataset_version_id="dv-sciencebase-predicate",
+        source_system="sciencebase",
+        source_mode="public_api",
+    )
+    nonpublic_sciencebase = DatasetSourceProvenance(
+        dataset_version_id="dv-sciencebase-private-predicate",
+        source_system="sciencebase",
+        source_mode="private_api",
+    )
+    other_public = DatasetSourceProvenance(
+        dataset_version_id="dv-other-public-predicate",
+        source_system="other_connector",
+        source_mode="public_api",
+    )
+
+    assert layer3_workbench._is_admitted_dataset_version_provenance(aps) is True
+    assert layer3_workbench._is_admitted_dataset_version_provenance(raw_mixed) is True
+    assert layer3_workbench._is_admitted_dataset_version_provenance(public_sciencebase) is False
+    assert layer3_workbench._is_admitted_dataset_version_provenance(nonpublic_sciencebase) is False
+    assert layer3_workbench._is_admitted_public_dataset_version_provenance(public_sciencebase) is True
+    assert layer3_workbench._is_admitted_public_dataset_version_provenance(nonpublic_sciencebase) is False
+    assert layer3_workbench._is_admitted_public_dataset_version_provenance(other_public) is False
+
+
+def test_public_dataset_discovery_is_flag_gated_and_never_bleeds_into_aps_candidates(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    aps_dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-aps-isolated-001",
+    )
+    sciencebase_dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-sciencebase-discovery-001",
+        source_system="sciencebase",
+        source_mode="public_api",
+        parser_family="",
+        typed_content_contract_id="",
+        parser_contract_id="",
+    )
+    raw_mixed_dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-raw-mixed-isolated-001",
+        source_system="local_operator_staged_server_owned_manifest",
+        source_mode="raw_mixed_materialized",
+        artifact_locator_type="server_owned_ref",
+        fetch_policy_mode="server_owned_manifest",
+    )
+    stale_sciencebase_dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-sciencebase-stale-001",
+        source_system="sciencebase",
+        source_mode="public_api",
+        parser_family="",
+        typed_content_contract_id="",
+        parser_contract_id="",
+    )
+    db_session.add(
+        DatasetSourceProvenance(
+            dataset_version_id=stale_sciencebase_dataset_version_id,
+            connector_run_id=None,
+            source_system="other_connector",
+            source_mode="public_api",
+            source_artifact_key="other/run-newer/fixture.csv",
+            downloaded_sha256="8" * 64,
+            raw_storage_ref="other/run-newer/fixture.csv",
+            source_reference_json={"target_id": "other-newer"},
+            created_at=datetime(2030, 1, 1, tzinfo=timezone.utc),
+        )
+    )
+    db_session.flush()
+    aps_flag_state_payloads = []
+    for enabled in (False, True):
+        monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", enabled)
+        aps_result = layer3_workbench.aps_dataset_version_candidates(db_session)
+        assert {
+            item["dataset_version_id"] for item in aps_result["dataset_version_candidates"]
+        } == {aps_dataset_version_id, raw_mixed_dataset_version_id}
+        assert all(
+            item["source_system"] != "sciencebase"
+            for item in aps_result["dataset_version_candidates"]
+        )
+        aps_flag_state_payloads.append(
+            {
+                "dataset_version_candidates": aps_result["dataset_version_candidates"],
+                "candidate_count": aps_result["candidate_count"],
+                "source_system": aps_result["source_system"],
+                "source_family_summary": aps_result["source_family_summary"],
+                "authority_rail": aps_result["authority_rail"],
+            }
+        )
+
+        public_result = layer3_workbench.public_connector_dataset_version_candidates(db_session)
+        public_candidates = public_result["dataset_version_candidates"]
+        assert public_result["schema_id"] == "layer3.public_connector_dataset_version_candidates.v1"
+        if not enabled:
+            assert public_result["candidate_count"] == 0
+            assert public_candidates == []
+            continue
+        assert {item["dataset_version_id"] for item in public_candidates} == {
+            sciencebase_dataset_version_id,
+        }
+        assert all(item["source_system"] == "sciencebase" for item in public_candidates)
+        assert all(item["source_mode"] == "public_api" for item in public_candidates)
+        assert all(item["source_family"] == "sciencebase_public" for item in public_candidates)
+        assert all(item["aps_derived"] is False for item in public_candidates)
+        assert all(item["sciencebase_derived"] is True for item in public_candidates)
+    assert aps_flag_state_payloads[0] == aps_flag_state_payloads[1]
+    assert json.dumps(
+        aps_flag_state_payloads[0],
+        separators=(",", ":"),
+    ).encode("utf-8") == json.dumps(
+        aps_flag_state_payloads[1],
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
+def test_public_dataset_discovery_does_not_drop_valid_authority_below_mixed_rows(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    public_dataset_version_id = _seed_aps_derived_dataset_version(
+        db_session,
+        tmp_path,
+        dataset_version_id="dv-sciencebase-below-mixed-window-001",
+        source_system="sciencebase",
+        source_mode="public_api",
+        parser_family="",
+        typed_content_contract_id="",
+        parser_contract_id="",
+    )
+    public_row = (
+        db_session.query(DatasetSourceProvenance)
+        .filter(
+            DatasetSourceProvenance.dataset_version_id == public_dataset_version_id
+        )
+        .one()
+    )
+    public_row.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    for index in range(6):
+        noise_dataset_version_id = _seed_aps_derived_dataset_version(
+            db_session,
+            tmp_path,
+            dataset_version_id=f"dv-newer-aps-noise-{index:03d}",
+        )
+        noise_row = (
+            db_session.query(DatasetSourceProvenance)
+            .filter(
+                DatasetSourceProvenance.dataset_version_id
+                == noise_dataset_version_id
+            )
+            .one()
+        )
+        noise_row.created_at = datetime(2026, 2, index + 1, tzinfo=timezone.utc)
+    db_session.flush()
+
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    result = layer3_workbench.public_connector_dataset_version_candidates(
+        db_session,
+        limit=1,
+    )
+
+    assert [
+        candidate["dataset_version_id"]
+        for candidate in result["dataset_version_candidates"]
+    ] == [public_dataset_version_id]
 
 
 def test_aps_derived_dataset_material_preview_uses_newest_provenance(db_session, tmp_path) -> None:

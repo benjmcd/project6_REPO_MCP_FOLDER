@@ -47,6 +47,14 @@ APS_ADMITTED_TABLE_SOURCE_FAMILIES: tuple[dict[str, Any], ...] = (
 
 RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM = "local_operator_staged_server_owned_manifest"
 RAW_MIXED_SOURCE_MODE = "raw_mixed_materialized"
+PUBLIC_SCIENCEBASE_SOURCE_FAMILY: dict[str, Any] = {
+    "parser_family": None,
+    "source_family": "sciencebase_public",
+    "source_family_label": "ScienceBase-derived public dataset",
+    "typed_content_contract_id": None,
+    "admission_state": "admitted_materialized_dataset_version",
+    "scope": "public ScienceBase CSV materialized through existing connector DatasetVersion authority",
+}
 RAW_MIXED_MATERIALIZED_SOURCE_FAMILY: dict[str, Any] = {
     "parser_family": None,
     "source_family": "server_owned_raw_mixed",
@@ -147,6 +155,11 @@ def source_family_for_parser(parser_family: str | None) -> dict[str, Any]:
 
 
 def source_family_for_provenance(provenance: Mapping[str, Any]) -> dict[str, Any]:
+    if (
+        str(provenance.get("source_system") or "") == "sciencebase"
+        and str(provenance.get("source_mode") or "") == "public_api"
+    ):
+        return dict(PUBLIC_SCIENCEBASE_SOURCE_FAMILY)
     if (
         str(provenance.get("source_system") or "") == RAW_MIXED_SERVER_OWNED_SOURCE_SYSTEM
         and str(provenance.get("source_mode") or "") == RAW_MIXED_SOURCE_MODE

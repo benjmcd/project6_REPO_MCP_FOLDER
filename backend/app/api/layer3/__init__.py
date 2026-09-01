@@ -187,6 +187,8 @@ class Layer3WorkbenchBootstrapResponse(Layer3BaseResponse):
     mockup_activation_readiness: dict[str, Any]
     features: dict[str, bool]
     analysis_product_package_inventory_enabled: bool = False
+    layer3_public_dataset_analysis_enabled: bool = False
+    layer3_public_connector_value_reveal_enabled: bool = False
     execution_readiness: dict[str, Any]
     authority_rail: dict[str, Any]
 
@@ -11335,6 +11337,25 @@ def get_dataset_version_candidates(
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.aps_dataset_version_candidates(db, limit=limit))
+
+
+@router.get(
+    "/public-dataset-version-candidates",
+    response_model=Layer3DatasetVersionCandidatesResponse,
+    responses=_workbench_error_responses(400),
+)
+def get_public_dataset_version_candidates(
+    request: Request,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request, access="read")
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    return _json_or_error(
+        lambda: layer3_workbench.public_connector_dataset_version_candidates(db, limit=limit)
+    )
 
 
 @router.get(

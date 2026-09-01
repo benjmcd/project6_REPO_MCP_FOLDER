@@ -1211,6 +1211,20 @@ def test_layer3_first_slice_preview_openapi_contracts(client: TestClient) -> Non
         "authority_rail",
     } <= set(dataset_candidate_schema["required"])
 
+    public_dataset_candidate_schema = _openapi_response_schema(
+        spec,
+        "/api/v1/layer3/public-dataset-version-candidates",
+        "get",
+    )
+    assert public_dataset_candidate_schema["title"] == "Layer3DatasetVersionCandidatesResponse"
+    assert {
+        "dataset_version_candidates",
+        "candidate_count",
+        "source_system",
+        "source_family_summary",
+        "authority_rail",
+    } <= set(public_dataset_candidate_schema["required"])
+
     aps_content_candidate_schema = _openapi_response_schema(
         spec,
         "/api/v1/layer3/aps-content-document-candidates",
@@ -1250,6 +1264,65 @@ def test_layer3_api_lists_aps_derived_dataset_version_candidates(client: TestCli
     assert candidate["parser_family"] == "csv_table"
     assert candidate["source_family_label"] == "CSV table"
     assert body["source_family_summary"]["observed_candidate_counts"] == {"csv_table": 1}
+
+
+def test_layer3_api_bootstrap_exposes_both_public_science_flags(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", False)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", False)
+    disabled = client.get("/api/v1/layer3/bootstrap")
+    assert disabled.status_code == 200
+    assert disabled.json()["layer3_public_dataset_analysis_enabled"] is False
+    assert disabled.json()["layer3_public_connector_value_reveal_enabled"] is False
+
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+    enabled = client.get("/api/v1/layer3/bootstrap")
+    assert enabled.status_code == 200
+    assert enabled.json()["layer3_public_dataset_analysis_enabled"] is True
+    assert enabled.json()["layer3_public_connector_value_reveal_enabled"] is True
+
+
+def test_layer3_api_lists_public_sciencebase_dataset_versions_only_when_enabled(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    db = client.layer3_session_factory()
+    try:
+        dataset_version_id = _seed_aps_derived_dataset_version(
+            db,
+            tmp_path,
+            dataset_version_id="dv-sciencebase-public-api-001",
+            source_system="sciencebase",
+            source_mode="public_api",
+            parser_family="",
+            typed_content_contract_id="",
+            parser_contract_id="",
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", False)
+    disabled = client.get("/api/v1/layer3/public-dataset-version-candidates")
+    assert disabled.status_code == 200
+    assert disabled.json()["dataset_version_candidates"] == []
+    assert disabled.json()["candidate_count"] == 0
+
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    enabled = client.get("/api/v1/layer3/public-dataset-version-candidates")
+    assert enabled.status_code == 200
+    body = enabled.json()
+    assert body["schema_id"] == "layer3.public_connector_dataset_version_candidates.v1"
+    assert body["candidate_count"] == 1
+    assert body["dataset_version_candidates"][0]["dataset_version_id"] == dataset_version_id
+    assert body["dataset_version_candidates"][0]["source_family_label"] == (
+        "ScienceBase-derived public dataset"
+    )
+    assert body["dataset_version_candidates"][0]["aps_derived"] is False
 
 
 def test_layer3_api_validates_sec_edgar_text_table_authority_envelope(client: TestClient, tmp_path) -> None:
@@ -12691,6 +12764,12 @@ def test_layer3_json_workbench_error_openapi_contracts(client: TestClient) -> No
             {"source_candidate_ids": ["src-dataset_version-forced"]},
         ),
         ("aps_dataset_version_candidates", "get", "/api/v1/layer3/dataset-version-candidates?limit=1", None),
+        (
+            "public_connector_dataset_version_candidates",
+            "get",
+            "/api/v1/layer3/public-dataset-version-candidates?limit=1",
+            None,
+        ),
         ("aps_content_document_candidates", "get", "/api/v1/layer3/aps-content-document-candidates?limit=1", None),
         (
             "gate_b_decision",

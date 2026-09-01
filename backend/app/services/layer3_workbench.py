@@ -14,7 +14,7 @@ from typing import Any, Callable
 
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import DBAPIError, IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.core.config import settings
 from app.models.models import (
@@ -974,7 +974,7 @@ def readiness_contract() -> dict[str, Any]:
 
 
 def bootstrap() -> dict[str, Any]:
-    return build_bootstrap_contract(
+    contract = build_bootstrap_contract(
         route=ROUTE,
         api_root=API_ROOT,
         supported_source_classes=SUPPORTED_SOURCE_CLASSES,
@@ -990,6 +990,13 @@ def bootstrap() -> dict[str, Any]:
             browser_only_state=["expanded_rows", "hidden_uncommitted_candidates", "selected_tab"],
         ),
     )
+    contract["layer3_public_dataset_analysis_enabled"] = bool(
+        settings.layer3_public_dataset_analysis_enabled
+    )
+    contract["layer3_public_connector_value_reveal_enabled"] = bool(
+        settings.layer3_public_connector_value_reveal_enabled
+    )
+    return contract
 
 
 def preflight(payload: dict[str, Any]) -> dict[str, Any]:
@@ -1166,6 +1173,10 @@ def _is_admitted_dataset_version_provenance(row: DatasetSourceProvenance) -> boo
     return row.source_system == "nrc_adams_aps"
 
 
+def _is_admitted_public_dataset_version_provenance(row: DatasetSourceProvenance) -> bool:
+    return row.source_system == "sciencebase" and row.source_mode == "public_api"
+
+
 def _dataset_version_provenance_rows(db: Session, *, dataset_version_id: str) -> list[DatasetSourceProvenance]:
     return (
         db.query(DatasetSourceProvenance)
@@ -1180,7 +1191,13 @@ def _dataset_version_provenance_rows(db: Session, *, dataset_version_id: str) ->
 
 def _aps_dataset_provenance_rows(db: Session, *, dataset_version_id: str) -> list[DatasetSourceProvenance]:
     rows = _dataset_version_provenance_rows(db, dataset_version_id=dataset_version_id)
-    if rows and not _is_admitted_dataset_version_provenance(rows[0]):
+    primary_is_aps_admitted = bool(rows and _is_admitted_dataset_version_provenance(rows[0]))
+    primary_is_public_admitted = bool(
+        rows
+        and settings.layer3_public_dataset_analysis_enabled
+        and _is_admitted_public_dataset_version_provenance(rows[0])
+    )
+    if rows and not (primary_is_aps_admitted or primary_is_public_admitted):
         raise Layer3WorkbenchError(
             "dataset_version_provenance_not_admitted",
             "DatasetVersion provenance is not admitted for Layer 3 material preview.",
@@ -1188,6 +1205,8 @@ def _aps_dataset_provenance_rows(db: Session, *, dataset_version_id: str) -> lis
             blocked_fields=["dataset_version_ids"],
             next_allowed_actions=["revise_dataset_version_selection"],
         )
+    if primary_is_public_admitted:
+        return [row for row in rows if _is_admitted_public_dataset_version_provenance(row)]
     return [row for row in rows if _is_admitted_dataset_version_provenance(row)]
 
 
@@ -1220,25 +1239,35 @@ def _dataset_version_source_trace(
     aps_provenance: list[dict[str, Any]],
     source_family: dict[str, Any],
     storage_available: bool,
+    sciencebase_derived: bool = False,
 ) -> dict[str, Any]:
     numeric_variables = [variable.variable_name for variable in variables if variable.is_numeric]
     time_variables = [variable.variable_name for variable in variables if variable.is_time_index]
     primary_provenance = aps_provenance[0] if aps_provenance else {}
     trace_readiness = (
-        "traceable_aps_dataset_version"
-        if aps_provenance
-        else "traceable_dataset_version_without_aps_provenance"
+        "traceable_sciencebase_dataset_version"
+        if sciencebase_derived
+        else (
+            "traceable_aps_dataset_version"
+            if aps_provenance
+            else "traceable_dataset_version_without_aps_provenance"
+        )
     )
-    return {
+    trace = {
         "schema_id": "layer3.dataset_version_source_trace.v1",
         "trace_scope": "selected_material_candidate",
         "selection_shape": "dataset_version",
         "trace_readiness": trace_readiness,
         "ui_summary": (
-            "Selected material is traceable through DatasetVersion authority, "
-            "DatasetSourceProvenance, parser contract metadata, and source artifact refs."
-            if aps_provenance
-            else "Selected material is traceable as an existing DatasetVersion; APS source provenance was not present."
+            "Selected public ScienceBase material is traceable through DatasetVersion authority, "
+            "DatasetSourceProvenance, and source artifact refs."
+            if sciencebase_derived
+            else (
+                "Selected material is traceable through DatasetVersion authority, "
+                "DatasetSourceProvenance, parser contract metadata, and source artifact refs."
+                if aps_provenance
+                else "Selected material is traceable as an existing DatasetVersion; APS source provenance was not present."
+            )
         ),
         "source_family": source_family["source_family"],
         "source_family_label": source_family["source_family_label"],
@@ -1263,19 +1292,21 @@ def _dataset_version_source_trace(
             "row_count": int(version.row_count or 0),
             "storage_available": storage_available,
         },
-        "aps_trace_refs": {
-            "source_artifact_key": primary_provenance.get("source_artifact_key"),
-            "raw_storage_ref": primary_provenance.get("raw_storage_ref"),
-            "diagnostics_ref": primary_provenance.get("diagnostics_ref"),
-            "target_id": primary_provenance.get("target_id"),
-            "accession_number": primary_provenance.get("accession_number"),
-            "parser_family": primary_provenance.get("parser_family"),
-            "parser_contract_id": primary_provenance.get("parser_contract_id"),
-            "typed_content_contract_id": primary_provenance.get("typed_content_contract_id"),
-            "table_index": primary_provenance.get("table_index"),
-            "table_hash": primary_provenance.get("table_hash"),
-        },
     }
+    trace_refs = {
+        "source_artifact_key": primary_provenance.get("source_artifact_key"),
+        "raw_storage_ref": primary_provenance.get("raw_storage_ref"),
+        "diagnostics_ref": primary_provenance.get("diagnostics_ref"),
+        "target_id": primary_provenance.get("target_id"),
+        "accession_number": primary_provenance.get("accession_number"),
+        "parser_family": primary_provenance.get("parser_family"),
+        "parser_contract_id": primary_provenance.get("parser_contract_id"),
+        "typed_content_contract_id": primary_provenance.get("typed_content_contract_id"),
+        "table_index": primary_provenance.get("table_index"),
+        "table_hash": primary_provenance.get("table_hash"),
+    }
+    trace["sciencebase_trace_refs" if sciencebase_derived else "aps_trace_refs"] = trace_refs
+    return trace
 
 
 def _aps_content_linkage_rows(db: Session, *, content_id: str) -> list[ApsContentLinkage]:
@@ -1473,6 +1504,108 @@ def aps_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str,
         "candidate_count": len(candidates),
         "source_system": "nrc_adams_aps",
         "source_family_summary": _source_family_summary(candidates),
+        "authority_rail": {
+            "authority_source": "dataset_source_provenance",
+            "selection_authority": "material_preview_dataset_version_ids",
+            "read_only": True,
+        },
+    }
+
+
+def public_connector_dataset_version_candidates(db: Session, *, limit: int = 50) -> dict[str, Any]:
+    normalized_limit = max(1, min(int(limit or 50), 200))
+    candidates: list[dict[str, Any]] = []
+    if settings.layer3_public_dataset_analysis_enabled:
+        newer_provenance = aliased(DatasetSourceProvenance)
+        newer_provenance_exists = (
+            db.query(newer_provenance.dataset_source_provenance_id)
+            .filter(
+                newer_provenance.dataset_version_id
+                == DatasetSourceProvenance.dataset_version_id,
+                or_(
+                    newer_provenance.created_at
+                    > DatasetSourceProvenance.created_at,
+                    and_(
+                        newer_provenance.created_at
+                        == DatasetSourceProvenance.created_at,
+                        newer_provenance.dataset_source_provenance_id
+                        > DatasetSourceProvenance.dataset_source_provenance_id,
+                    ),
+                ),
+            )
+            .exists()
+        )
+        rows = (
+            db.query(DatasetSourceProvenance)
+            .filter(
+                DatasetSourceProvenance.source_system == "sciencebase",
+                DatasetSourceProvenance.source_mode == "public_api",
+                ~newer_provenance_exists,
+            )
+            .order_by(
+                DatasetSourceProvenance.created_at.desc(),
+                DatasetSourceProvenance.dataset_source_provenance_id.desc(),
+            )
+            .limit(normalized_limit)
+            .all()
+        )
+        for row in rows:
+            version = db.get(DatasetVersion, row.dataset_version_id)
+            if version is None:
+                continue
+            dataset = db.get(Dataset, version.dataset_id)
+            variables = _dataset_version_variables(db, dataset_version_id=version.dataset_version_id)
+            provenance = _serialize_aps_dataset_provenance(row)
+            source_family = _source_family_for_provenance(provenance)
+            candidates.append(
+                {
+                    "schema_id": "layer3.public_connector_dataset_version_candidate.v1",
+                    "dataset_version_id": version.dataset_version_id,
+                    "dataset_id": version.dataset_id,
+                    "dataset_name": dataset.name if dataset is not None else None,
+                    "version_label": version.version_label,
+                    "version_type": version.version_type,
+                    "status": version.status,
+                    "row_count": int(version.row_count or 0),
+                    "variable_count": len(variables),
+                    "time_column": dataset.time_column if dataset is not None else None,
+                    "frequency_hint": dataset.frequency_hint if dataset is not None else None,
+                    "source_system": row.source_system,
+                    "source_mode": row.source_mode,
+                    "source_artifact_key": row.source_artifact_key,
+                    "parser_family": provenance.get("parser_family"),
+                    "typed_content_contract_id": provenance.get("typed_content_contract_id"),
+                    "source_family": source_family["source_family"],
+                    "source_family_label": source_family["source_family_label"],
+                    "source_admission_state": source_family["admission_state"],
+                    "source_family_scope": source_family["scope"],
+                    "target_id": provenance.get("target_id"),
+                    "aps_derived": False,
+                    "sciencebase_derived": True,
+                }
+            )
+            if len(candidates) >= normalized_limit:
+                break
+    return {
+        **_base_response("layer3.public_connector_dataset_version_candidates.v1"),
+        "dataset_version_candidates": candidates,
+        "candidate_count": len(candidates),
+        "source_system": "sciencebase",
+        "source_family_summary": {
+            "schema_id": "layer3.public_connector_source_family_summary.v1",
+            "authority_source": "dataset_source_provenance",
+            "selection_shape": "dataset_version",
+            "admitted_materialized_families": [
+                {
+                    "source_family": "sciencebase_public",
+                    "source_family_label": "ScienceBase-derived public dataset",
+                    "source_system": "sciencebase",
+                    "source_mode": "public_api",
+                }
+            ],
+            "observed_candidate_counts": {"sciencebase_public": len(candidates)},
+            "ui_scope": "Public ScienceBase DatasetVersions admitted by the default-off analysis seam.",
+        },
         "authority_rail": {
             "authority_source": "dataset_source_provenance",
             "selection_authority": "material_preview_dataset_version_ids",
@@ -1759,10 +1892,15 @@ def _dataset_version_material_candidates(
             )
         dataset = db.get(Dataset, version.dataset_id)
         variables = _dataset_version_variables(db, dataset_version_id=dataset_version_id)
+        provenance_rows = _aps_dataset_provenance_rows(db, dataset_version_id=dataset_version_id)
         aps_provenance = [
             _serialize_aps_dataset_provenance(row)
-            for row in _aps_dataset_provenance_rows(db, dataset_version_id=dataset_version_id)
+            for row in provenance_rows
         ]
+        sciencebase_derived = bool(
+            provenance_rows
+            and _is_admitted_public_dataset_version_provenance(provenance_rows[0])
+        )
         source_family = (
             _source_family_for_provenance(aps_provenance[0])
             if aps_provenance
@@ -1782,6 +1920,7 @@ def _dataset_version_material_candidates(
             aps_provenance=aps_provenance,
             source_family=source_family,
             storage_available=storage_available,
+            sciencebase_derived=sciencebase_derived,
         )
         source_identity = {
             "schema_id": "layer3.dataset_version_source_identity.v1",
@@ -1802,24 +1941,47 @@ def _dataset_version_material_candidates(
             "time_column": dataset.time_column if dataset is not None else None,
             "frequency_hint": dataset.frequency_hint if dataset is not None else None,
             "domain_pack": dataset.domain_pack if dataset is not None else None,
-            "aps_source_provenance": aps_provenance,
-            "aps_derived": bool(aps_provenance),
-            "source_family": source_family["source_family"],
-            "source_family_label": source_family["source_family_label"],
-            "source_admission_state": source_family["admission_state"],
-            "source_family_scope": source_family["scope"],
-            "source_trace": source_trace,
         }
+        if sciencebase_derived:
+            source_provenance.update(
+                {
+                    "sciencebase_source_provenance": aps_provenance,
+                    "sciencebase_derived": True,
+                    "aps_derived": False,
+                }
+            )
+        else:
+            source_provenance.update(
+                {
+                    "aps_source_provenance": aps_provenance,
+                    "aps_derived": bool(aps_provenance),
+                }
+            )
+        source_provenance.update(
+            {
+                "source_family": source_family["source_family"],
+                "source_family_label": source_family["source_family_label"],
+                "source_admission_state": source_family["admission_state"],
+                "source_family_scope": source_family["scope"],
+                "source_trace": source_trace,
+            }
+        )
         load_summary = {
             "loaded_records": int(version.row_count or 0),
             "failed_records": 0,
             "preview_material": True,
             "storage_available": storage_available,
             "variable_count": len(variables),
-            "aps_derived": bool(aps_provenance),
-            "source_family": source_family["source_family"],
-            "source_admission_state": source_family["admission_state"],
+            "aps_derived": False if sciencebase_derived else bool(aps_provenance),
         }
+        if sciencebase_derived:
+            load_summary["sciencebase_derived"] = True
+        load_summary.update(
+            {
+                "source_family": source_family["source_family"],
+                "source_admission_state": source_family["admission_state"],
+            }
+        )
         short_id = _stable_id(
             "mat",
             {

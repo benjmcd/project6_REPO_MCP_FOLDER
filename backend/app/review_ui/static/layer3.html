@@ -561,6 +561,39 @@
                         <label for="dataset-version-ids">Explicit DatasetVersion IDs</label>
                         <textarea id="dataset-version-ids" name="dataset-version-ids" rows="2" placeholder="dv-aps-csv-001, another-dataset-version-id"></textarea>
                     </section>
+                    <section id="public-sciencebase-panel" class="dataset-version-selector public-sciencebase-panel" hidden aria-labelledby="public-sciencebase-heading" aria-live="polite">
+                        <div>
+                            <h3 id="public-sciencebase-heading">Public ScienceBase DatasetVersion selection</h3>
+                            <p>Retrieve a public ScienceBase CSV, inspect connector progress, and select admitted DatasetVersion IDs for the existing Layer 3 status-only analysis walk. No dataset values are rendered here.</p>
+                        </div>
+                        <div id="public-sciencebase-connector-form" class="public-sciencebase-connector-form">
+                            <div class="source-intake-grid">
+                                <label for="public-sciencebase-query">Query</label>
+                                <input id="public-sciencebase-query" name="public-sciencebase-query" value="Mineral Commodity Summaries" autocomplete="off">
+                                <label for="public-sciencebase-scope-mode">Scope mode</label>
+                                <select id="public-sciencebase-scope-mode" name="public-sciencebase-scope-mode">
+                                    <option value="keyword_search" selected>Keyword search</option>
+                                    <option value="folder_children">Folder children</option>
+                                    <option value="folder_descendants">Folder descendants</option>
+                                    <option value="explicit_item_ids">Explicit item IDs</option>
+                                    <option value="explicit_dois">Explicit DOIs</option>
+                                </select>
+                                <label for="public-sciencebase-scope-values">Scope values</label>
+                                <textarea id="public-sciencebase-scope-values" name="public-sciencebase-scope-values" rows="2" placeholder="One scope value per line"></textarea>
+                                <label for="public-sciencebase-filters">Filters</label>
+                                <textarea id="public-sciencebase-filters" name="public-sciencebase-filters" rows="2" placeholder="One filter per line"></textarea>
+                            </div>
+                            <button id="public-sciencebase-retrieve" class="secondary-btn" type="button">Retrieve public ScienceBase CSV</button>
+                        </div>
+                        <div id="public-sciencebase-run-status" class="public-sciencebase-run-status" aria-live="polite">
+                            <span class="dataset-version-empty">Public ScienceBase retrieval has not started.</span>
+                        </div>
+                        <div id="public-sciencebase-dataset-version-candidates" class="dataset-version-candidates" aria-live="polite">
+                            <span class="dataset-version-empty">Public DatasetVersion candidates have not loaded yet.</span>
+                        </div>
+                        <label for="public-sciencebase-dataset-version-ids">Explicit public DatasetVersion IDs</label>
+                        <textarea id="public-sciencebase-dataset-version-ids" name="public-sciencebase-dataset-version-ids" rows="2" readonly aria-readonly="true" placeholder="Select admitted public candidates above"></textarea>
+                    </section>
                     <section class="aps-content-document-selector" aria-labelledby="aps-content-document-selector-heading">
                         <div>
                             <h3 id="aps-content-document-selector-heading">APS content document selection</h3>

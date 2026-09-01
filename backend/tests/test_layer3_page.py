@@ -3356,3 +3356,187 @@ def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:
     assert client.get("/review/nrc-aps/workbench-compare").status_code == 200
     assert client.get("/review/nrc-aps/candidate-b-trace").status_code == 200
     assert client.get("/review/analyst-insight").status_code == 200
+
+
+def test_layer3_public_dataset_version_is_hidden_and_bootstrap_flag_gated() -> None:
+    html = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert html.status_code == 200
+    assert js.status_code == 200
+    assert '<section id="public-sciencebase-panel"' in html.text
+    assert '<div id="public-sciencebase-connector-form"' in html.text
+    assert '<form id="public-sciencebase-connector-form"' not in html.text
+    assert '<button id="public-sciencebase-retrieve"' in html.text
+    assert 'id="public-sciencebase-retrieve" class="secondary-btn" type="button"' in html.text
+    panel_start = html.text.find('<section id="public-sciencebase-panel"')
+    panel_end = html.text.find('>', panel_start)
+    assert panel_start != -1
+    assert panel_end != -1
+    assert ' hidden ' in f" {html.text[panel_start:panel_end]} "
+    for required in (
+        'id="public-sciencebase-connector-form"',
+        'id="public-sciencebase-retrieve"',
+        'id="public-sciencebase-dataset-version-candidates"',
+        'id="public-sciencebase-dataset-version-ids"',
+        'id="public-sciencebase-run-status"',
+    ):
+        assert required in html.text
+
+    state_start = js.text.find("const State = {")
+    state_end = js.text.find("};", state_start)
+    gate_start = js.text.find("function publicScienceBaseControlsEnabled")
+    gate_end = js.text.find("function ", gate_start + 1)
+    init_start = js.text.find("async function init()")
+    init_end = js.text.find("if (elements.themeSelector)", init_start)
+    assert state_start != -1
+    assert state_end != -1
+    assert gate_start != -1
+    assert gate_end != -1
+    assert init_start != -1
+    assert init_end != -1
+
+    state_slice = js.text[state_start:state_end]
+    gate_slice = js.text[gate_start:gate_end]
+    init_slice = js.text[init_start:init_end]
+    assert "publicDatasetVersionCandidates" in state_slice
+    assert "publicScienceBaseRun" in state_slice
+    assert "publicScienceBaseControlsEnabled" in gate_slice
+    assert "State.bootstrap?.layer3_public_dataset_analysis_enabled === true" in gate_slice
+    assert "value_reveal" not in gate_slice
+    assert "if (publicScienceBaseControlsEnabled())" in init_slice
+    assert "loadPublicDatasetVersionCandidates()" in init_slice
+    assert "loadPublicScienceBaseRunTargets" not in init_slice
+
+
+def test_layer3_public_sciencebase_connector_uses_api_root_and_bounded_status_projection() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert js.status_code == 200
+    connector_start = js.text.find("const CONNECTOR_API_ROOT = '/api/v1';")
+    payload_start = js.text.find("function publicScienceBaseConnectorPayload")
+    status_start = js.text.find("function renderPublicScienceBaseRunStatus")
+    targets_start = js.text.find("async function loadPublicScienceBaseRunTargets")
+    bind_start = js.text.find("function bindPublicScienceBaseControls")
+    assert connector_start != -1
+    assert payload_start != -1
+    assert status_start != -1
+    assert targets_start != -1
+    assert bind_start != -1
+
+    connector_slice = js.text[connector_start:payload_start]
+    payload_slice = js.text[payload_start:status_start]
+    status_slice = js.text[status_start:targets_start]
+    targets_slice = js.text[targets_start:bind_start]
+    for required in (
+        "'/connectors/sciencebase-public/runs'",
+        "'/connectors/runs/'",
+        "PUBLIC_CONNECTOR_TARGETS_PATH",
+        "devInjectedFetchHeaders()",
+        "PUBLIC_CONNECTOR_TERMINAL_STATUSES",
+        "PUBLIC_CONNECTOR_MAX_POLLS",
+        "PUBLIC_CONNECTOR_STALE_RUN_MS",
+    ):
+        assert required in connector_slice or required in targets_slice
+    assert "const PUBLIC_CONNECTOR_MAX_POLLS = 300;" in connector_slice
+    for required in (
+        "q:",
+        "scope_mode:",
+        "scope_values:",
+        "filters:",
+        "postConnectorJson(",
+        "PUBLIC_SCIENCEBASE_RUNS_PATH",
+    ):
+        assert required in payload_slice
+    for required in (
+        "current_phase",
+        "discovered_count",
+        "downloaded_count",
+        "ingested_count",
+        "recommended_count",
+        "stale",
+    ):
+        assert required in status_slice
+    assert "materialized_count" not in status_slice
+    assert "admitted_count" not in status_slice
+    for forbidden in ("raw_value", "numeric_value", "data_value", "values:"):
+        assert forbidden not in status_slice
+    assert "getConnectorJson(" in js.text
+    assert "PUBLIC_CONNECTOR_RUN_PATH" in js.text
+    assert "getConnectorJson(" in targets_slice
+    assert "PUBLIC_CONNECTOR_TARGETS_PATH" in targets_slice
+    assert "/targets" in targets_slice
+    assert "if (PUBLIC_CONNECTOR_TERMINAL_STATUSES.has(terminalStatus))" in js.text
+    assert "terminalStatus === 'completed' || terminalStatus === 'completed_with_errors'" in js.text
+
+
+def test_layer3_public_dataset_selection_refreshes_admitted_ids_without_gate_approval() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert js.status_code == 200
+    load_start = js.text.find("async function loadPublicDatasetVersionCandidates")
+    select_start = js.text.find("function selectPublicDatasetVersionCandidate")
+    render_start = js.text.find("function renderPublicDatasetVersionCandidates")
+    next_start = js.text.find("function ", render_start + 1)
+    bind_start = js.text.find("function bindPublicScienceBaseControls")
+    assert load_start != -1
+    assert select_start != -1
+    assert render_start != -1
+    assert bind_start != -1
+    assert next_start != -1
+
+    load_slice = js.text[load_start:select_start]
+    select_slice = js.text[select_start:render_start]
+    render_slice = js.text[render_start:bind_start]
+    assert "'/public-dataset-version-candidates'" in load_slice
+    assert "source_admission_state === 'admitted_materialized_dataset_version'" in js.text
+    assert "dataset_version_id" in select_slice
+    assert "syncPublicDatasetVersionSelection()" in select_slice
+    assert "elements.datasetVersionIds.value" in js.text
+    assert "gateB" not in select_slice
+    assert "planApprove" not in select_slice
+    assert "renderPublicScienceBaseRunStatus" in render_slice
+    assert "public-dataset-version-candidate" in render_slice
+    assert "source_admission_state" in render_slice
+    assert "publicScienceBaseRetrieve.addEventListener('click'" in js.text
+
+
+def test_layer3_public_picker_is_tied_to_run_targets_and_not_aps_labeled() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert js.status_code == 200
+    target_helper_start = js.text.find("function publicScienceBaseRunTargetDatasetVersionIds")
+    render_start = js.text.find("function renderPublicDatasetVersionCandidates")
+    render_end = js.text.find("function renderPublicScienceBasePanel", render_start)
+    labels_start = js.text.find("function selectedSourceClassLabels")
+    labels_end = js.text.find("function currentIntentText", labels_start)
+    sync_start = js.text.find("function syncPublicDatasetVersionSelection")
+    sync_end = js.text.find("async function retrievePublicScienceBaseRun", sync_start)
+    targets_start = js.text.find("async function loadPublicScienceBaseRunTargets")
+    targets_end = js.text.find("function parseDatasetVersionIds", targets_start)
+    assert target_helper_start != -1
+    assert render_start != -1
+    assert render_end != -1
+    assert labels_start != -1
+    assert labels_end != -1
+    assert sync_start != -1
+    assert sync_end != -1
+    assert targets_start != -1
+    assert targets_end != -1
+
+    target_helper_slice = js.text[target_helper_start:render_start]
+    render_slice = js.text[render_start:render_end]
+    labels_slice = js.text[labels_start:labels_end]
+    sync_slice = js.text[sync_start:sync_end]
+    targets_slice = js.text[targets_start:targets_end]
+    assert "State.publicScienceBaseRunTargets?.targets" in target_helper_slice
+    assert "target.dataset_version_id" in target_helper_slice
+    assert "targetDatasetVersionIds" in render_slice
+    assert "targetDatasetVersionIds.has(String(candidate.dataset_version_id" in render_slice
+    assert "State.publicScienceBaseSelectedIds" in labels_slice
+    assert ".filter((id) => !selectedPublicIds.has(id))" in labels_slice
+    assert "APS-derived DatasetVersion ID" in labels_slice
+    assert "ScienceBase-derived public DatasetVersion ID" in labels_slice
+    assert "clearLayer3FlowStateForSourceChange()" in sync_slice
+    assert "?limit=500&offset=${offset}" in targets_slice
+    assert "offset < total" in targets_slice
