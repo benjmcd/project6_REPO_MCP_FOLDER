@@ -9875,6 +9875,18 @@ class Layer3ExecutionResultStatusResponse(Layer3BaseResponse):
     dataset_version_id: str | None
 
 
+class Layer3PublicConnectorExecutionResultValuesResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_plan_id: str
+    pass_run_id: str
+    preview_identity: dict[str, Any]
+    analysis_run_id: str
+    dataset_version_id: str
+    selected_method_name: str
+    provenance: dict[str, Any]
+    values: dict[str, Any]
+
+
 class Layer3ExecutionResultReviewResponse(Layer3BaseResponse):
     session_id: str
     analysis_plan_id: str
@@ -11592,6 +11604,29 @@ def post_execution_result_status(
     except SecXbrlInAppAuthPolicyError as exc:
         return _sec_xbrl_auth_policy_error_response(exc)
     return _json_or_error(lambda: layer3_workbench.execution_result_status(db, payload.model_dump(exclude_unset=True)))
+
+
+@router.post(
+    "/execution/result/public-values",
+    response_model=Layer3PublicConnectorExecutionResultValuesResponse,
+    openapi_extra={"requestBody": _json_request_body(EXECUTION_RESULT_STATUS_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_public_connector_execution_result_values(
+    payload: Layer3ExecutionResultStatusRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request, access="read")
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    return _json_or_error(
+        lambda: layer3_workbench.public_connector_execution_result_values(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
 
 
 @router.post(

@@ -92,6 +92,31 @@ def test_core_workbench_post_fails_closed_before_service(proxy_untrusted_client,
     _assert_untrusted_proxy_response(response)
 
 
+def test_public_connector_result_values_fails_closed_before_service(
+    proxy_untrusted_client,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        layer3_workbench,
+        "public_connector_execution_result_values",
+        _fail_if_service_reached,
+    )
+
+    response = proxy_untrusted_client.post(
+        _API + "/execution/result/public-values",
+        json={
+            "session_id": "session-public-values-auth",
+            "analysis_plan_id": "plan-public-values-auth",
+            "pass_run_id": "pass-public-values-auth",
+            "preview_id": "preview-public-values-auth",
+            "preview_hash": "preview-hash-public-values-auth",
+        },
+        headers=_identity_headers(),
+    )
+
+    _assert_untrusted_proxy_response(response)
+
+
 @pytest.mark.parametrize(
     ("path", "service_name"),
     [

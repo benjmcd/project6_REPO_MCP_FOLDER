@@ -3540,3 +3540,151 @@ def test_layer3_public_picker_is_tied_to_run_targets_and_not_aps_labeled() -> No
     assert "clearLayer3FlowStateForSourceChange()" in sync_slice
     assert "?limit=500&offset=${offset}" in targets_slice
     assert "offset < total" in targets_slice
+
+
+def test_layer3_public_sciencebase_value_reveal_markup_and_two_flag_gate() -> None:
+    html = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+    css = client.get("/review/layer3/static/layer3.css")
+
+    assert html.status_code == 200
+    assert js.status_code == 200
+    assert css.status_code == 200
+    panel_start = html.text.find('<section id="public-sciencebase-panel"')
+    panel_end = html.text.find("</section>", panel_start)
+    assert panel_start != -1
+    assert panel_end != -1
+    panel_slice = html.text[panel_start:panel_end]
+    for required in (
+        'id="public-sciencebase-values-inspect"',
+        'type="button"',
+        "Inspect result values",
+        'id="public-sciencebase-values-status"',
+        'id="public-sciencebase-values"',
+        'class="public-sciencebase-values"',
+    ):
+        assert required in panel_slice
+    assert "No dataset values are rendered here." not in panel_slice
+    assert "both public-analysis and value-reveal gates" in panel_slice
+    assert '<a ' not in panel_slice
+    assert '<img ' not in panel_slice
+    assert " download" not in panel_slice
+    assert ".public-sciencebase-values[hidden]" in css.text
+    assert "display: none;" in css.text[css.text.find(".public-sciencebase-values[hidden]"):][:120]
+
+    gate_slice = _js_slice(
+        js.text,
+        "function publicScienceBaseValueRevealEnabled",
+        "function publicScienceBaseLineValues",
+    )
+    assert "State.bootstrap?.layer3_public_dataset_analysis_enabled === true" in gate_slice
+    assert "State.bootstrap?.layer3_public_connector_value_reveal_enabled === true" in gate_slice
+    assert "publicScienceBaseControlsEnabled()" not in gate_slice
+    state_slice = _js_slice(js.text, "const State = {", "const elements = {")
+    for required in (
+        "publicScienceBaseValues:",
+        "publicScienceBaseValuesError:",
+        "publicScienceBaseValuesPending:",
+        "publicScienceBaseValuesRequestToken:",
+    ):
+        assert required in state_slice
+    for required in (
+        "publicScienceBaseValuesInspect:",
+        "publicScienceBaseValuesStatus:",
+        "publicScienceBaseValues:",
+    ):
+        assert required in js.text
+    assert "max_items: 25" in js.text
+    assert "max_files: 1" in js.text
+
+
+def test_layer3_public_sciencebase_value_reveal_uses_exact_authority_and_safe_renderer() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert js.status_code == 200
+    payload_slice = _js_slice(
+        js.text,
+        "function publicScienceBaseResultValuesPayload",
+        "function resultReviewPayload",
+    )
+    assert payload_slice.count("session_id:") == 1
+    assert payload_slice.count("analysis_plan_id:") == 1
+    assert payload_slice.count("pass_run_id:") == 1
+    assert payload_slice.count("preview_id:") == 1
+    assert payload_slice.count("preview_hash:") == 1
+    for forbidden in ("client_request_id", "analysis_run_id", "operator_view_mode"):
+        assert forbidden not in payload_slice
+
+    render_slice = _js_slice(
+        js.text,
+        "function renderPublicScienceBaseValues",
+        "function renderPublicScienceBasePanel",
+    )
+    for required in (
+        "Values",
+        "Provenance",
+        "variable_profiles",
+        "cross_correlation",
+        "decomposition",
+        "structural_break",
+        "descriptive_summary",
+        "sciencebase_item_id",
+        "sciencebase_item_url",
+        "sciencebase_download_uri",
+        "sciencebase_file_name",
+        "downloaded_sha256",
+        "downloaded_at",
+        "escapeHtml(",
+        "fieldItem(",
+        '<table class="material-table">',
+        "<th>Variable</th>",
+    ):
+        assert required in render_slice
+    for forbidden in (
+        "Object.entries(State.publicScienceBaseValues",
+        "storage_ref",
+        "raw_storage_ref",
+        "innerHTML = State.publicScienceBaseValues",
+        "<a ",
+        "<img ",
+        "download=",
+    ):
+        assert forbidden not in render_slice
+
+    inspect_slice = _js_slice(
+        js.text,
+        "async function inspectPublicScienceBaseResultValues",
+        "async function inspectPackageReviewPreview",
+    )
+    for required in (
+        "publicScienceBaseValueRevealEnabled()",
+        "publicScienceBaseResultValuesPayload(authority)",
+        "'/execution/result/public-values'",
+        "State.publicScienceBaseValuesRequestToken",
+        "publicScienceBaseAuthorityKey",
+        "State.publicScienceBaseValues = result",
+        "State.publicScienceBaseValues = null",
+    ):
+        assert required in inspect_slice
+
+    values_clear_slice = _js_slice(
+        js.text,
+        "function clearPublicScienceBaseValuesState",
+        "function clearResultReviewState",
+    )
+    assert "setBusy(elements.publicScienceBaseValuesInspect, false, 'Inspect result values')" in values_clear_slice
+    assert "elements.publicScienceBaseValues.hidden = true" in values_clear_slice
+    assert "elements.publicScienceBaseValues.innerHTML = ''" in values_clear_slice
+    clear_slice = _js_slice(js.text, "function clearResultReviewState", "function selectedResultAuthority")
+    assert "clearPublicScienceBaseValuesState()" in clear_slice
+    panel_slice = _js_slice(js.text, "function renderPublicScienceBasePanel", "function bindPublicScienceBaseControls")
+    assert "renderPublicScienceBaseValues()" in panel_slice
+    assert "publicScienceBaseResultAuthorityKey(result)" in render_slice
+    bind_slice = _js_slice(js.text, "function bindPublicScienceBaseControls", "async function loadApsContentDocumentCandidates")
+    assert "publicScienceBaseValuesInspect.addEventListener('click', inspectPublicScienceBaseResultValues)" in bind_slice
+
+    status_start = js.text.find("function renderPublicScienceBaseRunStatus")
+    targets_start = js.text.find("async function loadPublicScienceBaseRunTargets")
+    renderer_start = js.text.find("function renderPublicScienceBaseValues")
+    assert -1 not in (status_start, targets_start, renderer_start)
+    assert not status_start < renderer_start < targets_start

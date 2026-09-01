@@ -20,6 +20,7 @@ sys.path.insert(0, str(BACKEND))
 from app.core.config import bootstrap_storage_tree, settings
 from app.db.session import Base
 from app.models.models import (
+    AnalysisArtifact,
     AnalysisRun,
     ApsContentChunk,
     ApsContentDocument,
@@ -46,7 +47,9 @@ from app.models.models import (
     L3SourceIntakeRecord,
     L3TypingRecord,
     VariableDefinition,
+    VariableProfile,
 )
+from app.services import analysis as analysis_service
 from app.services import layer3_provider_private_signed_url, layer3_workbench, nrc_aps_artifact_ingestion
 from app.services.layer3_workbench import Layer3WorkbenchError
 from app.services.layer3_state_action_contract import STATE_ACTION_CONTRACT_SCHEMA_ID
@@ -1368,6 +1371,297 @@ def _seed_aps_derived_dataset_version(
     return dataset_version_id
 
 
+def _seed_public_connector_result_values_fixture(
+    db,
+    tmp_path: Path,
+    *,
+    source_system: str = "sciencebase",
+    source_mode: str = "public_api",
+    method_name: str = "descriptive_summary",
+    without_time_index: bool = False,
+) -> tuple[dict[str, str], AnalysisRun, Path]:
+    dataset_version_id = "dv-public-values-001"
+    dataset_id = "ds-public-values-001"
+    session_id = "session-public-values-001"
+    analysis_plan_id = "plan-public-values-001"
+    analysis_set_id = "set-public-values-001"
+    pass_run_id = "pass-public-values-001"
+    preview_id = "preview-public-values-001"
+    preview_hash = "preview-hash-public-values-001"
+    now = datetime.now(timezone.utc)
+
+    descriptive_only = method_name == "descriptive_summary" or without_time_index
+    dataset = Dataset(
+        dataset_id=dataset_id,
+        name="Public ScienceBase values fixture",
+        description="Public connector value reveal proof",
+        frequency_hint=None if descriptive_only else "MS",
+        time_column=None if descriptive_only else "observed_at",
+    )
+    version = DatasetVersion(
+        dataset_version_id=dataset_version_id,
+        dataset_id=dataset_id,
+        version_label="public-v1",
+        version_type="sciencebase_public_csv",
+        status="ready",
+        row_count=3 if descriptive_only else 36,
+    )
+    if descriptive_only:
+        category = VariableDefinition(
+            variable_id="var-public-category-001",
+            dataset_version_id=dataset_version_id,
+            variable_name="category",
+            dtype="string",
+            role="dimension",
+            is_numeric=False,
+            is_time_index=False,
+            ordinal_position=0,
+        )
+        amount = VariableDefinition(
+            variable_id="var-public-amount-001",
+            dataset_version_id=dataset_version_id,
+            variable_name="amount",
+            dtype="float64",
+            role="measure",
+            is_numeric=True,
+            is_time_index=False,
+            ordinal_position=1,
+        )
+        variables = [category, amount]
+        profiles = [
+            VariableProfile(
+                variable_profile_id="profile-public-amount-001",
+                dataset_version_id=dataset_version_id,
+                variable_id=amount.variable_id,
+                missingness_rate=0.0,
+                mean_value=2.5,
+                median_value=2.5,
+                min_value=1.0,
+                max_value=4.0,
+                std_dev=1.5,
+                skewness=0.0,
+                outlier_fraction=0.0,
+                negative_values_flag=False,
+                zero_values_flag=False,
+                bounded_flag=False,
+                seasonality_flag=False,
+                stationarity_hint="not_assessed",
+                summary_json={"profile_basis": "pytest"},
+            )
+        ]
+        csv_text = "category,amount\nalpha,1.0\nbeta,2.5\ngamma,4.0\n"
+    else:
+        observed_at = VariableDefinition(
+            variable_id="var-public-observed-at-001",
+            dataset_version_id=dataset_version_id,
+            variable_name="observed_at",
+            dtype="datetime64[ns]",
+            role="time",
+            is_numeric=False,
+            is_time_index=True,
+            ordinal_position=0,
+        )
+        series_a = VariableDefinition(
+            variable_id="var-public-series-a-001",
+            dataset_version_id=dataset_version_id,
+            variable_name="series_a",
+            dtype="float64",
+            role="measure",
+            is_numeric=True,
+            is_time_index=False,
+            ordinal_position=1,
+        )
+        series_b = VariableDefinition(
+            variable_id="var-public-series-b-001",
+            dataset_version_id=dataset_version_id,
+            variable_name="series_b",
+            dtype="float64",
+            role="measure",
+            is_numeric=True,
+            is_time_index=False,
+            ordinal_position=2,
+        )
+        variables = [observed_at, series_a, series_b]
+        profiles = [
+            VariableProfile(
+                variable_profile_id=f"profile-public-{name}-001",
+                dataset_version_id=dataset_version_id,
+                variable_id=variable.variable_id,
+                missingness_rate=0.0,
+                mean_value=20.0,
+                median_value=20.0,
+                min_value=0.0,
+                max_value=60.0,
+                std_dev=12.0,
+                skewness=0.0,
+                outlier_fraction=0.0,
+                negative_values_flag=False,
+                zero_values_flag=True,
+                bounded_flag=False,
+                seasonality_flag=True,
+                stationarity_hint="not_assessed",
+                summary_json={"seasonality": {"best_lag": 12}},
+            )
+            for name, variable in (("series-a", series_a), ("series-b", series_b))
+        ]
+        seasonal = (0.0, 2.0, 4.0, 6.0, 4.0, 2.0, 0.0, -2.0, -4.0, -6.0, -4.0, -2.0)
+        csv_rows = ["observed_at,series_a,series_b"]
+        for index in range(36):
+            year = 2021 + index // 12
+            month = index % 12 + 1
+            regime_shift = 24.0 if index >= 18 else 0.0
+            csv_rows.append(
+                f"{year:04d}-{month:02d}-01,{10.0 + index * 0.5 + regime_shift + seasonal[index % 12]:.3f},"
+                f"{30.0 + index * 0.25 + regime_shift - seasonal[index % 12]:.3f}"
+            )
+        csv_text = "\n".join(csv_rows) + "\n"
+    provenance = DatasetSourceProvenance(
+        dataset_source_provenance_id="provenance-public-values-001",
+        dataset_version_id=dataset_version_id,
+        connector_run_id=None,
+        source_system=source_system,
+        source_mode=source_mode,
+        source_artifact_key="sciencebase/run-001/item-001/fixture.csv",
+        sciencebase_item_id="sciencebase-item-001",
+        sciencebase_item_url="https://www.sciencebase.gov/catalog/item/sciencebase-item-001",
+        sciencebase_file_name="fixture.csv",
+        sciencebase_download_uri="https://www.sciencebase.gov/catalog/file/get/sciencebase-item-001",
+        downloaded_sha256="a" * 64,
+        downloaded_at=now,
+        raw_storage_ref="C:/private/sciencebase/raw-fixture.csv",
+    )
+    dataset_dir = tmp_path / "datasets"
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = dataset_dir / f"{dataset_version_id}.csv"
+    csv_path.write_text(csv_text, encoding="utf-8")
+    version.storage_ref = str(csv_path)
+    db.add_all([dataset, version, *variables, *profiles, provenance])
+    db.commit()
+
+    analysis_run = analysis_service.run_analysis(
+        db,
+        dataset_version_id,
+        method_name,
+        None,
+        {"penalty": 0.1} if method_name == "structural_break" else {},
+        None,
+    )
+    artifacts = (
+        db.query(AnalysisArtifact)
+        .filter(AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id)
+        .order_by(AnalysisArtifact.created_at.asc(), AnalysisArtifact.artifact_id.asc())
+        .all()
+    )
+    output_manifest_path = tmp_path / "public-values-output.json"
+    output_manifest_path.write_text(
+        json.dumps(
+            {
+                "analysis_run_id": analysis_run.analysis_run_id,
+                "analysis_set_id": analysis_set_id,
+                "dataset_version_id": dataset_version_id,
+                "selected_method_name": method_name,
+                "artifact_refs_json": [artifact.storage_ref for artifact in artifacts],
+                "artifact_types_json": [artifact.artifact_type for artifact in artifacts],
+                "source_gate": "gate_c_pass_freeze",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    session = L3Session(
+        session_id=session_id,
+        status="completed",
+        selection_manifest_id="manifest-public-values-001",
+        entry_route_context_json={"entrypoint": "pytest"},
+        operator_context_json={"operator": "pytest"},
+        summary_json={
+            "execution_selection": {
+                "schema_id": "layer3.execution_selection_state.v1",
+                "state": "execution_pass_completed",
+                "analysis_plan_id": analysis_plan_id,
+                "source_preview_id": preview_id,
+                "source_preview_hash": preview_hash,
+                "pass_run_ids_json": [pass_run_id],
+                "pass_run_count": 1,
+                "execution_started": True,
+                "analysis_run_ids_json": [analysis_run.analysis_run_id],
+                "pass_run_statuses_json": {pass_run_id: "completed"},
+            }
+        },
+        started_at=now,
+        completed_at=now,
+        created_at=now,
+    )
+    analysis_set = L3AnalysisSet(
+        analysis_set_id=analysis_set_id,
+        session_id=session_id,
+        analysis_group_ids_json=[],
+        analysis_unit_ids_json=[],
+        set_type="single_item",
+        formation_basis_json={},
+    )
+    plan = L3AnalysisPlan(
+        analysis_plan_id=analysis_plan_id,
+        session_id=session_id,
+        analysis_set_ids_json=[analysis_set_id],
+        status="approved",
+        approved_by_operator=True,
+        approved_at=now,
+        plan_json={
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+        },
+    )
+    pass_run = L3PassRun(
+        pass_run_id=pass_run_id,
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        analysis_set_id=analysis_set_id,
+        pass_type="single_item",
+        engine_family="wrapped_quantitative_analysis",
+        status="completed",
+        started_at=now,
+        completed_at=now,
+        input_payload_ref=str(csv_path),
+        output_payload_ref=str(output_manifest_path),
+        summary_json={
+            "source_preview_id": preview_id,
+            "source_preview_hash": preview_hash,
+            "planned_pass": {
+                "pass_type": "single_item",
+                "engine_family": "wrapped_quantitative_analysis",
+                "analysis_set_id": analysis_set_id,
+                "dataset_version_id": dataset_version_id,
+                "selected_method_name": method_name,
+            },
+            "execution_started": True,
+            "analysis_run_id": analysis_run.analysis_run_id,
+            "dataset_version_id": dataset_version_id,
+            "selected_method_name": method_name,
+            "artifact_refs_json": [artifact.storage_ref for artifact in artifacts],
+            "artifact_types_json": [artifact.artifact_type for artifact in artifacts],
+            "analysis_execution_start": {
+                "schema_id": "layer3.analysis_execution_start_state.v1",
+                "state": "execution_pass_completed",
+            },
+        },
+    )
+    db.add_all([session, analysis_set, plan, pass_run])
+    db.commit()
+    return (
+        {
+            "session_id": session_id,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "preview_id": preview_id,
+            "preview_hash": preview_hash,
+            "analysis_run_id": analysis_run.analysis_run_id,
+        },
+        analysis_run,
+        output_manifest_path,
+    )
+
+
 def _seed_aps_content_document(
     db,
     tmp_path: Path,
@@ -1908,6 +2202,615 @@ def test_aps_derived_dataset_version_flows_from_material_preview_to_plan_preview
     )
     assert plan["plan_preview"]["admitted_sets"][0]["readiness"] == "admitted"
     assert plan["plan_preview"]["planned_passes"][0]["dataset_version_id"] == dataset_version_id
+
+
+@pytest.mark.parametrize(
+    ("analysis_enabled", "reveal_enabled", "expected_error_code"),
+    [
+        (False, False, "public_connector_value_reveal_disabled"),
+        (False, True, "public_connector_value_reveal_disabled"),
+        (True, False, "public_connector_value_reveal_disabled"),
+        (True, True, "session_not_found"),
+    ],
+)
+def test_public_connector_result_values_requires_both_flags_before_identity_resolution(
+    db_session,
+    monkeypatch,
+    analysis_enabled,
+    reveal_enabled,
+    expected_error_code,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", analysis_enabled)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", reveal_enabled)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(
+            db_session,
+            {
+                "session_id": "missing-session",
+                "analysis_plan_id": "missing-plan",
+                "pass_run_id": "missing-pass",
+                "preview_id": "missing-preview",
+                "preview_hash": "missing-preview-hash",
+            },
+        )
+
+    assert exc.value.error_code == expected_error_code
+    if expected_error_code == "public_connector_value_reveal_disabled":
+        assert exc.value.http_status == 404
+        assert exc.value.blocked_fields == []
+
+
+def test_public_connector_result_values_refuses_non_sciencebase_provenance(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, _, _ = _seed_public_connector_result_values_fixture(
+        db_session,
+        tmp_path,
+        source_system="nrc_adams_aps",
+        source_mode="artifact_csv_parser",
+    )
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_provenance_not_admitted"
+    assert exc.value.http_status == 409
+
+
+def test_public_connector_result_values_requires_completed_analysis_run(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    analysis_run.status = "failed"
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_analysis_run_not_completed"
+
+
+def test_public_connector_result_values_projects_descriptive_only_with_provenance(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    result = layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert result["schema_id"] == "layer3.public_connector_execution_result_values.v1"
+    assert result["status"] == "available"
+    assert result["analysis_run_id"] == analysis_run.analysis_run_id
+    assert result["dataset_version_id"] == analysis_run.dataset_version_id
+    assert result["selected_method_name"] == "descriptive_summary"
+    profiles = {item["variable_name"]: item for item in result["values"]["variable_profiles"]}
+    assert profiles["amount"]["profile_state"] == "profiled"
+    assert profiles["amount"]["profile"]["mean_value"] == 2.5
+    assert profiles["category"]["profile_state"] == "unprofiled"
+    assert profiles["category"]["profile"] is None
+    assert profiles["category"]["descriptive_summary"]["inferred_class"] == "categorical"
+    methods = result["values"]["method_outputs"]["methods"]
+    assert methods["descriptive_summary"]["status"] == "available"
+    assert len(methods["descriptive_summary"]["artifacts"]) == 1
+    assert methods["descriptive_summary"]["artifacts"][0]["columns"]["amount"]["numeric_summary"]["mean"] == 2.5
+    for method_name in ("cross_correlation", "decomposition", "structural_break"):
+        assert methods[method_name] == {
+            "status": "not_produced_by_selected_run",
+            "artifacts": [],
+        }
+    assert result["provenance"]["source_system"] == "sciencebase"
+    assert result["provenance"]["source_mode"] == "public_api"
+    assert result["provenance"]["source_family"] == "sciencebase_public"
+    assert result["provenance"]["sciencebase_item_id"] == "sciencebase-item-001"
+    serialized = json.dumps(result, sort_keys=True)
+    assert "raw_storage_ref" not in serialized
+    assert "/storage/" not in serialized
+    assert "C:/private/sciencebase/raw-fixture.csv" not in serialized
+
+
+@pytest.mark.parametrize(
+    ("method_name", "expected_artifact_count", "required_payload_key"),
+    [
+        ("cross_correlation", 1, "results"),
+        ("decomposition", 2, "observed"),
+        ("structural_break", 2, "breakpoints"),
+    ],
+)
+def test_public_connector_result_values_projects_each_selected_method_and_n_artifacts(
+    db_session,
+    tmp_path,
+    monkeypatch,
+    method_name,
+    expected_artifact_count,
+    required_payload_key,
+) -> None:
+    payload, _, _ = _seed_public_connector_result_values_fixture(
+        db_session,
+        tmp_path,
+        method_name=method_name,
+    )
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    result = layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert result["selected_method_name"] == method_name
+    methods = result["values"]["method_outputs"]["methods"]
+    assert methods[method_name]["status"] == "available"
+    assert len(methods[method_name]["artifacts"]) == expected_artifact_count
+    assert all(required_payload_key in artifact for artifact in methods[method_name]["artifacts"])
+    for absent_method in {
+        "cross_correlation",
+        "decomposition",
+        "structural_break",
+        "descriptive_summary",
+    } - {method_name}:
+        assert methods[absent_method] == {
+            "status": "not_produced_by_selected_run",
+            "artifacts": [],
+        }
+    profiles = result["values"]["variable_profiles"]
+    assert [item["variable_name"] for item in profiles] == ["observed_at", "series_a", "series_b"]
+    assert profiles[0]["profile_state"] == "unprofiled"
+    assert all(item["profile_state"] == "profiled" for item in profiles[1:])
+    serialized = json.dumps(result, sort_keys=True)
+    assert "/storage/" not in serialized
+    assert "_plot" not in serialized
+
+
+def test_public_connector_result_values_accepts_low_ratio_column_pair_keys(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    # Regression: run_analysis selects cross-correlation columns by per-value
+    # coercibility (>= 2 coercible values), while VariableDefinition.is_numeric
+    # is ratio-based — a legitimately produced pair key naming a low-ratio
+    # (is_numeric=False) column must not be refused as an identity mismatch.
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(
+        db_session,
+        tmp_path,
+        method_name="cross_correlation",
+    )
+    db_session.add(
+        VariableDefinition(
+            variable_id="var-public-mostly-text-001",
+            dataset_version_id="dv-public-values-001",
+            variable_name="mostly_text",
+            dtype="string",
+            role="dimension",
+            is_numeric=False,
+            is_time_index=False,
+            ordinal_position=3,
+        )
+    )
+    artifact = (
+        db_session.query(AnalysisArtifact)
+        .filter(
+            AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id,
+            AnalysisArtifact.artifact_type == "cross_correlation_result",
+        )
+        .one()
+    )
+    artifact_path = analysis_service._artifact_storage_path(artifact.storage_ref)
+    artifact_payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    artifact_payload["results"]["series_a__vs__mostly_text"] = next(
+        iter(artifact_payload["results"].values())
+    )
+    artifact_path.write_text(json.dumps(artifact_payload), encoding="utf-8")
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    result = layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    artifacts = result["values"]["method_outputs"]["methods"]["cross_correlation"]["artifacts"]
+    assert len(artifacts) == 1
+    assert "series_a__vs__mostly_text" in artifacts[0]["results"]
+
+
+def test_public_connector_result_values_refuses_manifest_identity_mismatch_without_partial_values(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, _, manifest_path = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["analysis_run_id"] = "foreign-analysis-run"
+    manifest["sentinel"] = "must-not-leak"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_output_identity_mismatch"
+    assert "must-not-leak" not in exc.value.message
+
+
+@pytest.mark.parametrize(
+    ("planned_field", "foreign_value"),
+    [
+        ("dataset_version_id", "foreign-dataset-version"),
+        ("analysis_set_id", "foreign-analysis-set"),
+    ],
+)
+def test_public_connector_result_values_refuses_planned_pass_identity_mismatch(
+    db_session,
+    tmp_path,
+    monkeypatch,
+    planned_field,
+    foreign_value,
+) -> None:
+    payload, _, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    pass_run = db_session.get(L3PassRun, payload["pass_run_id"])
+    summary = dict(pass_run.summary_json)
+    planned_pass = dict(summary["planned_pass"])
+    planned_pass[planned_field] = foreign_value
+    summary["planned_pass"] = planned_pass
+    pass_run.summary_json = summary
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_output_identity_mismatch"
+
+
+def test_public_connector_result_values_refuses_newer_nonpublic_provenance(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    db_session.add(
+        DatasetSourceProvenance(
+            dataset_source_provenance_id="provenance-public-values-newer-nonpublic",
+            dataset_version_id=analysis_run.dataset_version_id,
+            connector_run_id=None,
+            source_system="nrc_adams_aps",
+            source_mode="artifact_csv_parser",
+            source_artifact_key="nonpublic/newest.csv",
+        )
+    )
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_provenance_not_admitted"
+
+
+def test_public_connector_result_values_refuses_incomplete_public_provenance(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    provenance = (
+        db_session.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.dataset_version_id == analysis_run.dataset_version_id)
+        .one()
+    )
+    provenance.sciencebase_item_url = None
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_provenance_incomplete"
+
+
+def test_public_connector_result_values_refuses_storage_path_in_public_provenance(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    provenance = (
+        db_session.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.dataset_version_id == analysis_run.dataset_version_id)
+        .one()
+    )
+    provenance.source_artifact_key = "/storage"
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_provenance_not_admitted"
+    assert "/storage" not in exc.value.message
+
+
+def test_public_connector_result_values_refuses_storage_reference_inside_json_payload(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    artifact = (
+        db_session.query(AnalysisArtifact)
+        .filter(
+            AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id,
+            AnalysisArtifact.artifact_type == "descriptive_summary_result",
+        )
+        .one()
+    )
+    artifact_path = analysis_service._artifact_storage_path(artifact.storage_ref)
+    artifact_payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    artifact_payload["raw_storage_ref"] = "C:/private/must-not-leak.csv"
+    artifact_path.write_text(json.dumps(artifact_payload), encoding="utf-8")
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_artifact_payload_not_admitted"
+    assert "must-not-leak" not in exc.value.message
+
+
+def test_public_connector_result_values_refuses_unexpected_json_artifact_fields(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    artifact = (
+        db_session.query(AnalysisArtifact)
+        .filter(
+            AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id,
+            AnalysisArtifact.artifact_type == "descriptive_summary_result",
+        )
+        .one()
+    )
+    artifact_path = analysis_service._artifact_storage_path(artifact.storage_ref)
+    artifact_payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    artifact_payload["download_url"] = "file:///C:/private/must-not-leak.csv"
+    artifact_path.write_text(json.dumps(artifact_payload), encoding="utf-8")
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_artifact_payload_not_admitted"
+    assert "must-not-leak" not in exc.value.message
+
+
+def test_public_connector_result_values_missing_artifact_root_is_read_only(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, _, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    missing_storage = tmp_path / "missing-storage"
+    monkeypatch.setattr(settings, "storage_dir", str(missing_storage))
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_artifact_unreadable"
+    assert not missing_storage.exists()
+
+
+@pytest.mark.parametrize(
+    ("manifest_field", "malformed_value"),
+    (
+        ("artifact_refs_json", None),
+        ("artifact_types_json", "not-a-list"),
+    ),
+)
+def test_public_connector_result_values_refuses_malformed_zero_artifact_manifest(
+    db_session,
+    tmp_path,
+    monkeypatch,
+    manifest_field,
+    malformed_value,
+) -> None:
+    payload, analysis_run, manifest_path = _seed_public_connector_result_values_fixture(
+        db_session,
+        tmp_path,
+        method_name="decomposition",
+        without_time_index=True,
+    )
+    assert analysis_run.status in {"completed", "completed_with_warnings"}
+    assert (
+        db_session.query(AnalysisArtifact)
+        .filter(AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id)
+        .count()
+        == 0
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if malformed_value is None:
+        manifest.pop(manifest_field)
+    else:
+        manifest[manifest_field] = malformed_value
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_output_unavailable"
+
+
+def test_public_connector_result_values_refuses_cross_run_artifact_storage_ref(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, manifest_path = _seed_public_connector_result_values_fixture(
+        db_session,
+        tmp_path,
+    )
+    artifact = (
+        db_session.query(AnalysisArtifact)
+        .filter(
+            AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id,
+            AnalysisArtifact.artifact_type == "descriptive_summary_result",
+        )
+        .one()
+    )
+    artifact_payload = json.loads(
+        analysis_service._artifact_storage_path(artifact.storage_ref).read_text(encoding="utf-8")
+    )
+    artifact_payload["columns"]["amount"]["numeric_summary"]["mean"] = 90125.0
+    foreign_name = "descriptive_summary_result_foreign-analysis-run_1234abcd.json"
+    foreign_path = Path(settings.artifact_storage_dir) / foreign_name
+    foreign_path.write_text(json.dumps(artifact_payload), encoding="utf-8")
+    foreign_ref = f"/storage/artifacts/{foreign_name}"
+    artifact.storage_ref = foreign_ref
+    pass_run = db_session.get(L3PassRun, payload["pass_run_id"])
+    summary = dict(pass_run.summary_json)
+    summary["artifact_refs_json"] = [foreign_ref]
+    pass_run.summary_json = summary
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["artifact_refs_json"] = [foreign_ref]
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_artifact_identity_mismatch"
+    assert "90125" not in exc.value.message
+
+
+def test_public_connector_result_values_refuses_descriptive_artifact_identity_drift(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    artifact = (
+        db_session.query(AnalysisArtifact)
+        .filter(
+            AnalysisArtifact.analysis_run_id == analysis_run.analysis_run_id,
+            AnalysisArtifact.artifact_type == "descriptive_summary_result",
+        )
+        .one()
+    )
+    artifact_path = analysis_service._artifact_storage_path(artifact.storage_ref)
+    artifact_payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    artifact_payload["dataset_version_id"] = "foreign-dataset-version"
+    artifact_payload["columns"]["foreign_secret"] = {
+        "inferred_class": "categorical",
+        "non_null_count": 1,
+        "missing_count": 0,
+        "missing_fraction": 0.0,
+        "unsupported_nested_values": False,
+        "unique_count": 1,
+        "top_values": [{"value": "must-not-leak", "count": 1}],
+    }
+    artifact_path.write_text(json.dumps(artifact_payload), encoding="utf-8")
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_artifact_identity_mismatch"
+    assert "must-not-leak" not in exc.value.message
+
+
+def test_public_connector_result_values_refuses_cross_dataset_variable_profile(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    profile = db_session.query(VariableProfile).one()
+    db_session.add(
+        DatasetVersion(
+            dataset_version_id="dv-public-values-foreign-profile",
+            dataset_id="ds-public-values-001",
+            version_label="foreign-profile-v1",
+            version_type="pytest",
+            status="ready",
+            row_count=0,
+        )
+    )
+    profile.dataset_version_id = "dv-public-values-foreign-profile"
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_profile_identity_mismatch"
+
+
+def test_public_connector_result_values_refuses_ambiguous_variable_profiles(
+    db_session,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    payload, analysis_run, _ = _seed_public_connector_result_values_fixture(db_session, tmp_path)
+    amount = (
+        db_session.query(VariableDefinition)
+        .filter(
+            VariableDefinition.dataset_version_id == analysis_run.dataset_version_id,
+            VariableDefinition.variable_name == "amount",
+        )
+        .one()
+    )
+    db_session.add(
+        VariableProfile(
+            variable_profile_id="profile-public-amount-duplicate",
+            dataset_version_id=analysis_run.dataset_version_id,
+            variable_id=amount.variable_id,
+            missingness_rate=0.0,
+            mean_value=999.0,
+            median_value=999.0,
+            min_value=999.0,
+            max_value=999.0,
+            std_dev=0.0,
+            skewness=0.0,
+            outlier_fraction=0.0,
+            negative_values_flag=False,
+            zero_values_flag=False,
+            bounded_flag=True,
+            seasonality_flag=False,
+            stationarity_hint="not_assessed",
+            summary_json={},
+        )
+    )
+    db_session.commit()
+    monkeypatch.setattr(settings, "layer3_public_dataset_analysis_enabled", True)
+    monkeypatch.setattr(settings, "layer3_public_connector_value_reveal_enabled", True)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.public_connector_execution_result_values(db_session, payload)
+
+    assert exc.value.error_code == "public_connector_value_reveal_profile_ambiguous"
 
 
 def test_public_sciencebase_dataset_version_admission_is_default_off_narrow_and_not_aps_labeled(

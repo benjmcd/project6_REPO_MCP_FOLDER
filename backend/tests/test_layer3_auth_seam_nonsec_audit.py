@@ -56,7 +56,7 @@ _PUBLIC_METADATA_HANDLERS = {
 }
 
 _EXPECTED_FILE_COUNTS = {
-    "__init__.py": {"routes": 31, "gated": 28, "public": 3},
+    "__init__.py": {"routes": 32, "gated": 29, "public": 3},
     "handoff.py": {"routes": 25, "gated": 25, "public": 0},
     "package.py": {"routes": 16, "gated": 16, "public": 0},
     "operator_identity.py": {"routes": 1, "gated": 1, "public": 0},
@@ -172,7 +172,7 @@ def _assert_not_auth_blocked(response) -> None:
 def test_nonsec_route_identity_audit_inventory_matches_current_authority() -> None:
     records = _collect_nonsec_routes()
 
-    assert len(records) == 184
+    assert len(records) == 185
     by_file = Counter(record.file_name for record in records)
     gated_by_file = Counter(record.file_name for record in records if record.access is not None)
     public_by_file = Counter(record.file_name for record in records if record.access is None)
@@ -189,7 +189,7 @@ def test_nonsec_route_identity_audit_inventory_matches_current_authority() -> No
     assert public_handlers == _PUBLIC_METADATA_HANDLERS
 
     access_counts = Counter(record.access for record in records if record.access is not None)
-    assert access_counts == {"read": 63, "write": 118}
+    assert access_counts == {"read": 64, "write": 118}
 
     nrc_aps = [record for record in records if record.file_name == "review_nrc_aps.py"]
     assert len(nrc_aps) == 23
