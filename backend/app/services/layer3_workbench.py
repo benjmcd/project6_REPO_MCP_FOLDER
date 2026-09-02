@@ -3554,11 +3554,27 @@ def connector_dataset_handoff(db: Session, payload: dict[str, Any]) -> dict[str,
     }
 
 
+def _requested_method_name_or_raise(payload: dict[str, Any]) -> str | None:
+    requested = payload.get("requested_method_name")
+    if requested is None or not str(requested).strip():
+        return None
+    if not settings.layer3_operator_method_selection_enabled:
+        raise Layer3WorkbenchError(
+            "operator_method_selection_disabled",
+            "Operator method selection is not enabled; requested_method_name is not admitted.",
+            status="blocked",
+            blocked_fields=["requested_method_name"],
+            next_allowed_actions=["use_owner_service_default"],
+        )
+    return str(requested).strip()
+
+
 def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
     request_id = str(payload.get("client_request_id") or uuid_str())
     session_id = str(payload.get("session_id") or "").strip()
     if not session_id:
         raise Layer3WorkbenchError("session_not_found", "session_id is required for plan preview.", http_status=404)
+    requested_method_name = _requested_method_name_or_raise(payload)
 
     preview_scope = str(payload.get("preview_scope") or PLAN_PREVIEW_SCOPE).strip()
     if preview_scope != PLAN_PREVIEW_SCOPE:
@@ -3583,7 +3599,9 @@ def plan_preview(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
         )
 
     try:
-        owner_preview = preview_pass_entry(db, session_id=session_id)
+        owner_preview = preview_pass_entry(
+            db, session_id=session_id, requested_method_name=requested_method_name
+        )
     except Layer3PassEntryError as exc:
         raise plan_preview_workbench_error(exc) from exc
 
@@ -3696,14 +3714,14 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             http_status=409,
         )
 
-    expected_preview = plan_preview(
-        db,
-        {
-            "client_request_id": request_id,
-            "session_id": session_id,
-            "preview_scope": PLAN_PREVIEW_SCOPE,
-        },
-    )
+    expected_preview_payload: dict[str, Any] = {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "preview_scope": PLAN_PREVIEW_SCOPE,
+    }
+    if payload.get("requested_method_name") is not None:
+        expected_preview_payload["requested_method_name"] = payload["requested_method_name"]
+    expected_preview = plan_preview(db, expected_preview_payload)
     preview_id = str(payload.get("preview_id") or "").strip()
     preview_hash = str(payload.get("preview_hash") or "").strip()
     if preview_id != expected_preview["preview_id"] or preview_hash != expected_preview["preview_hash"]:
@@ -3723,6 +3741,7 @@ def plan_approval(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             preview_hash=preview_hash,
             source_preview_id=preview_id,
             approved_by_operator=True,
+            requested_method_name=_requested_method_name_or_raise(payload),
         )
         db.commit()
     except Layer3PassEntryError as exc:
@@ -3830,14 +3849,14 @@ def plan_revision(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
             http_status=409,
         )
 
-    expected_preview = plan_preview(
-        db,
-        {
-            "client_request_id": request_id,
-            "session_id": session_id,
-            "preview_scope": PLAN_PREVIEW_SCOPE,
-        },
-    )
+    expected_preview_payload: dict[str, Any] = {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "preview_scope": PLAN_PREVIEW_SCOPE,
+    }
+    if payload.get("requested_method_name") is not None:
+        expected_preview_payload["requested_method_name"] = payload["requested_method_name"]
+    expected_preview = plan_preview(db, expected_preview_payload)
     preview_id = str(payload.get("preview_id") or "").strip()
     preview_hash = str(payload.get("preview_hash") or "").strip()
     if preview_id != expected_preview["preview_id"] or preview_hash != expected_preview["preview_hash"]:

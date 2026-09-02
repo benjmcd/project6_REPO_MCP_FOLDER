@@ -1043,6 +1043,7 @@ PLAN_PREVIEW_REQUEST_SCHEMA: dict[str, Any] = {
         "session_id": {"type": "string"},
         "preview_scope": {"type": "string", "enum": ["owner_service_default"]},
         "include_exclusions": {"type": "boolean"},
+        "requested_method_name": {"type": "string"},
     },
 }
 
@@ -1061,6 +1062,7 @@ PLAN_APPROVAL_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "operator_confirmation": {"type": "boolean", "enum": [True]},
         "approval_scope": {"type": "string", "enum": ["owner_service_default"]},
+        "requested_method_name": {"type": "string"},
     },
 }
 
@@ -1122,6 +1124,7 @@ PLAN_REVISION_REQUEST_SCHEMA: dict[str, Any] = {
         "preview_hash": {"type": "string"},
         "operator_decision": {"type": "string", "enum": ["reject_current_preview", "request_revision"]},
         "operator_note": {"type": "string"},
+        "requested_method_name": {"type": "string"},
         "execute": _forbidden_request_field_schema(),
         "execution": _forbidden_request_field_schema(),
         "run": _forbidden_request_field_schema(),

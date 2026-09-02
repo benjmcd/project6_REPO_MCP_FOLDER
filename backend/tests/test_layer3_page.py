@@ -3688,3 +3688,38 @@ def test_layer3_public_sciencebase_value_reveal_uses_exact_authority_and_safe_re
     renderer_start = js.text.find("function renderPublicScienceBaseValues")
     assert -1 not in (status_start, targets_start, renderer_start)
     assert not status_start < renderer_start < targets_start
+
+
+def test_layer3_operator_method_selection_gate_and_payload_wiring() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    assert js.status_code == 200
+
+    gate_start = js.text.find("function operatorMethodSelectionEnabled")
+    assert gate_start != -1
+    gate_end = js.text.find("function ", gate_start + 1)
+    gate_slice = js.text[gate_start:gate_end]
+    assert "layer3_operator_method_selection_enabled" in gate_slice
+
+    helper_start = js.text.find("function requestedMethodSelectionFields")
+    assert helper_start != -1
+    helper_end = js.text.find("function ", helper_start + 1)
+    helper_slice = js.text[helper_start:helper_end]
+    assert "operatorMethodSelectionEnabled()" in helper_slice
+    assert "requested_method_name" in helper_slice
+
+    for payload_fn in ("async function previewPlan", "async function approvePlan", "async function revisePlan"):
+        fn_start = js.text.find(payload_fn)
+        assert fn_start != -1, payload_fn
+        fn_slice = js.text[fn_start : js.text.find("async function ", fn_start + 1)]
+        assert "...requestedMethodSelectionFields()," in fn_slice, payload_fn
+
+    render_start = js.text.find("function renderPlanPanel")
+    render_end = js.text.find("function displayValue")
+    render_slice = js.text[render_start:render_end]
+    assert 'name="plan-method-selection"' in render_slice
+    assert "operatorMethodSelectionEnabled()" in render_slice
+    assert "method_options" in render_slice
+    select_markup_start = render_slice.find("<select id=")
+    select_markup = render_slice[select_markup_start : render_slice.find("</select>", select_markup_start)]
+    for guarded in ("upload", "directory", "provider", "public", "rag", "vector"):
+        assert guarded not in select_markup, guarded

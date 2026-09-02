@@ -3923,3 +3923,222 @@ def test_session_summary_reflects_gate_b_counts_without_overclaiming_typing_comm
     assert summary["gate_b_summary"] == {"approved": 1, "denied": 0, "isolated": 0, "flagged": 1}
     assert summary["gate_c_summary"]["typing_committed"] is False
     assert summary["downstream_unavailable"] == ["plan", "execution", "results", "package"]
+
+
+def _walk_aps_dataset_to_gate_c(db_session, tmp_path) -> str:
+    dataset_version_id = _seed_aps_derived_dataset_version(db_session, tmp_path)
+    preflight = layer3_workbench.preflight(
+        {
+            "client_request_id": "req-preflight-method-selection",
+            "natural_language_intent": "Review APS-derived CSV table as quantitative source material.",
+            "manual_constraints": {"source_classes": ["dataset_version"]},
+        }
+    )
+    source = layer3_workbench.source_preview(
+        {
+            "client_request_id": "req-source-method-selection",
+            "preflight_id": preflight["preflight_id"],
+            "selected_source_classes": ["dataset_version"],
+        }
+    )
+    material = layer3_workbench.material_preview(
+        {
+            "client_request_id": "req-material-method-selection",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "source_candidate_ids": [source["source_candidates"][0]["source_candidate_id"]],
+            "dataset_version_ids": [dataset_version_id],
+            "query_basis": {"terms": ["aps", "csv"]},
+        },
+        db_session,
+    )
+    candidate = material["material_candidates"][0]
+    gate_b = layer3_workbench.gate_b_decision(
+        db_session,
+        {
+            "client_request_id": "req-gate-b-method-selection",
+            "preflight_id": preflight["preflight_id"],
+            "source_set_id": source["source_set_id"],
+            "material_preview_id": material["material_preview_id"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "",
+                    "decision_basis": {
+                        "source_ref": candidate["source_ref"],
+                        "query_basis": candidate["query_basis"],
+                        "provenance_ref": candidate["provenance_ref"],
+                        "source_identity": candidate["source_identity"],
+                        "source_provenance": candidate["source_provenance"],
+                        "payload": candidate["payload"],
+                        "load_summary": candidate["load_summary"],
+                    },
+                }
+            ],
+            "commit_reason": "pytest_method_selection_gate_b",
+            "actor": "pytest",
+        },
+    )
+    layer3_workbench.gate_c_preview(
+        db_session,
+        {
+            "client_request_id": "req-gate-c-method-selection",
+            "session_id": gate_b["session_id"],
+            "commit_typing": True,
+        },
+    )
+    return gate_b["session_id"]
+
+
+def test_plan_preview_refuses_requested_method_when_selection_flag_off(db_session, tmp_path) -> None:
+    session_id = _walk_aps_dataset_to_gate_c(db_session, tmp_path)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.plan_preview(
+            db_session,
+            {
+                "client_request_id": "req-plan-method-flag-off",
+                "session_id": session_id,
+                "requested_method_name": "structural_break",
+            },
+        )
+
+    assert exc.value.error_code == "operator_method_selection_disabled"
+    assert exc.value.blocked_fields == ["requested_method_name"]
+
+
+def test_plan_preview_operator_method_selection_plans_requested_method(db_session, tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "layer3_operator_method_selection_enabled", True)
+    session_id = _walk_aps_dataset_to_gate_c(db_session, tmp_path)
+
+    default_plan = layer3_workbench.plan_preview(
+        db_session,
+        {"client_request_id": "req-plan-method-default", "session_id": session_id},
+    )
+    default_pass = default_plan["plan_preview"]["planned_passes"][0]
+    assert default_pass["selected_method_name"] == "decomposition"
+    assert default_pass["method_options"] == ["decomposition", "structural_break"]
+
+    selected_plan = layer3_workbench.plan_preview(
+        db_session,
+        {
+            "client_request_id": "req-plan-method-selected",
+            "session_id": session_id,
+            "requested_method_name": "structural_break",
+        },
+    )
+    selected_pass = selected_plan["plan_preview"]["planned_passes"][0]
+    assert selected_pass["selected_method_name"] == "structural_break"
+
+    approval = layer3_workbench.plan_approval(
+        db_session,
+        {
+            "client_request_id": "req-plan-method-approve",
+            "session_id": session_id,
+            "preview_id": selected_plan["preview_id"],
+            "preview_hash": selected_plan["plan_preview"]["preview_hash"],
+            "operator_confirmation": True,
+            "requested_method_name": "structural_break",
+        },
+    )
+    approved_passes = approval["approved_plan"]["planned_passes"]
+    assert approved_passes[0]["selected_method_name"] == "structural_break"
+
+    cleared_plan_error = None
+    try:
+        layer3_workbench.plan_preview(
+            db_session,
+            {"client_request_id": "req-plan-method-cleared", "session_id": session_id},
+        )
+    except Layer3WorkbenchError as caught:
+        cleared_plan_error = caught
+    assert cleared_plan_error is not None
+    assert cleared_plan_error.error_code == "plan_already_materialized"
+
+
+def test_plan_preview_requested_method_outside_recommendation_is_refused(db_session, tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "layer3_operator_method_selection_enabled", True)
+    session_id = _walk_aps_dataset_to_gate_c(db_session, tmp_path)
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.plan_preview(
+            db_session,
+            {
+                "client_request_id": "req-plan-method-invalid",
+                "session_id": session_id,
+                "requested_method_name": "cross_correlation",
+            },
+        )
+
+    assert exc.value.error_code == "no_admissible_plan"
+
+
+def test_plan_preview_flag_off_planned_passes_carry_no_method_options(db_session, tmp_path) -> None:
+    session_id = _walk_aps_dataset_to_gate_c(db_session, tmp_path)
+
+    plan = layer3_workbench.plan_preview(
+        db_session,
+        {"client_request_id": "req-plan-method-flag-off-shape", "session_id": session_id},
+    )
+
+    assert "method_options" not in plan["plan_preview"]["planned_passes"][0]
+
+
+def test_plan_approval_with_different_requested_method_fails_preview_mismatch(
+    db_session, tmp_path, monkeypatch
+) -> None:
+    monkeypatch.setattr(settings, "layer3_operator_method_selection_enabled", True)
+    session_id = _walk_aps_dataset_to_gate_c(db_session, tmp_path)
+
+    selected_plan = layer3_workbench.plan_preview(
+        db_session,
+        {
+            "client_request_id": "req-plan-method-mismatch-preview",
+            "session_id": session_id,
+            "requested_method_name": "structural_break",
+        },
+    )
+
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_workbench.plan_approval(
+            db_session,
+            {
+                "client_request_id": "req-plan-method-mismatch-approve",
+                "session_id": session_id,
+                "preview_id": selected_plan["preview_id"],
+                "preview_hash": selected_plan["plan_preview"]["preview_hash"],
+                "operator_confirmation": True,
+                "requested_method_name": "decomposition",
+            },
+        )
+
+    assert exc.value.error_code == "preview_mismatch"
+
+
+def test_plan_revision_accepts_requested_method_consistent_preview(db_session, tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(settings, "layer3_operator_method_selection_enabled", True)
+    session_id = _walk_aps_dataset_to_gate_c(db_session, tmp_path)
+
+    selected_plan = layer3_workbench.plan_preview(
+        db_session,
+        {
+            "client_request_id": "req-plan-method-revision-preview",
+            "session_id": session_id,
+            "requested_method_name": "structural_break",
+        },
+    )
+
+    revision = layer3_workbench.plan_revision(
+        db_session,
+        {
+            "client_request_id": "req-plan-method-revision",
+            "session_id": session_id,
+            "preview_id": selected_plan["preview_id"],
+            "preview_hash": selected_plan["plan_preview"]["preview_hash"],
+            "operator_decision": "reject_current_preview",
+            "requested_method_name": "structural_break",
+        },
+    )
+
+    assert revision["operator_decision"] == "reject_current_preview"

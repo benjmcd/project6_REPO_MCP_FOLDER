@@ -682,6 +682,7 @@ const State = {
     gateB: null,
     gateC: null,
     planPreview: null,
+    planMethodSelection: null,
     planApproval: null,
     planApprovalError: null,
     planApprovalCancel: null,
@@ -3436,6 +3437,7 @@ function clearLayer3FlowStateForSourceChange() {
     State.materialPreview = null;
     State.gateB = null;
     State.gateC = null;
+    State.planMethodSelection = null;
     State.planPreview = null;
     State.planApproval = null;
     State.planRevision = null;
@@ -8700,6 +8702,15 @@ function canStartExecution() {
     );
 }
 
+function operatorMethodSelectionEnabled() {
+    return State.bootstrap?.layer3_operator_method_selection_enabled === true;
+}
+
+function requestedMethodSelectionFields() {
+    if (!operatorMethodSelectionEnabled() || !State.planMethodSelection) return {};
+    return { requested_method_name: State.planMethodSelection };
+}
+
 function renderPlanPanel() {
     if (State.planRevision) {
         const label = State.planRevision.next_state === 'plan_rejected' ? 'rejected' : 'revision requested';
@@ -8814,6 +8825,22 @@ function renderPlanPanel() {
     const warningRows = warnings.length
         ? warnings.map((item) => `<li>${escapeHtml(item.reason_code)}: ${escapeHtml(item.message)}</li>`).join('')
         : '<li>No warnings.</li>';
+    const methodOptionsPass = operatorMethodSelectionEnabled()
+        ? planned.find((item) => Array.isArray(item.method_options) && item.method_options.length)
+        : null;
+    const methodOptions = methodOptionsPass?.method_options || [];
+    const methodSelector = methodOptions.length > 1
+        ? `
+        <div class="plan-list plan-method-selection">
+            <h3>Analysis Method</h3>
+            <label for="plan-method-selection">Recommended methods for this plan</label>
+            <select id="plan-method-selection" name="plan-method-selection">
+                ${methodOptions.map((option) => `
+                    <option value="${escapeHtml(option)}"${option === (methodOptionsPass?.selected_method_name || '') ? ' selected' : ''}>${escapeHtml(option)}</option>
+                `).join('')}
+            </select>
+        </div>`
+        : '';
     elements.planPanel.innerHTML = `
         <div class="plan-summary-grid">
             <div class="plan-summary-card"><strong>Preview</strong>${escapeHtml(body.preview_only ? 'preview only' : 'unknown')}</div>
@@ -8821,6 +8848,7 @@ function renderPlanPanel() {
             <div class="plan-summary-card"><strong>Excluded</strong>${excluded.length}</div>
             <div class="plan-summary-card"><strong>Passes</strong>${planned.length}</div>
         </div>
+        ${methodSelector}
         <div class="plan-preview-grid">
             <section class="plan-list"><h3>Planned Passes</h3><ul>${plannedRows}</ul></section>
             <section class="plan-list"><h3>Admitted Sets</h3><ul>${admittedRows}</ul></section>
@@ -8829,6 +8857,13 @@ function renderPlanPanel() {
         </div>
         ${renderErrorCard(State.planApprovalError || State.planRevisionError)}
     `;
+    const methodSelect = document.getElementById('plan-method-selection');
+    if (methodSelect) {
+        methodSelect.addEventListener('change', () => {
+            State.planMethodSelection = methodSelect.value;
+            previewPlan();
+        });
+    }
 }
 
 function displayValue(value) {
@@ -31432,6 +31467,7 @@ async function previewPlan() {
             session_id: currentSessionId(),
             include_exclusions: true,
             preview_scope: 'owner_service_default',
+            ...requestedMethodSelectionFields(),
         });
         State.planApproval = null;
         State.planRevision = null;
@@ -31441,6 +31477,7 @@ async function previewPlan() {
         addEvent('Plan preview loaded.');
         renderAll();
     } catch (error) {
+        State.planMethodSelection = null;
         State.planPreview = error.payload || {
             schema_id: 'layer3.workbench_error.v1',
             error_code: 'plan_preview_request_failed',
@@ -31468,6 +31505,7 @@ async function approvePlan() {
             preview_hash: State.planPreview.preview_hash,
             operator_confirmation: true,
             approval_scope: 'owner_service_default',
+            ...requestedMethodSelectionFields(),
         });
         clearResultReviewState();
         persistSessionRecoveryAnchor('plan_approval');
@@ -31499,6 +31537,7 @@ async function revisePlan(operatorDecision) {
             preview_id: State.planPreview.preview_id,
             preview_hash: State.planPreview.preview_hash,
             operator_decision: operatorDecision,
+            ...requestedMethodSelectionFields(),
         });
         clearResultReviewState();
         persistSessionRecoveryAnchor('plan_revision');

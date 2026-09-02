@@ -384,6 +384,7 @@ class Layer3PlanApprovalRequest(BaseModel):
     preview_hash: str
     operator_confirmation: bool
     approval_scope: str | None = None
+    requested_method_name: str | None = None
 
 
 class Layer3ApprovedPlanCancelRequest(BaseModel):
@@ -426,6 +427,7 @@ class Layer3PlanPreviewRequest(BaseModel):
     session_id: str | None = None
     preview_scope: str | None = None
     include_exclusions: bool | None = None
+    requested_method_name: str | None = None
 
 
 class Layer3SourcePreviewRequest(BaseModel):
@@ -1509,6 +1511,7 @@ class Layer3PlanRevisionRequest(BaseModel):
     preview_hash: str | None = None
     operator_decision: str | None = None
     operator_note: str | None = None
+    requested_method_name: str | None = None
     execute: Any | None = None
     execution: Any | None = None
     run: Any | None = None
