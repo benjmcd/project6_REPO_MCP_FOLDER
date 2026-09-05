@@ -1,5 +1,18 @@
 # ScienceBase v1.3.3 Pilot Runbook
 
+> **2026-09-04 current-source scope:** This is a preserved legacy connector
+> validation recipe, not the current whole-path authority. Current main is
+> `d9412188e9581302429112cc637e416fe666994f`; current bounded state is in
+> [docs/MASTER_CONTEXT.md](docs/MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation),
+> and the public connector path is in
+> [docs/public-connectors-journey.md](docs/public-connectors-journey.md#2026-09-04-bounded-layer-3-extension).
+> The validator below covers the connector run lifecycle and conditional no-op
+> gate. It does not validate
+> `GET /api/v1/layer3/public-dataset-version-candidates` or
+> `POST /api/v1/layer3/execution/result/public-values`, and it does not itself
+> authorize a new acquisition, flag arming, connector freeze, or release tag.
+> The historical body and v1.3.3 instructions remain preserved in time.
+
 ## Purpose
 Operational runbook for the Annual MCS pilot gate using the public-read ScienceBase connector.
 

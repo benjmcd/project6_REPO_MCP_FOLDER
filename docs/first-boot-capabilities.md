@@ -1,5 +1,15 @@
 # First-Boot Capabilities
 
+> **2026-09-04 clarification:** The existing no-key ScienceBase connector remains
+> available at first boot, but its newly landed Layer 3 public-dataset analysis
+> and result-value inspection subfeatures are not first-boot capabilities.
+> `LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED` and
+> `LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED` both default to `false`; values
+> require both flags, admitted newest `sciencebase/public_api` provenance,
+> provenance co-display, and storage-reference exclusion. This is a bounded
+> experimental default-off extension under the existing selected profile, with
+> no support-matrix capability-count or pin-set change.
+
 What an operator can actually do immediately after a default boot, versus what is gated behind an API key, a secret, or a feature flag. This is the concrete definition of "usable" for a fresh install; it is not target-state design.
 
 Default boot (no environment configuration):
@@ -17,7 +27,7 @@ Status legend: **[verified]** = exercised end-to-end against a running server in
 
 | Capability | Surface | Status |
 | --- | --- | --- |
-| Health / readiness / OpenAPI | `GET /health`, `GET /ready`, `GET /docs`, `GET /openapi.json` (306 paths) | [verified] |
+| Health / readiness / OpenAPI | `GET /health`, `GET /ready`, `GET /docs`, `GET /openapi.json` | [verified] |
 | Method-aware analytics vertical | `POST /api/v1/sources/upload` → `.../profile` → `.../analysis/recommend` → `POST /api/v1/analysis-runs` (`cross_correlation`, `decomposition`, `structural_break`) — runs complete with persisted artifacts | [verified] |
 | Layer 3 workbench UI | `GET /review/layer3` (+ `/review/nrc-aps`, `/review/analyst-insight`, document-trace, workbench-compare, candidate-b-trace) | [verified: layer3 page serves] |
 | ScienceBase public connector | `POST /api/v1/connectors/sciencebase-public/runs` (+ `sciencebase-mcs`) — no API key; public access | [code: `config.py:144`, `get_sciencebase_adapter`] |
@@ -44,11 +54,16 @@ All default `false` in `config.py` unless noted. Each must be explicitly enabled
 
 | Flag (env alias) | Gates | config.py |
 | --- | --- | --- |
+| `LAYER3_CONNECTOR_PROMOTION_IDENTITY_ENABLED` | Connector promotion identity recording | 232-234 |
+| `LAYER3_ADOPTED_EXTERNAL_SOURCE_INTAKE_ENABLED` | Adopted-external source intake | 236-238 |
 | `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED` | Live network fetches to SEC EDGAR (otherwise offline/replay only) | 86-89 |
 | `LAYER3_SEC_EDGAR_ARELLE_INTERNAL_VALUE_STORE_ENABLED` | Arelle fact-authority internal value store | 100-103 |
 | `LAYER3_SEC_EDGAR_ARELLE_CORPUS_VALIDATION_ENABLED` | Arelle real-company corpus validation | 104-107 |
 | `LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED` | SEC EDGAR Arelle value-reveal | 112-115 |
 | `LAYER3_SEC_XBRL_CONTROLLED_VALUE_REVEAL_SUBMIT_ENABLED` | SEC XBRL controlled value-reveal submit | 120-123 |
+| `LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED` | Public ScienceBase DatasetVersion admission into the bounded Layer 3 analysis path | 240-242 |
+| `LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED` | Provenance-bound public connector result-value inspection; also requires public-dataset analysis | 244-246 |
+| `LAYER3_CONNECTOR_DATASET_HANDOFF_ENABLED` | Connector-only DatasetVersion handoff | 248-250 |
 | `LAYER3_ANALYSIS_PRODUCT_PACKAGE_INVENTORY_ENABLED` | 3C product package inventory feature | 124-127 |
 | `SEC_XBRL_PRODUCTION_ADMISSION_EVALUATOR_ENABLED` | SEC XBRL production admission evaluator | 128-131 |
 | `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED` (default **true**) | Arelle fact-authority cutover; in nonlocal mode also requires `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_NONLOCAL_AUTHORIZED=true` | 96-99 |

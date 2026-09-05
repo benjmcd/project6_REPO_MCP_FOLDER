@@ -1,5 +1,24 @@
 # 01 — Arc Ledger (chronological accomplishment record)
 
+## 2026-09-04 current ledger extension
+
+Current main is `d9412188e9581302429112cc637e416fe666994f`. The landed chain after
+the July admission-spine checkpoint is #2477 `1b2e170b`, #2478 `fcf6070d`,
+#2479 `f6b70030`, #2481 `c1fcd840`, #2482 `0b65b4f0`, #2486 `89b04fef`,
+#2487 `2182177e`, #2489
+`892a6b0a2fd8be4b3385c9304974e1e0a523cd40`, #2490
+`d7488c05520405716eceab7093ec84d268870b68`, #2491 `f8f4ee9c`, #2492
+`9d358139dcc05386a8b956691af478ccaa62038a`, #2493
+`c979edad991bef3ecc1b310edeb8bd9964f40333`, and #2494 at the current-main
+hash. Exact bounded outcomes and non-claims are summarized in
+[MASTER_CONTEXT](../MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation).
+
+PR #2495 at `44c3a433d39c5c676c2e1d163ab19b8e0965f6bf` and PR #2496 at
+`1de3b1e291a854ef69a3d46bfa1cfd31cc240349` are open, clean, and reported
+with 21 successful checks each. Neither is landed. Their merges remain owner
+decisions. This extension records no merge authority and does not declare the
+whole B1b program, integrated-loop utility, or Phase 4/5/6 complete.
+
 Each entry: what landed, evidence anchor, and why it was the right move at that point.
 Dates 2026. All PRs merged to `project6-origin/main`; squash SHAs given.
 

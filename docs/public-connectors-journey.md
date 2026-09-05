@@ -1,5 +1,33 @@
 # Public Connectors Journey
 
+## 2026-09-04 bounded Layer 3 extension
+
+Current main adds an optional public ScienceBase-to-Layer 3 path after the
+canonical connector journey below. It is experimental and default-off. With
+`LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED=true`, the workbench may discover only
+materialized DatasetVersions whose newest provenance is
+`sciencebase/public_api`, and it remains bound to connector target identity.
+Result-value inspection requires that flag plus
+`LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED=true`. Returned values remain
+bound to approved plan/pass/run and artifact identities, are co-displayed with
+complete public provenance, and exclude storage references.
+
+The exact Layer 3 navigation surfaces are:
+
+- `GET /api/v1/layer3/public-dataset-version-candidates` for the gated public
+  candidate inventory.
+- `POST /api/v1/layer3/execution/result/public-values` for the dual-flag-gated,
+  provenance-bound result-value response.
+
+This extension does not widen the shared APS admission predicate, make the
+public path default-on, change support-matrix IDs/counts/pins, prove temporal
+scientific utility, or authorize a public run. Retained public runs demonstrate
+plumbing only; cross-sectional row order is not time. See
+[MASTER_CONTEXT](MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation) for
+the current bounded state and pending owner decisions. Operator navigation starts
+at the
+[current operator pointer](OPERATOR_UTILIZATION_INDEX.md#2026-09-04-current-operator-pointer).
+
 This journey covers the public_connectors overlay in the current selected local profile: ScienceBase public/MCS, Senate LDA anonymous metadata, World Bank Indicators anonymous metadata, BLS Public Data API v1 anonymous metadata, OECD SDMX anonymous metadata, and CFTC COT anonymous public report rows. It does not activate or claim OCR, model/agent egress, keyed connectors, nonlocal deployment, high availability, automatic replay, real provider delivery, SEC value reveal, or default-on SEC live network behavior. The current support matrix, not the earlier RC1 analytics-only claim, is the authority for whether these connector slices are selected.
 
 ## Canonical ScienceBase Path

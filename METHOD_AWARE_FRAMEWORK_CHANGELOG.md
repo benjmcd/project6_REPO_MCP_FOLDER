@@ -1,5 +1,12 @@
 # Method-Aware Framework — Changelog Through Latest Repo
 
+> **2026-09-04 scope correction:** The body is history scoped to its named
+> artifacts and conversation. Its "latest repo," workspace, and test-status
+> statements do not describe current main, support posture, or analytical proof.
+> Start with [README](README.md) and the
+> [current state summary](docs/MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation).
+> The historical body is retained without rewriting its original account.
+
 This changelog is reconstructed from the generated planning-pack files, patch summaries, validation reports, and the latest repo archive `method_aware_framework_starter_decomp_break.zip`.
 
 It is accurate to the artifacts available in this conversation, not to an external git history. Where the repo state and README disagree, the code and patch summaries are treated as source of truth.

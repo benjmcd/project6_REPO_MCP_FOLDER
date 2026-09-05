@@ -1,5 +1,19 @@
 # 00 — Governing Posture and Invariants
 
+## 2026-09-04 reconciliation pointer
+
+Current implementation authority is `project6-origin/main` at
+`d9412188e9581302429112cc637e416fe666994f`; the complete bounded summary is in
+[MASTER_CONTEXT](../MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation).
+The landed public ScienceBase analysis/value paths preserve the governing
+rails: analysis is default-off, values require both public-analysis and
+value-reveal flags, newest `sciencebase/public_api` provenance is mandatory,
+values and provenance are co-displayed, and storage references are excluded.
+This record changes no support policy, schema, source default, runtime status,
+credentialed-lane authority, signing authority, I12 posture, or owner decision.
+Operator-local raw sources and records remain outside this tracked set; only
+sanitized hashes, counts, and bounded interpretations may enter it.
+
 Every rail below is stated with (a) what it requires, (b) WHY it is the optimal posture given
 the circumstances, and (c) WHERE it is enforced. These are the constraints every future lane
 inherits. None is ceremony; each earns its place. (Owner standing directive: velocity ceremony

@@ -1,5 +1,24 @@
 # Operator Utilization Index
 
+## 2026-09-04 current operator pointer
+
+Current tracked state is summarized in
+[MASTER_CONTEXT](MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation).
+On current main, public ScienceBase DatasetVersions can enter the bounded Layer
+3 analysis path only when `LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED=true`; the
+source default is `false`. Inspecting public result values additionally requires
+`LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED=true`, so both flags must be armed.
+The value response remains bound to approved plan/pass/run identity, newest
+`sciencebase/public_api` provenance, provenance co-display, and storage-reference
+exclusion. This docs pointer is not an arming recipe or authorization.
+
+Retained public runs prove workflow plumbing, not robust temporal findings.
+Cross-sectional row order must not be interpreted as time. The next planned
+persisted proof uses a qualified operator-local 60-quarter derivative with
+explicit normalized-time and per-point lineage; it has not been run through a
+persisted API/Layer 3 flow. No fresh download is required for that local proof;
+a public-envelope proof requires an appropriate admitted public input.
+
 This is the single entry point for intended local operator use. It is an index,
 not a replacement for the source runbooks. Follow the linked authority for the
 surface you are using, and keep generated runtime state isolated unless a
@@ -10,6 +29,7 @@ runbook explicitly says otherwise.
 - Repo harness and command rules: [docs/agent-harness.md](agent-harness.md).
 - Wrapper action semantics: [docs/harness-validate-inventory.md](harness-validate-inventory.md).
 - Current selected local profile: [docs/support-matrix-local-expert.md](support-matrix-local-expert.md) and [docs/local-profile-ops.md](local-profile-ops.md).
+- Public connector workflow and the default-off Layer 3 extension: [docs/public-connectors-journey.md](public-connectors-journey.md).
 - NRC APS truth model and review path: [docs/nrc_adams/nrc_aps_reader_path.md](nrc_adams/nrc_aps_reader_path.md).
 - Layer 3 operator smoke path: [next_milestone_plans/Layer3_execution_handoff/09_L3_OPERATOR_SMOKE_RUNBOOK.md](../next_milestone_plans/Layer3_execution_handoff/09_L3_OPERATOR_SMOKE_RUNBOOK.md).
 - SEC/XBRL operator CLI and UI path: [next_milestone_plans/Layer3_execution_handoff/10_SEC_XBRL_OPERATOR_CLI_RUNBOOK.md](../next_milestone_plans/Layer3_execution_handoff/10_SEC_XBRL_OPERATOR_CLI_RUNBOOK.md).

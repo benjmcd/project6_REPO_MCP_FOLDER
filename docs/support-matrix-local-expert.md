@@ -1,5 +1,17 @@
 # Local Expert Support Matrix
 
+> **2026-09-04 current interpretation:** The 32 capability IDs, their statuses,
+> and the selected-profile pin set remain intentionally scoped and unchanged.
+> Public ScienceBase DatasetVersion analysis and public result-value inspection
+> are bounded experimental default-off subfeatures beneath the existing
+> `sciencebase_public_connector_slice` and `layer3_workbench_ui` capabilities;
+> they do not add capability rows. Their source defaults are
+> `LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED=false` and
+> `LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED=false`. Values require both
+> flags, newest admitted `sciencebase/public_api` provenance, provenance
+> co-display, and storage-reference exclusion. This clarification changes no
+> support status, schema, default, runtime state, or production-readiness claim.
+
 This support matrix applies to the selected final 0.3.0 profile `base=local_expert` with `overlays=["public_connectors","sec_xbrl_offline"]`.
 
 The profile is a single-operator local source-run posture: `DEPLOYMENT_MODE=local`, `AUTH_OWNER=none`, SQLite/local filesystem, and loopback/local trust. Under this posture there is no authentication boundary; the local principal is constant and identity or role enforcement is not a product claim.

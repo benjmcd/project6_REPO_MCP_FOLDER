@@ -16,6 +16,7 @@
       "FRONT-DOOR TRUTH RE-ANCHOR (2026-06-18): snapshot_base_main_commit now anchors to current project6-origin/main f679f64f08a595fe724158d46006be77a179c786 after PR #2334. Older PR #609/ad51b1c6 progress-sync entries are retained only as historical lineage, not as the current live-main base. Full detailed refresh for docs 868-929 (Layer 3 workbench) and 1115-1350 (SEC EDGAR + SEC XBRL) remains required.",
       "LEGACY SHA SEMANTICS (2026-06-18): this manifest is a mixed historical ledger. Only snapshot_base_main_commit/current_snapshot and explicitly refreshed current_main_tip fields are current live-main SHA claims for this front-door re-anchor. Older embedded merge/head/base/current-main hashes may be non-ancestors after the history rebuild and are archival lineage/proof notes unless a future focused refresh revalidates that entry against project6-origin/main.",
       "RECORD TRUTH 2 (2026-07-02): project6-origin/main 7fa72e745c7a2d6b72be37971e0e8768780dc5d5 is the current A8 record-status reconciliation ref after PR #2419; f679f64f08a595fe724158d46006be77a179c786 remains only the historical PR #2334 front-door re-anchor.",
+      "CURRENT ROUTER RELOCATION (2026-09-04): current authoritative-file lists use backend/app/api/layer3/__init__.py for the package router and backend/app/services/layer3_workbench.py for workbench behavior. Historical backend/app/api/layer3.py occurrences remain dated pre-package-refactor evidence and are not current file-presence claims.",
       "This artifact is intentionally scoped to the bounded Layer3 Phase1A through APS multisource chain.",
       "This artifact now includes the landed first shared-consumer freeze that selects the first downstream shared APS consumer beyond multisource on current `main`, plus the now-landed bounded export-package handoff implementation slice governed by that freeze and the exact-run export/export-package gate-hardening follow-up on current `main`.",
       "This artifact now also includes the landed read-only package-derived-context freeze on current `main`.",
@@ -261,7 +262,7 @@
       "e2e/layer3-workbench.spec.js",
       "next_milestone_plans/Layer3_planning_docs/54_L3_WB_HANDOFF_EXPORT_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/55_L3_WB_HANDOFF_EXPORT_API_AND_STATE_CONTRACT.md",
-      "backend/app/api/layer3.py",
+      "backend/app/api/layer3/__init__.py",
       "backend/app/services/layer3_workbench.py",
       "backend/app/services/layer3_aps_handoff.py",
       "backend/tests/test_layer3_api.py",
@@ -314,7 +315,7 @@
       "backend/alembic/versions/0016_layer3_signed_reference_state.py",
       "backend/app/services/layer3_signed_reference_state.py",
       "backend/app/services/layer3_workbench.py",
-      "backend/app/api/layer3.py",
+      "backend/app/api/layer3/__init__.py",
       "backend/tests/test_layer3_api.py",
       "next_milestone_plans/Layer3_planning_docs/136_APPROVED_PLAN_CANCEL_ENTRY_FREEZE.md",
       "next_milestone_plans/Layer3_planning_docs/135_APPROVED_PLAN_CORRECTION_FREEZE.md",
@@ -5767,7 +5768,7 @@
     "backend/app/services/layer3_signed_reference_state.py",
     "backend/app/services/layer3_workbench.py",
     "backend/app/services/layer3_preflight_request_contract.py",
-    "backend/app/api/layer3.py",
+    "backend/app/api/layer3/__init__.py",
     "backend/tests/test_layer3_api.py",
     "backend/tests/test_layer3_preflight_request_contract.py",
     "next_milestone_plans/layer3_workbench_proof_manifest.json",
@@ -27490,7 +27491,7 @@
       "owner_service": "backend/app/services/layer3_corrected_package_artifact_set.py",
       "durable_model": "L3CorrectedPackageArtifactSet",
       "durable_table": "l3_corrected_package_artifact_set",
-      "migration_owner": "backend/alembic/versions/0031_layer3_corrected_package_artifact_set.py",
+      "migration_owner": "backend/alembic/versions/0033_layer3_corrected_package_artifact_set.py",
       "targeted_tests": "backend/tests/test_layer3_corrected_package_artifact_set.py",
       "api_response_schema_id": "layer3.corrected_package_artifact_set.v1",
       "request_mode": "operator_review_corrections_server_owned_corrected_package_artifact_set",
@@ -50201,5 +50202,92 @@
     },
     "next_posture": "explicit_second_key_owner_gate"
   },
-  "latest_m_admission_spine_b1_record_summary": "M-ADMISSION-SPINE-B1-RECORD aligns the tracked record through PR #2476 at 56c56e77ebe435c3a9f035f47de2d8611efee7d7. Standing: B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED. The complete 58-disposition enumeration is RATIFIED-EXACTLY-AS-PROPOSED and precedence is RATIFIED-AS-PROPOSED; the second key is NOT-GRANTED, future intent is INTENDED-NON-AUTHORIZING, and WITHHELD is NOT-CLAIMED. Four operator-held local evidence files are recorded only by basename, bytes, full SHA-256, and canonical self-hash where applicable. This records lane authorizes no implementation, schema, ORM, migration, runtime, build dispatch, B1b build PR, or B1b build merge. Next posture: explicit_second_key_owner_gate."
+  "latest_m_admission_spine_b1_record_summary": "M-ADMISSION-SPINE-B1-RECORD aligns the tracked record through PR #2476 at 56c56e77ebe435c3a9f035f47de2d8611efee7d7. Standing: B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED. The complete 58-disposition enumeration is RATIFIED-EXACTLY-AS-PROPOSED and precedence is RATIFIED-AS-PROPOSED; the second key is NOT-GRANTED, future intent is INTENDED-NON-AUTHORIZING, and WITHHELD is NOT-CLAIMED. Four operator-held local evidence files are recorded only by basename, bytes, full SHA-256, and canonical self-hash where applicable. This records lane authorizes no implementation, schema, ORM, migration, runtime, build dispatch, B1b build PR, or B1b build merge. Next posture: explicit_second_key_owner_gate.",
+  "m_state_reconciliation_tracking": {
+    "milestone": "m_state_reconciliation_v1",
+    "record_date": "2026-09-04",
+    "status": "branch_local_tier1_docs_only",
+    "source_frontier": "d9412188e9581302429112cc637e416fe666994f",
+    "current_summary": "docs/MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation",
+    "landed_chain": {
+      "#2477": "1b2e170b",
+      "#2478": "fcf6070d",
+      "#2479": "f6b70030",
+      "#2481": "c1fcd840",
+      "#2482": "0b65b4f0",
+      "#2486": "89b04fef",
+      "#2487": "2182177e",
+      "#2489": "892a6b0a2fd8be4b3385c9304974e1e0a523cd40",
+      "#2490": "d7488c05520405716eceab7093ec84d268870b68",
+      "#2491": "f8f4ee9c",
+      "#2492": "9d358139dcc05386a8b956691af478ccaa62038a",
+      "#2493": "c979edad991bef3ecc1b310edeb8bd9964f40333",
+      "#2494": "d9412188e9581302429112cc637e416fe666994f"
+    },
+    "public_layer3_posture": {
+      "classification": "bounded_experimental_default_off_subfeatures",
+      "analysis_flag": "LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED=false",
+      "value_flag": "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED=false",
+      "admitted_source": "newest sciencebase/public_api DatasetVersion provenance",
+      "value_requirements": "both flags plus approved plan/pass/run and artifact identity, provenance co-display, and storage-reference exclusion",
+      "support_matrix_capability_count": 32,
+      "support_matrix_ids_statuses_and_pins_changed": false
+    },
+    "pending_owner_merges": [
+      {
+        "pr": "#2495",
+        "head": "44c3a433d39c5c676c2e1d163ab19b8e0965f6bf",
+        "state": "OPEN_CLEAN_21_SUCCESSFUL_CHECKS",
+        "on_main": false
+      },
+      {
+        "pr": "#2496",
+        "head": "1de3b1e291a854ef69a3d46bfa1cfd31cc240349",
+        "state": "OPEN_CLEAN_21_SUCCESSFUL_CHECKS",
+        "on_main": false,
+        "scope": "default-off method selection with cohort-state, shared-method intersection, and pending-UI repairs"
+      }
+    ],
+    "historical_correction": "The July second-key NOT-GRANTED disposition remains exact-proposal authority, not a blanket present-day source-absence claim; later source presence does not retroactively approve or close the old ballot.",
+    "analytical_limit": {
+      "retained_public_runs": "plumbing proof only, not robust temporal findings",
+      "cross_sectional_row_order_is_time": false,
+      "qualified_local_observations": 60,
+      "qualified_local_derivative_sha256": "5ad88a04e4232227b5d1a59bbc1531dfd3deca8665401b0184b16d0310eb4bd0",
+      "normalized_coordinate_and_per_point_lineage": true,
+      "production_stl_period_4_in_memory": "accepted",
+      "residual_stationarity": "warn_inconclusive",
+      "persisted_real_data_api_layer3_proof": false,
+      "sciencebase_provenance_claim": false,
+      "scientific_finding_claim": false
+    },
+    "index_scope": {
+      "path": "docs/program-context",
+      "classification": "exhaustive",
+      "tracked_file_count": 6,
+      "contents": "INDEX.md plus five numbered records"
+    },
+    "source_reference_corrections": {
+      "current_api_router_authority": "backend/app/api/layer3/__init__.py",
+      "current_workbench_authority": "backend/app/services/layer3_workbench.py",
+      "historical_layer3_py_occurrences_preserved": true,
+      "corrected_package_artifact_set_migration": "backend/alembic/versions/0033_layer3_corrected_package_artifact_set.py",
+      "future_next_migration_placeholder_preserved": true,
+      "legacy_sciencebase_pilot_runbook_scoped_to_connector_validation": true
+    },
+    "negative_authority_flags": {
+      "runtime_change": false,
+      "support_policy_change": false,
+      "schema_or_migration_change": false,
+      "config_default_or_status_change": false,
+      "acquisition_or_flag_arming": false,
+      "persisted_run": false,
+      "owner_decision": false,
+      "merge_authorized": false,
+      "private_record_published_or_linked": false,
+      "whole_b1b_or_phase_4_5_6_completion_claim": false
+    },
+    "next_posture": "land_docs_then_seek_separate_owner_merge_decisions_then_isolated_persisted_real_data_proof"
+  },
+  "latest_m_state_reconciliation_summary": "M-STATE-RECONCILIATION records current main d9412188e9581302429112cc637e416fe666994f, the bounded #2477-#2494 landed chain, public ScienceBase analysis/value subfeatures as dual-flag default-off under the unchanged 32-capability selected profile, and #2495/#2496 as open clean owner-gated merges with 21 successful checks each. It corrects the July second-key blanket interpretation without retroactive approval, records only sanitized local analytical limits, and makes no runtime, support-policy, schema/default/status, acquisition, flag, owner-decision, or merge change."
 }
