@@ -1,5 +1,66 @@
 # Layer3 Progress Board
 
+## M-STATE-RECONCILIATION
+
+Milestone: `m_state_reconciliation_v1`.
+
+Status: branch-local Tier-1 docs-only current-state reconciliation. It becomes a
+tracked current pointer only if this lane lands; it makes no runtime change.
+
+Source frontier: `project6-origin/main`
+`d9412188e9581302429112cc637e416fe666994f`. The verified landed sequence is
+#2477 `1b2e170b`, #2478 `fcf6070d`, #2479 `f6b70030`, #2481 `c1fcd840`,
+#2482 `0b65b4f0`, #2486 `89b04fef`, #2487 `2182177e`, #2489
+`892a6b0a2fd8be4b3385c9304974e1e0a523cd40`, #2490
+`d7488c05520405716eceab7093ec84d268870b68`, #2491 `f8f4ee9c`, #2492
+`9d358139dcc05386a8b956691af478ccaa62038a`, #2493
+`c979edad991bef3ecc1b310edeb8bd9964f40333`, and #2494 at the source
+frontier. These changes establish only their bounded connector-intake,
+adopted-external, and public ScienceBase slices; they do not establish whole-B1b,
+integrated-loop, scientific-utility, Phase 4/5/6, nonlocal, or production
+completion.
+
+Current public posture: `LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED=false` and
+`LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED=false`. Analysis admits only the
+new public `sciencebase/public_api` family. Values require both flags, approved
+plan/pass/run and artifact identity, provenance co-display, and storage-reference
+exclusion. These are bounded experimental default-off subfeatures under the
+existing intentionally scoped 32-capability profile; the support-matrix IDs,
+counts, statuses, and pin set remain unchanged.
+
+Pending owner decisions: #2495 at
+`44c3a433d39c5c676c2e1d163ab19b8e0965f6bf` and #2496 at
+`1de3b1e291a854ef69a3d46bfa1cfd31cc240349` are OPEN/CLEAN with 21 successful
+checks each. Neither is on main and neither merge is authorized by this record.
+#2496 contains the pending default-off method-selection cohort/intersection/UI
+repair and must not be described as current-main behavior.
+
+Analytical limit: retained public runs prove workflow plumbing, not robust
+temporal findings; cross-sectional row order is not time. Operator-local
+unpublished evidence qualifies a 60-quarter derivative with an explicit
+normalized coordinate and per-point lineage. Production STL accepted period 4
+in memory, while residual stationarity remained warn/inconclusive. This is not
+a scientific finding, ScienceBase provenance, or persisted real-data API/Layer
+3 proof. A fresh isolated persisted proof is next after docs synchronization;
+the local proof needs no new download, while a public-envelope proof requires
+an appropriate admitted public input.
+
+Historical correction: July's explicit-second-key `NOT-GRANTED` disposition
+still governs that exact old proposal, but no longer supports a blanket claim
+that later B1b-related source is absent. Later source presence does not
+retroactively approve or close the old ballot.
+
+Tracking keys: `m_state_reconciliation_tracking` and
+`latest_m_state_reconciliation_summary`. Proof keys:
+`m_state_reconciliation_proof` and
+`latest_m_state_reconciliation_proof_summary`.
+
+Boundary: no support policy, capability inventory, schema, migration, config
+default, runtime status, acquisition, flag arming, persisted run, credentialed
+lane, signing, egress, I12/ledger custody, owner decision, PR merge, or
+production-readiness change. Private operator records and raw sources are not
+published or linked by this milestone.
+
 Live-main SHA semantics (2026-06-18), updated 2026-07-02: this board is a
 mixed historical ledger.
 The prior 2026-06-18 front-door anchor, `project6-origin/main`

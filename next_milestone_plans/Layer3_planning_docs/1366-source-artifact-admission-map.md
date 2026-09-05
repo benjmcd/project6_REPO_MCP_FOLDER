@@ -1,5 +1,26 @@
 # Source-Artifact Admission Map (1366)
 
+## Erratum (2026-09-04, tracked-state reconciliation)
+
+Current implementation authority is `project6-origin/main` at
+`d9412188e9581302429112cc637e416fe666994f`. The July 13 second-key
+`NOT-GRANTED` language remains the historical authority for that exact proposed
+key, but it is obsolete as a blanket claim that all B1b-related implementation
+is absent. Later main contains A0 promotion identity (#2486), connector-only
+DatasetVersion handoff (#2489), adopted-external intake (#2490), default-off
+public ScienceBase analysis (#2492), provenance-bound public values (#2493),
+and the eligible-candidate cap correction (#2494).
+
+Those source-presence facts do not retroactively approve the old second key,
+close the old ballot, authorize connector-to-intake auto-trigger, or prove the
+whole B1b program, an integrated production loop, scientific utility, or Phase
+4/5/6 completion. Public analysis remains restricted to the new
+`sciencebase/public_api` family and default-off; values require both public
+flags, provenance co-display, and storage-reference exclusion. No support
+policy, schema, default, status, runtime action, acquisition, or owner decision
+is changed by this erratum. See
+[MASTER_CONTEXT](../../docs/MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation).
+
 **Status:** Tier-1, DOCS-ONLY. Contract/reference doc for lane **M-ADMISSION-MAP** (Phase 0+1 of the source-artifact admission-spine program). Grounds against `project6-origin/main` tip `ee87e576`; all `file:line` anchors were verified live before authoring. No production-readiness, default-on, nonlocal-admission, live-pilot, or connector-source-default expansion is claimed. This doc **subsumes** the in-code registry `backend/app/services/layer3_aps_source_family.py:5` (`APS_ADMITTED_TABLE_SOURCE_FAMILIES`); it does not duplicate or supersede runtime behavior.
 
 ## 1. Purpose & authority

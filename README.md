@@ -1,5 +1,20 @@
 # Project6: Method-Aware Framework + Connector Stack
 
+> **2026-09-04 state reconciliation:** Current tracked-state authority is
+> `project6-origin/main` at `d9412188e9581302429112cc637e416fe666994f`.
+> Relevant merged tranches from PRs #2477-#2494 add the ratified connector-intake
+> records, connector-only DatasetVersion handoff, adopted-external intake, and
+> bounded public ScienceBase analysis/value inspection. The public Layer 3
+> additions are experimental and default-off:
+> `LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED=false` and
+> `LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED=false`; values require both
+> flags plus admitted `sciencebase/public_api` provenance and are returned only
+> with provenance, with storage references excluded. PRs #2495 and #2496 are
+> open with clean merge state and 21 successful checks each, but remain owner
+> merge decisions and are not on main. See
+> [docs/MASTER_CONTEXT.md](docs/MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation)
+> for the bounded current summary and explicit non-claims.
+
 > **Current status** (tracked on `project6-origin/main`): the selected final 0.3.0 profile is `base=local_expert`, `overlays=["public_connectors","sec_xbrl_offline"]`. The FastAPI/SQLAlchemy surface defaults to a single-operator local profile (`AUTH_OWNER=none`, `LAYER3_ROUTE_AUTHORIZATION_MODE=identity_presence`): under this local default there is **no authentication boundary** - the server derives a constant local-operator principal without inspecting request headers and treats the caller as owner, so identity/role gating is inert. Identity and role become an actual auth boundary only under the nonlocal/proxy posture (`AUTH_OWNER=proxy` with `TRUSTED_PROXY_MODE=true` behind an authenticating reverse proxy). Sublayer 3C deterministic method/product flows, ScienceBase public/MCS, Senate LDA anonymous metadata, World Bank Indicators anonymous metadata, BLS Public Data API v1 anonymous metadata, OECD SDMX anonymous metadata, and CFTC COT anonymous public report-row connector workflows, connector run observability, and the default-deny model/agent egress policy are present. Public connector support is bounded to operator-workflow + local-deployment for public/anonymous connector use; SEC-XBRL value-bearing support is simulation/offline-replay only for already-acquired operator-supplied evidence with redacted/hash-only outputs. Bounded SEC-XBRL live source-artifact acquisition is present but remains explicit-default-off behind `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED=false` and server-configured User-Agent/rate-limit controls; value reveal / controlled reveal submit remain default-off; and CI covers the PostgreSQL 3C golden path plus the SEC-XBRL test families. This selected local profile is not a production-ready claim for SEC value reveal, real provider delivery, live SEC network, model egress, OCR, keyed connectors, HA, or any nonlocal/default-on behavior.
 >
 > Agent/operator harness entry point: [docs/agent-harness.md](docs/agent-harness.md).
@@ -21,7 +36,7 @@ The notes below are layer-specific milestones and navigation pointers, not the r
 >
 > Some `tests/...` and `tools/...` paths referenced in older docs may not exist in a given export workspace; confirm on-disk presence before treating any as an authority path.
 
-This repository has five active tracks in one backend:
+This repository has seven active tracks in one backend:
 
 1. Method-aware tabular analytics flow:
    upload -> profile -> transform -> annotate -> analyze.

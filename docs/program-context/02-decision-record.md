@@ -1,5 +1,20 @@
 # 02 — Decision Record
 
+## 2026-09-04 reconciliation — no new owner decision
+
+This docs pass records source and PR state; it makes no new owner decision. See
+[MASTER_CONTEXT](../MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation)
+for the current bounded summary.
+
+The July explicit-second-key `NOT-GRANTED` disposition remains the historical
+authority for that exact proposed key. Later landed connector handoff,
+adopted-external intake, and public ScienceBase source paths mean it must not be
+read as a blanket assertion that all B1b-related source remains unimplemented.
+Conversely, later source presence does not retroactively approve the old key,
+close its ballot, or grant connector-to-intake auto-trigger, acquisition,
+credential, signing, flag-arming, nonlocal, or merge authority. I12 and ledger
+custody remain separately governed.
+
 ADR-style. Each: context → alternatives → decision → why optimal given the circumstances →
 evidence → revisit-when. Dates 2026.
 

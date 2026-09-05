@@ -1,5 +1,92 @@
 # Master Context — project6 Layer 3 / SEC-XBRL Campaign
 
+## 2026-09-04 current state reconciliation
+
+This is the single tracked current-state summary for the September 4
+reconciliation. Current implementation authority is `project6-origin/main` at
+`d9412188e9581302429112cc637e416fe666994f`; source, tests, configuration, and
+CI remain stronger authority than this narrative. The dated sections below are
+preserved historical records and do not override this block.
+
+### Landed implementation frontier
+
+Relevant verified merged tranches after the July admission-spine record are:
+
+| PR | Merge commit | Bounded result |
+|---|---|---|
+| #2477 | `1b2e170b` | Owner ratifications recorded |
+| #2478 | `fcf6070d` | Dispatch specification |
+| #2479 | `f6b70030` | Pre-key archive record |
+| #2481 | `c1fcd840` | Section 18 record |
+| #2482 | `0b65b4f0` | Section 19 record |
+| #2486 | `89b04fef` | A0 promotion identity implementation |
+| #2487 | `2182177e` | Focused CI repair |
+| #2489 | `892a6b0a2fd8be4b3385c9304974e1e0a523cd40` | Connector-only DatasetVersion handoff |
+| #2490 | `d7488c05520405716eceab7093ec84d268870b68` | Adopted-external intake |
+| #2491 | `f8f4ee9c` | Post-land corrections |
+| #2492 | `9d358139dcc05386a8b956691af478ccaa62038a` | Public ScienceBase DatasetVersion admission |
+| #2493 | `c979edad991bef3ecc1b310edeb8bd9964f40333` | Provenance-bound public result values |
+| #2494 | `d9412188e9581302429112cc637e416fe666994f` | Eligible-candidate file-cap correction |
+
+This chain proves only the scope carried by those source changes. It does not
+prove the entire B1b program, an integrated production loop, Phase 4/5/6
+completion, scientific utility, nonlocal readiness, or default-on operation.
+The July `B1B-BLOCKED-ON-OWNER` / `NOT-GRANTED` record remains true for the
+then-proposed second-key authority, but is no longer a blanket statement that
+later B1b-related source is absent. Later source presence does not retroactively
+grant, rewrite, or close the earlier ballot instrument.
+
+### Current public ScienceBase posture
+
+Public Layer 3 analysis is admitted only through the newly introduced public
+family for materialized DatasetVersions whose newest provenance is
+`source_system=sciencebase` and `source_mode=public_api`. It is controlled by
+`LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED`, whose source default is `false`.
+Public result-value inspection additionally requires
+`LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED`, also default `false`, so values
+require both flags. The response binds the approved plan/pass/run and source
+identities, requires provenance co-display, accepts only admitted JSON result
+fields, and excludes storage references. These are bounded experimental
+default-off subfeatures under the existing 32-capability selected-profile
+contract; they do not expand the intentionally scoped capability IDs, counts,
+or pin set in the support matrix.
+
+### Pending owner decisions
+
+- PR #2495 is OPEN/CLEAN at
+  `44c3a433d39c5c676c2e1d163ab19b8e0965f6bf`, with 21 successful checks. It
+  contains three additive ignore rules. Merge remains reserved to the owner.
+- PR #2496 is OPEN/CLEAN at
+  `1de3b1e291a854ef69a3d46bfa1cfd31cc240349`, with 21 successful checks. It
+  contains default-off method selection plus cohort-state, shared-method
+  intersection, and pending-UI repairs. It is not on main. Merge remains
+  reserved to the owner.
+
+No merge, flag arming, acquisition, credentialed action, support-policy change,
+schema/default/status change, or new owner decision is authorized by this docs
+reconciliation. Existing I12, ledger custody, old-ballot, source-authority,
+credentialed-lane, signing, and egress boundaries remain in force.
+
+### Analytical evidence and next proof
+
+Retained public runs prove connector/admission/execution and provenance/value
+display plumbing. They do not establish robust temporal findings: cross-sectional
+row order is not time, and sparse annual overlap is diagnostic only. Separately,
+operator-local unpublished evidence includes a deterministic derivative with 60
+complete quarterly observations, SHA-256
+`5ad88a04e4232227b5d1a59bbc1531dfd3deca8665401b0184b16d0310eb4bd0`,
+an explicit normalized quarter coordinate, and per-point lineage. The unchanged
+production STL function accepted period 4 in memory; residual stationarity was
+warn/inconclusive. This is a qualified local derivative, not a scientific
+finding, a ScienceBase-provenance claim, or persisted API/Layer 3 real-data
+proof.
+
+After this docs synchronization, the next evidence step is a fresh isolated
+persisted real-data proof that keeps lineage and result-quality limits visible.
+The qualified local proof needs no fresh download. A public-envelope proof
+still requires an appropriate admitted public input. The pending PR merges
+remain separate owner decisions.
+
 > Living context + decision record + forward plan. Maintained across sessions.
 > Authority: this is a narrative/state document, NOT runtime truth — verify any
 > file:line / SHA against current `project6-origin/main` before acting on it.

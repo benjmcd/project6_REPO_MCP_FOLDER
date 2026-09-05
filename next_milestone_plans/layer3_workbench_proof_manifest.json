@@ -1094,7 +1094,7 @@
     "backend/app/services/layer3_state_model_contract.py",
     "backend/app/services/layer3_readiness_contract.py",
     "backend/app/services/layer3_bootstrap_contract.py",
-    "backend/app/api/layer3.py",
+    "backend/app/api/layer3/__init__.py",
     "backend/tests/test_layer3_api.py",
     "backend/tests/test_layer3_approved_plan_correction.py",
     "backend/tests/test_layer3_plan_flow_contract.py",
@@ -2171,7 +2171,8 @@
   "state_notes": [
     "Docs 82/83 are current-main planning/control governance for selected-pass associated-cohort result review after PR #432; PR #438 is the separate bounded backend/API implementation and docs 82/83 by themselves are not live behavior.",
     "Theme synthesis pack 238 is planning/reference-only: it consolidates the admitted /review/layer3 themes and the static Claude prototype boundary, but it does not admit runtime behavior.",
-    "RECORD TRUTH 3 (2026-07-02): current A8/O6 proof ref is project6-origin/main f566ddb14f62cd717f697f1d13b533ff434785ed after PR #2421; the real-data D1->O2->O3 reveal proof is recorded with sanitized hashes/counts only and production_readiness_claimed=false."
+    "RECORD TRUTH 3 (2026-07-02): current A8/O6 proof ref is project6-origin/main f566ddb14f62cd717f697f1d13b533ff434785ed after PR #2421; the real-data D1->O2->O3 reveal proof is recorded with sanitized hashes/counts only and production_readiness_claimed=false.",
+    "CURRENT ROUTER RELOCATION (2026-09-04): the current authoritative-file list uses backend/app/api/layer3/__init__.py for the package router and backend/app/services/layer3_workbench.py for workbench behavior. Historical backend/app/api/layer3.py occurrences remain dated pre-package-refactor evidence and are not current file-presence claims."
   ],
   "authoritative_file_refs": [
     "next_milestone_plans/Layer3_planning_docs/56_L3_WB_HANDOFF_EXPORT_UI_FREEZE.md",
@@ -2185,7 +2186,7 @@
     "next_milestone_plans/Layer3_planning_docs/61_L3_WB_APS_HANDOFF_DISPATCH_UI_STATE_CONTRACT.md",
     "backend/app/services/layer3_aps_handoff.py",
     "backend/tests/test_layer3_aps_handoff.py",
-    "backend/app/api/layer3.py",
+    "backend/app/api/layer3/__init__.py",
     "backend/app/review_ui/static/layer3.html",
     "backend/app/review_ui/static/layer3.css",
     "backend/app/review_ui/static/layer3.js",
@@ -47911,5 +47912,60 @@
     },
     "next_posture": "explicit_second_key_owner_gate"
   },
-  "latest_m_admission_spine_b1_record_proof_summary": "M-ADMISSION-SPINE-B1-RECORD proof aligns the tracked record through PR #2476 at 56c56e77ebe435c3a9f035f47de2d8611efee7d7. Standing: B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED. The complete 58-disposition enumeration is RATIFIED-EXACTLY-AS-PROPOSED and precedence is RATIFIED-AS-PROPOSED; the second key is NOT-GRANTED, future intent is INTENDED-NON-AUTHORIZING, and WITHHELD is NOT-CLAIMED. Four operator-held local evidence files are recorded only by basename, bytes, full SHA-256, and canonical self-hash where applicable. This records lane authorizes no implementation, schema, ORM, migration, runtime, build dispatch, B1b build PR, or B1b build merge. Next posture: explicit_second_key_owner_gate."
+  "latest_m_admission_spine_b1_record_proof_summary": "M-ADMISSION-SPINE-B1-RECORD proof aligns the tracked record through PR #2476 at 56c56e77ebe435c3a9f035f47de2d8611efee7d7. Standing: B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED. The complete 58-disposition enumeration is RATIFIED-EXACTLY-AS-PROPOSED and precedence is RATIFIED-AS-PROPOSED; the second key is NOT-GRANTED, future intent is INTENDED-NON-AUTHORIZING, and WITHHELD is NOT-CLAIMED. Four operator-held local evidence files are recorded only by basename, bytes, full SHA-256, and canonical self-hash where applicable. This records lane authorizes no implementation, schema, ORM, migration, runtime, build dispatch, B1b build PR, or B1b build merge. Next posture: explicit_second_key_owner_gate.",
+  "m_state_reconciliation_proof": {
+    "milestone": "m_state_reconciliation_v1",
+    "record_date": "2026-09-04",
+    "proof_class": "tracked_docs_source_reconciliation",
+    "source_frontier": "d9412188e9581302429112cc637e416fe666994f",
+    "source_anchors": [
+      "backend/app/core/config.py",
+      "backend/app/api/layer3/__init__.py",
+      "backend/app/services/layer3_aps_source_family.py",
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/services/layer3_bootstrap_contract.py",
+      "backend/alembic/versions/0033_layer3_corrected_package_artifact_set.py",
+      "SCIENCEBASE_PILOT_RUNBOOK.md"
+    ],
+    "source_confirmations": {
+      "public_analysis_default_false": true,
+      "public_values_default_false": true,
+      "public_source_family_is_new_sciencebase_public_api_only": true,
+      "public_values_require_both_flags": true,
+      "provenance_co_display_required": true,
+      "storage_references_excluded": true,
+      "current_package_router_authority_ref_corrected": true,
+      "historical_pre_package_router_refs_preserved_with_relocation_note": true,
+      "current_owner_migration_corrected_from_0031_to_0033": true,
+      "future_next_migration_placeholder_preserved": true,
+      "legacy_sciencebase_pilot_runbook_does_not_cover_public_layer3_routes": true
+    },
+    "pending_pr_evidence": [
+      "#2495 head 44c3a433d39c5c676c2e1d163ab19b8e0965f6bf OPEN/CLEAN with 21 successful checks; not on main",
+      "#2496 head 1de3b1e291a854ef69a3d46bfa1cfd31cc240349 OPEN/CLEAN with 21 successful checks; not on main"
+    ],
+    "analytical_evidence_qualification": {
+      "evidence_class": "operator_local_unpublished_hash_count_and_interpretation_only",
+      "observation_count": 60,
+      "derivative_sha256": "5ad88a04e4232227b5d1a59bbc1531dfd3deca8665401b0184b16d0310eb4bd0",
+      "normalized_coordinate": true,
+      "per_point_lineage": true,
+      "production_stl_period": 4,
+      "execution_mode": "in_memory_only",
+      "residual_stationarity": "warn_inconclusive",
+      "raw_values_or_private_paths_recorded": false,
+      "scientific_or_sciencebase_or_persisted_real_proof_claimed": false
+    },
+    "docs_only": true,
+    "runtime_executed": false,
+    "validation_scope": "source_docs_and_manifest_checks_only",
+    "negative_claims": [
+      "no whole-B1b or Phase 4/5/6 completion proof",
+      "no integrated-loop or production-readiness proof",
+      "no support-matrix ID, count, status, or pin change",
+      "no merge, acquisition, flag-arming, schema, config-default, or owner-decision authority",
+      "no private coordination record published or linked"
+    ]
+  },
+  "latest_m_state_reconciliation_proof_summary": "M-STATE-RECONCILIATION proof binds the docs-only current pointer to main d9412188e9581302429112cc637e416fe666994f and live source anchors for dual-default-off public ScienceBase analysis/value behavior, provenance co-display, storage-reference exclusion, the package router at backend/app/api/layer3/__init__.py, workbench service authority, and migration 0033. It records pending #2495/#2496 state and only sanitized 60-quarter local evidence limits; no runtime was executed by this record lane."
 }

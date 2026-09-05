@@ -1,6 +1,13 @@
 # Program Context — Index and Conventions
 
-Destination: `docs/program-context/`. This set is the exhaustive program record for the
+> **2026-09-04 current pointer:** This exhaustive set contains exactly six
+> tracked files: this index plus the five numbered records below. The current
+> cross-record summary is
+> [docs/MASTER_CONTEXT.md](../MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation).
+> No seventh program-context file is required. Historical entries remain dated
+> evidence; current runtime claims must still be revalidated against source.
+
+Destination: `docs/program-context/`. This six-file set is the exhaustive program record for the
 SEC-XBRL Layer 3 value-retention/reveal campaign and its successors: what was accomplished,
 why each decision was made, what comes next, and under what acceptance criteria.
 `docs/MASTER_CONTEXT.md` remains the executive summary; where the two disagree, the more

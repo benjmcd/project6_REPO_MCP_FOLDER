@@ -1,5 +1,15 @@
 # Local Profile Ops
 
+> **2026-09-04 current pointer:** The local-profile acceptance contract remains
+> unchanged. Public ScienceBase Layer 3 analysis and result-value inspection are
+> bounded experimental default-off subfeatures under the selected profile, not
+> additions to the base local harness. Their source defaults are
+> `LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED=false` and
+> `LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED=false`; values require both
+> flags plus newest admitted `sciencebase/public_api` provenance, provenance
+> co-display, and storage-reference exclusion. See
+> [MASTER_CONTEXT](MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation).
+
 This runbook covers the base local operational subcontracts for `local_expert`. The current selected 0.3.0 final profile also includes `public_connectors` and `sec_xbrl_offline` overlays; use `config/support_matrix.yaml` and `docs/support-matrix-local-expert.md` as the current capability-status authority.
 
 ## Profile
@@ -15,7 +25,7 @@ This runbook covers the base local operational subcontracts for `local_expert`. 
 
 ## Public Connector Lifecycle Posture
 
-This posture note is for the public connector slice selected by the current local profile: ScienceBase public/MCS and Senate LDA anonymous. It does not change the empty owner-selected gates in `config/release_readiness.yaml`, and it does not broaden connector support into keyed connectors, HA, nonlocal deployment, real provider delivery, OCR, SEC value reveal, or default-on SEC live network behavior.
+This posture note is for the public connector slice selected by the current local profile: ScienceBase public/MCS, Senate LDA anonymous metadata, World Bank Indicators anonymous metadata, BLS Public Data API v1 anonymous metadata, OECD SDMX anonymous metadata, and CFTC COT anonymous public report rows. It does not change the empty owner-selected gates in `config/release_readiness.yaml`, and it does not broaden connector support into keyed connectors, HA, nonlocal deployment, real provider delivery, OCR, SEC value reveal, or default-on SEC live network behavior.
 
 Connector restart recovery is operator-resume-driven. After an executor crash or process loss, an operator rechecks run status and posts `POST /api/v1/connectors/runs/{connector_run_id}/resume`; the selected profile does not run an automatic orphan-run or lease-expiry reaper. A run left `running` with an expired lease is detectable through the connector run status payload and persisted lease owner/token/expiry fields.
 
