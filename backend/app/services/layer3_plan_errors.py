@@ -14,6 +14,15 @@ def plan_preview_workbench_error(exc: Layer3PassEntryError) -> Layer3WorkbenchEr
         return Layer3WorkbenchError("plan_already_materialized", message, status="conflict", http_status=409)
     if "has no analysis sets" in message:
         return Layer3WorkbenchError("no_analysis_sets", message, status="blocked", http_status=409)
+    if "is not admitted by every baseline-admitted quantitative singleton analysis set" in message:
+        return Layer3WorkbenchError(
+            "no_admissible_plan",
+            message,
+            status="blocked",
+            http_status=409,
+            blocked_fields=["requested_method_name"],
+            next_allowed_actions=["use_owner_service_default"],
+        )
     if "has no admissible analysis sets" in message:
         return Layer3WorkbenchError("no_admissible_plan", message, status="blocked", http_status=409)
     return Layer3WorkbenchError(

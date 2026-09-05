@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -653,6 +653,7 @@ def _classify_sets(
 ) -> tuple[list[_AdmittedSetCandidate], list[dict[str, Any]]]:
     admitted: list[_AdmittedSetCandidate] = []
     excluded: list[dict[str, Any]] = []
+    quantitative_method_sequences: dict[str, tuple[str, ...]] = {}
 
     for analysis_set in analysis_sets:
         analysis_unit_ids = list(analysis_set.analysis_unit_ids_json or [])
@@ -676,10 +677,10 @@ def _classify_sets(
                 )
                 continue
             assert prepared_cohort is not None
-            requested_method_name = _cohort_requested_method_name(analysis_set)
+            cohort_requested_method_name = _cohort_requested_method_name(analysis_set)
             selected_method_name = _choose_cohort_method_name_or_raise(
                 shaped_dataframe=prepared_cohort.shaped_dataframe,
-                requested_method_name=requested_method_name,
+                requested_method_name=cohort_requested_method_name,
             )
             source_gate = (
                 SOURCE_GATE_COHORT_DESC_FREEZE
@@ -838,7 +839,6 @@ def _classify_sets(
             selected_method_name, method_sequence = _choose_method_name_or_raise(
                 db,
                 dataset_version_id=dataset_version_id,
-                requested_method_name=requested_method_name,
             )
         except Layer3PassEntryError:
             excluded.append(
@@ -860,11 +860,47 @@ def _classify_sets(
                 selected_method_name=selected_method_name,
                 dataset_version_id=dataset_version_id,
                 input_payload_ref=snapshot.payload_ref,
-                method_options=(
-                    method_sequence if settings.layer3_operator_method_selection_enabled else None
-                ),
             )
         )
+
+        quantitative_method_sequences[analysis_set.analysis_set_id] = method_sequence
+
+    quantitative_candidates = [
+        candidate
+        for candidate in admitted
+        if candidate.pass_type == PASS_TYPE_SINGLE_ITEM
+        and candidate.pass_scope == PASS_SCOPE_QUANT_SINGLE_ITEM
+    ]
+    common_method_options: tuple[str, ...] = ()
+    if quantitative_candidates:
+        first_sequence = quantitative_method_sequences[quantitative_candidates[0].analysis_set.analysis_set_id]
+        common_method_options = tuple(
+            method_name
+            for method_name in first_sequence
+            if all(
+                method_name in quantitative_method_sequences[candidate.analysis_set.analysis_set_id]
+                for candidate in quantitative_candidates[1:]
+            )
+        )
+    if requested_method_name is not None and requested_method_name not in common_method_options:
+        raise Layer3PassEntryError(
+            f"Requested Gate C method '{requested_method_name}' is not admitted by every "
+            "baseline-admitted quantitative singleton analysis set"
+        )
+
+    admitted = [
+        replace(
+            candidate,
+            selected_method_name=requested_method_name or candidate.selected_method_name,
+            method_options=(
+                common_method_options if settings.layer3_operator_method_selection_enabled else None
+            ),
+        )
+        if candidate.pass_type == PASS_TYPE_SINGLE_ITEM
+        and candidate.pass_scope == PASS_SCOPE_QUANT_SINGLE_ITEM
+        else candidate
+        for candidate in admitted
+    ]
 
     return admitted, excluded
 

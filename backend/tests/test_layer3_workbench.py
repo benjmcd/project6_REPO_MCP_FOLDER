@@ -4072,6 +4072,10 @@ def test_plan_preview_requested_method_outside_recommendation_is_refused(db_sess
         )
 
     assert exc.value.error_code == "no_admissible_plan"
+    assert exc.value.blocked_fields == ["requested_method_name"]
+    assert exc.value.next_allowed_actions == ["use_owner_service_default"]
+    assert db_session.query(L3AnalysisPlan).count() == 0
+    assert db_session.query(L3PassRun).count() == 0
 
 
 def test_plan_preview_flag_off_planned_passes_carry_no_method_options(db_session, tmp_path) -> None:

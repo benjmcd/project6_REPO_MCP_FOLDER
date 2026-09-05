@@ -33,6 +33,19 @@ def test_plan_preview_workbench_error_mapping_is_preserved() -> None:
         assert str(mapped.message) == message
 
 
+def test_plan_preview_maps_plan_global_method_rejection_to_actionable_no_admissible_plan() -> None:
+    mapped = _mapped_preview(
+        "Requested Gate C method 'cross_correlation' is not admitted by every "
+        "baseline-admitted quantitative singleton analysis set"
+    )
+
+    assert mapped.error_code == "no_admissible_plan"
+    assert mapped.status == "blocked"
+    assert mapped.http_status == 409
+    assert mapped.blocked_fields == ["requested_method_name"]
+    assert mapped.next_allowed_actions == ["use_owner_service_default"]
+
+
 def test_plan_approval_workbench_error_mapping_is_preserved() -> None:
     preview_mismatch = _mapped_approval("preview hash mismatch for approved plan")
     assert preview_mismatch.error_code == "preview_mismatch"

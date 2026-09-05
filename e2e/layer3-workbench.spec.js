@@ -25554,6 +25554,133 @@ test('Layer 3 SEC XBRL value reveal authority prepare is fail-closed on basis ha
   expect(authBody.error_code).toBe('sec_xbrl_auth_binding_missing');
 });
 
+for (const commonMethods of [['decomposition', 'structural_break'], ['decomposition']]) {
+  test(`Plan method picker preserves owner defaults with ${commonMethods.length} common choices`, async ({ page }) => {
+    await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+    await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+
+    // Exercise the renderer against the plan-wide options contract. Backend
+    // tests separately prove that these options are an admission intersection.
+    await page.evaluate((methods) => {
+      State.bootstrap.layer3_operator_method_selection_enabled = true;
+      State.activeOperationId = 'plan-band';
+      State.operationDockManual = true;
+      State.gateC = null;
+      State.planApproval = null;
+      State.planRevision = null;
+      State.planMethodSelection = null;
+      State.planPreview = {
+        preview_only: true,
+        plan_preview: {
+          admitted_sets: [],
+          planned_passes: [
+            { analysis_set_id: 'cohort', selected_method_name: 'descriptive_summary' },
+            { analysis_set_id: 'multi', selected_method_name: 'cross_correlation', method_options: methods },
+            { analysis_set_id: 'single', selected_method_name: 'decomposition', method_options: methods },
+          ],
+        },
+      };
+      renderAll();
+    }, commonMethods);
+
+    const picker = page.locator('#plan-method-selection');
+    await expect(picker).toBeVisible();
+    await expect(picker).toHaveValue('');
+    await expect(picker.locator('option')).toHaveText(['Owner service defaults', ...commonMethods]);
+    expect(await page.evaluate(() => requestedMethodSelectionFields())).toEqual({});
+
+    await picker.selectOption(commonMethods.at(-1));
+    expect(await page.evaluate(() => requestedMethodSelectionFields())).toEqual({
+      requested_method_name: commonMethods.at(-1),
+    });
+    await page.evaluate(() => renderPlanPanel());
+    await expect(picker).toHaveValue(commonMethods.at(-1));
+
+    await picker.selectOption('');
+    expect(await page.evaluate(() => State.planMethodSelection)).toBeNull();
+    expect(await page.evaluate(() => requestedMethodSelectionFields())).toEqual({});
+
+    const previewBody = await page.evaluate(() => {
+      State.sessionSummary = { session_id: 'method-picker-session' };
+      State.gateC = { authority_rail: { typing_status: 'committed' } };
+      Object.assign(State.planPreview, {
+        schema_id: 'layer3.plan_preview_result.v1', preview_id: 'method-preview', preview_hash: 'method-hash',
+      });
+      setGateControls();
+      return State.planPreview;
+    });
+    let releasePreview;
+    const previewRelease = new Promise((resolve) => { releasePreview = resolve; });
+    let requestedMethod;
+    await page.route('**/api/v1/layer3/plan/preview', async (route) => {
+      requestedMethod = route.request().postDataJSON().requested_method_name;
+      await previewRelease;
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(previewBody) });
+    });
+    try {
+      await picker.selectOption(commonMethods.at(-1));
+      await expect.poll(() => requestedMethod).toBe(commonMethods.at(-1));
+      await expect(picker).toBeDisabled();
+      for (const control of ['#plan-preview', '#plan-approve', '#plan-request-revision', '#plan-reject']) {
+        await expect(page.locator(control)).toBeDisabled();
+      }
+      expect(await page.evaluate(() => [canPlanPreview(), canPlanApprove(), canPlanRevise()])).toEqual([false, false, false]);
+    } finally {
+      releasePreview();
+    }
+    await expect(picker).toBeEnabled();
+    await expect(picker).toHaveValue(commonMethods.at(-1));
+    await page.evaluate(() => { State.gateC = null; });
+
+    await page.evaluate(() => {
+      State.bootstrap.layer3_operator_method_selection_enabled = false;
+      State.planMethodSelection = 'structural_break';
+      renderPlanPanel();
+    });
+    await expect(picker).toHaveCount(0);
+    expect(await page.evaluate(() => requestedMethodSelectionFields())).toEqual({});
+
+    await page.evaluate(() => {
+      State.bootstrap.layer3_operator_method_selection_enabled = true;
+      State.planMethodSelection = null;
+      for (const pass of State.planPreview.plan_preview.planned_passes) {
+        if (pass.method_options) pass.method_options = [];
+      }
+      renderPlanPanel();
+    });
+    await expect(picker).toHaveCount(0);
+  });
+}
+
+test('Plan method selection resets when starting a new flow or committing a new session', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  const responses = {
+    preflight: { preflight_id: 'new-preflight' },
+    'source-preview': { source_set_id: 'new-source', source_candidates: [] },
+    'material-preview': { material_preview_id: 'new-material', material_candidates: [] },
+    'gate-b/decision': { session_id: 'new-session' },
+  };
+  for (const [routePath, body] of Object.entries(responses)) {
+    await page.route(`**/api/v1/layer3/${routePath}`, (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify(body),
+    }));
+  }
+  await page.evaluate(async () => {
+    State.bootstrap.layer3_operator_method_selection_enabled = true;
+    State.planMethodSelection = 'structural_break';
+    await runPreflightFlow({ preventDefault() {} });
+  });
+  expect(await page.evaluate(() => State.materialPreview.material_preview_id)).toBe('new-material');
+  expect(await page.evaluate(() => requestedMethodSelectionFields())).toEqual({});
+  await page.evaluate(async () => {
+    State.planMethodSelection = 'structural_break';
+    await commitGateB();
+  });
+  expect(await page.evaluate(() => State.gateB.session_id)).toBe('new-session');
+  expect(await page.evaluate(() => requestedMethodSelectionFields())).toEqual({});
+});
+
 test('Analysis Products dock panel collects multiple evidence rows into draft POST body', async ({ page }) => {
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
 

@@ -682,6 +682,7 @@ const State = {
     gateB: null,
     gateC: null,
     planPreview: null,
+    planPreviewPending: false,
     planMethodSelection: null,
     planApproval: null,
     planApprovalError: null,
@@ -8520,12 +8521,13 @@ function renderGateCPanel() {
 }
 
 function canPlanPreview() {
-    return Boolean(currentSessionId() && isTypingCommitted());
+    return Boolean(currentSessionId() && isTypingCommitted() && !State.planPreviewPending);
 }
 
 function canPlanApprove() {
     return Boolean(
         currentSessionId()
+        && !State.planPreviewPending
         && State.planPreview?.schema_id === 'layer3.plan_preview_result.v1'
         && State.planPreview?.preview_id
         && State.planPreview?.preview_hash
@@ -8538,6 +8540,7 @@ function canPlanApprove() {
 function canPlanRevise() {
     return Boolean(
         currentSessionId()
+        && !State.planPreviewPending
         && State.planPreview?.schema_id === 'layer3.plan_preview_result.v1'
         && State.planPreview?.preview_id
         && State.planPreview?.preview_hash
@@ -8825,18 +8828,19 @@ function renderPlanPanel() {
     const warningRows = warnings.length
         ? warnings.map((item) => `<li>${escapeHtml(item.reason_code)}: ${escapeHtml(item.message)}</li>`).join('')
         : '<li>No warnings.</li>';
-    const methodOptionsPass = operatorMethodSelectionEnabled()
-        ? planned.find((item) => Array.isArray(item.method_options) && item.method_options.length)
-        : null;
-    const methodOptions = methodOptionsPass?.method_options || [];
-    const methodSelector = methodOptions.length > 1
+    // The server supplies the same plan-wide intersection on every eligible singleton.
+    const methodOptions = operatorMethodSelectionEnabled()
+        ? planned.find((item) => Array.isArray(item.method_options))?.method_options || []
+        : [];
+    const methodSelector = methodOptions.length
         ? `
         <div class="plan-list plan-method-selection">
             <h3>Analysis Method</h3>
-            <label for="plan-method-selection">Recommended methods for this plan</label>
-            <select id="plan-method-selection" name="plan-method-selection">
+            <label for="plan-method-selection">Methods shared by this plan's quantitative singletons</label>
+            <select id="plan-method-selection" name="plan-method-selection"${State.planPreviewPending ? ' disabled' : ''}>
+                <option value=""${!State.planMethodSelection ? ' selected' : ''}>Owner service defaults</option>
                 ${methodOptions.map((option) => `
-                    <option value="${escapeHtml(option)}"${option === (methodOptionsPass?.selected_method_name || '') ? ' selected' : ''}>${escapeHtml(option)}</option>
+                    <option value="${escapeHtml(option)}"${option === State.planMethodSelection ? ' selected' : ''}>${escapeHtml(option)}</option>
                 `).join('')}
             </select>
         </div>`
@@ -8860,7 +8864,7 @@ function renderPlanPanel() {
     const methodSelect = document.getElementById('plan-method-selection');
     if (methodSelect) {
         methodSelect.addEventListener('change', () => {
-            State.planMethodSelection = methodSelect.value;
+            State.planMethodSelection = methodSelect.value || null;
             previewPlan();
         });
     }
@@ -31349,6 +31353,7 @@ async function runPreflightFlow(event) {
         State.gateC = null;
         State.sessionSummary = null;
         State.planPreview = null;
+        State.planMethodSelection = null;
         State.planApproval = null;
         State.planRevision = null;
         State.planRevisionRecovery = null;
@@ -31385,6 +31390,7 @@ async function commitGateB() {
         });
         State.gateC = null;
         State.planPreview = null;
+        State.planMethodSelection = null;
         State.planApproval = null;
         State.planRevision = null;
         State.planRevisionRecovery = null;
@@ -31459,7 +31465,11 @@ async function commitGateC() {
 
 async function previewPlan() {
     if (!canPlanPreview()) return;
+    State.planPreviewPending = true;
     setBusy(elements.planPreview, true, 'Preview Plan');
+    setGateControls();
+    const methodSelect = document.getElementById('plan-method-selection');
+    if (methodSelect) methodSelect.disabled = true;
     try {
         State.planPreview = await postJson('/plan/preview', {
             schema_id: 'layer3.plan_preview_request.v1',
@@ -31487,8 +31497,11 @@ async function previewPlan() {
         addEvent(`Plan preview blocked: ${error.message}`);
         renderAll();
     } finally {
+        State.planPreviewPending = false;
         setBusy(elements.planPreview, false, 'Preview Plan');
         setGateControls();
+        const currentMethodSelect = document.getElementById('plan-method-selection');
+        if (currentMethodSelect) currentMethodSelect.disabled = false;
     }
 }
 

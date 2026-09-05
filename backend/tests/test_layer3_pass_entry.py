@@ -26,6 +26,8 @@ from app.models.models import (
     DatasetVersion,
     L3AnalysisPlan,
     L3AnalysisSet,
+    L3AnalysisUnit,
+    L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,
     L3Session,
@@ -368,6 +370,118 @@ def _build_quant_cohort_ready_session(
     return session.session_id, phase1a_status, phase1a_completed_at
 
 
+def _add_singleton_set_from_cohort(
+    db,
+    *,
+    session_id: str,
+    cohort_analysis_set_id: str,
+    singleton_analysis_set_id: str,
+) -> None:
+    cohort = (
+        db.query(L3AnalysisSet)
+        .filter(
+            L3AnalysisSet.session_id == session_id,
+            L3AnalysisSet.set_type == "associated_cohort",
+        )
+        .one()
+    )
+    cohort.analysis_set_id = cohort_analysis_set_id
+    cohort.formation_basis_json = {
+        **cohort.formation_basis_json,
+        "requested_method_name": "descriptive_summary",
+    }
+    source_unit = db.get(L3AnalysisUnit, cohort.analysis_unit_ids_json[0])
+    singleton_unit = L3AnalysisUnit(
+        analysis_unit_id="unit-cohort-adjacent-singleton",
+        session_id=session_id,
+        unit_kind=source_unit.unit_kind,
+        analysis_modality=source_unit.analysis_modality,
+        member_snapshot_ids_json=list(source_unit.member_snapshot_ids_json),
+        member_ranges_json=list(source_unit.member_ranges_json),
+        must_remain_intact=source_unit.must_remain_intact,
+        typing_record_ids_json=list(source_unit.typing_record_ids_json),
+        derived_view_ref=source_unit.derived_view_ref,
+        unit_hash="4" * 64,
+        summary_json=dict(source_unit.summary_json),
+    )
+    db.add(singleton_unit)
+    db.add(
+        L3AnalysisSet(
+            analysis_set_id=singleton_analysis_set_id,
+            session_id=session_id,
+            analysis_group_ids_json=[],
+            analysis_unit_ids_json=[singleton_unit.analysis_unit_id],
+            set_type="single_item",
+            formation_basis_json={"analysis_modality": "quantitative", "group_basis": "singleton"},
+        )
+    )
+    db.commit()
+
+
+def _add_two_measure_singleton(db, tmp_path: Path, *, session_id: str) -> None:
+    dataset_version_id = "dv-pass-two-measure"
+    _seed_timeseries_dataset_version(
+        db,
+        tmp_path,
+        dataset_id="ds-pass-two-measure",
+        dataset_version_id=dataset_version_id,
+    )
+    db.add(
+        VariableDefinition(
+            variable_id="var-value-two-dv-pass-two-measure",
+            dataset_version_id=dataset_version_id,
+            variable_name="value_two",
+            dtype="float64",
+            role="measure",
+            is_numeric=True,
+            is_time_index=False,
+            ordinal_position=2,
+        )
+    )
+    version = db.get(DatasetVersion, dataset_version_id)
+    frame = pd.read_csv(version.storage_ref)
+    frame["value_two"] = [200 + index for index in range(len(frame))]
+    frame.to_csv(version.storage_ref, index=False)
+
+    source_snapshot = db.query(L3MaterialSnapshot).filter(L3MaterialSnapshot.session_id == session_id).first()
+    snapshot = L3MaterialSnapshot(
+        material_snapshot_id="snapshot-pass-two-measure",
+        session_id=session_id,
+        descriptor_id=source_snapshot.descriptor_id,
+        source_plane="plane_b",
+        source_shape="dataset_version",
+        payload_ref=version.storage_ref,
+        payload_hash="2" * 64,
+        source_identity_json={"dataset_version_id": dataset_version_id},
+        source_provenance_json={"dataset_id": version.dataset_id},
+        co_retrieval_group_id=None,
+        load_summary_json={"loaded_records": len(frame), "failed_records": 0},
+    )
+    unit = L3AnalysisUnit(
+        analysis_unit_id="unit-pass-two-measure",
+        session_id=session_id,
+        unit_kind="tabular_numeric",
+        analysis_modality="quantitative",
+        member_snapshot_ids_json=[snapshot.material_snapshot_id],
+        member_ranges_json=[],
+        must_remain_intact=False,
+        typing_record_ids_json=[],
+        derived_view_ref=None,
+        unit_hash="3" * 64,
+        summary_json={},
+    )
+    analysis_set = L3AnalysisSet(
+        analysis_set_id="set-pass-two-measure",
+        session_id=session_id,
+        analysis_group_ids_json=[],
+        analysis_unit_ids_json=[unit.analysis_unit_id],
+        set_type="single_item",
+        formation_basis_json={"analysis_modality": "quantitative", "group_basis": "singleton"},
+    )
+    db.add_all([snapshot, unit, analysis_set])
+    db.commit()
+
+
 def _build_mixed_ready_session(db, tmp_path: Path) -> tuple[str, str, datetime]:
     dataset_version_id = "dv-pass-002"
     _seed_dataset_version(db, tmp_path, dataset_id="ds-pass-002", dataset_version_id=dataset_version_id)
@@ -673,6 +787,184 @@ def test_gatec_pass_entry_preview_reports_exclusions_without_materializing(tmp_p
         assert db.query(AnalysisRun).count() == 0
     finally:
         settings.storage_dir = original_storage_dir
+
+
+@pytest.mark.parametrize(
+    ("cohort_first", "selection_enabled", "requested_method_name", "expected_singleton_method"),
+    [
+        (True, False, None, "decomposition"),
+        (False, False, None, "decomposition"),
+        (True, True, "structural_break", "structural_break"),
+        (False, True, "structural_break", "structural_break"),
+    ],
+)
+def test_gatec_pass_entry_operator_method_does_not_depend_on_cohort_order(
+    tmp_path,
+    cohort_first,
+    selection_enabled,
+    requested_method_name,
+    expected_singleton_method,
+):
+    original_storage_dir = settings.storage_dir
+    original_selection_enabled = settings.layer3_operator_method_selection_enabled
+    settings.storage_dir = str(tmp_path)
+    settings.layer3_operator_method_selection_enabled = selection_enabled
+    try:
+        db = _make_session()
+        session_id, _, _ = _build_quant_cohort_ready_session(db, tmp_path)
+        first_id = "00000000-0000-0000-0000-000000000001"
+        last_id = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+        _add_singleton_set_from_cohort(
+            db,
+            session_id=session_id,
+            cohort_analysis_set_id=first_id if cohort_first else last_id,
+            singleton_analysis_set_id=last_id if cohort_first else first_id,
+        )
+
+        preview = preview_pass_entry(
+            db,
+            session_id=session_id,
+            requested_method_name=requested_method_name,
+        )
+
+        analysis_sets = db.query(L3AnalysisSet).filter(L3AnalysisSet.session_id == session_id).all()
+        units_by_type = {item.set_type: set(item.analysis_unit_ids_json) for item in analysis_sets}
+        assert units_by_type["associated_cohort"].isdisjoint(units_by_type["single_item"])
+        planned_by_type = {planned["pass_type"]: planned for planned in preview.planned_passes}
+        assert planned_by_type["associated_cohort"]["selected_method_name"] == "descriptive_summary"
+        singleton = planned_by_type["single_item"]
+        assert singleton["selected_method_name"] == expected_singleton_method
+        if selection_enabled:
+            assert singleton["method_options"] == ["decomposition", "structural_break"]
+        else:
+            assert "method_options" not in singleton
+    finally:
+        settings.storage_dir = original_storage_dir
+        settings.layer3_operator_method_selection_enabled = original_selection_enabled
+
+
+def test_gatec_pass_entry_rejects_plan_global_method_outside_singleton_intersection(tmp_path):
+    original_storage_dir = settings.storage_dir
+    original_selection_enabled = settings.layer3_operator_method_selection_enabled
+    settings.storage_dir = str(tmp_path)
+    settings.layer3_operator_method_selection_enabled = True
+    try:
+        db = _make_session()
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        _add_two_measure_singleton(db, tmp_path, session_id=session_id)
+
+        with pytest.raises(Layer3PassEntryError, match="not admitted by every"):
+            preview_pass_entry(
+                db,
+                session_id=session_id,
+                requested_method_name="cross_correlation",
+            )
+
+        assert db.query(L3AnalysisPlan).count() == 0
+        assert db.query(L3PassRun).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
+        settings.layer3_operator_method_selection_enabled = original_selection_enabled
+
+
+@pytest.mark.parametrize("disjoint_recommendations", [False, True])
+def test_gatec_pass_entry_plan_global_method_intersection_preserves_baseline_exclusions(
+    tmp_path,
+    monkeypatch,
+    disjoint_recommendations,
+):
+    original_storage_dir = settings.storage_dir
+    original_selection_enabled = settings.layer3_operator_method_selection_enabled
+    settings.storage_dir = str(tmp_path)
+    settings.layer3_operator_method_selection_enabled = True
+    try:
+        db = _make_session()
+        session_id, _, _ = _build_quant_ready_session(db, tmp_path)
+        _add_two_measure_singleton(db, tmp_path, session_id=session_id)
+        db.add(
+            L3AnalysisSet(
+                analysis_set_id="set-baseline-excluded",
+                session_id=session_id,
+                analysis_group_ids_json=[],
+                analysis_unit_ids_json=[],
+                set_type="unsupported",
+                formation_basis_json={"analysis_modality": "quantitative"},
+            )
+        )
+        db.commit()
+
+        if disjoint_recommendations:
+            def _recommend_disjoint(_db, dataset_version_id, *, goal_type):
+                method_name = (
+                    "decomposition"
+                    if dataset_version_id == "dv-pass-001"
+                    else "cross_correlation"
+                )
+                return {"recommended_sequence": [method_name]}
+
+            monkeypatch.setattr(
+                layer3_pass_entry_module,
+                "recommend_analysis",
+                _recommend_disjoint,
+            )
+
+        default_preview = preview_pass_entry(db, session_id=session_id)
+        assert [item["reason_code"] for item in default_preview.excluded_sets] == [
+            "set_type_not_admitted"
+        ]
+        if disjoint_recommendations:
+            assert {item["selected_method_name"] for item in default_preview.planned_passes} == {
+                "cross_correlation",
+                "decomposition",
+            }
+            assert all(item["method_options"] == [] for item in default_preview.planned_passes)
+
+            with pytest.raises(Layer3PassEntryError, match="not admitted by every"):
+                preview_pass_entry(
+                    db,
+                    session_id=session_id,
+                    requested_method_name="decomposition",
+                )
+
+            assert db.query(L3AnalysisPlan).count() == 0
+            assert db.query(L3PassRun).count() == 0
+            return
+
+        selected_preview = preview_pass_entry(
+            db,
+            session_id=session_id,
+            requested_method_name="decomposition",
+        )
+
+        assert default_preview.preview_hash != selected_preview.preview_hash
+        assert {item["selected_method_name"] for item in default_preview.planned_passes} == {
+            "cross_correlation",
+            "decomposition",
+        }
+        assert all(
+            item["method_options"] == ["decomposition", "structural_break"]
+            for item in default_preview.planned_passes
+        )
+        assert {item["selected_method_name"] for item in selected_preview.planned_passes} == {
+            "decomposition"
+        }
+        assert [item["reason_code"] for item in selected_preview.excluded_sets] == ["set_type_not_admitted"]
+
+        approval = approve_pass_entry_plan(
+            db,
+            session_id=session_id,
+            preview_hash=selected_preview.preview_hash,
+            source_preview_id="plan-global-method-preview",
+            requested_method_name="decomposition",
+        )
+
+        assert approval.source_preview_hash == selected_preview.preview_hash
+        assert {item["selected_method_name"] for item in approval.planned_passes} == {"decomposition"}
+        assert db.query(L3AnalysisPlan).count() == 1
+        assert db.query(L3PassRun).count() == 0
+    finally:
+        settings.storage_dir = original_storage_dir
+        settings.layer3_operator_method_selection_enabled = original_selection_enabled
 
 
 def test_gatec_pass_entry_preview_admits_source_intake_without_materializing_downstream(tmp_path):
