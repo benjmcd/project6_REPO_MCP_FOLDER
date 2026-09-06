@@ -69,3 +69,26 @@ def test_public_dataset_analysis_flags_default_off_and_value_reveal_is_registere
     assert "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED" in armed._armed_value_reveal_flags_nonlocal_forbidden()
     assert "LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED" in armed._armed_raw_bearing_flags()
     assert "LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED" not in armed._armed_value_reveal_flags()
+
+
+def test_operator_method_selection_flag_default_off_and_unregistered(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.delenv("LAYER3_OPERATOR_METHOD_SELECTION_ENABLED", raising=False)
+
+    defaults = Settings(_env_file=None)
+
+    assert defaults.layer3_operator_method_selection_enabled is False
+
+    armed = Settings(
+        _env_file=None,
+        STORAGE_EXPOSURE="disabled",
+        STORAGE_DIR=str(tmp_path / "private-storage"),
+        DATABASE_URL=f"sqlite:///{(tmp_path / 'private.db').as_posix()}",
+        LAYER3_OPERATOR_METHOD_SELECTION_ENABLED="true",
+    )
+
+    assert armed.layer3_operator_method_selection_enabled is True
+    assert "LAYER3_OPERATOR_METHOD_SELECTION_ENABLED" not in armed._armed_value_reveal_flags()
+    assert "LAYER3_OPERATOR_METHOD_SELECTION_ENABLED" not in armed._armed_raw_bearing_flags()

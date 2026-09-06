@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -167,6 +167,7 @@ class _AdmittedSetCandidate:
     dataset_version_id: str | None = None
     input_payload_ref: str | None = None
     prepared_cohort: _PreparedCohortCandidate | None = None
+    method_options: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -299,23 +300,37 @@ def _source_intake_candidate_exclusion_reason(
     return None
 
 
-def _choose_method_name_or_raise(db: Session, *, dataset_version_id: str) -> str:
+def _choose_method_name_or_raise(
+    db: Session,
+    *,
+    dataset_version_id: str,
+    requested_method_name: str | None = None,
+) -> tuple[str, tuple[str, ...]]:
     recommendation = recommend_analysis(db, dataset_version_id, goal_type=None)
-    sequence = recommendation.get("recommended_sequence") or []
-    if not sequence:
+    raw_sequence = [str(item).strip() for item in (recommendation.get("recommended_sequence") or [])]
+    if not raw_sequence or not raw_sequence[0]:
         raise Layer3PassEntryError(
             f"Dataset version '{dataset_version_id}' has no recommended quantitative method for Gate C pass entry"
         )
-    selected = str(sequence[0]).strip()
-    if not selected:
+    # Fail closed on the owner-recommender binding: an unsupported FIRST entry is
+    # a contract break, never silently substituted with a lower-ranked method.
+    if raw_sequence[0] not in SUPPORTED_WRAPPED_QUANTITATIVE_METHODS:
         raise Layer3PassEntryError(
-            f"Dataset version '{dataset_version_id}' yielded an empty quantitative method recommendation"
+            f"Dataset version '{dataset_version_id}' recommended unsupported Gate C method '{raw_sequence[0]}'"
         )
-    if selected not in SUPPORTED_WRAPPED_QUANTITATIVE_METHODS:
-        raise Layer3PassEntryError(
-            f"Dataset version '{dataset_version_id}' recommended unsupported Gate C method '{selected}'"
-        )
-    return selected
+    sequence = tuple(
+        item for item in raw_sequence if item and item in SUPPORTED_WRAPPED_QUANTITATIVE_METHODS
+    )
+    if requested_method_name is not None:
+        # Operator method selection is recommendation-bounded: only a method the
+        # owner recommender already admits for this dataset may be selected.
+        requested = str(requested_method_name).strip()
+        if requested not in sequence:
+            raise Layer3PassEntryError(
+                f"Dataset version '{dataset_version_id}' does not admit requested Gate C method '{requested}'"
+            )
+        return requested, sequence
+    return sequence[0], sequence
 
 
 def _unit_column_name(analysis_unit_id: str) -> str:
@@ -634,9 +649,11 @@ def _classify_sets(
     analysis_sets: list[L3AnalysisSet],
     unit_by_id: dict[str, L3AnalysisUnit],
     snapshot_by_id: dict[str, L3MaterialSnapshot],
+    requested_method_name: str | None = None,
 ) -> tuple[list[_AdmittedSetCandidate], list[dict[str, Any]]]:
     admitted: list[_AdmittedSetCandidate] = []
     excluded: list[dict[str, Any]] = []
+    quantitative_method_sequences: dict[str, tuple[str, ...]] = {}
 
     for analysis_set in analysis_sets:
         analysis_unit_ids = list(analysis_set.analysis_unit_ids_json or [])
@@ -660,10 +677,10 @@ def _classify_sets(
                 )
                 continue
             assert prepared_cohort is not None
-            requested_method_name = _cohort_requested_method_name(analysis_set)
+            cohort_requested_method_name = _cohort_requested_method_name(analysis_set)
             selected_method_name = _choose_cohort_method_name_or_raise(
                 shaped_dataframe=prepared_cohort.shaped_dataframe,
-                requested_method_name=requested_method_name,
+                requested_method_name=cohort_requested_method_name,
             )
             source_gate = (
                 SOURCE_GATE_COHORT_DESC_FREEZE
@@ -819,7 +836,10 @@ def _classify_sets(
             )
             continue
         try:
-            selected_method_name = _choose_method_name_or_raise(db, dataset_version_id=dataset_version_id)
+            selected_method_name, method_sequence = _choose_method_name_or_raise(
+                db,
+                dataset_version_id=dataset_version_id,
+            )
         except Layer3PassEntryError:
             excluded.append(
                 _exclusion_entry(
@@ -842,6 +862,45 @@ def _classify_sets(
                 input_payload_ref=snapshot.payload_ref,
             )
         )
+
+        quantitative_method_sequences[analysis_set.analysis_set_id] = method_sequence
+
+    quantitative_candidates = [
+        candidate
+        for candidate in admitted
+        if candidate.pass_type == PASS_TYPE_SINGLE_ITEM
+        and candidate.pass_scope == PASS_SCOPE_QUANT_SINGLE_ITEM
+    ]
+    common_method_options: tuple[str, ...] = ()
+    if quantitative_candidates:
+        first_sequence = quantitative_method_sequences[quantitative_candidates[0].analysis_set.analysis_set_id]
+        common_method_options = tuple(
+            method_name
+            for method_name in first_sequence
+            if all(
+                method_name in quantitative_method_sequences[candidate.analysis_set.analysis_set_id]
+                for candidate in quantitative_candidates[1:]
+            )
+        )
+    if requested_method_name is not None and requested_method_name not in common_method_options:
+        raise Layer3PassEntryError(
+            f"Requested Gate C method '{requested_method_name}' is not admitted by every "
+            "baseline-admitted quantitative singleton analysis set"
+        )
+
+    admitted = [
+        replace(
+            candidate,
+            selected_method_name=requested_method_name or candidate.selected_method_name,
+            method_options=(
+                common_method_options if settings.layer3_operator_method_selection_enabled else None
+            ),
+        )
+        if candidate.pass_type == PASS_TYPE_SINGLE_ITEM
+        and candidate.pass_scope == PASS_SCOPE_QUANT_SINGLE_ITEM
+        else candidate
+        for candidate in admitted
+    ]
 
     return admitted, excluded
 
@@ -1029,6 +1088,8 @@ def _preview_planned_pass(candidate: _AdmittedSetCandidate) -> dict[str, Any]:
         "execution_status": "not_started",
         "preview_only": True,
     }
+    if candidate.method_options is not None:
+        result["method_options"] = list(candidate.method_options)
     if candidate.dataset_version_id is not None:
         result["dataset_version_id"] = candidate.dataset_version_id
     if candidate.prepared_cohort is not None:
@@ -1108,6 +1169,7 @@ def _load_admitted_preview_basis(
     db: Session,
     *,
     session_id: str,
+    requested_method_name: str | None = None,
 ) -> tuple[
     L3Session,
     list[_AdmittedSetCandidate],
@@ -1122,6 +1184,7 @@ def _load_admitted_preview_basis(
         analysis_sets=analysis_sets,
         unit_by_id=unit_by_id,
         snapshot_by_id=snapshot_by_id,
+        requested_method_name=requested_method_name,
     )
     qualitative_admitted = [
         candidate for candidate in admitted if _is_single_aps_doc_qualitative_candidate(candidate)
@@ -1145,10 +1208,17 @@ def _load_admitted_preview_basis(
     return session, admitted, excluded, preview
 
 
-def preview_pass_entry(db: Session, *, session_id: str) -> Layer3PassEntryPreviewResult:
+def preview_pass_entry(
+    db: Session,
+    *,
+    session_id: str,
+    requested_method_name: str | None = None,
+) -> Layer3PassEntryPreviewResult:
     """Return the Gate C pass-entry plan basis without materializing or executing it."""
 
-    _, _, _, preview = _load_admitted_preview_basis(db, session_id=session_id)
+    _, _, _, preview = _load_admitted_preview_basis(
+        db, session_id=session_id, requested_method_name=requested_method_name
+    )
     return preview
 
 
@@ -1159,13 +1229,16 @@ def approve_pass_entry_plan(
     preview_hash: str | None = None,
     source_preview_id: str | None = None,
     approved_by_operator: bool = True,
+    requested_method_name: str | None = None,
 ) -> Layer3PassEntryApprovalResult:
     """Persist operator approval of the current pass-entry plan without executing it."""
 
     if not approved_by_operator:
         raise Layer3PassEntryError("operator confirmation is required for Layer 3 plan approval")
 
-    session, admitted, excluded, preview = _load_admitted_preview_basis(db, session_id=session_id)
+    session, admitted, excluded, preview = _load_admitted_preview_basis(
+        db, session_id=session_id, requested_method_name=requested_method_name
+    )
     if preview_hash is not None and preview_hash != preview.preview_hash:
         raise Layer3PassEntryError("Layer 3 plan approval preview hash mismatch")
 

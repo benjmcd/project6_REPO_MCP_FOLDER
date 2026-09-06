@@ -245,6 +245,10 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED",
     )
+    layer3_operator_method_selection_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_OPERATOR_METHOD_SELECTION_ENABLED",
+    )
     layer3_connector_dataset_handoff_enabled: bool = Field(
         default=False,
         alias="LAYER3_CONNECTOR_DATASET_HANDOFF_ENABLED",

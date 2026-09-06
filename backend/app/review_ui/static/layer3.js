@@ -682,6 +682,8 @@ const State = {
     gateB: null,
     gateC: null,
     planPreview: null,
+    planPreviewPending: false,
+    planMethodSelection: null,
     planApproval: null,
     planApprovalError: null,
     planApprovalCancel: null,
@@ -3436,6 +3438,7 @@ function clearLayer3FlowStateForSourceChange() {
     State.materialPreview = null;
     State.gateB = null;
     State.gateC = null;
+    State.planMethodSelection = null;
     State.planPreview = null;
     State.planApproval = null;
     State.planRevision = null;
@@ -8518,12 +8521,13 @@ function renderGateCPanel() {
 }
 
 function canPlanPreview() {
-    return Boolean(currentSessionId() && isTypingCommitted());
+    return Boolean(currentSessionId() && isTypingCommitted() && !State.planPreviewPending);
 }
 
 function canPlanApprove() {
     return Boolean(
         currentSessionId()
+        && !State.planPreviewPending
         && State.planPreview?.schema_id === 'layer3.plan_preview_result.v1'
         && State.planPreview?.preview_id
         && State.planPreview?.preview_hash
@@ -8536,6 +8540,7 @@ function canPlanApprove() {
 function canPlanRevise() {
     return Boolean(
         currentSessionId()
+        && !State.planPreviewPending
         && State.planPreview?.schema_id === 'layer3.plan_preview_result.v1'
         && State.planPreview?.preview_id
         && State.planPreview?.preview_hash
@@ -8700,6 +8705,15 @@ function canStartExecution() {
     );
 }
 
+function operatorMethodSelectionEnabled() {
+    return State.bootstrap?.layer3_operator_method_selection_enabled === true;
+}
+
+function requestedMethodSelectionFields() {
+    if (!operatorMethodSelectionEnabled() || !State.planMethodSelection) return {};
+    return { requested_method_name: State.planMethodSelection };
+}
+
 function renderPlanPanel() {
     if (State.planRevision) {
         const label = State.planRevision.next_state === 'plan_rejected' ? 'rejected' : 'revision requested';
@@ -8814,6 +8828,23 @@ function renderPlanPanel() {
     const warningRows = warnings.length
         ? warnings.map((item) => `<li>${escapeHtml(item.reason_code)}: ${escapeHtml(item.message)}</li>`).join('')
         : '<li>No warnings.</li>';
+    // The server supplies the same plan-wide intersection on every eligible singleton.
+    const methodOptions = operatorMethodSelectionEnabled()
+        ? planned.find((item) => Array.isArray(item.method_options))?.method_options || []
+        : [];
+    const methodSelector = methodOptions.length
+        ? `
+        <div class="plan-list plan-method-selection">
+            <h3>Analysis Method</h3>
+            <label for="plan-method-selection">Methods shared by this plan's quantitative singletons</label>
+            <select id="plan-method-selection" name="plan-method-selection"${State.planPreviewPending ? ' disabled' : ''}>
+                <option value=""${!State.planMethodSelection ? ' selected' : ''}>Owner service defaults</option>
+                ${methodOptions.map((option) => `
+                    <option value="${escapeHtml(option)}"${option === State.planMethodSelection ? ' selected' : ''}>${escapeHtml(option)}</option>
+                `).join('')}
+            </select>
+        </div>`
+        : '';
     elements.planPanel.innerHTML = `
         <div class="plan-summary-grid">
             <div class="plan-summary-card"><strong>Preview</strong>${escapeHtml(body.preview_only ? 'preview only' : 'unknown')}</div>
@@ -8821,6 +8852,7 @@ function renderPlanPanel() {
             <div class="plan-summary-card"><strong>Excluded</strong>${excluded.length}</div>
             <div class="plan-summary-card"><strong>Passes</strong>${planned.length}</div>
         </div>
+        ${methodSelector}
         <div class="plan-preview-grid">
             <section class="plan-list"><h3>Planned Passes</h3><ul>${plannedRows}</ul></section>
             <section class="plan-list"><h3>Admitted Sets</h3><ul>${admittedRows}</ul></section>
@@ -8829,6 +8861,13 @@ function renderPlanPanel() {
         </div>
         ${renderErrorCard(State.planApprovalError || State.planRevisionError)}
     `;
+    const methodSelect = document.getElementById('plan-method-selection');
+    if (methodSelect) {
+        methodSelect.addEventListener('change', () => {
+            State.planMethodSelection = methodSelect.value || null;
+            previewPlan();
+        });
+    }
 }
 
 function displayValue(value) {
@@ -31314,6 +31353,7 @@ async function runPreflightFlow(event) {
         State.gateC = null;
         State.sessionSummary = null;
         State.planPreview = null;
+        State.planMethodSelection = null;
         State.planApproval = null;
         State.planRevision = null;
         State.planRevisionRecovery = null;
@@ -31350,6 +31390,7 @@ async function commitGateB() {
         });
         State.gateC = null;
         State.planPreview = null;
+        State.planMethodSelection = null;
         State.planApproval = null;
         State.planRevision = null;
         State.planRevisionRecovery = null;
@@ -31424,7 +31465,11 @@ async function commitGateC() {
 
 async function previewPlan() {
     if (!canPlanPreview()) return;
+    State.planPreviewPending = true;
     setBusy(elements.planPreview, true, 'Preview Plan');
+    setGateControls();
+    const methodSelect = document.getElementById('plan-method-selection');
+    if (methodSelect) methodSelect.disabled = true;
     try {
         State.planPreview = await postJson('/plan/preview', {
             schema_id: 'layer3.plan_preview_request.v1',
@@ -31432,6 +31477,7 @@ async function previewPlan() {
             session_id: currentSessionId(),
             include_exclusions: true,
             preview_scope: 'owner_service_default',
+            ...requestedMethodSelectionFields(),
         });
         State.planApproval = null;
         State.planRevision = null;
@@ -31441,6 +31487,7 @@ async function previewPlan() {
         addEvent('Plan preview loaded.');
         renderAll();
     } catch (error) {
+        State.planMethodSelection = null;
         State.planPreview = error.payload || {
             schema_id: 'layer3.workbench_error.v1',
             error_code: 'plan_preview_request_failed',
@@ -31450,8 +31497,11 @@ async function previewPlan() {
         addEvent(`Plan preview blocked: ${error.message}`);
         renderAll();
     } finally {
+        State.planPreviewPending = false;
         setBusy(elements.planPreview, false, 'Preview Plan');
         setGateControls();
+        const currentMethodSelect = document.getElementById('plan-method-selection');
+        if (currentMethodSelect) currentMethodSelect.disabled = false;
     }
 }
 
@@ -31468,6 +31518,7 @@ async function approvePlan() {
             preview_hash: State.planPreview.preview_hash,
             operator_confirmation: true,
             approval_scope: 'owner_service_default',
+            ...requestedMethodSelectionFields(),
         });
         clearResultReviewState();
         persistSessionRecoveryAnchor('plan_approval');
@@ -31499,6 +31550,7 @@ async function revisePlan(operatorDecision) {
             preview_id: State.planPreview.preview_id,
             preview_hash: State.planPreview.preview_hash,
             operator_decision: operatorDecision,
+            ...requestedMethodSelectionFields(),
         });
         clearResultReviewState();
         persistSessionRecoveryAnchor('plan_revision');

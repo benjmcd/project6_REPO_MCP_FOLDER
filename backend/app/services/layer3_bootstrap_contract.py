@@ -152,6 +152,7 @@ def build_bootstrap_contract(
         "analysis_product_package_inventory_enabled": bool(settings.layer3_analysis_product_package_inventory_enabled),
         "layer3_public_dataset_analysis_enabled": bool(settings.layer3_public_dataset_analysis_enabled),
         "layer3_public_connector_value_reveal_enabled": bool(settings.layer3_public_connector_value_reveal_enabled),
+        "layer3_operator_method_selection_enabled": bool(settings.layer3_operator_method_selection_enabled),
         "execution_readiness": {
             "schema_id": EXECUTION_READINESS_SCHEMA_ID,
             "execution_admitted": False,
