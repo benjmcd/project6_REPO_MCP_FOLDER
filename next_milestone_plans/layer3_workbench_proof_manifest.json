@@ -47917,7 +47917,7 @@
     "milestone": "m_state_reconciliation_v1",
     "record_date": "2026-09-04",
     "proof_class": "tracked_docs_source_reconciliation",
-    "source_frontier": "d9412188e9581302429112cc637e416fe666994f",
+    "source_frontier": "348956f38eccac4d55e2e42857f1ad5eecbd1382",
     "source_anchors": [
       "backend/app/core/config.py",
       "backend/app/api/layer3/__init__.py",
@@ -47940,9 +47940,10 @@
       "future_next_migration_placeholder_preserved": true,
       "legacy_sciencebase_pilot_runbook_does_not_cover_public_layer3_routes": true
     },
-    "pending_pr_evidence": [
-      "#2495 head 44c3a433d39c5c676c2e1d163ab19b8e0965f6bf OPEN/CLEAN with 21 successful checks; not on main",
-      "#2496 head 1de3b1e291a854ef69a3d46bfa1cfd31cc240349 OPEN/CLEAN with 21 successful checks; not on main"
+    "pending_pr_evidence": [],
+    "merged_pr_evidence_2026_09_06": [
+      "#2495 head 44c3a433d39c5c676c2e1d163ab19b8e0965f6bf merged as de693eea607fba511fb4e95f121bebaa54e82e13 at 2026-09-06T00:05:32Z; on main",
+      "#2496 head 1de3b1e291a854ef69a3d46bfa1cfd31cc240349 merged as 348956f38eccac4d55e2e42857f1ad5eecbd1382 at 2026-09-06T00:06:21Z; on main; LAYER3_OPERATOR_METHOD_SELECTION_ENABLED default remains false"
     ],
     "analytical_evidence_qualification": {
       "evidence_class": "operator_local_unpublished_hash_count_and_interpretation_only",
@@ -47967,5 +47968,5 @@
       "no private coordination record published or linked"
     ]
   },
-  "latest_m_state_reconciliation_proof_summary": "M-STATE-RECONCILIATION proof binds the docs-only current pointer to main d9412188e9581302429112cc637e416fe666994f and live source anchors for dual-default-off public ScienceBase analysis/value behavior, provenance co-display, storage-reference exclusion, the package router at backend/app/api/layer3/__init__.py, workbench service authority, and migration 0033. It records pending #2495/#2496 state and only sanitized 60-quarter local evidence limits; no runtime was executed by this record lane."
+  "latest_m_state_reconciliation_proof_summary": "M-STATE-RECONCILIATION proof binds the docs-only current pointer to main d9412188e9581302429112cc637e416fe666994f and live source anchors for dual-default-off public ScienceBase analysis/value behavior, provenance co-display, storage-reference exclusion, the package router at backend/app/api/layer3/__init__.py, workbench service authority, and migration 0033. It recorded then-pending #2495/#2496 state and only sanitized 60-quarter local evidence limits; no runtime was executed by this record lane. Update 2026-09-06 UTC: #2495 merged as de693eea607fba511fb4e95f121bebaa54e82e13 and #2496 as 348956f38eccac4d55e2e42857f1ad5eecbd1382 (now the source frontier) on explicit owner decisions; method selection default remains false; no runtime executed by this update."
 }

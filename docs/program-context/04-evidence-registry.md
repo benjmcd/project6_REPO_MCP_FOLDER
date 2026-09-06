@@ -4,13 +4,13 @@
 
 | Claim | Re-derivable or sanitized anchor | Limit |
 |---|---|---|
-| Current implementation frontier | `project6-origin/main` `d9412188e9581302429112cc637e416fe666994f` | Source/config/tests remain authority |
+| Current implementation frontier | `project6-origin/main` `348956f38eccac4d55e2e42857f1ad5eecbd1382` (#2496 merge, 2026-09-06 UTC) | Source/config/tests remain authority |
 | Public analysis default | `backend/app/core/config.py` field `LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED=false` | Default-off; not an arming record |
 | Public values default | `backend/app/core/config.py` field `LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED=false` | Values require both flags |
 | Public-source admission | `backend/app/services/layer3_workbench.py`; newest `sciencebase/public_api` provenance | New public family only; does not widen shared APS admission |
 | Value response boundary | `backend/app/services/layer3_workbench.py`; provenance co-display and storage-reference exclusion | Bounded admitted JSON output only |
-| Pending PR #2495 | `44c3a433d39c5c676c2e1d163ab19b8e0965f6bf`; OPEN/CLEAN; 21 successful checks | Not on main; merge owner-gated |
-| Pending PR #2496 | `1de3b1e291a854ef69a3d46bfa1cfd31cc240349`; OPEN/CLEAN; 21 successful checks | Not on main; method selection remains default-off |
+| Merged PR #2495 | head `44c3a433d39c5c676c2e1d163ab19b8e0965f6bf`; merge commit `de693eea607fba511fb4e95f121bebaa54e82e13`; 2026-09-06 UTC | On main; directory-wide `state/agent-inbox/` ignore rule; untracks nothing |
+| Merged PR #2496 | head `1de3b1e291a854ef69a3d46bfa1cfd31cc240349`; merge commit `348956f38eccac4d55e2e42857f1ad5eecbd1382`; 2026-09-06 UTC | On main; method selection remains default-off |
 | Qualified local derivative | 60 complete quarterly observations; SHA-256 `5ad88a04e4232227b5d1a59bbc1531dfd3deca8665401b0184b16d0310eb4bd0` | Operator-local unpublished evidence; normalized coordinate and per-point lineage; not ScienceBase or persisted Layer 3 proof |
 
 The relevant merged tranches and analytical qualifications are in

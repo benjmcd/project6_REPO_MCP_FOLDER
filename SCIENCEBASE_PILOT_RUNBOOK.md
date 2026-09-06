@@ -2,7 +2,8 @@
 
 > **2026-09-04 current-source scope:** This is a preserved legacy connector
 > validation recipe, not the current whole-path authority. Current main is
-> `d9412188e9581302429112cc637e416fe666994f`; current bounded state is in
+> `348956f38eccac4d55e2e42857f1ad5eecbd1382` (after the 2026-09-05/06 merges of
+> #2497, #2495, and #2496); current bounded state is in
 > [docs/MASTER_CONTEXT.md](docs/MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation),
 > and the public connector path is in
 > [docs/public-connectors-journey.md](docs/public-connectors-journey.md#2026-09-04-bounded-layer-3-extension).

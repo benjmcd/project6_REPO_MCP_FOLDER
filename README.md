@@ -9,9 +9,9 @@
 > `LAYER3_PUBLIC_DATASET_ANALYSIS_ENABLED=false` and
 > `LAYER3_PUBLIC_CONNECTOR_VALUE_REVEAL_ENABLED=false`; values require both
 > flags plus admitted `sciencebase/public_api` provenance and are returned only
-> with provenance, with storage references excluded. PRs #2495 and #2496 are
-> open with clean merge state and 21 successful checks each, but remain owner
-> merge decisions and are not on main. See
+> with provenance, with storage references excluded. PRs #2495 and #2496 merged
+> on 2026-09-06 UTC (`de693eea`, `348956f3`) on explicit owner decisions;
+> method selection stays default-off. See
 > [docs/MASTER_CONTEXT.md](docs/MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation)
 > for the bounded current summary and explicit non-claims.
 

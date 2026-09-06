@@ -5,11 +5,11 @@ Generated: 2026-03-09 (America/Los_Angeles)
 > Status note (2026-09-04): The current tracked-state reconciliation is in
 > [docs/MASTER_CONTEXT.md](docs/MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation),
 > grounded at `project6-origin/main`
-> `d9412188e9581302429112cc637e416fe666994f`. This intentionally scoped repo map
+> `348956f38eccac4d55e2e42857f1ad5eecbd1382`. This intentionally scoped repo map
 > does not duplicate that live summary. Public ScienceBase Layer 3 analysis and
 > value inspection are bounded default-off additions under the existing selected
 > profile; they do not change this index into a support-policy authority. PRs
-> #2495 and #2496 remain open and absent from main pending owner merge decisions.
+> #2495 and #2496 merged on 2026-09-06 UTC and are on main; method selection stays default-off.
 
 > Status note (2026-04-21): Current repo authority and front-door status now start from [README.md](README.md). Lane-specific current authority lives in [docs/nrc_adams/nrc_aps_reader_path.md](docs/nrc_adams/nrc_aps_reader_path.md), [docs/nrc_adams/nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md), [frontend_UI_plans/README.md](frontend_UI_plans/README.md), [docs/onlook-ops.md](docs/onlook-ops.md), and the other lane-status docs linked from [README.md](README.md). This file remains an intentionally scoped broad repo map, not a live whole-repo status ledger. Older status notes below are preserved lineage snapshots and do not override those current authority surfaces.
 > Status note (2026-03-13): NRC APS operational status and current lower-layer document-processing authority now live in [docs/nrc_adams/nrc_aps_status_handoff.md](docs/nrc_adams/nrc_aps_status_handoff.md). This file remains a broad repo map. Older ScienceBase-centric snapshot sections below are not the authoritative NRC APS status surface.
