@@ -71,3 +71,6 @@ state/agent-inbox/for-claude.md
 state/agent-inbox/*-source.md
 state/agent-inbox/*-followon.md
 state/ipc-tools/
+
+# Owner ruling 2026-09-01: agent-inbox records (handoffs, audit ledger, owner tokens) never publish
+state/agent-inbox/
