@@ -50206,8 +50206,8 @@
   "m_state_reconciliation_tracking": {
     "milestone": "m_state_reconciliation_v1",
     "record_date": "2026-09-04",
-    "status": "branch_local_tier1_docs_only",
-    "source_frontier": "d9412188e9581302429112cc637e416fe666994f",
+    "status": "landed_pr_2497_pins_updated_2026_09_06",
+    "source_frontier": "348956f38eccac4d55e2e42857f1ad5eecbd1382",
     "current_summary": "docs/MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation",
     "landed_chain": {
       "#2477": "1b2e170b",
@@ -50222,7 +50222,10 @@
       "#2491": "f8f4ee9c",
       "#2492": "9d358139dcc05386a8b956691af478ccaa62038a",
       "#2493": "c979edad991bef3ecc1b310edeb8bd9964f40333",
-      "#2494": "d9412188e9581302429112cc637e416fe666994f"
+      "#2494": "d9412188e9581302429112cc637e416fe666994f",
+      "#2497": "7d390a644330d07e1c999da7bbf0005bbf1ffafa",
+      "#2495": "de693eea607fba511fb4e95f121bebaa54e82e13",
+      "#2496": "348956f38eccac4d55e2e42857f1ad5eecbd1382"
     },
     "public_layer3_posture": {
       "classification": "bounded_experimental_default_off_subfeatures",
@@ -50233,19 +50236,25 @@
       "support_matrix_capability_count": 32,
       "support_matrix_ids_statuses_and_pins_changed": false
     },
-    "pending_owner_merges": [
+    "pending_owner_merges": [],
+    "owner_merges_executed_2026_09_06": [
       {
         "pr": "#2495",
         "head": "44c3a433d39c5c676c2e1d163ab19b8e0965f6bf",
-        "state": "OPEN_CLEAN_21_SUCCESSFUL_CHECKS",
-        "on_main": false
+        "merge_commit": "de693eea607fba511fb4e95f121bebaa54e82e13",
+        "merged_at": "2026-09-06T00:05:32Z",
+        "state": "MERGED",
+        "on_main": true,
+        "scope": "directory-wide state/agent-inbox/ ignore rule; untracks nothing; state/agent-inbox/README.md remains the sole tracked file under state/"
       },
       {
         "pr": "#2496",
         "head": "1de3b1e291a854ef69a3d46bfa1cfd31cc240349",
-        "state": "OPEN_CLEAN_21_SUCCESSFUL_CHECKS",
-        "on_main": false,
-        "scope": "default-off method selection with cohort-state, shared-method intersection, and pending-UI repairs"
+        "merge_commit": "348956f38eccac4d55e2e42857f1ad5eecbd1382",
+        "merged_at": "2026-09-06T00:06:21Z",
+        "state": "MERGED",
+        "on_main": true,
+        "scope": "default-off method selection (LAYER3_OPERATOR_METHOD_SELECTION_ENABLED=false) with cohort-state, shared-method intersection, and pending-UI repairs; 21 successful checks at head; pre-merge local verification covered the flag-off cohort regressions and the picker browser checks"
       }
     ],
     "historical_correction": "The July second-key NOT-GRANTED disposition remains exact-proposal authority, not a blanket present-day source-absence claim; later source presence does not retroactively approve or close the old ballot.",
@@ -50284,10 +50293,11 @@
       "persisted_run": false,
       "owner_decision": false,
       "merge_authorized": false,
+      "owner_merge_decisions_executed_outside_this_record_2026_09_06": true,
       "private_record_published_or_linked": false,
       "whole_b1b_or_phase_4_5_6_completion_claim": false
     },
-    "next_posture": "land_docs_then_seek_separate_owner_merge_decisions_then_isolated_persisted_real_data_proof"
+    "next_posture": "pins_flipped_2026_09_06_after_owner_merges; remaining pursuits tracked separately"
   },
-  "latest_m_state_reconciliation_summary": "M-STATE-RECONCILIATION records current main d9412188e9581302429112cc637e416fe666994f, the bounded #2477-#2494 landed chain, public ScienceBase analysis/value subfeatures as dual-flag default-off under the unchanged 32-capability selected profile, and #2495/#2496 as open clean owner-gated merges with 21 successful checks each. It corrects the July second-key blanket interpretation without retroactive approval, records only sanitized local analytical limits, and makes no runtime, support-policy, schema/default/status, acquisition, flag, owner-decision, or merge change."
+  "latest_m_state_reconciliation_summary": "M-STATE-RECONCILIATION recorded main d9412188e9581302429112cc637e416fe666994f at record time, the bounded #2477-#2494 landed chain, public ScienceBase analysis/value subfeatures as dual-flag default-off under the unchanged 32-capability selected profile, and #2495/#2496 as then-open clean owner-gated merges with 21 successful checks each. Update 2026-09-06 UTC: #2497 landed as 7d390a644330d07e1c999da7bbf0005bbf1ffafa; #2495 merged as de693eea607fba511fb4e95f121bebaa54e82e13 and #2496 as 348956f38eccac4d55e2e42857f1ad5eecbd1382 (now the source frontier) on explicit owner decisions; method selection remains default-off; this update grants no further authority. It corrects the July second-key blanket interpretation without retroactive approval, records only sanitized local analytical limits, and makes no runtime, support-policy, schema/default/status, acquisition, flag, owner-decision, or merge change."
 }

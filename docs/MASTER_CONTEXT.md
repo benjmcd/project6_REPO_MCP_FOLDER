@@ -51,16 +51,20 @@ default-off subfeatures under the existing 32-capability selected-profile
 contract; they do not expand the intentionally scoped capability IDs, counts,
 or pin set in the support matrix.
 
-### Pending owner decisions
+### Owner merge decisions (executed 2026-09-06 UTC)
 
-- PR #2495 is OPEN/CLEAN at
-  `44c3a433d39c5c676c2e1d163ab19b8e0965f6bf`, with 21 successful checks. It
-  contains three additive ignore rules. Merge remains reserved to the owner.
-- PR #2496 is OPEN/CLEAN at
-  `1de3b1e291a854ef69a3d46bfa1cfd31cc240349`, with 21 successful checks. It
-  contains default-off method selection plus cohort-state, shared-method
-  intersection, and pending-UI repairs. It is not on main. Merge remains
-  reserved to the owner.
+- PR #2495 (head `44c3a433d39c5c676c2e1d163ab19b8e0965f6bf`) merged as
+  `de693eea607fba511fb4e95f121bebaa54e82e13`. It added a directory-wide
+  `state/agent-inbox/` ignore rule; it untracks nothing, and
+  `state/agent-inbox/README.md` remains the sole tracked file under `state/`.
+- PR #2496 (head `1de3b1e291a854ef69a3d46bfa1cfd31cc240349`) merged as
+  `348956f38eccac4d55e2e42857f1ad5eecbd1382`, now the source frontier. It adds
+  default-off operator method selection
+  (`LAYER3_OPERATOR_METHOD_SELECTION_ENABLED=false`) plus cohort-state,
+  shared-method intersection, and pending-UI repairs. Its 21 checks passed at
+  head; pre-merge local verification covered the flag-off cohort regressions
+  and the picker browser checks. Both merges were explicit owner decisions
+  taken outside this document; nothing here grants further authority.
 
 No merge, flag arming, acquisition, credentialed action, support-policy change,
 schema/default/status change, or new owner decision is authorized by this docs

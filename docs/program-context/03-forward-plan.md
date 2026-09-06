@@ -6,23 +6,27 @@ The current state and boundaries are in
 [MASTER_CONTEXT](../MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation).
 The ordered next work is:
 
-1. Publish and validate this tracked documentation synchronization.
-2. Present PR #2495 at `44c3a433d39c5c676c2e1d163ab19b8e0965f6bf`
-   and PR #2496 at `1de3b1e291a854ef69a3d46bfa1cfd31cc240349`
-   for separate owner merge decisions; refresh heads/checks/reviews before any
-   authorized merge.
+1. Done: this tracked documentation synchronization landed as PR #2497
+   (`7d390a644330d07e1c999da7bbf0005bbf1ffafa`, 2026-09-05 UTC).
+2. Done: PR #2495 (`44c3a433d39c5c676c2e1d163ab19b8e0965f6bf`) merged as
+   `de693eea607fba511fb4e95f121bebaa54e82e13` and PR #2496
+   (`1de3b1e291a854ef69a3d46bfa1cfd31cc240349`) merged as
+   `348956f38eccac4d55e2e42857f1ad5eecbd1382` on 2026-09-06 UTC, each on an
+   explicit owner decision after refreshing heads/checks/reviews. Method
+   selection remains default-off.
 3. Run a fresh isolated persisted real-data proof with explicit normalized-time
    and per-point lineage, accepting a valid no-break result and keeping
    stationarity/segment/overlap limits visible. The qualified local derivative
    needs no fresh download. A public-envelope proof requires an appropriate
-   admitted public input.
+   admitted public input. A bounded operator-local execution of this proof on
+   2026-09-05 UTC (valid zero-break outcome) exists only in unpublished
+   workspace records; this plan does not claim it as tracked evidence.
 4. Keep armed-browser coverage, post-land nits, source-specific public proof,
    and any connector-to-intake automation as separate bounded pursuits.
 
 The plan does not authorize a merge, acquisition, flag arm, support-matrix
-expansion, schema/default/status change, or new owner decision. The already
-planned isolated persisted proof remains the next evidence action after this
-docs synchronization.
+expansion, schema/default/status change, or new owner decision. Items 1-2 are
+complete; any tracked follow-on proof needs its own explicit scope.
 
 Every open pursuit: status, precise residual delta, acceptance criteria (pass), fail
 criteria, SHOULD-NOTs, gates, size/risk, sequencing. Criteria derive from the M-FWD3-CRITERIA

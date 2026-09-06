@@ -4,17 +4,20 @@
 
 Milestone: `m_state_reconciliation_v1`.
 
-Status: branch-local Tier-1 docs-only current-state reconciliation. It becomes a
-tracked current pointer only if this lane lands; it makes no runtime change.
+Status: landed as PR #2497 (`7d390a644330d07e1c999da7bbf0005bbf1ffafa`,
+2026-09-05 UTC); pins updated 2026-09-06 UTC after the two owner merges below.
+It makes no runtime change.
 
 Source frontier: `project6-origin/main`
-`d9412188e9581302429112cc637e416fe666994f`. The verified landed sequence is
+`348956f38eccac4d55e2e42857f1ad5eecbd1382`. The verified landed sequence is
 #2477 `1b2e170b`, #2478 `fcf6070d`, #2479 `f6b70030`, #2481 `c1fcd840`,
 #2482 `0b65b4f0`, #2486 `89b04fef`, #2487 `2182177e`, #2489
 `892a6b0a2fd8be4b3385c9304974e1e0a523cd40`, #2490
 `d7488c05520405716eceab7093ec84d268870b68`, #2491 `f8f4ee9c`, #2492
 `9d358139dcc05386a8b956691af478ccaa62038a`, #2493
-`c979edad991bef3ecc1b310edeb8bd9964f40333`, and #2494 at the source
+`c979edad991bef3ecc1b310edeb8bd9964f40333`, #2494
+`d9412188e9581302429112cc637e416fe666994f`, #2497 `7d390a64` (docs), #2495
+`de693eea607fba511fb4e95f121bebaa54e82e13`, and #2496 at the source
 frontier. These changes establish only their bounded connector-intake,
 adopted-external, and public ScienceBase slices; they do not establish whole-B1b,
 integrated-loop, scientific-utility, Phase 4/5/6, nonlocal, or production
@@ -28,12 +31,14 @@ exclusion. These are bounded experimental default-off subfeatures under the
 existing intentionally scoped 32-capability profile; the support-matrix IDs,
 counts, statuses, and pin set remain unchanged.
 
-Pending owner decisions: #2495 at
-`44c3a433d39c5c676c2e1d163ab19b8e0965f6bf` and #2496 at
-`1de3b1e291a854ef69a3d46bfa1cfd31cc240349` are OPEN/CLEAN with 21 successful
-checks each. Neither is on main and neither merge is authorized by this record.
-#2496 contains the pending default-off method-selection cohort/intersection/UI
-repair and must not be described as current-main behavior.
+Owner merge decisions executed 2026-09-06 UTC: #2495 (head
+`44c3a433d39c5c676c2e1d163ab19b8e0965f6bf`) merged as
+`de693eea607fba511fb4e95f121bebaa54e82e13`; #2496 (head
+`1de3b1e291a854ef69a3d46bfa1cfd31cc240349`) merged as
+`348956f38eccac4d55e2e42857f1ad5eecbd1382`. The #2496 default-off
+method-selection cohort/intersection/UI repair is now current-main behavior
+behind `LAYER3_OPERATOR_METHOD_SELECTION_ENABLED=false`. This record grants no
+further authority.
 
 Analytical limit: retained public runs prove workflow plumbing, not robust
 temporal findings; cross-sectional row order is not time. Operator-local
