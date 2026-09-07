@@ -240,7 +240,16 @@ post-decision review body. They carry no measured observation value, no storage
 reference and no artifact body, and nothing is persisted into stored review state.
 Caveat and check text does quote run diagnostics and parameters, such as observation
 counts, returned segment lengths and the penalty used, because those are what
-qualify the result. The frozen execution-status contract is unchanged, no route was added,
+qualify the result. One of those is not an ordinary parameter: when a caller omits
+the structural-break penalty the runner derives it from the data as
+`var(working_series) * ln(n)`, so the always-on caveat surface discloses a scale
+statistic of each analyzed variable. Combined with the co-emitted segment lengths,
+which sum to n, that supports a rounded estimate of the working series' variance
+(the value is rendered at six significant figures, so it is an estimate, not exact
+reconstruction). This was disclosed in general terms when the derived penalty was
+ruled — the ruling recorded that the value and its source would appear in
+`parameters_json` and the caveat — but the inference path was not spelled out.
+Measured observation values, artifact bodies and storage references remain absent. The frozen execution-status contract is unchanged, no route was added,
 and no feature flag gates this display. A structural-break run that selects no
 breakpoints is a valid negative outcome and states that outcome rather than
 appearing as a missing artifact.
