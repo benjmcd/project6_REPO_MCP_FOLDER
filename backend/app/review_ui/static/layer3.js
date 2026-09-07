@@ -30168,7 +30168,7 @@ function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel() {
     `;
 }
 
-async function inspectResultStatus() {
+async function inspectResultStatus({ refreshSummary = false } = {}) {
     if (!canInspectResultStatus()) return;
     clearPublicScienceBaseValuesState();
     setBusy(elements.resultStatusInspect, true, 'Inspect Result Status');
@@ -30192,11 +30192,14 @@ async function inspectResultStatus() {
         State.apsHandoffDispatchError = null;
         clearExternalExportDownloadPrepareState();
         addEvent('Result/status authority loaded.');
-        // The frozen status body carries warnings_present only; the caveat text the
-        // operator reviews before deciding comes from the session summary, so refresh
-        // it (best effort) through the existing session route.
+        // The frozen status body carries warnings_present only, so the caveat text comes from
+        // the session summary. Refresh it only on the operator's own Inspect click: the
+        // auto-advance path must issue zero /session/ calls after result/status (e2e "G1
+        // result-review auto-advance" pins that), so it renders from the summary already in
+        // State, and the caveat card says "not loaded" rather than showing an empty list when
+        // that summary does not cover the selected run.
         const statusSessionId = State.resultStatus?.session_id || currentSessionId();
-        if (statusSessionId) {
+        if (refreshSummary && statusSessionId) {
             try {
                 State.sessionSummary = await getJson(`/session/${encodeURIComponent(statusSessionId)}`);
                 persistSessionRecoveryAnchor('result_status_refresh');
@@ -32383,7 +32386,7 @@ elements.resultSessionReopenId.addEventListener('keydown', (event) => {
         reopenSessionById();
     }
 });
-elements.resultStatusInspect.addEventListener('click', inspectResultStatus);
+elements.resultStatusInspect.addEventListener('click', () => inspectResultStatus({ refreshSummary: true }));
 elements.resultReviewForm.addEventListener('submit', submitResultReview);
 elements.packageReviewPreviewInspect.addEventListener('click', inspectPackageReviewPreview);
 elements.packageConstructionCommit.addEventListener('click', commitPackageConstruction);

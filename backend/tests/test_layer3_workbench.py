@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -4217,6 +4217,45 @@ def _assert_no_forbidden_keys(value, forbidden: set[str]) -> None:
     elif isinstance(value, list):
         for item in value:
             _assert_no_forbidden_keys(item, forbidden)
+
+
+def test_session_summary_caveats_follow_the_executed_pass_not_the_first(db_session, tmp_path) -> None:
+    """A session holds one pass run per selected analysis set, so position is not the authority.
+
+    An older sibling pass that never executed must not shadow the run under review: reporting
+    "no caveats recorded" for a run that has high-severity caveats is the exact false statement
+    this projection exists to prevent.
+    """
+    identity = _walk_aps_dataset_to_completed_pass(db_session, tmp_path)
+    executed = db_session.get(L3PassRun, identity["pass_run_id"])
+    assert executed is not None
+
+    older_sibling = L3PassRun(
+        session_id=executed.session_id,
+        analysis_plan_id=executed.analysis_plan_id,
+        analysis_set_id=executed.analysis_set_id,
+        pass_type=executed.pass_type,
+        engine_family=executed.engine_family,
+        status=executed.status,
+        input_payload_ref=executed.input_payload_ref,
+        summary_json={},
+    )
+    db_session.add(older_sibling)
+    db_session.flush()
+    older_sibling.created_at = executed.created_at - timedelta(minutes=5)
+    db_session.commit()
+
+    summary = layer3_workbench.session_summary(db_session, identity["session_id"])
+
+    # The unexecuted sibling sorts first; the projection must still follow the executed run.
+    assert summary["execution_selection"]["pass_run_ids"][0] == older_sibling.pass_run_id
+    analysis_run = db_session.get(AnalysisRun, identity["analysis_run_id"])
+    assert summary["caveat_count"] == len(analysis_run.caveats) > 0
+    assert summary["assumption_check_count"] == len(analysis_run.assumptions) > 0
+    assert {item["caveat_type"] for item in summary["caveats"]} == {
+        item.caveat_type for item in analysis_run.caveats
+    }
+    _assert_caveat_projection_is_text_only(summary)
 
 
 def test_session_summary_and_review_response_project_selected_run_caveats_at_read_time(db_session, tmp_path) -> None:

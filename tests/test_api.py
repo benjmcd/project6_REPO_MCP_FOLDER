@@ -10754,7 +10754,8 @@ def test_structural_break_explicit_penalty_keeps_scalar_and_records_explicit_sou
     sensitivity = [item for item in break_payload['caveats'] if item['caveat_type'] == 'penalty_sensitivity']
     assert len(sensitivity) == 2
     for item in sensitivity:
-        assert 'penalty=2 ' in item['message'] or 'penalty=2.' in item['message'] or 'penalty=2,' in item['message'] or 'penalty=2)' in item['message']
+        # The message interpolates the penalty with :g, so 2.0 renders exactly as "penalty=2 ".
+        assert 'penalty=2 ' in item['message']
         assert 'source=explicit' in item['message']
         assert 'heuristic' not in item['message']
     for artifact in break_payload['artifacts']:

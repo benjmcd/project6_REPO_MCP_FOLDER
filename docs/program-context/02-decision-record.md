@@ -968,9 +968,11 @@ migration, runtime, build dispatch, B1b build PR, or B1b build merge authority.
   no new routes and no parameter surface.
 - Decision: (e), as four owner rulings taken 2026-09-06.
   1. D-a: caveats and assumption checks ride unflagged. They are text, carry no
-     numeric result value or storage reference, and are projected at read time
-     from one source shared by the pre-decision panel and reopen-by-id; the
-     frozen execution-status contract is untouched.
+     measured observation value, artifact body or storage reference — though they
+     do quote run diagnostics and parameters such as counts, segment lengths and
+     the penalty used — and are projected at read time from one source shared by
+     the pre-decision panel and reopen-by-id; the frozen execution-status contract
+     is untouched.
   2. D-b: a time index requires at least two distinct parsed timestamps. The
      guard sits at the time-column decision during ingest and at the cohort
      dataset-version producer; each time-series method records a

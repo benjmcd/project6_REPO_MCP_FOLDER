@@ -341,7 +341,7 @@ def test_result_caveat_projection_projects_text_only_caveats_and_checks() -> Non
             {
                 "artifact_type": "structural_break_result",
                 "title": "Structural breaks: series_a",
-                "storage_ref": "C:/private/should-not-leak/structural_break_result.json",
+                "storage_ref": "/private/should-not-leak/structural_break_result.json",
                 "summary": "series_a: structural break metadata",
                 "metadata_json": {"break_count": 1},
             }

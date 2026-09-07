@@ -236,9 +236,11 @@ of the code; it is not a completion claim for the wider program.
 
 Caveat notes and assumption checks are projected at read time from one source
 shared by the pre-decision review panel, the reopen-by-session-id path, and the
-post-decision review body. They are text only: no numeric result value, no
-storage reference, no artifact body, and nothing is persisted into stored review
-state. The frozen execution-status contract is unchanged, no route was added,
+post-decision review body. They carry no measured observation value, no storage
+reference and no artifact body, and nothing is persisted into stored review state.
+Caveat and check text does quote run diagnostics and parameters, such as observation
+counts, returned segment lengths and the penalty used, because those are what
+qualify the result. The frozen execution-status contract is unchanged, no route was added,
 and no feature flag gates this display. A structural-break run that selects no
 breakpoints is a valid negative outcome and states that outcome rather than
 appearing as a missing artifact.

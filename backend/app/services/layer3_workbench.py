@@ -20577,18 +20577,28 @@ def _external_local_export_summary(
     )
 
 
-def _selected_pass_result_caveat_projection(db: Session, *, pass_run_ids: list[str]) -> dict[str, Any]:
-    """Text-only caveats/assumption checks for the selected pass run's analysis run, read at request time.
+def _selected_pass_result_caveat_projection(
+    db: Session, *, pass_run_ids: list[str], executed_analysis_run_id: str | None = None
+) -> dict[str, Any]:
+    """Text-only caveats/assumption checks for the reviewed analysis run, read at request time.
 
-    The selected pass is the first server-ordered pass run (the same authority the review
-    panel resolves); a pass without an analysis run projects empty lists and zero counts.
+    A session may hold one pass run per selected analysis set, so position is not the
+    authority: the panel resolves the run from the execution-start/status body first
+    (`selectedResultAuthority` in layer3.js), then falls back to a pass that actually
+    executed. Mirror that order here, newest executed pass first, so a multi-set session
+    cannot report another pass's caveats — or none — for the run under review. A session
+    with no executed pass projects empty lists and zero counts.
     """
     analysis_run = None
-    if pass_run_ids:
-        pass_run = db.get(L3PassRun, str(pass_run_ids[0]))
-        analysis_run_id = _pass_run_analysis_run_id(pass_run) if pass_run is not None else None
-        if analysis_run_id:
-            analysis_run = db.get(AnalysisRun, analysis_run_id)
+    if executed_analysis_run_id:
+        analysis_run = db.get(AnalysisRun, str(executed_analysis_run_id))
+    if analysis_run is None:
+        for candidate_id in reversed(list(pass_run_ids or [])):
+            pass_run = db.get(L3PassRun, str(candidate_id))
+            analysis_run_id = _pass_run_analysis_run_id(pass_run) if pass_run is not None else None
+            if analysis_run_id:
+                analysis_run = db.get(AnalysisRun, analysis_run_id)
+                break
     return _result_caveat_projection(analysis_run)
 
 
@@ -20689,9 +20699,15 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
             "downstream_unavailable": list(APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE),
         }
     execution_selection_readiness = _execution_selection_summary(db, session_id=session_id)
+    _recorded_execution_start = (session.summary_json or {}).get("analysis_execution_start")
     result_caveat_state = _selected_pass_result_caveat_projection(
         db,
         pass_run_ids=execution_selection_readiness.get("pass_run_ids") or [],
+        executed_analysis_run_id=(
+            _recorded_execution_start.get("analysis_run_id")
+            if isinstance(_recorded_execution_start, dict)
+            else None
+        ),
     )
     analysis_execution_start_state = (session.summary_json or {}).get("analysis_execution_start")
     execution_result_review_state = (session.summary_json or {}).get("execution_result_review")
