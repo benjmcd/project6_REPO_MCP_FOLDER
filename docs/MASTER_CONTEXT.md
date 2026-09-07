@@ -245,8 +245,9 @@ the structural-break penalty the runner derives it from the data as
 `var(working_series) * ln(n)`, so the always-on caveat surface discloses a scale
 statistic of each analyzed variable. Combined with the co-emitted segment lengths,
 which sum to n, that supports a rounded estimate of the working series' variance
-(the value is rendered at six significant figures, so it is an estimate, not exact
-reconstruction). This was disclosed in general terms when the derived penalty was
+on that surface (the caveat text formats the value with up to six significant
+digits, so it is a close estimate rather than exact reconstruction; the ordinary
+analysis-run API separately returns the unrounded value in `parameters_json`). This was disclosed in general terms when the derived penalty was
 ruled — the ruling recorded that the value and its source would appear in
 `parameters_json` and the caveat — but the inference path was not spelled out.
 Measured observation values, artifact bodies and storage references remain absent. The frozen execution-status contract is unchanged, no route was added,

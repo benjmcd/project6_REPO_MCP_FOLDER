@@ -989,15 +989,8 @@ migration, runtime, build dispatch, B1b build PR, or B1b build merge authority.
   default (c), or invite post-hoc tuning of a parameter the acceptance contract
   forbids retuning (d). Making the surface truthful first is the cheapest change
   that prevents the cross-section-as-time-series error class from reaching a
-  recorded finding, and it makes the registry's declared structural-break penalty
-  match what the runner actually does.
-  (Correction, 2026-09-07: this clause first read "it leaves the method registry
-  describing what the code actually does", which is false as written and is now
-  scoped to the penalty default. The `decomposition` entry declares
-  `sufficient_observations`, `time_regularity` and `stationarity_of_residual`,
-  none of which any runner emits. That over-declaration predates this lane and is
-  recorded here as a known defect; the registry test only checks the
-  emitted-implies-declared direction, so nothing catches the reverse.)
+  recorded finding, and it leaves the method registry describing what the code
+  actually does.
 - Evidence: the rulings and their grounding are recorded in the operator-held
   decision record for 2026-09-06. In-repo evidence is this lane's tests: the
   constant-year fixture is refused as a time index and recommended descriptive
