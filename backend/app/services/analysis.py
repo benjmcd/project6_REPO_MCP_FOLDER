@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -18,7 +19,7 @@ from statsmodels.tsa.seasonal import STL
 
 from app.core.config import settings
 from app.models import AnalysisArtifact, AnalysisRun, AnnotationWindow, AssumptionCheck, CaveatNote, Dataset, DatasetVersion, VariableDefinition, VariableProfile
-from app.services.data_utils import classify_numeric_token, coerce_numeric_series
+from app.services.data_utils import MIN_DISTINCT_TIMESTAMPS_FOR_TIME_INDEX, classify_numeric_token, coerce_numeric_series
 from app.services.dataframe_io import load_version_dataframe
 from app.services.profiling import _detect_stationarity
 
@@ -48,8 +49,8 @@ ANALYSIS_METHOD_REGISTRY: dict[str, AnalysisMethodSpec] = {
         input_scope='dataset_version_with_optional_annotation_window',
         required_dataset_features=('time_column', 'at_least_two_numeric_variables'),
         parameters={'max_lag': {'type': 'integer', 'default': 10}},
-        assumption_checks=('time_ordered_observations', 'series_stationarity'),
-        caveats=('interpretation', 'insufficient_variables', 'degenerate_pairs'),
+        assumption_checks=('time_ordered_observations', 'time_index_variation', 'series_stationarity'),
+        caveats=('interpretation', 'non_varying_time_index', 'insufficient_variables', 'degenerate_pairs'),
         artifact_types=('cross_correlation_result', 'cross_correlation_plot'),
         runner='cross_correlation',
     ),
@@ -60,7 +61,7 @@ ANALYSIS_METHOD_REGISTRY: dict[str, AnalysisMethodSpec] = {
         input_scope='dataset_version_with_optional_annotation_window',
         required_dataset_features=('time_column', 'at_least_one_numeric_variable'),
         parameters={},
-        assumption_checks=('sufficient_observations', 'time_regularity', 'stationarity_of_residual'),
+        assumption_checks=('time_index_variation', 'sufficient_observations', 'time_regularity', 'stationarity_of_residual'),
         caveats=(
             'missing_time_index',
             'insufficient_observations',
@@ -79,12 +80,13 @@ ANALYSIS_METHOD_REGISTRY: dict[str, AnalysisMethodSpec] = {
         input_scope='dataset_version_with_optional_annotation_window',
         required_dataset_features=('time_column', 'at_least_one_numeric_variable'),
         parameters={
-            'penalty': {'type': 'number', 'default': 8.0},
+            # No fixed default: when absent, the runner derives var(working_series) * ln(n) per variable.
+            'penalty': {'type': 'number', 'default': None, 'derived': 'variance_log_n'},
             'minimum_segment_flag': {'type': 'integer', 'default': 12},
             'min_size': {'type': 'integer', 'default': 3},
             'model': {'type': 'string', 'default': 'l2'},
         },
-        assumption_checks=('minimum_segment_length', 'stationarity_required_for_break_test'),
+        assumption_checks=('time_index_variation', 'minimum_segment_length', 'stationarity_required_for_break_test'),
         caveats=(
             'missing_time_index',
             'penalty_sensitivity',
@@ -281,6 +283,35 @@ def _pairwise_lag_correlation(series_a: pd.Series, series_b: pd.Series, max_lag:
     return out
 
 
+def _time_index_distinct_count(df: pd.DataFrame, dataset: Dataset) -> int:
+    if not dataset.time_column or dataset.time_column not in df.columns:
+        return 0
+    return int(pd.to_datetime(df[dataset.time_column], errors='coerce', utc=True).dropna().nunique())
+
+
+def _record_time_index_variation(db: Session, run: AnalysisRun, df: pd.DataFrame, dataset: Dataset) -> bool:
+    """Record the time_index_variation check; True when the stored time index has >= 2 distinct timestamps."""
+    distinct_count = _time_index_distinct_count(df, dataset)
+    varies = distinct_count >= MIN_DISTINCT_TIMESTAMPS_FOR_TIME_INDEX
+    db.add(AssumptionCheck(
+        analysis_run_id=run.analysis_run_id,
+        assumption_name='time_index_variation',
+        check_method='distinct_timestamp_count',
+        check_result='pass' if varies else 'fail',
+        severity='medium' if varies else 'high',
+        notes=f'time_column={dataset.time_column or "none"}; distinct_timestamps={distinct_count}',
+    ))
+    return varies
+
+
+def _non_varying_time_index_message(method_label: str, dataset: Dataset) -> str:
+    return (
+        f'{method_label} requires a time index that varies; the stored time index '
+        f'{dataset.time_column!r} has fewer than {MIN_DISTINCT_TIMESTAMPS_FOR_TIME_INDEX} distinct timestamps, '
+        'so the observations cannot be ordered in time.'
+    )
+
+
 def _get_time_frame(df: pd.DataFrame, dataset: Dataset, variable_name: str) -> pd.DataFrame:
     if not dataset.time_column or dataset.time_column not in df.columns:
         return pd.DataFrame(columns=['time', 'value'])
@@ -436,8 +467,12 @@ def _run_cross_correlation(db: Session, run: AnalysisRun, dataset_version_id: st
         if series.notna().sum() >= 2:
             numeric_cols.append(c)
     max_lag = int(run.parameters_json.get('max_lag', 10))
-    time_check_result = 'pass' if dataset.time_column else 'fail'
+    time_index_varies = _record_time_index_variation(db, run, df, dataset)
+    time_check_result = 'pass' if dataset.time_column and time_index_varies else 'fail'
     db.add(AssumptionCheck(analysis_run_id=run.analysis_run_id, assumption_name='time_ordered_observations', check_method='time_column_present', check_result=time_check_result, severity='high', notes='cross-correlation requires ordered observations'))
+    if dataset.time_column and not time_index_varies:
+        db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='non_varying_time_index', severity='high', message=_non_varying_time_index_message('Cross-correlation', dataset)))
+        return
     profile_map = {var.variable_name: profile for profile, var in db.query(VariableProfile, VariableDefinition).join(VariableDefinition, VariableProfile.variable_id == VariableDefinition.variable_id).filter(VariableProfile.dataset_version_id == dataset_version_id).all()}
     hints = [profile_map[n].stationarity_hint for n in numeric_cols if n in profile_map and profile_map[n].stationarity_hint]
     nonstationary = [h for h in hints if h in NONSTATIONARY_HINTS]
@@ -722,8 +757,12 @@ def _run_descriptive_summary(db: Session, run: AnalysisRun, dataset_version_id: 
 
 def _run_decomposition(db: Session, run: AnalysisRun, dataset_version_id: str, dataset: Dataset, df: pd.DataFrame) -> None:
     profile_map, _, numeric_cols, has_time = _profile_maps(db, dataset_version_id)
+    time_index_varies = _record_time_index_variation(db, run, df, dataset)
     if not has_time:
         db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='missing_time_index', severity='high', message='Decomposition requires a time-indexed dataset.'))
+        return
+    if not time_index_varies:
+        db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='missing_time_index', severity='high', message=_non_varying_time_index_message('Decomposition', dataset)))
         return
     artifact_count = 0
     for variable_name in numeric_cols:
@@ -795,16 +834,45 @@ def _confidence_proxy(series: pd.Series, breakpoint: int, window: int = 5) -> fl
     return float(delta / std)
 
 
+PENALTY_SOURCE_EXPLICIT = 'explicit'
+PENALTY_SOURCE_DERIVED = 'derived_variance_log_n'
+
+
+def _derived_break_penalty(series: pd.Series) -> float:
+    """Scale-aware default PELT penalty: sample variance of the working series times ln(n).
+
+    An l2 segment cost scales with the series variance, so a fixed penalty is negligible on
+    large-scale residuals and over-suppressive on small-scale ones. This is a descriptive
+    heuristic, not calibrated inference; the caveat note says so per variable.
+    """
+    return float(series.var(ddof=1)) * math.log(int(len(series)))
+
+
+def _penalty_sensitivity_message(variable_name: str, penalty: float, penalty_source: str, source_label: str) -> str:
+    message = (
+        f'{variable_name}: structural break detection is sensitive to the penalty parameter. '
+        f'penalty={penalty:g} (source={penalty_source}, working_series={source_label}).'
+    )
+    if penalty_source == PENALTY_SOURCE_DERIVED:
+        message += ' The derived default is a descriptive heuristic (variance x ln n), not calibrated inference.'
+    return message
+
+
 def _run_structural_break(db: Session, run: AnalysisRun, dataset_version_id: str, dataset: Dataset, df: pd.DataFrame) -> None:
     profile_map, _, numeric_cols, has_time = _profile_maps(db, dataset_version_id)
+    time_index_varies = _record_time_index_variation(db, run, df, dataset)
     if not has_time:
         db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='missing_time_index', severity='high', message='Structural break detection requires a time-indexed dataset.'))
         return
-    penalty = float(run.parameters_json.get('penalty', 8.0))
+    if not time_index_varies:
+        db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='missing_time_index', severity='high', message=_non_varying_time_index_message('Structural break detection', dataset)))
+        return
+    explicit_penalty = run.parameters_json.get('penalty')
+    penalty_source = PENALTY_SOURCE_EXPLICIT if explicit_penalty is not None else PENALTY_SOURCE_DERIVED
+    derived_penalty_by_variable: dict[str, float] = {}
     min_segment_flag = int(run.parameters_json.get('minimum_segment_flag', 12))
     algo_min_size = int(run.parameters_json.get('min_size', 3))
     model_name = str(run.parameters_json.get('model', 'l2'))
-    db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='penalty_sensitivity', severity='medium', message=f'Structural break detection is sensitive to the penalty parameter. penalty={penalty:g}.'))
     if model_name != 'l2':
         db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='break_model_choice', severity='medium', message=f'Structural break detection is using ruptures model={model_name}, which may detect distributional changes rather than simple mean shifts.'))
     artifact_count = 0
@@ -842,6 +910,13 @@ def _run_structural_break(db: Session, run: AnalysisRun, dataset_version_id: str
             db.add(AssumptionCheck(analysis_run_id=run.analysis_run_id, assumption_name='stationarity_required_for_break_test', check_method='profile_lookup', check_result='warn', severity='medium', notes=f'{variable_name}: {hint or "not_profiled"}'))
             continue
 
+        # The penalty is resolved per variable because the working series differs per variable.
+        if penalty_source == PENALTY_SOURCE_EXPLICIT:
+            penalty = float(explicit_penalty)
+        else:
+            penalty = _derived_break_penalty(series)
+            derived_penalty_by_variable[variable_name] = penalty
+        db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='penalty_sensitivity', severity='medium', message=_penalty_sensitivity_message(variable_name, penalty, penalty_source, source_label)))
         algo = rpt.Pelt(model=model_name, min_size=algo_min_size).fit(series.to_numpy(dtype=float))
         raw_breaks = algo.predict(pen=penalty)
         internal_breaks = [int(bp) for bp in raw_breaks if int(bp) < len(series)]
@@ -889,6 +964,12 @@ def _run_structural_break(db: Session, run: AnalysisRun, dataset_version_id: str
         artifact_count += 2
     if artifact_count == 0:
         db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='no_structural_break_artifacts', severity='medium', message='No variables produced structural break artifacts.'))
+    # parameters_json is an untracked JSON column: reassign the whole dict so the change is
+    # flagged dirty and survives run_analysis()'s commit + refresh (in-place mutation would not).
+    penalty_record: dict[str, Any] = {'penalty_source': penalty_source}
+    if penalty_source == PENALTY_SOURCE_DERIVED:
+        penalty_record['derived_penalty_by_variable'] = derived_penalty_by_variable
+    run.parameters_json = {**(run.parameters_json or {}), **penalty_record}
 
 
 def run_analysis(db: Session, dataset_version_id: str, method_name: str, goal_type: str | None, parameters: dict[str, Any], annotation_window_id: str | None) -> AnalysisRun:

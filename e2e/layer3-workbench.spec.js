@@ -25936,3 +25936,196 @@ test('Analysis Products generate form: catalog populates method dropdown and sta
   await expect(page.locator('#apw-inventory-view')).toContainText('diagnostic');
   await expect(page.locator('#apw-inventory-view')).toContainText('draft');
 });
+
+const HONEST_RESULT_CAVEAT = {
+  caveat_type: 'insufficient_observations',
+  severity: 'high',
+  message: 'value: STL requires at least 24 observations for this workflow.',
+};
+const HONEST_RESULT_CHECK = {
+  assumption_name: 'sufficient_observations',
+  check_method: 'row_count_threshold',
+  check_result: 'fail',
+  severity: 'high',
+  notes: 'value: n=3',
+};
+
+function controlledReviewReadySummary(overrides = {}) {
+  return {
+    schema_id: 'layer3.workbench_session_summary.v1',
+    session_id: 'honest-result-session',
+    execution_selection: {
+      schema_id: 'layer3.execution_selection_readiness.v1',
+      available: false,
+      selected: true,
+      state: 'execution_pass_completed',
+      analysis_plan_id: 'plan-honest-result',
+      source_preview_id: 'preview-honest-result',
+      source_preview_hash: 'hash-honest-result',
+      pass_run_ids: ['pass-honest-result'],
+      pass_run_count: 1,
+      execution_started: true,
+      analysis_run_ids: ['run-honest-result'],
+      pass_run_statuses: { 'pass-honest-result': 'completed' },
+    },
+    analysis_execution_start: { state: 'execution_pass_completed' },
+    execution_result_review: { schema_id: 'layer3.execution_result_review_state.v1', available: true, state: null },
+    caveats: [HONEST_RESULT_CAVEAT],
+    assumption_checks: [HONEST_RESULT_CHECK],
+    caveat_count: 1,
+    assumption_check_count: 1,
+    outcome_summary: null,
+    ...overrides,
+  };
+}
+
+function controlledReviewReadyStatus(overrides = {}) {
+  return {
+    schema_id: 'layer3.execution_result_status.v1',
+    status: 'available',
+    result_status_available: true,
+    session_id: 'honest-result-session',
+    analysis_plan_id: 'plan-honest-result',
+    pass_run_id: 'pass-honest-result',
+    analysis_run_id: 'run-honest-result',
+    pass_run_status: 'completed',
+    execution_started: true,
+    engine_family: 'wrapped_quantitative_analysis',
+    preview_identity: { preview_id: 'preview-honest-result', preview_hash: 'hash-honest-result' },
+    output_metadata_summary: { readable: true, artifact_count: 2, selected_method_name: 'decomposition' },
+    ...overrides,
+  };
+}
+
+async function renderControlledReviewReadyPanel(page, summary, status) {
+  await page.evaluate(({ summary: controlledSummary, status: controlledStatus }) => {
+    State.sessionSummary = controlledSummary;
+    State.resultStatus = controlledStatus;
+    State.resultStatusError = null;
+    State.resultReview = null;
+    State.resultReviewError = null;
+    renderAll();
+    setGateControls();
+  }, { summary, status });
+}
+
+test('Layer 3 workbench renders selected-run caveats and assumption checks before the review decision', async ({ page }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+
+  await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
+  const panel = page.locator('#result-review-panel');
+  const caveatCard = page.locator('#result-review-caveats');
+  await expect(panel).toContainText('result_review_ui_review_ready');
+  await expect(panel).toContainText('selected method: decomposition');
+  await expect(caveatCard).toBeVisible();
+  await expect(caveatCard).toContainText('Caveats and Assumption Checks');
+  await expect(caveatCard).toContainText('caveats (1)');
+  await expect(caveatCard).toContainText('[high] insufficient_observations: value: STL requires at least 24 observations for this workflow.');
+  await expect(caveatCard).toContainText('assumption checks (1)');
+  await expect(caveatCard).toContainText('sufficient_observations (row_count_threshold): fail [high] value: n=3');
+  await expect(caveatCard).not.toContainText('expected for this outcome');
+  // The decision has not been taken: the submit control is armed but never clicked.
+  await expect(page.locator('#result-review-submit')).toBeEnabled();
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, ['/execution/result/review']);
+
+  await renderControlledReviewReadyPanel(
+    page,
+    controlledReviewReadySummary({
+      caveats: [
+        { caveat_type: 'penalty_sensitivity', severity: 'medium', message: 'value: structural break detection is sensitive to the penalty parameter. penalty=3.1e+10 (source=derived_variance_log_n, working_series=stl_residual). The derived default is a descriptive heuristic (variance x ln n), not calibrated inference.' },
+        { caveat_type: 'no_breakpoints_detected', severity: 'low', message: 'value: no structural breakpoints were detected at penalty=3.1e+10 using model=l2.' },
+        { caveat_type: 'no_structural_break_artifacts', severity: 'medium', message: 'No variables produced structural break artifacts.' },
+      ],
+      caveat_count: 3,
+      outcome_summary: {
+        outcome: 'no_breakpoints_detected',
+        artifact_absence_expected: true,
+        message: 'No structural breakpoints were detected for any analyzed variable at the penalty used; the absent structural-break artifact is the expected outcome for this run, not a failure.',
+      },
+    }),
+    controlledReviewReadyStatus({ output_metadata_summary: { readable: true, artifact_count: 0, selected_method_name: 'structural_break' } }),
+  );
+  await expect(panel).toContainText('result_review_ui_review_ready');
+  await expect(caveatCard).toContainText('outcome: no_breakpoints_detected');
+  await expect(caveatCard).toContainText('structural-break artifact: absent (expected for this outcome, not a failure)');
+  await expect(caveatCard).toContainText('the absent structural-break artifact is the expected outcome for this run, not a failure.');
+  await expect(caveatCard).toContainText('[low] no_breakpoints_detected: value: no structural breakpoints were detected at penalty=3.1e+10 using model=l2.');
+  await expect(page.locator('#result-review-submit')).toBeEnabled();
+
+  await renderControlledReviewReadyPanel(
+    page,
+    controlledReviewReadySummary({ caveats: [], assumption_checks: [], caveat_count: 0, assumption_check_count: 0 }),
+    controlledReviewReadyStatus(),
+  );
+  await expect(caveatCard).toContainText('no caveats recorded');
+  await expect(caveatCard).toContainText('no assumption checks recorded');
+  await expect(caveatCard).not.toContainText('expected for this outcome');
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, ['/execution/result/review']);
+  await expectNoDeferredRawMixedControls(page);
+});
+
+test('Layer 3 workbench shows selected-run caveats before the decision and after reopen by pasted session id', async ({ page, request }) => {
+  const executed = await prepareExecutedLayer3Session(request);
+  expect(['completed', 'completed_with_warnings']).toContain(executed.start.pass_run_status);
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await attachSessionToWorkbench(page, executed.seed.session_id);
+  await reloadRecoveredExecutionSession(page, executed.seed.session_id);
+
+  const statusResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/execution/result/status')
+  ));
+  await page.locator('#result-status-inspect').click();
+  const status = await expectJson(await statusResponsePromise);
+  expect(status.result_status_available).toBe(true);
+  const panel = page.locator('#result-review-panel');
+  const caveatCard = page.locator('#result-review-caveats');
+  await expect(panel).toContainText('result_review_ui_review_ready');
+  await expect(caveatCard).toContainText('Browser harness deterministic caveat: results are synthetic.');
+  await expect(caveatCard).toContainText('sufficient_observations (row_count_threshold): pass');
+  await expect(page.locator('#result-review-submit')).toBeEnabled();
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, ['/execution/result/review']);
+
+  // Fresh page without a recovery anchor: nothing is loaded until the operator pastes an id.
+  await page.evaluate(() => localStorage.removeItem('layer3_workbench_session_recovery_v1'));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => typeof State !== 'undefined' && !!State.bootstrap);
+  await expect(panel).toContainText('result_review_ui_unavailable');
+  const reopenInput = page.locator('#result-session-reopen-id');
+  const reopenButton = page.locator('#result-session-reopen');
+  await expect(reopenInput).toBeVisible();
+  await expect(reopenButton).toBeDisabled();
+  await reopenInput.fill(executed.seed.session_id);
+  await expect(reopenButton).toBeEnabled();
+
+  const summaryResponsePromise = page.waitForResponse((response) => (
+    response.url().includes(`/api/v1/layer3/session/${executed.seed.session_id}`)
+    && response.request().method() === 'GET'
+  ));
+  await reopenButton.click();
+  const summary = await expectJson(await summaryResponsePromise);
+  expect(summary.session_id).toBe(executed.seed.session_id);
+  expect(summary.caveat_count).toBeGreaterThan(0);
+  expect(summary.assumption_check_count).toBeGreaterThan(0);
+  expect(summary.caveats.map((item) => item.message)).toContain('Browser harness deterministic caveat: results are synthetic.');
+  expect(summary.assumption_checks.map((item) => item.check_method)).toContain('row_count_threshold');
+  expect(JSON.stringify(summary.caveats)).not.toContain('storage_ref');
+  await expect(panel).toContainText(executed.seed.session_id);
+  await expect(caveatCard).toContainText('Browser harness deterministic caveat: results are synthetic.');
+  await expect(caveatCard).toContainText('sufficient_observations (row_count_threshold): pass');
+  await expect(page.locator('#execution-step-chip')).toHaveAttribute('data-available', 'true');
+
+  await reopenInput.fill('session-does-not-exist');
+  const missingResponsePromise = page.waitForResponse((response) => (
+    response.url().includes('/api/v1/layer3/session/session-does-not-exist')
+  ));
+  await reopenButton.click();
+  expect((await missingResponsePromise).status()).toBe(404);
+  await expect(panel).toContainText('session_not_found');
+  // A failed reopen never clobbers the session that is already loaded.
+  await expect(panel).toContainText(executed.seed.session_id);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, ['/execution/result/review']);
+  await expectNoDeferredRawMixedControls(page);
+});

@@ -86,20 +86,30 @@ def parse_time_series(series: pd.Series, column_name: str | None = None) -> pd.S
     return pd.to_datetime(s, errors="coerce")
 
 
+MIN_DISTINCT_TIMESTAMPS_FOR_TIME_INDEX = 2
+
+
+def parsed_time_index_varies(parsed: pd.Series) -> bool:
+    """A time index needs at least two distinct parsed timestamps; one period is a cross-section."""
+    return int(pd.Series(parsed).dropna().nunique()) >= MIN_DISTINCT_TIMESTAMPS_FOR_TIME_INDEX
+
+
 def infer_time_column(df: pd.DataFrame, explicit: str | None) -> str | None:
     if explicit and explicit in df.columns:
-        return explicit
+        # An explicit time column must still vary; a constant column (for example
+        # Year=2025_estimated on every row) must not mark the dataset time-indexed.
+        return explicit if parsed_time_index_varies(parse_time_series(df[explicit], explicit)) else None
     named_candidates = [c for c in df.columns if time_like_column_name(str(c))]
     for col in named_candidates:
         parsed = parse_time_series(df[col], col)
-        if parsed.notna().mean() >= 0.8:
+        if parsed.notna().mean() >= 0.8 and parsed_time_index_varies(parsed):
             return col
     for col in df.columns:
         series = df[col]
         if pd.api.types.is_numeric_dtype(series):
             continue
         parsed = parse_time_series(series, str(col))
-        if parsed.notna().mean() >= 0.9:
+        if parsed.notna().mean() >= 0.9 and parsed_time_index_varies(parsed):
             return col
     return None
 

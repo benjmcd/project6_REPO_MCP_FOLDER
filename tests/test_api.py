@@ -232,10 +232,18 @@ def test_analysis_method_registry_describes_current_methods_only() -> None:
     assert list(registry) == list(SUPPORTED_ANALYSIS_METHOD_IDS)
     assert registry["cross_correlation"]["parameters"]["max_lag"]["default"] == 10
     assert registry["decomposition"]["artifact_types"] == ("decomposition_components", "decomposition_plot")
-    assert registry["structural_break"]["parameters"]["penalty"]["default"] == 8.0
+    # D-c: the penalty has no fixed default any more; when a caller omits it the runner derives
+    # var(working_series) * ln(n) per variable, so the registry declares the derived shape truthfully.
+    assert registry["structural_break"]["parameters"]["penalty"] == {"type": "number", "default": None, "derived": "variance_log_n"}
     assert registry["structural_break"]["parameters"]["model"]["default"] == "l2"
     assert registry["descriptive_summary"]["artifact_types"] == ("descriptive_summary_result",)
     assert registry["descriptive_summary"]["parameters"] == {}
+    # D-b: every time-series runner records the time-index variation check, and cross-correlation
+    # declares the refusal caveat it emits when the stored time index does not vary.
+    for method_id in ("cross_correlation", "decomposition", "structural_break"):
+        assert "time_index_variation" in registry[method_id]["assumption_checks"], method_id
+    assert "non_varying_time_index" in registry["cross_correlation"]["caveats"]
+    assert "time_index_variation" not in registry["descriptive_summary"]["assumption_checks"]
 
 
 def test_descriptive_summary_runs_deterministic_json_without_widening_scope():
@@ -10387,3 +10395,376 @@ def test_cftc_cot_support_matrix_mirror_and_runtime_probe():
     payload = audit.PROBES["cftc_cot_anonymous_connector_slice"]()
     assert payload["status"] == "completed"
     assert payload["auth_mode"] == "anonymous"
+
+
+# ---------------------------------------------------------------------------
+# D-b: a time-like column must carry >= 2 distinct parsed timestamps to mark a
+# dataset time-indexed (the T3 "Year=2025_estimated" cross-section error class).
+# ---------------------------------------------------------------------------
+
+_MONTHLY_36 = [f'{2021 + i // 12}-{i % 12 + 1:02d}-01' for i in range(36)]
+
+
+def _constant_year_csv(rows: int = 52) -> bytes:
+    lines = ['Year,value_a,value_b']
+    for i in range(rows):
+        lines.append(f'2025_estimated,{10 + i * 0.5:.2f},{100 - i * 0.25:.2f}')
+    return ('\n'.join(lines) + '\n').encode()
+
+
+def test_infer_time_column_requires_two_distinct_parsed_timestamps():
+    from app.services.data_utils import infer_time_column
+
+    constant_year = pd.DataFrame({'Year': ['2025_estimated'] * 52, 'value_a': range(52), 'value_b': range(52)})
+    assert infer_time_column(constant_year, None) is None
+    assert infer_time_column(constant_year, 'Year') is None
+
+    varying_year = pd.DataFrame({'Year': [str(1990 + i) for i in range(36)], 'value_a': range(36), 'value_b': range(36)})
+    assert infer_time_column(varying_year, None) == 'Year'
+    assert infer_time_column(varying_year, 'Year') == 'Year'
+
+    two_periods = pd.DataFrame({'Year': ['2024', '2025'], 'value_a': [1, 2]})
+    assert infer_time_column(two_periods, None) == 'Year'
+
+    constant_date_varying_period = pd.DataFrame({
+        'date': ['2025-01-01'] * 12,
+        'period': _MONTHLY_36[:12],
+        'value_a': range(12),
+    })
+    assert infer_time_column(constant_date_varying_period, None) == 'period'
+
+
+def test_constant_time_like_column_does_not_mark_dataset_time_indexed():
+    from app.models import Dataset, VariableDefinition
+    from app.services.data_utils import is_semantically_numeric
+
+    for explicit_time_column in (None, 'Year'):
+        data = {'name': f'Cross-section {explicit_time_column}', 'description': 'constant Year column', 'domain_pack': 'commodity'}
+        if explicit_time_column:
+            data['primary_time_column'] = explicit_time_column
+        response = client.post(
+            '/api/v1/sources/upload',
+            files={'file': ('constant_year.csv', io.BytesIO(_constant_year_csv()), 'text/csv')},
+            data=data,
+        )
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert payload['time_column'] is None, explicit_time_column
+        assert payload['row_count'] == 52
+        dataset_id = payload['dataset_id']
+        version_id = payload['dataset_version_id']
+
+        detail = client.get(f'/api/v1/datasets/{dataset_id}')
+        assert detail.status_code == 200, detail.text
+        assert detail.json()['time_column'] is None
+
+        db = TestingSessionLocal()
+        try:
+            # ingest.py: dataset-level time_column stays None (:114).
+            assert db.get(Dataset, dataset_id).time_column is None
+            variables = {
+                item.variable_name: item
+                for item in db.query(VariableDefinition).filter(VariableDefinition.dataset_version_id == version_id).all()
+            }
+            year = variables['Year']
+            # ingest.py: the refused column takes the measure path (:149-150) and is never a time index (:161).
+            assert year.role == 'measure'
+            assert year.is_time_index is False
+            assert year.dtype != 'datetime64[ns]'
+            # `is_semantically_numeric` returns a numpy bool, so compare by value, not identity.
+            assert year.is_numeric == bool(is_semantically_numeric(pd.Series(['2025_estimated'] * 52)))
+            assert all(item.is_time_index is False for item in variables.values())
+            assert variables['value_a'].is_numeric is True
+            assert variables['value_b'].is_numeric is True
+            # ingest.py: row persistence (:165) receives time_column=None, so no timestamp parsing is applied.
+            version = db.get(DatasetVersion, version_id)
+            stored = pd.read_parquet(version.storage_ref)
+            assert not pd.api.types.is_datetime64_any_dtype(stored['Year'])
+            assert stored['Year'].astype(str).iloc[0] == '2025_estimated'
+        finally:
+            db.close()
+
+        recommendation = client.post(
+            f'/api/v1/datasets/{dataset_id}/versions/{version_id}/analysis/recommend',
+            json={'goal_type': 'exploratory'},
+        )
+        assert recommendation.status_code == 200, recommendation.text
+        assert recommendation.json()['recommended_sequence'] == ['descriptive_summary']
+
+
+def _seed_stored_non_varying_time_index_version(version_id: str) -> str:
+    from app.models import Dataset, VariableDefinition, VariableProfile
+
+    db = TestingSessionLocal()
+    try:
+        dataset = Dataset(
+            dataset_id=f'ds-{version_id}',
+            name='Stored constant time index',
+            description='time column marked as index but every parsed timestamp is identical',
+            domain_pack='macro',
+            frequency_hint=None,
+            time_column='observed_at',
+        )
+        version = DatasetVersion(
+            dataset_version_id=version_id,
+            dataset_id=dataset.dataset_id,
+            version_label='v1',
+            version_type='raw',
+            status='ready',
+            row_count=30,
+        )
+        observed_at = VariableDefinition(
+            variable_id=f'var-time-{version_id}',
+            dataset_version_id=version_id,
+            variable_name='observed_at',
+            dtype='datetime64[ns]',
+            role='time_index',
+            is_numeric=False,
+            is_time_index=True,
+            ordinal_position=0,
+        )
+        numeric_variables = [
+            VariableDefinition(
+                variable_id=f'var-{name}-{version_id}',
+                dataset_version_id=version_id,
+                variable_name=name,
+                dtype='float64',
+                role='measure',
+                is_numeric=True,
+                is_time_index=False,
+                ordinal_position=position,
+            )
+            for position, name in ((1, 'value_a'), (2, 'value_b'))
+        ]
+        profiles = [
+            VariableProfile(
+                variable_profile_id=f'profile-{variable.variable_name}-{version_id}',
+                dataset_version_id=version_id,
+                variable_id=variable.variable_id,
+                seasonality_flag=False,
+                stationarity_hint='likely_stationary',
+                summary_json={},
+            )
+            for variable in numeric_variables
+        ]
+        db.add_all([dataset, version, observed_at, *numeric_variables, *profiles])
+        db.flush()
+        rows = ['observed_at,value_a,value_b']
+        for i in range(30):
+            rows.append(f'2025-01-01,{10 + i},{5 + 2 * i}')
+        storage_path = TEST_STORAGE_DIR / 'datasets' / f'{version_id}.csv'
+        storage_path.parent.mkdir(parents=True, exist_ok=True)
+        storage_path.write_text('\n'.join(rows) + '\n', encoding='utf-8')
+        version.storage_ref = str(storage_path)
+        db.commit()
+    finally:
+        db.close()
+    return version_id
+
+
+@pytest.mark.parametrize(
+    ('method_name', 'refusal_caveat_type'),
+    [
+        ('cross_correlation', 'non_varying_time_index'),
+        ('decomposition', 'missing_time_index'),
+        ('structural_break', 'missing_time_index'),
+    ],
+)
+def test_time_series_runners_refuse_stored_non_varying_time_index(method_name, refusal_caveat_type):
+    version_id = _seed_stored_non_varying_time_index_version(f'dv-constant-time-{method_name}')
+
+    response = client.post(
+        '/api/v1/analysis-runs',
+        json={'dataset_version_id': version_id, 'method_name': method_name, 'goal_type': 'exploratory', 'parameters': {}, 'annotation_window_id': None},
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+
+    assert payload['artifacts'] == []
+    variation_checks = [item for item in payload['assumptions'] if item['assumption_name'] == 'time_index_variation']
+    assert len(variation_checks) == 1
+    assert variation_checks[0]['check_result'] == 'fail'
+    assert variation_checks[0]['severity'] == 'high'
+    assert 'distinct_timestamps=1' in variation_checks[0]['notes']
+    caveat_types = [item['caveat_type'] for item in payload['caveats']]
+    assert refusal_caveat_type in caveat_types
+    refusal = next(item for item in payload['caveats'] if item['caveat_type'] == refusal_caveat_type)
+    assert refusal['severity'] == 'high'
+    assert 'vary' in refusal['message'] or 'distinct' in refusal['message']
+    # The runner returned before computing: no method-specific result caveats or checks.
+    assert 'penalty_sensitivity' not in caveat_types
+    assert 'nonstationary_break_interpretation' not in caveat_types
+    assert not any(item['assumption_name'] == 'series_stationarity' for item in payload['assumptions'])
+    if method_name == 'cross_correlation':
+        ordered = next(item for item in payload['assumptions'] if item['assumption_name'] == 'time_ordered_observations')
+        assert ordered['check_result'] == 'fail'
+
+    # Registry-level: the refusal caveat and the variation check are declared for this method.
+    registry = analysis_method_registry()
+    assert 'time_index_variation' in registry[method_name]['assumption_checks']
+    assert refusal_caveat_type in registry[method_name]['caveats']
+
+
+def test_time_series_runners_record_time_index_variation_pass_on_varying_index():
+    rows = ['date,value_a,value_b']
+    for i, date_value in enumerate(_MONTHLY_36):
+        seasonal = 3 if i % 12 < 6 else -3
+        rows.append(f'{date_value},{10 + i * 0.3 + seasonal:.2f},{20 + 0.5 * i - seasonal:.2f}')
+    response = client.post(
+        '/api/v1/sources/upload',
+        files={'file': ('varying.csv', io.BytesIO(('\n'.join(rows) + '\n').encode()), 'text/csv')},
+        data={'name': 'Varying', 'description': 'varying time index', 'domain_pack': 'macro', 'primary_time_column': 'date'},
+    )
+    assert response.status_code == 200, response.text
+    version_id = response.json()['dataset_version_id']
+    for method_name in ('cross_correlation', 'decomposition', 'structural_break'):
+        run = client.post(
+            '/api/v1/analysis-runs',
+            json={'dataset_version_id': version_id, 'method_name': method_name, 'goal_type': 'exploratory', 'parameters': {}, 'annotation_window_id': None},
+        )
+        assert run.status_code == 200, run.text
+        checks = [item for item in run.json()['assumptions'] if item['assumption_name'] == 'time_index_variation']
+        assert len(checks) == 1, method_name
+        assert checks[0]['check_result'] == 'pass'
+        assert 'distinct_timestamps=36' in checks[0]['notes']
+        assert 'missing_time_index' not in {item['caveat_type'] for item in run.json()['caveats']}
+        assert 'non_varying_time_index' not in {item['caveat_type'] for item in run.json()['caveats']}
+
+
+# ---------------------------------------------------------------------------
+# D-c: scale-aware default structural-break penalty derived per variable when
+# the caller omits `penalty`; explicit callers are unchanged.
+# ---------------------------------------------------------------------------
+
+
+def _upload_two_variable_monthly_series(name: str, scale: float) -> tuple[str, str]:
+    rows = ['date,value_a,value_b']
+    for i, date_value in enumerate(_MONTHLY_36):
+        seasonal = 0.3 * scale if i % 12 < 6 else -0.3 * scale
+        shift = 0.0 if i < 24 else 0.5 * scale
+        noise = ((i * 7919) % 13 - 6) / 6.0 * 0.05 * scale
+        rows.append(f'{date_value},{scale + i * 0.03 * scale + seasonal + shift + noise:.4f},{2 * scale + 0.05 * scale * i - seasonal + shift - noise:.4f}')
+    response = client.post(
+        '/api/v1/sources/upload',
+        files={'file': (f'{name}.csv', io.BytesIO(('\n'.join(rows) + '\n').encode()), 'text/csv')},
+        data={'name': name, 'description': 'derived penalty fixture', 'domain_pack': 'macro', 'primary_time_column': 'date'},
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    profile_response = client.post(
+        f'/api/v1/datasets/{payload["dataset_id"]}/versions/{payload["dataset_version_id"]}/profile',
+        json={'detect_seasonality': True, 'detect_stationarity': True},
+    )
+    assert profile_response.status_code == 200, profile_response.text
+    return payload['dataset_id'], payload['dataset_version_id']
+
+
+def _artifact_payload(artifact: dict) -> dict:
+    from pathlib import Path as _Path
+    import json as _json
+
+    return _json.loads((_Path(os.environ['STORAGE_DIR']) / 'artifacts' / _Path(artifact['storage_ref']).name).read_text())
+
+
+def test_structural_break_derives_scale_aware_penalty_per_variable_when_absent():
+    import math
+
+    from app.models import AnalysisRun
+
+    _, version_id = _upload_two_variable_monthly_series('usd-scale-derived-penalty', 1_000_000.0)
+
+    decomposition = client.post(
+        '/api/v1/analysis-runs',
+        json={'dataset_version_id': version_id, 'method_name': 'decomposition', 'goal_type': 'exploratory', 'parameters': {}, 'annotation_window_id': None},
+    )
+    assert decomposition.status_code == 200, decomposition.text
+    residual_by_variable = {}
+    for artifact in decomposition.json()['artifacts']:
+        if artifact['artifact_type'] == 'decomposition_components':
+            payload = _artifact_payload(artifact)
+            residual_by_variable[payload['variable_name']] = pd.Series([v for v in payload['residual'] if v is not None], dtype=float)
+    assert set(residual_by_variable) == {'value_a', 'value_b'}
+
+    breaks = client.post(
+        '/api/v1/analysis-runs',
+        json={'dataset_version_id': version_id, 'method_name': 'structural_break', 'goal_type': 'exploratory', 'parameters': {}, 'annotation_window_id': None},
+    )
+    assert breaks.status_code == 200, breaks.text
+    break_payload = breaks.json()
+    parameters = break_payload['parameters_json']
+
+    assert parameters['penalty_source'] == 'derived_variance_log_n'
+    assert 'penalty' not in parameters
+    derived = parameters['derived_penalty_by_variable']
+    assert set(derived) == {'value_a', 'value_b'}
+    for variable_name, residual in residual_by_variable.items():
+        expected = float(residual.var(ddof=1)) * math.log(len(residual))
+        assert derived[variable_name] == pytest.approx(expected, rel=1e-9), variable_name
+        # USD-scale residuals: the fixed 8.0 would have been negligible against these magnitudes.
+        assert derived[variable_name] > 1e6
+
+    sensitivity = [item for item in break_payload['caveats'] if item['caveat_type'] == 'penalty_sensitivity']
+    assert len(sensitivity) == 2
+    messages_by_variable = {item['message'].split(':', 1)[0]: item['message'] for item in sensitivity}
+    assert set(messages_by_variable) == {'value_a', 'value_b'}
+    for variable_name, message in messages_by_variable.items():
+        assert f'penalty={derived[variable_name]:g}' in message
+        assert 'source=derived_variance_log_n' in message
+        assert 'working_series=cached_stl_residual' in message
+        assert 'heuristic' in message
+        assert 'not calibrated inference' in message
+
+    for artifact in break_payload['artifacts']:
+        if artifact['artifact_type'] == 'structural_break_result':
+            payload = _artifact_payload(artifact)
+            assert payload['penalty_used'] == pytest.approx(derived[payload['variable_name']])
+    for item in break_payload['caveats']:
+        if item['caveat_type'] == 'no_breakpoints_detected':
+            variable_name = item['message'].split(':', 1)[0]
+            assert f'penalty={derived[variable_name]:g}' in item['message']
+
+    # Durable persistence: parameters_json was reassigned as a whole dict, so the refreshed
+    # row (fresh session, after commit) carries the derived values.
+    db = TestingSessionLocal()
+    try:
+        stored = db.get(AnalysisRun, break_payload['analysis_run_id'])
+        db.refresh(stored)
+        assert stored.parameters_json == parameters
+        assert stored.parameters_json['derived_penalty_by_variable'] == derived
+    finally:
+        db.close()
+
+
+def test_structural_break_explicit_penalty_keeps_scalar_and_records_explicit_source():
+    from app.models import AnalysisRun
+
+    _, version_id = _upload_two_variable_monthly_series('explicit-penalty', 10.0)
+
+    breaks = client.post(
+        '/api/v1/analysis-runs',
+        json={'dataset_version_id': version_id, 'method_name': 'structural_break', 'goal_type': 'exploratory', 'parameters': {'penalty': 2.0}, 'annotation_window_id': None},
+    )
+    assert breaks.status_code == 200, breaks.text
+    break_payload = breaks.json()
+    parameters = break_payload['parameters_json']
+
+    assert parameters['penalty'] == 2.0
+    assert parameters['penalty_source'] == 'explicit'
+    assert 'derived_penalty_by_variable' not in parameters
+    sensitivity = [item for item in break_payload['caveats'] if item['caveat_type'] == 'penalty_sensitivity']
+    assert len(sensitivity) == 2
+    for item in sensitivity:
+        assert 'penalty=2 ' in item['message'] or 'penalty=2.' in item['message'] or 'penalty=2,' in item['message'] or 'penalty=2)' in item['message']
+        assert 'source=explicit' in item['message']
+        assert 'heuristic' not in item['message']
+    for artifact in break_payload['artifacts']:
+        if artifact['artifact_type'] == 'structural_break_result':
+            assert _artifact_payload(artifact)['penalty_used'] == 2.0
+
+    db = TestingSessionLocal()
+    try:
+        stored = db.get(AnalysisRun, break_payload['analysis_run_id'])
+        db.refresh(stored)
+        assert stored.parameters_json == {'penalty': 2.0, 'penalty_source': 'explicit'}
+    finally:
+        db.close()

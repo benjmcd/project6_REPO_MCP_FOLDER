@@ -108,6 +108,7 @@ from app.services.layer3_execution_review import (
     execution_result_review_response as _execution_result_review_response,
     execution_result_review_from_pass_run as _execution_result_review_from_pass_run,
     normalize_result_review_items as _normalize_result_review_items,
+    result_caveat_projection as _result_caveat_projection,
     result_review_trace_summary as _result_review_trace_summary,
 )
 from app.services.layer3_execution_selection import (
@@ -6679,6 +6680,9 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
     )
 
     analysis_run_id = str(status_body.get("analysis_run_id") or "").strip() or None
+    # Read-time caveat projection for the response bodies only; never merged into the
+    # persisted review_state (pass_run.summary_json / session.summary_json replay it).
+    result_caveats = _result_caveat_projection(db.get(AnalysisRun, analysis_run_id) if analysis_run_id else None)
     reviewed_items, unresolved_trace_count = _normalize_result_review_items(
         items=payload.get("reviewed_output_items"),
         session_id=session_id,
@@ -6742,7 +6746,7 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
                 preview_hash=preview_hash,
                 pass_run=pass_run,
                 analysis_run_id=analysis_run_id,
-                review_state=existing_review,
+                review_state={**existing_review, **result_caveats},
             )
         raise Layer3WorkbenchError(
             "execution_result_review_already_recorded",
@@ -6842,7 +6846,7 @@ def execution_result_review(db: Session, payload: dict[str, Any]) -> dict[str, A
         preview_hash=preview_hash,
         pass_run=pass_run,
         analysis_run_id=analysis_run_id,
-        review_state=review_state,
+        review_state={**review_state, **result_caveats},
     )
 
 
@@ -20573,6 +20577,21 @@ def _external_local_export_summary(
     )
 
 
+def _selected_pass_result_caveat_projection(db: Session, *, pass_run_ids: list[str]) -> dict[str, Any]:
+    """Text-only caveats/assumption checks for the selected pass run's analysis run, read at request time.
+
+    The selected pass is the first server-ordered pass run (the same authority the review
+    panel resolves); a pass without an analysis run projects empty lists and zero counts.
+    """
+    analysis_run = None
+    if pass_run_ids:
+        pass_run = db.get(L3PassRun, str(pass_run_ids[0]))
+        analysis_run_id = _pass_run_analysis_run_id(pass_run) if pass_run is not None else None
+        if analysis_run_id:
+            analysis_run = db.get(AnalysisRun, analysis_run_id)
+    return _result_caveat_projection(analysis_run)
+
+
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = _latest_selection_manifest_for_session(db, session=session)
@@ -20670,6 +20689,10 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
             "downstream_unavailable": list(APPROVED_PLAN_CANCEL_DOWNSTREAM_UNAVAILABLE),
         }
     execution_selection_readiness = _execution_selection_summary(db, session_id=session_id)
+    result_caveat_state = _selected_pass_result_caveat_projection(
+        db,
+        pass_run_ids=execution_selection_readiness.get("pass_run_ids") or [],
+    )
     analysis_execution_start_state = (session.summary_json or {}).get("analysis_execution_start")
     execution_result_review_state = (session.summary_json or {}).get("execution_result_review")
     if not isinstance(analysis_execution_start_state, dict):
@@ -20878,6 +20901,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "execution_selection": execution_selection_readiness,
         "analysis_execution_start": analysis_execution_start_state,
         "execution_result_review": execution_result_review_state,
+        **result_caveat_state,
         "package_review_preview": package_review_preview_state,
         "package_construction": package_construction_state,
         "package_review_submit": package_review_submit_state,

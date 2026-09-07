@@ -9915,6 +9915,11 @@ class Layer3ExecutionResultReviewResponse(Layer3BaseResponse):
     source_gate: str | None = None
     source_dataset_version_ids: list[str] | None = None
     cohort_shape: str | None = None
+    # Read-time, text-only echo of the reviewed run's caveat notes and assumption checks.
+    caveats: list[dict[str, Any]] = Field(default_factory=list)
+    assumption_checks: list[dict[str, Any]] = Field(default_factory=list)
+    caveat_count: int = 0
+    assumption_check_count: int = 0
 
 
 class Layer3PackageReviewPreviewResponse(Layer3BaseResponse):
@@ -11234,6 +11239,13 @@ class Layer3SessionSummaryResponse(Layer3BaseResponse):
     execution_selection: dict[str, Any]
     analysis_execution_start: dict[str, Any]
     execution_result_review: dict[str, Any]
+    # Read-time, text-only projection of the selected pass run's caveat notes and
+    # assumption checks (pre-decision panel and reopen-by-id read this one source).
+    caveats: list[dict[str, Any]] = Field(default_factory=list)
+    assumption_checks: list[dict[str, Any]] = Field(default_factory=list)
+    caveat_count: int = 0
+    assumption_check_count: int = 0
+    outcome_summary: dict[str, Any] | None = None
     package_review_preview: dict[str, Any]
     package_construction: dict[str, Any]
     package_review_submit: dict[str, Any]
