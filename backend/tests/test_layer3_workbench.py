@@ -4,7 +4,7 @@ import hashlib
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -4146,3 +4146,279 @@ def test_plan_revision_accepts_requested_method_consistent_preview(db_session, t
     )
 
     assert revision["operator_decision"] == "reject_current_preview"
+
+
+def _walk_aps_dataset_to_completed_pass(db_session, tmp_path) -> dict[str, str]:
+    session_id = _walk_aps_dataset_to_gate_c(db_session, tmp_path)
+    plan = layer3_workbench.plan_preview(
+        db_session,
+        {"client_request_id": "req-plan-honest-result", "session_id": session_id},
+    )
+    approval = layer3_workbench.plan_approval(
+        db_session,
+        {
+            "client_request_id": "req-approve-honest-result",
+            "session_id": session_id,
+            "preview_id": plan["preview_id"],
+            "preview_hash": plan["plan_preview"]["preview_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    identity = {
+        "session_id": session_id,
+        "analysis_plan_id": approval["analysis_plan_id"],
+        "preview_id": plan["preview_id"],
+        "preview_hash": plan["plan_preview"]["preview_hash"],
+    }
+    selection = layer3_workbench.execution_selection(
+        db_session,
+        {"client_request_id": "req-select-honest-result", **identity},
+    )
+    identity["pass_run_id"] = selection["pass_run_ids"][0]
+    start = layer3_workbench.analysis_execution_start(
+        db_session,
+        {"client_request_id": "req-start-honest-result", **identity},
+    )
+    assert start["execution_started"] is True
+    assert start["analysis_run_id"]
+    identity["analysis_run_id"] = start["analysis_run_id"]
+    return identity
+
+
+def _caveat_projection_leaves(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield key, None
+            yield from _caveat_projection_leaves(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _caveat_projection_leaves(item)
+    else:
+        yield None, value
+
+
+def _assert_caveat_projection_is_text_only(body: dict) -> None:
+    forbidden_keys = {"storage_ref", "raw_storage_ref", "artifacts", "payload", "metadata_json", "values", "observed", "residual", "breakpoints"}
+    projected = {key: body.get(key) for key in ("caveats", "assumption_checks", "outcome_summary")}
+    for key, leaf in _caveat_projection_leaves(projected):
+        if key is not None:
+            assert key not in forbidden_keys, key
+        else:
+            assert leaf is None or isinstance(leaf, (str, bool)), leaf
+    assert isinstance(body["caveat_count"], int) and not isinstance(body["caveat_count"], bool)
+    assert isinstance(body["assumption_check_count"], int) and not isinstance(body["assumption_check_count"], bool)
+
+
+def _assert_no_forbidden_keys(value, forbidden: set[str]) -> None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            assert key not in forbidden, key
+            _assert_no_forbidden_keys(item, forbidden)
+    elif isinstance(value, list):
+        for item in value:
+            _assert_no_forbidden_keys(item, forbidden)
+
+
+def test_session_summary_caveats_follow_the_executed_pass_not_the_first(db_session, tmp_path) -> None:
+    """A session holds one pass run per selected analysis set, so position is not the authority.
+
+    An older sibling pass that never executed must not shadow the run under review: reporting
+    "no caveats recorded" for a run that has high-severity caveats is the exact false statement
+    this projection exists to prevent.
+    """
+    identity = _walk_aps_dataset_to_completed_pass(db_session, tmp_path)
+    executed = db_session.get(L3PassRun, identity["pass_run_id"])
+    assert executed is not None
+
+    older_sibling = L3PassRun(
+        session_id=executed.session_id,
+        analysis_plan_id=executed.analysis_plan_id,
+        analysis_set_id=executed.analysis_set_id,
+        pass_type=executed.pass_type,
+        engine_family=executed.engine_family,
+        status=executed.status,
+        input_payload_ref=executed.input_payload_ref,
+        summary_json={},
+    )
+    db_session.add(older_sibling)
+    db_session.flush()
+    older_sibling.created_at = executed.created_at - timedelta(minutes=5)
+    db_session.commit()
+
+    summary = layer3_workbench.session_summary(db_session, identity["session_id"])
+
+    # The unexecuted sibling sorts first; the projection must still follow the executed run.
+    assert summary["execution_selection"]["pass_run_ids"][0] == older_sibling.pass_run_id
+    analysis_run = db_session.get(AnalysisRun, identity["analysis_run_id"])
+    assert summary["caveat_count"] == len(analysis_run.caveats) > 0
+    assert summary["assumption_check_count"] == len(analysis_run.assumptions) > 0
+    assert {item["caveat_type"] for item in summary["caveats"]} == {
+        item.caveat_type for item in analysis_run.caveats
+    }
+    _assert_caveat_projection_is_text_only(summary)
+
+
+def test_session_summary_and_review_response_project_selected_run_caveats_at_read_time(db_session, tmp_path) -> None:
+    identity = _walk_aps_dataset_to_completed_pass(db_session, tmp_path)
+    analysis_run = db_session.get(AnalysisRun, identity["analysis_run_id"])
+    assert analysis_run is not None
+    expected_caveats = [
+        {"caveat_type": item.caveat_type, "severity": item.severity, "message": item.message}
+        for item in analysis_run.caveats
+    ]
+    expected_checks = [
+        {
+            "assumption_name": item.assumption_name,
+            "check_method": item.check_method,
+            "check_result": item.check_result,
+            "severity": item.severity,
+            "notes": item.notes,
+        }
+        for item in analysis_run.assumptions
+    ]
+    assert expected_caveats, "the 3-row APS fixture must yield real decomposition caveats"
+    assert expected_checks
+    assert {item["caveat_type"] for item in expected_caveats} >= {"insufficient_observations"}
+    assert {item["assumption_name"] for item in expected_checks} >= {"sufficient_observations", "time_regularity"}
+    assert all(item["check_method"] for item in expected_checks)
+
+    summary = layer3_workbench.session_summary(db_session, identity["session_id"])
+
+    assert summary["execution_selection"]["pass_run_ids"] == [identity["pass_run_id"]]
+    assert summary["caveats"] == expected_caveats
+    assert summary["assumption_checks"] == expected_checks
+    assert summary["caveat_count"] == len(expected_caveats)
+    assert summary["assumption_check_count"] == len(expected_checks)
+    assert summary["outcome_summary"] is None
+    _assert_caveat_projection_is_text_only(summary)
+    assert "caveats" not in (summary["execution_result_review"] or {})
+
+    review = layer3_workbench.execution_result_review(
+        db_session,
+        {
+            "client_request_id": "req-review-honest-result",
+            "session_id": identity["session_id"],
+            "analysis_plan_id": identity["analysis_plan_id"],
+            "pass_run_id": identity["pass_run_id"],
+            "preview_id": identity["preview_id"],
+            "preview_hash": identity["preview_hash"],
+            "operator_decision": "approved",
+        },
+    )
+
+    assert review["status"] == "recorded"
+    assert review["caveats"] == expected_caveats
+    assert review["assumption_checks"] == expected_checks
+    assert review["caveat_count"] == len(expected_caveats)
+    assert review["assumption_check_count"] == len(expected_checks)
+    _assert_caveat_projection_is_text_only(review)
+    _assert_no_forbidden_keys(review, {"storage_ref", "raw_storage_ref", "artifacts", "metadata_json"})
+
+    pass_run = db_session.get(L3PassRun, identity["pass_run_id"])
+    session = db_session.get(L3Session, identity["session_id"])
+    db_session.refresh(pass_run)
+    db_session.refresh(session)
+    for stored in (pass_run.summary_json["execution_result_review"], session.summary_json["execution_result_review"]):
+        for key in ("caveats", "assumption_checks", "caveat_count", "assumption_check_count", "outcome_summary"):
+            assert key not in stored, key
+
+    replay = layer3_workbench.execution_result_review(
+        db_session,
+        {
+            "client_request_id": "req-review-honest-result",
+            "session_id": identity["session_id"],
+            "analysis_plan_id": identity["analysis_plan_id"],
+            "pass_run_id": identity["pass_run_id"],
+            "preview_id": identity["preview_id"],
+            "preview_hash": identity["preview_hash"],
+            "operator_decision": "approved",
+        },
+    )
+    assert replay["status"] == "already_recorded"
+    assert replay["caveats"] == expected_caveats
+    assert replay["assumption_check_count"] == len(expected_checks)
+
+    reopened = layer3_workbench.session_summary(db_session, identity["session_id"])
+    assert reopened["caveats"] == expected_caveats
+    assert reopened["assumption_checks"] == expected_checks
+    assert reopened["execution_result_review"]["review_state"] == "execution_result_review_approved"
+    assert "caveats" not in reopened["execution_result_review"]
+
+
+def test_session_summary_projects_empty_caveats_when_selected_pass_has_no_analysis_run(db_session) -> None:
+    now = datetime.now(timezone.utc)
+    session = L3Session(
+        session_id="session-no-analysis-run",
+        status="completed",
+        selection_manifest_id="manifest-no-analysis-run",
+        entry_route_context_json={"entrypoint": "pytest"},
+        operator_context_json={"operator": "pytest"},
+        summary_json={
+            "execution_selection": {
+                "schema_id": "layer3.execution_selection_state.v1",
+                "state": "execution_pass_completed",
+                "analysis_plan_id": "plan-no-analysis-run",
+                "source_preview_id": "preview-no-analysis-run",
+                "source_preview_hash": "hash-no-analysis-run",
+                "pass_run_ids_json": ["pass-no-analysis-run"],
+                "pass_run_count": 1,
+                "execution_started": True,
+                "analysis_run_ids_json": [],
+                "pass_run_statuses_json": {"pass-no-analysis-run": "completed"},
+            }
+        },
+        started_at=now,
+        completed_at=now,
+        created_at=now,
+    )
+    manifest = L3SelectionManifest(
+        selection_manifest_id="manifest-no-analysis-run",
+        session_id=session.session_id,
+        manifest_json={"session_id": session.session_id, "items": [{"descriptor_type": "dataset_version"}]},
+        source_plane_hints_json={"source_classes": ["dataset_version"]},
+        selection_hash="selection-hash-no-analysis-run",
+        committed_at=now,
+        commit_reason="pytest no-analysis-run session",
+    )
+    analysis_set = L3AnalysisSet(
+        analysis_set_id="set-no-analysis-run",
+        session_id=session.session_id,
+        analysis_group_ids_json=[],
+        analysis_unit_ids_json=[],
+        set_type="single_item",
+        formation_basis_json={},
+    )
+    plan = L3AnalysisPlan(
+        analysis_plan_id="plan-no-analysis-run",
+        session_id=session.session_id,
+        analysis_set_ids_json=[analysis_set.analysis_set_id],
+        status="approved",
+        approved_by_operator=True,
+        approved_at=now,
+        plan_json={"source_preview_id": "preview-no-analysis-run", "source_preview_hash": "hash-no-analysis-run"},
+    )
+    pass_run = L3PassRun(
+        pass_run_id="pass-no-analysis-run",
+        session_id=session.session_id,
+        analysis_plan_id=plan.analysis_plan_id,
+        analysis_set_id=analysis_set.analysis_set_id,
+        pass_type="single_item",
+        engine_family="source_intake_qualitative_preview",
+        status="completed",
+        started_at=now,
+        completed_at=now,
+        input_payload_ref="payload://input",
+        output_payload_ref=None,
+        summary_json={"execution_started": True, "analysis_run_id": None},
+    )
+    db_session.add_all([session, manifest, analysis_set, plan, pass_run])
+    db_session.commit()
+
+    summary = layer3_workbench.session_summary(db_session, session.session_id)
+
+    assert summary["execution_selection"]["pass_run_ids"] == [pass_run.pass_run_id]
+    assert summary["caveats"] == []
+    assert summary["assumption_checks"] == []
+    assert summary["caveat_count"] == 0
+    assert summary["assumption_check_count"] == 0
+    assert summary["outcome_summary"] is None

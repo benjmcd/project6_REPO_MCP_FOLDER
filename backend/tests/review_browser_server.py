@@ -34,6 +34,8 @@ from app.models.models import (
     ApsContentChunk,
     ApsContentDocument,
     ApsContentLinkage,
+    AssumptionCheck,
+    CaveatNote,
     ConnectorRun,
     ConnectorRunTarget,
     Dataset,
@@ -525,6 +527,26 @@ def _install_layer3_browser_patches(temp_path: Path) -> None:
                 storage_ref=f"layer3-browser://artifact/{run.analysis_run_id}/summary.json",
                 summary="Deterministic Layer 3 browser harness output.",
                 metadata_json={"source": "review_browser_server", "method_name": method_name},
+            )
+        )
+        # Deterministic caveat/assumption rows so the review panel's read-time
+        # projection is exercised end to end (text only, no result values).
+        db.add(
+            AssumptionCheck(
+                analysis_run_id=run.analysis_run_id,
+                assumption_name="sufficient_observations",
+                check_method="row_count_threshold",
+                check_result="pass",
+                severity="medium",
+                notes="value: n=24 (browser harness deterministic check)",
+            )
+        )
+        db.add(
+            CaveatNote(
+                analysis_run_id=run.analysis_run_id,
+                caveat_type="interpretation",
+                severity="low",
+                message="Browser harness deterministic caveat: results are synthetic.",
             )
         )
         db.flush()

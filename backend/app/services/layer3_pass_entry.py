@@ -1365,13 +1365,23 @@ def _persist_cohort_dataset_version(
     selected_method_name: str,
     source_gate: str,
 ) -> tuple[str, str]:
+    import pandas as pd
+
+    from app.services.data_utils import parsed_time_index_varies
     from app.services.dataframe_io import persist_dataframe_as_version_rows
+
+    # The same >= 2 distinct timestamps guard as ingest: a single-period cohort is a
+    # cross-section and must not be persisted as a time-indexed dataset version.
+    time_index_varies = parsed_time_index_varies(
+        pd.to_datetime(prepared_cohort.shaped_dataframe[COHORT_TIME_COLUMN], errors="coerce", utc=True)
+    )
+    effective_time_column = COHORT_TIME_COLUMN if time_index_varies else None
 
     dataset = Dataset(
         name=f"L3 cohort {analysis_set_id}",
         description="Derived Gate C quantitative associated cohort input",
         frequency_hint=prepared_cohort.frequency_hint,
-        time_column=COHORT_TIME_COLUMN,
+        time_column=effective_time_column,
     )
     db.add(dataset)
     db.flush()
@@ -1390,9 +1400,9 @@ def _persist_cohort_dataset_version(
         dataset_version_id=version.dataset_version_id,
         variable_name=COHORT_TIME_COLUMN,
         dtype="datetime64[ns]",
-        role="time_index",
+        role="time_index" if time_index_varies else "dimension",
         is_numeric=False,
-        is_time_index=True,
+        is_time_index=time_index_varies,
         ordinal_position=0,
     )
     db.add(time_variable)
@@ -1431,7 +1441,7 @@ def _persist_cohort_dataset_version(
         db,
         version,
         prepared_cohort.shaped_dataframe,
-        COHORT_TIME_COLUMN,
+        effective_time_column,
     )
     manifest_ref = _persist_input_manifest(
         pass_run_id=pass_run_id,
@@ -1440,7 +1450,7 @@ def _persist_cohort_dataset_version(
             "derived_dataset_version_id": version.dataset_version_id,
             "source_dataset_version_ids_json": list(prepared_cohort.source_dataset_version_ids),
             "column_map_json": [prepared_column.manifest_entry() for prepared_column in prepared_cohort.columns],
-            "time_column": COHORT_TIME_COLUMN,
+            "time_column": effective_time_column,
             "row_count": int(len(prepared_cohort.shaped_dataframe)),
             "source_gate": source_gate,
             "selected_method_name": selected_method_name,

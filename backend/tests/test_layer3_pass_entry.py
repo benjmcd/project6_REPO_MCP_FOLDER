@@ -2206,3 +2206,76 @@ def test_sciencebase_public_dataset_walk_executes_quantitative_analysis_and_retu
     assert forbidden_value_keys.isdisjoint(observed_keys)
     serialized_status = json.dumps(status, sort_keys=True)
     assert all(str(sentinel) not in serialized_status for sentinel in numeric_sentinels)
+
+
+def _prepared_cohort_column(column_name: str, unit: str) -> layer3_pass_entry_module._PreparedCohortColumn:
+    return layer3_pass_entry_module._PreparedCohortColumn(
+        column_name=column_name,
+        analysis_unit_id=f"unit-{unit}",
+        material_snapshot_id=f"snapshot-{unit}",
+        dataset_version_id=f"dv-{unit}",
+        descriptor_id=f"descriptor-{unit}",
+        source_variable_name="value",
+        stationarity_hint="likely_stationary",
+        seasonality_flag=False,
+    )
+
+
+@pytest.mark.parametrize(
+    ("periods", "expected_time_column", "expected_sequence"),
+    [
+        (1, None, ["descriptive_summary"]),
+        (3, layer3_pass_entry_module.COHORT_TIME_COLUMN, ["cross_correlation", "decomposition", "structural_break"]),
+    ],
+)
+def test_persist_cohort_dataset_version_requires_two_distinct_cohort_timestamps(
+    tmp_path, monkeypatch, periods, expected_time_column, expected_sequence
+):
+    from app.services.analysis import recommend_analysis
+
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    db = _make_session()
+    time_column = layer3_pass_entry_module.COHORT_TIME_COLUMN
+    shaped = pd.DataFrame(
+        {
+            time_column: pd.date_range("2025-01-01", periods=periods, freq="MS", tz="UTC"),
+            "unit_a": [1.0 + index for index in range(periods)],
+            "unit_b": [2.0 + 2 * index for index in range(periods)],
+        }
+    )
+    prepared = layer3_pass_entry_module._PreparedCohortCandidate(
+        shaped_dataframe=shaped,
+        source_dataset_version_ids=("dv-a", "dv-b"),
+        columns=(_prepared_cohort_column("unit_a", "a"), _prepared_cohort_column("unit_b", "b")),
+        frequency_hint=None,
+    )
+
+    version_id, manifest_ref = layer3_pass_entry_module._persist_cohort_dataset_version(
+        db,
+        session_id=f"session-cohort-{periods}",
+        analysis_set_id=f"set-cohort-{periods}",
+        pass_run_id=f"pass-cohort-{periods}",
+        prepared_cohort=prepared,
+        selected_method_name="descriptive_summary",
+        source_gate="pytest_cohort_time_index_guard",
+    )
+    db.commit()
+
+    version = db.get(DatasetVersion, version_id)
+    dataset = db.get(Dataset, version.dataset_id)
+    variables = (
+        db.query(VariableDefinition)
+        .filter(VariableDefinition.dataset_version_id == version_id)
+        .order_by(VariableDefinition.ordinal_position.asc())
+        .all()
+    )
+    manifest = json.loads(Path(manifest_ref).read_text(encoding="utf-8"))
+
+    assert dataset.time_column == expected_time_column
+    assert manifest["time_column"] == expected_time_column
+    assert [variable.variable_name for variable in variables] == [time_column, "unit_a", "unit_b"]
+    assert variables[0].is_time_index is (expected_time_column is not None)
+    assert variables[0].role == ("time_index" if expected_time_column else "dimension")
+    assert [variable.is_time_index for variable in variables[1:]] == [False, False]
+    assert recommend_analysis(db, version_id)["recommended_sequence"] == expected_sequence
+    assert len(load_version_dataframe(db, version_id)) == periods

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -11,7 +12,7 @@ os.environ["DB_INIT_MODE"] = "none"
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
-from app.models.models import L3PassRun
+from app.models.models import AnalysisArtifact, AnalysisRun, AssumptionCheck, CaveatNote, L3PassRun
 from app.services import layer3_execution_review as execution_review
 from app.services import layer3_workbench
 from app.services.layer3_pass_entry import (
@@ -265,3 +266,220 @@ def test_execution_result_review_response_preserves_workbench_projection() -> No
     assert response["trace_summary"]["nested"]["stable"] is True
     assert response["reviewed_output_items"][0]["trace_status"] == "resolved"
     assert response["source_dataset_version_ids"] == ["dataset-version-output"]
+
+
+def _analysis_run(
+    method_name: str = "structural_break",
+    *,
+    caveats: list[dict] | None = None,
+    assumptions: list[dict] | None = None,
+    artifacts: list[dict] | None = None,
+) -> AnalysisRun:
+    run = AnalysisRun(
+        analysis_run_id="analysis-run-caveats",
+        dataset_version_id="dataset-version-caveats",
+        method_name=method_name,
+        status="completed",
+        parameters_json={},
+        window_scope_json={},
+    )
+    for caveat in caveats or []:
+        run.caveats.append(CaveatNote(analysis_run_id=run.analysis_run_id, **caveat))
+    for assumption in assumptions or []:
+        run.assumptions.append(AssumptionCheck(analysis_run_id=run.analysis_run_id, **assumption))
+    for artifact in artifacts or []:
+        run.artifacts.append(AnalysisArtifact(analysis_run_id=run.analysis_run_id, **artifact))
+    return run
+
+
+_EMPTY_CAVEAT_PROJECTION = {
+    "caveats": [],
+    "assumption_checks": [],
+    "caveat_count": 0,
+    "assumption_check_count": 0,
+    "outcome_summary": None,
+}
+
+
+def _leaf_values(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield key, None
+            yield from _leaf_values(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _leaf_values(item)
+    else:
+        yield None, value
+
+
+def _assert_text_only_projection(projection: dict) -> None:
+    forbidden_keys = {"storage_ref", "raw_storage_ref", "artifacts", "payload", "metadata_json", "values", "observed", "residual", "breakpoints"}
+    for key, leaf in _leaf_values({k: projection[k] for k in ("caveats", "assumption_checks", "outcome_summary")}):
+        if key is not None:
+            assert key not in forbidden_keys, key
+        else:
+            assert leaf is None or isinstance(leaf, (str, bool)), leaf
+
+
+def test_result_caveat_projection_projects_text_only_caveats_and_checks() -> None:
+    run = _analysis_run(
+        caveats=[
+            {"caveat_type": "penalty_sensitivity", "severity": "medium", "message": "series_a: penalty=2 (source=explicit)."},
+            {"caveat_type": "nonstationary_break_interpretation", "severity": "high", "message": "series_a: breaks may reflect trend."},
+        ],
+        assumptions=[
+            {
+                "assumption_name": "minimum_segment_length",
+                "check_method": "ruptures_segment_lengths",
+                "check_result": "pass",
+                "severity": "medium",
+                "notes": "series_a: segment_lengths=[18, 18]",
+            }
+        ],
+        artifacts=[
+            {
+                "artifact_type": "structural_break_result",
+                "title": "Structural breaks: series_a",
+                "storage_ref": "/private/should-not-leak/structural_break_result.json",
+                "summary": "series_a: structural break metadata",
+                "metadata_json": {"break_count": 1},
+            }
+        ],
+    )
+
+    projection = execution_review.result_caveat_projection(run)
+
+    assert projection == {
+        "caveats": [
+            {"caveat_type": "penalty_sensitivity", "severity": "medium", "message": "series_a: penalty=2 (source=explicit)."},
+            {"caveat_type": "nonstationary_break_interpretation", "severity": "high", "message": "series_a: breaks may reflect trend."},
+        ],
+        "assumption_checks": [
+            {
+                "assumption_name": "minimum_segment_length",
+                "check_method": "ruptures_segment_lengths",
+                "check_result": "pass",
+                "severity": "medium",
+                "notes": "series_a: segment_lengths=[18, 18]",
+            }
+        ],
+        "caveat_count": 2,
+        "assumption_check_count": 1,
+        "outcome_summary": None,
+    }
+    assert list(projection) == list(execution_review.RESULT_CAVEAT_PROJECTION_KEYS) + ["outcome_summary"]
+    serialized = json.dumps(projection, sort_keys=True)
+    assert "storage_ref" not in serialized
+    assert "should-not-leak" not in serialized
+    assert "break_count" not in serialized
+    _assert_text_only_projection(projection)
+
+
+def test_result_caveat_projection_returns_empty_shape_for_missing_or_bare_run() -> None:
+    assert execution_review.result_caveat_projection(None) == _EMPTY_CAVEAT_PROJECTION
+    assert execution_review.result_caveat_projection(_analysis_run()) == _EMPTY_CAVEAT_PROJECTION
+    assert execution_review.result_caveat_projection(_analysis_run("decomposition")) == _EMPTY_CAVEAT_PROJECTION
+
+
+def test_result_caveat_projection_labels_zero_break_outcome_as_expected_artifact_absence() -> None:
+    zero_break_run = _analysis_run(
+        caveats=[
+            {"caveat_type": "penalty_sensitivity", "severity": "medium", "message": "series_a: penalty=8 (source=explicit)."},
+            {"caveat_type": "no_breakpoints_detected", "severity": "low", "message": "series_a: no structural breakpoints were detected at penalty=8 using model=l2."},
+            {"caveat_type": "no_breakpoints_detected", "severity": "low", "message": "series_b: no structural breakpoints were detected at penalty=8 using model=l2."},
+            {"caveat_type": "no_structural_break_artifacts", "severity": "medium", "message": "No variables produced structural break artifacts."},
+        ],
+        assumptions=[
+            {
+                "assumption_name": "minimum_segment_length",
+                "check_method": "ruptures_segment_lengths",
+                "check_result": "pass",
+                "severity": "medium",
+                "notes": "series_a: segment_lengths=[36]",
+            }
+        ],
+    )
+
+    projection = execution_review.result_caveat_projection(zero_break_run)
+
+    assert projection["caveat_count"] == 4
+    assert projection["outcome_summary"] == {
+        "outcome": "no_breakpoints_detected",
+        "artifact_absence_expected": True,
+        "message": execution_review.NO_BREAKPOINTS_OUTCOME_MESSAGE,
+    }
+    assert "expected" in projection["outcome_summary"]["message"]
+    assert "not a failure" in projection["outcome_summary"]["message"]
+    _assert_text_only_projection(projection)
+
+    break_found_run = _analysis_run(
+        caveats=[
+            {"caveat_type": "no_breakpoints_detected", "severity": "low", "message": "series_b: no structural breakpoints were detected at penalty=8 using model=l2."},
+        ],
+        artifacts=[
+            {
+                "artifact_type": "structural_break_result",
+                "title": "Structural breaks: series_a",
+                "storage_ref": "artifacts/structural_break_result.json",
+                "summary": "series_a: structural break metadata",
+                "metadata_json": {},
+            }
+        ],
+    )
+    assert execution_review.result_caveat_projection(break_found_run)["outcome_summary"] is None
+
+    decomposition_without_artifacts = _analysis_run(
+        "decomposition",
+        caveats=[{"caveat_type": "no_decomposition_artifacts", "severity": "medium", "message": "No variables met STL decomposition prerequisites."}],
+    )
+    assert execution_review.result_caveat_projection(decomposition_without_artifacts)["outcome_summary"] is None
+
+
+def test_execution_result_review_response_echoes_caveat_projection_with_get_defaults() -> None:
+    pass_run = _pass_run()
+    base_review_state = {
+        "review_state": "execution_result_review_approved",
+        "operator_decision": "approved",
+        "review_record_ref": "layer3://review/pass-run-review",
+        "trace_summary": {"reviewed_item_count": 0},
+        "reviewed_output_items": [],
+        "unresolved_trace_count": 0,
+        "review_notes": None,
+    }
+    projection = {
+        "caveats": [{"caveat_type": "insufficient_observations", "severity": "high", "message": "value: STL requires at least 24 observations for this workflow."}],
+        "assumption_checks": [
+            {"assumption_name": "sufficient_observations", "check_method": "row_count_threshold", "check_result": "fail", "severity": "high", "notes": "value: n=3"}
+        ],
+        "caveat_count": 1,
+        "assumption_check_count": 1,
+    }
+
+    def _response(review_state: dict) -> dict:
+        return execution_review.execution_result_review_response(
+            request_id="request-review-caveats",
+            status="recorded",
+            session_id=pass_run.session_id,
+            analysis_plan_id=pass_run.analysis_plan_id,
+            preview_id="preview-review",
+            preview_hash="hash-review",
+            pass_run=pass_run,
+            analysis_run_id="analysis-run-review",
+            review_state=review_state,
+        )
+
+    echoed = _response({**base_review_state, **projection})
+    assert echoed["caveats"] == projection["caveats"]
+    assert echoed["assumption_checks"] == projection["assumption_checks"]
+    assert echoed["caveat_count"] == 1
+    assert echoed["assumption_check_count"] == 1
+    assert "outcome_summary" not in echoed
+    projection["caveats"][0]["message"] = "mutated"
+    assert echoed["caveats"][0]["message"].startswith("value: STL requires")
+
+    defaulted = _response(dict(base_review_state))
+    assert defaulted["caveats"] == []
+    assert defaulted["assumption_checks"] == []
+    assert defaulted["caveat_count"] == 0
+    assert defaulted["assumption_check_count"] == 0

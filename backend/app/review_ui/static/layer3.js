@@ -1320,6 +1320,8 @@ const elements = {
     executionSelectionStartPanel: document.getElementById('execution-selection-start-panel'),
     resultReviewRefresh: document.getElementById('result-review-refresh'),
     resultStatusInspect: document.getElementById('result-status-inspect'),
+    resultSessionReopenId: document.getElementById('result-session-reopen-id'),
+    resultSessionReopen: document.getElementById('result-session-reopen'),
     resultReviewForm: document.getElementById('result-review-form'),
     resultReviewPanel: document.getElementById('result-review-panel'),
     resultReviewDecision: document.getElementById('result-review-decision'),
@@ -4242,10 +4244,9 @@ function associatedCohortReviewContext() {
     return associatedCohortProjection().isAssociated;
 }
 
-function canRefreshSessionSummary() {
+function sessionSummaryLoadIdle() {
     return Boolean(
-        currentSessionId()
-        && !State.executionSelectionPending
+        !State.executionSelectionPending
         && !State.executionStartPending
         && !State.resultReviewPending
         && !State.packageReviewPreviewPending
@@ -4260,6 +4261,14 @@ function canRefreshSessionSummary() {
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
     );
+}
+
+function canRefreshSessionSummary() {
+    return Boolean(currentSessionId() && sessionSummaryLoadIdle());
+}
+
+function canReopenSessionById() {
+    return Boolean(elements.resultSessionReopenId.value.trim() && sessionSummaryLoadIdle());
 }
 
 function canInspectResultStatus() {
@@ -9077,6 +9086,83 @@ function resultStatusBlockReason() {
     return null;
 }
 
+function resultCaveatProjection(authority = selectedResultAuthority()) {
+    // Read-time text projection of the selected run's caveat notes and assumption
+    // checks. The session summary is the one source for the pre-decision panel and
+    // reopen-by-id; the post-decision review body echoes the same keys.
+    const summary = State.sessionSummary;
+    if (
+        summary
+        && Array.isArray(summary.caveats)
+        && Array.isArray(summary.assumption_checks)
+        && (!authority.sessionId || summary.session_id === authority.sessionId)
+    ) {
+        return {
+            source: 'State.sessionSummary',
+            caveats: summary.caveats,
+            assumptionChecks: summary.assumption_checks,
+            outcomeSummary: summary.outcome_summary && typeof summary.outcome_summary === 'object' ? summary.outcome_summary : null,
+        };
+    }
+    const review = State.resultReview;
+    if (review && Array.isArray(review.caveats) && Array.isArray(review.assumption_checks)) {
+        return {
+            source: 'State.resultReview',
+            caveats: review.caveats,
+            assumptionChecks: review.assumption_checks,
+            outcomeSummary: null,
+        };
+    }
+    return null;
+}
+
+function renderResultCaveatCard(authority) {
+    const projection = resultCaveatProjection(authority);
+    if (!projection) {
+        return `
+            <section id="result-review-caveats" class="result-review-card">
+                <strong>Caveats and Assumption Checks</strong>
+                <ul>
+                    <li>caveats: not loaded (refresh session state or reopen the session by id)</li>
+                </ul>
+            </section>
+        `;
+    }
+    const outcome = projection.outcomeSummary;
+    const outcomeItems = outcome
+        ? `
+                    ${fieldItem('outcome', outcome.outcome)}
+                    <li>structural-break artifact: ${outcome.artifact_absence_expected === true
+        ? 'absent (expected for this outcome, not a failure)'
+        : 'present'}</li>
+                    <li>${escapeHtml(displayValue(outcome.message))}</li>`
+        : '';
+    const caveatItems = projection.caveats.length
+        ? projection.caveats.map((item) => (
+            `<li>[${escapeHtml(displayValue(item?.severity))}] ${escapeHtml(displayValue(item?.caveat_type))}: ${escapeHtml(displayValue(item?.message))}</li>`
+        )).join('')
+        : '<li>no caveats recorded</li>';
+    const checkItems = projection.assumptionChecks.length
+        ? projection.assumptionChecks.map((item) => (
+            `<li>${escapeHtml(displayValue(item?.assumption_name))} (${escapeHtml(displayValue(item?.check_method))}): `
+            + `${escapeHtml(displayValue(item?.check_result))} [${escapeHtml(displayValue(item?.severity))}]`
+            + `${item?.notes ? ` ${escapeHtml(String(item.notes))}` : ''}</li>`
+        )).join('')
+        : '<li>no assumption checks recorded</li>';
+    return `
+        <section id="result-review-caveats" class="result-review-card">
+            <strong>Caveats and Assumption Checks</strong>
+            <ul>
+                ${fieldItem('source', projection.source)}${outcomeItems}
+                <li>caveats (${projection.caveats.length})</li>
+            </ul>
+            <ul>${caveatItems}</ul>
+            <ul><li>assumption checks (${projection.assumptionChecks.length})</li></ul>
+            <ul>${checkItems}</ul>
+        </section>
+    `;
+}
+
 function renderResultReviewPanel() {
     const authority = selectedResultAuthority();
     const statusBody = State.resultStatus || {};
@@ -9135,6 +9221,7 @@ function renderResultReviewPanel() {
                     ${fieldItem('cohort review ready', cohort.ready)}
                 </ul>
             </section>
+            ${renderResultCaveatCard(authority)}
             <section class="result-review-card">
                 <strong>Review State</strong>
                 <ul>
@@ -27839,6 +27926,7 @@ function setGateControls() {
     elements.executionSelect.disabled = !canSelectExecution();
     elements.executionStart.disabled = !canStartExecution();
     elements.resultReviewRefresh.disabled = !canRefreshSessionSummary();
+    elements.resultSessionReopen.disabled = !canReopenSessionById();
     elements.resultStatusInspect.disabled = !canInspectResultStatus();
     elements.resultReviewDecision.disabled = !resultReviewControlsEnabled;
     elements.resultReviewNotes.disabled = !resultReviewControlsEnabled;
@@ -29204,14 +29292,39 @@ async function startExecution() {
 async function refreshSessionSummary() {
     const sessionId = currentSessionId();
     if (!sessionId) return;
-    setBusy(elements.resultReviewRefresh, true, 'Refresh Session State');
+    await loadSessionSummaryById(sessionId, {
+        button: elements.resultReviewRefresh,
+        label: 'Refresh Session State',
+        anchorSource: 'manual_refresh',
+        successEvent: 'Session state refreshed.',
+        blockedPrefix: 'Session refresh blocked',
+    });
+}
+
+async function reopenSessionById() {
+    const sessionId = elements.resultSessionReopenId.value.trim();
+    if (!sessionId || !canReopenSessionById()) return;
+    await loadSessionSummaryById(sessionId, {
+        button: elements.resultSessionReopen,
+        label: 'Reopen Session',
+        anchorSource: 'session_reopen',
+        successEvent: `Session ${sessionId} reopened from server state.`,
+        blockedPrefix: 'Session reopen blocked',
+    });
+}
+
+async function loadSessionSummaryById(sessionId, { button, label, anchorSource, successEvent, blockedPrefix }) {
+    // One loader for "Refresh Session State" and "Reopen Session": the existing
+    // GET /session/{session_id} route is the only source; a failed load leaves the
+    // currently loaded session untouched and renders the server error card.
+    setBusy(button, true, label);
     try {
         const previousSessionId = State.sessionSummary?.session_id;
         State.sessionSummary = await getJson(`/session/${encodeURIComponent(sessionId)}`);
         if (previousSessionId && previousSessionId !== State.sessionSummary.session_id) {
             clearResultReviewState({ keepSummary: true });
         }
-        persistSessionRecoveryAnchor('manual_refresh');
+        persistSessionRecoveryAnchor(anchorSource);
         State.executionSelectionError = null;
         State.executionStartError = null;
         State.resultStatusError = null;
@@ -29228,7 +29341,7 @@ async function refreshSessionSummary() {
         State.sourceDirectoryHybridMiddleLifecycleError = null;
         State.sourceDirectoryHybridInternalWebhookDispatchError = null;
         State.sourceDirectoryHybridInternalWebhookStatusError = null;
-        addEvent('Session state refreshed.');
+        addEvent(successEvent);
         renderAll();
     } catch (error) {
         State.resultStatusError = error.payload || {
@@ -29236,10 +29349,10 @@ async function refreshSessionSummary() {
             error_code: 'session_summary_request_failed',
             message: error.message,
         };
-        addEvent(`Session refresh blocked: ${error.message}`);
+        addEvent(`${blockedPrefix}: ${error.message}`);
         renderAll();
     } finally {
-        setBusy(elements.resultReviewRefresh, false, 'Refresh Session State');
+        setBusy(button, false, label);
         setGateControls();
     }
 }
@@ -30055,7 +30168,7 @@ function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel() {
     `;
 }
 
-async function inspectResultStatus() {
+async function inspectResultStatus({ refreshSummary = false } = {}) {
     if (!canInspectResultStatus()) return;
     clearPublicScienceBaseValuesState();
     setBusy(elements.resultStatusInspect, true, 'Inspect Result Status');
@@ -30079,6 +30192,21 @@ async function inspectResultStatus() {
         State.apsHandoffDispatchError = null;
         clearExternalExportDownloadPrepareState();
         addEvent('Result/status authority loaded.');
+        // The frozen status body carries warnings_present only, so the caveat text comes from
+        // the session summary. Refresh it only on the operator's own Inspect click: the
+        // auto-advance path must issue zero /session/ calls after result/status (e2e "G1
+        // result-review auto-advance" pins that), so it renders from the summary already in
+        // State, and the caveat card says "not loaded" rather than showing an empty list when
+        // that summary does not cover the selected run.
+        const statusSessionId = State.resultStatus?.session_id || currentSessionId();
+        if (refreshSummary && statusSessionId) {
+            try {
+                State.sessionSummary = await getJson(`/session/${encodeURIComponent(statusSessionId)}`);
+                persistSessionRecoveryAnchor('result_status_refresh');
+            } catch (refreshError) {
+                addEvent(`Result/status loaded; session refresh blocked: ${refreshError.message}`);
+            }
+        }
         renderAll();
     } catch (error) {
         State.resultStatusError = error.payload || {
@@ -32250,7 +32378,15 @@ elements.planApprove.addEventListener('click', approvePlan);
 elements.executionSelect.addEventListener('click', selectExecution);
 elements.executionStart.addEventListener('click', startExecution);
 elements.resultReviewRefresh.addEventListener('click', refreshSessionSummary);
-elements.resultStatusInspect.addEventListener('click', inspectResultStatus);
+elements.resultSessionReopen.addEventListener('click', reopenSessionById);
+elements.resultSessionReopenId.addEventListener('input', () => setGateControls());
+elements.resultSessionReopenId.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        reopenSessionById();
+    }
+});
+elements.resultStatusInspect.addEventListener('click', () => inspectResultStatus({ refreshSummary: true }));
 elements.resultReviewForm.addEventListener('submit', submitResultReview);
 elements.packageReviewPreviewInspect.addEventListener('click', inspectPackageReviewPreview);
 elements.packageConstructionCommit.addEventListener('click', commitPackageConstruction);

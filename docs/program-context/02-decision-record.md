@@ -948,3 +948,58 @@ The records-only alignment lane grants no implementation, schema, ORM,
 migration, runtime, build dispatch, B1b build PR, or B1b build merge authority.
 
 `B1A-PASS; B1B-BLOCKED-ON-OWNER; INTEGRATED-LOOP-NOT-PROVEN; LOOP-NOT-RUN-superseded-by-run; SCHEMA-NOT-CHANGED.`
+
+## D35. Make the operator's result surface honest before running a real analysis (09-06)
+
+- Context: the public-science vertical, operator method selection, and a
+  persisted real-data run all landed, but the surface the operator actually
+  reads carried numbers without their limits. Caveat notes and assumption
+  checks existed per run and were projected by the core analysis API, while the
+  Layer 3 pre-decision panel, the reopen path, and the post-decision review body
+  showed none of them. A valid zero-breakpoint run rendered as a bare
+  not-produced. Time-column inference accepted a column that never varied, so a
+  single-year cross-section was recommended for lag, decomposition, and break
+  methods. Both workbench call sites ran structural break with empty parameters,
+  fixing the penalty at 8.0 regardless of series scale.
+- Alternatives: (a) run the next real analysis first and describe the limits in
+  a separate record; (b) put the caveat text behind a new default-off flag;
+  (c) keep the fixed penalty and document it; (d) add an operator parameter
+  surface; (e) make the existing result surface honest first, unflagged, with
+  no new routes and no parameter surface.
+- Decision: (e), as four owner rulings taken 2026-09-06.
+  1. D-a: caveats and assumption checks ride unflagged. They are text, carry no
+     measured observation value, artifact body or storage reference — though they
+     do quote run diagnostics and parameters such as counts, segment lengths and
+     the penalty used — and are projected at read time from one source shared by
+     the pre-decision panel and reopen-by-id; the frozen execution-status contract
+     is untouched.
+  2. D-b: a time index requires at least two distinct parsed timestamps. The
+     guard sits at the time-column decision during ingest and at the cohort
+     dataset-version producer; each time-series method records a
+     `time_index_variation` assumption check and refuses rather than computing.
+  3. D-c: when a caller omits the structural-break penalty, the runner derives
+     one per variable from that variable's working series and records the value
+     and its source. Explicit callers are unchanged. No operator parameter
+     surface.
+  4. D-d: the milestone is done when an operator can choose a dataset, choose a
+     method, run it, and review the saved result with its caveats and
+     provenance.
+- Why optimal: the alternatives either publish a result the surface cannot
+  qualify (a), hide honesty behind an arming step (b), keep a scale-wrong
+  default (c), or invite post-hoc tuning of a parameter the acceptance contract
+  forbids retuning (d). Making the surface truthful first is the cheapest change
+  that prevents the cross-section-as-time-series error class from reaching a
+  recorded finding, and it leaves the method registry describing what the code
+  actually does.
+- Evidence: the rulings and their grounding are recorded in the operator-held
+  decision record for 2026-09-06. In-repo evidence is this lane's tests: the
+  constant-year fixture is refused as a time index and recommended descriptive
+  summary; each time-series runner records the variation check; an omitted
+  penalty persists a per-variable derived value with its source while an
+  explicit penalty is preserved unchanged; the method registry declares the
+  derived default and every check and caveat family it emits; caveats render in
+  the panel before the review decision and after reopening a pasted session id.
+- Revisit gate: an operator parameter surface, caveat co-display on the public
+  value surface, and any real ScienceBase-provenance analysis remain separate
+  decisions. This entry grants no acquisition, flag arming, admission widening,
+  or merge authority.

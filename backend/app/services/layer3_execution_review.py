@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.models.models import L3PassRun
+from app.models.models import AnalysisRun, L3PassRun
 from app.services.layer3_preview_contract import preview_identity
 from app.services.layer3_response_contract import base_response
 from app.services.layer3_utils import json_clone
@@ -147,6 +147,63 @@ def result_review_trace_summary(
     }
 
 
+RESULT_CAVEAT_PROJECTION_KEYS = ("caveats", "assumption_checks", "caveat_count", "assumption_check_count")
+NO_BREAKPOINTS_OUTCOME_MESSAGE = (
+    "No structural breakpoints were detected for any analyzed variable at the penalty used; "
+    "the absent structural-break artifact is the expected outcome for this run, not a failure."
+)
+_STRUCTURAL_BREAK_ARTIFACT_TYPES = frozenset({"structural_break_result", "structural_break_plot"})
+
+
+def _result_outcome_summary(analysis_run: AnalysisRun, caveat_types: set[str]) -> dict[str, Any] | None:
+    if analysis_run.method_name != "structural_break":
+        return None
+    if "no_breakpoints_detected" not in caveat_types:
+        return None
+    if any(artifact.artifact_type in _STRUCTURAL_BREAK_ARTIFACT_TYPES for artifact in analysis_run.artifacts):
+        return None
+    return {
+        "outcome": "no_breakpoints_detected",
+        "artifact_absence_expected": True,
+        "message": NO_BREAKPOINTS_OUTCOME_MESSAGE,
+    }
+
+
+def result_caveat_projection(analysis_run: AnalysisRun | None) -> dict[str, Any]:
+    """Read-time, text-only projection of one analysis run's caveat notes and assumption checks.
+
+    Never persisted: callers spread this into response bodies at read time so the
+    pre-decision panel, reopen-by-id, and the post-decision review body read one source.
+    """
+    if analysis_run is None:
+        caveats: list[dict[str, Any]] = []
+        assumption_checks: list[dict[str, Any]] = []
+        outcome_summary = None
+    else:
+        caveats = [
+            {"caveat_type": item.caveat_type, "severity": item.severity, "message": item.message}
+            for item in analysis_run.caveats
+        ]
+        assumption_checks = [
+            {
+                "assumption_name": item.assumption_name,
+                "check_method": item.check_method,
+                "check_result": item.check_result,
+                "severity": item.severity,
+                "notes": item.notes,
+            }
+            for item in analysis_run.assumptions
+        ]
+        outcome_summary = _result_outcome_summary(analysis_run, {item["caveat_type"] for item in caveats})
+    return {
+        "caveats": caveats,
+        "assumption_checks": assumption_checks,
+        "caveat_count": len(caveats),
+        "assumption_check_count": len(assumption_checks),
+        "outcome_summary": outcome_summary,
+    }
+
+
 def execution_result_review_response(
     *,
     request_id: str,
@@ -185,4 +242,10 @@ def execution_result_review_response(
         "source_gate": review_state.get("source_gate"),
         "source_dataset_version_ids": json_clone(review_state.get("source_dataset_version_ids") or []),
         "cohort_shape": review_state.get("cohort_shape"),
+        # Read-time caveat echo (text only). Read with defaults so hand-built review
+        # states stay valid; the persisted review state never carries these keys.
+        "caveats": json_clone(review_state.get("caveats") or []),
+        "assumption_checks": json_clone(review_state.get("assumption_checks") or []),
+        "caveat_count": int(review_state.get("caveat_count") or 0),
+        "assumption_check_count": int(review_state.get("assumption_check_count") or 0),
     }

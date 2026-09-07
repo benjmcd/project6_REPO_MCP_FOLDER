@@ -227,6 +227,40 @@ resolution dispositions. No production-readiness, default-on, new live SEC
 EDGAR egress, value-reveal, raw-value, nonlocal admission, or broader taxonomy
 host authority claim is made by this pointer.
 
+## 2026-09-06 honest result surface
+
+The operator-analysis milestone is defined as: choose a dataset, choose an
+analysis method, run that method, and review the saved result together with its
+caveats and provenance. This section records what that definition now requires
+of the code; it is not a completion claim for the wider program.
+
+Caveat notes and assumption checks are projected at read time from one source
+shared by the pre-decision review panel, the reopen-by-session-id path, and the
+post-decision review body. They carry no measured observation value, no storage
+reference and no artifact body, and nothing is persisted into stored review state.
+Caveat and check text does quote run diagnostics and parameters, such as observation
+counts, returned segment lengths and the penalty used, because those are what
+qualify the result. The frozen execution-status contract is unchanged, no route was added,
+and no feature flag gates this display. A structural-break run that selects no
+breakpoints is a valid negative outcome and states that outcome rather than
+appearing as a missing artifact.
+
+A time index now requires at least two distinct parsed timestamps, enforced at
+the ingest time-column decision and at the cohort dataset-version producer. Each
+time-series method records a `time_index_variation` assumption check and refuses
+rather than computing on a non-varying index, so a single-period cross-section is
+recommended descriptive summary instead of lag, decomposition, or break methods.
+When a caller omits the structural-break penalty, the runner derives one per
+variable from that variable's working series and records the derived value and
+its source; explicit callers are unchanged. The analysis method registry declares
+the derived default and every assumption-check and caveat family the runners emit.
+
+Unchanged by this record: public ScienceBase analysis and value reveal remain
+default-off and require their own flags; operator method selection remains
+default-off; no acquisition, flag arming, admission widening, parameter surface,
+or merge authority follows from this section. Caveat co-display on the public
+value surface and any ScienceBase-provenance analysis remain separate decisions.
+
 ## 2026-07-05 Addendum - Corpus-Go Domestic Breadth Record
 
 This addendum records the owner-authorized 2026-07-05 corpus-go operator run as
