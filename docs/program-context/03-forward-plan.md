@@ -1,5 +1,21 @@
 # 03 — Forward Plan
 
+## 2026-09-08 retained product continuation
+
+The [distinct retained analyst draft](../MASTER_CONTEXT.md#2026-09-08-retained-analyst-product)
+and [selected content reader](../product-content.md) close item 1 below for the
+named NBC interpretation. Do not schedule another content reader, rewrite its
+original reviews or rerun its analyses to repeat this acceptance.
+
+The next useful decision is the next question and intended reader. Reuse retained
+evidence when sufficient; qualify only the methods/source classes that question
+requires. The separate public-value caveat/assumption surface, one required admitted
+source-family workflow, broader Phase 4/5/6 acceptance, authentic NRC evidence use,
+intended consumer delivery and named-host custody/recovery/upgrade retain their
+own scopes. Existing authoring, NRC readers and local delivery mechanisms should
+be exercised before proposing replacement systems. The retained draft is not a
+human-approved scientific result or completion of those broader milestones.
+
 ## 2026-09-08 current forward pointer
 
 Use the [local analyst continuation](../MASTER_CONTEXT.md#2026-09-08-local-analyst-continuation)

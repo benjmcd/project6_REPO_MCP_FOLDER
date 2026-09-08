@@ -1,5 +1,19 @@
 # Layer3 Progress Board
 
+## 2026-09-08 retained analyst product
+
+Selected content reading and one retained local draft are verified at
+`0416f6b9d37c4be6f410079dec5af44e55406492`. See
+`docs/MASTER_CONTEXT.md#2026-09-08-retained-analyst-product` and
+`docs/product-content.md`. Backend: 65 passed; browser: 35 passed per mode.
+Actual form creation used one POST; fresh-process headed/headless reopening used
+15 GETs and zero POSTs per mode. Product
+`a2b1581c-5127-4a25-aef1-ac107ab9dd7b` remains draft. All 101 original files and
+original reviews remain preserved; no statistical rerun, schema/default change
+or cross-session evidence relaxation occurred. This closes one in-product use
+increment, not the broader analytical/source/delivery/operations milestone.
+The previous block below remains the historical repair/standalone-answer record.
+
 ## 2026-09-08 local analyst continuation
 
 Base: `a723a5e436a14e9d6ab21ff4c6eb2c63c53cb0b5` after #2501; branch:

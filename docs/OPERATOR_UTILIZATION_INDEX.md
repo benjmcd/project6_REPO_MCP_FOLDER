@@ -1,5 +1,16 @@
 # Operator Utilization Index
 
+## 2026-09-08 retained product pointer
+
+The [retained analyst product](MASTER_CONTEXT.md#2026-09-08-retained-analyst-product)
+now has a distinct saved draft and exact content read/reopen evidence. Use
+[Reading an analysis product](product-content.md) for the existing form and new
+explicit reader. In Light theme, scroll to Result Review and Analysis Products;
+the Workbench theme exposes the corresponding operation tabs. A draft and the
+technical `human` executor label do not establish human approval. Original runs
+and reviews remain unchanged. This supersedes the in-product interpretation gap
+in the older pointer below, within this single retained local example.
+
 ## 2026-09-08 current operator pointer
 
 Use the [local analyst continuation](MASTER_CONTEXT.md#2026-09-08-local-analyst-continuation)

@@ -12155,6 +12155,53 @@ def post_analysis_product_replay_verify(
 
 
 # ---------------------------------------------------------------------------
+# Analysis-product content — explicit selected authored-text disclosure
+# ---------------------------------------------------------------------------
+
+
+class Layer3AnalysisProductContentResponse(Layer3BaseResponse):
+    session_id: str
+    analysis_product: dict[str, Any]
+    evidence_refs: list[dict[str, Any]]
+    evidence_refs_total: int
+    evidence_refs_truncated: bool
+
+
+@router.get(
+    "/analysis-product/{analysis_product_id}/content",
+    response_model=Layer3AnalysisProductContentResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_analysis_product_content(
+    analysis_product_id: str,
+    request: Request,
+    session_id: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        _route_level_operator_identity(request, access="read")
+    except SecXbrlInAppAuthPolicyError as exc:
+        return _sec_xbrl_auth_policy_error_response(exc)
+    from app.services.layer3_analysis_product_content import (
+        CONTENT_SCHEMA_ID,
+        build_analysis_product_content,
+    )
+
+    try:
+        content = build_analysis_product_content(
+            db,
+            session_id=session_id,
+            analysis_product_id=analysis_product_id,
+        )
+        return {
+            **base_response(CONTENT_SCHEMA_ID),
+            **{key: value for key, value in content.items() if key != "schema_id"},
+        }
+    except Layer3AnalysisProductError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+# ---------------------------------------------------------------------------
 # Analysis-product lineage — 3C read-only inspector
 # ---------------------------------------------------------------------------
 

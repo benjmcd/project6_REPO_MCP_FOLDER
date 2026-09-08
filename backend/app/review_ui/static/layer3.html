@@ -806,6 +806,16 @@
                 <div id="apw-inventory-view" class="result-review-panel" aria-live="polite">
                     <div class="empty-panel">Load a session summary to view 3C analysis products.</div>
                 </div>
+                <div class="result-review-panel">
+                    <h3>Read saved product</h3>
+                    <label for="apw-read-product">Product to read</label>
+                    <select id="apw-read-product" disabled>
+                        <option value="">Select a product</option>
+                    </select>
+                    <button id="apw-read-submit" class="secondary-btn" type="button" disabled>Read product</button>
+                    <p id="apw-read-status" aria-live="polite">Select a product to read its stored content.</p>
+                    <article id="apw-content-view" aria-label="Stored analysis product" hidden></article>
+                </div>
                 <!-- TEXT ANCHOR: apw-packaging-readiness-band -->
                 <div id="apw-packaging-readiness" class="result-review-panel" aria-live="polite"></div>
                 <div id="apw-ref-datalists" hidden></div>
