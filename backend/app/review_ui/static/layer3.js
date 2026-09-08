@@ -711,6 +711,7 @@ const State = {
     resultReview: null,
     resultReviewError: null,
     resultReviewPending: false,
+    resultReviewRequestToken: 0,
     packageReviewPreview: null,
     packageReviewPreviewError: null,
     packageReviewPreviewPending: false,
@@ -3695,10 +3696,16 @@ function loadSessionRecoveryAnchor() {
 }
 
 async function recoverSessionFromStorage() {
+    // Startup recovery must not supersede an operator request or source reset.
+    if (State.sessionSummaryRequestToken !== 0) return false;
     const anchor = loadSessionRecoveryAnchor();
     if (!anchor) return false;
+    beginSessionSummaryRequest();
+    const requestKey = sessionRequestKey();
     try {
         const summary = await getJson(`/session/${encodeURIComponent(anchor.session_id)}`);
+        if (requestKey !== sessionRequestKey()) return false;
+        if (summary.session_id !== anchor.session_id) throw new Error('Session recovery returned a different session.');
         const currentContract = stateActionContractSignature();
         const summaryContract = stateActionContractSignature(summary);
         if (currentContract && summaryContract && currentContract !== summaryContract) {
@@ -3723,6 +3730,7 @@ async function recoverSessionFromStorage() {
         addEvent(`Session ${summary.session_id} restored from server state.`);
         return true;
     } catch (error) {
+        if (requestKey !== sessionRequestKey()) return false;
         // Do NOT clear the anchor here.  The anchor was already validated by
         // loadSessionRecoveryAnchor (schema, contract signature).  A fetch
         // failure (network error, transient server error, or a concurrent
@@ -4021,6 +4029,7 @@ function invalidateResultCaveats() {
 function clearResultReviewState({ keepSummary = false } = {}) {
     if (!keepSummary) {
         State.sessionSummary = null;
+        beginSessionSummaryRequest();
     }
     State.executionSelection = null;
     State.executionSelectionError = null;
@@ -4037,6 +4046,8 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.resultReview = null;
     State.resultReviewError = null;
     State.resultReviewPending = false;
+    State.resultReviewRequestToken += 1;
+    setBusy(elements.resultReviewSubmit, false, 'Submit Result Review');
     State.packageReviewPreview = null;
     State.packageReviewPreviewError = null;
     State.packageReviewPreviewPending = false;
@@ -4106,6 +4117,21 @@ function resultAuthorityKey(authority = selectedResultAuthority()) {
         authority.sessionId, authority.analysisPlanId, authority.passRunId,
         authority.analysisRunId, authority.previewId, authority.previewHash,
     ]);
+}
+
+function sessionRequestKey() {
+    return JSON.stringify([State.sessionSummaryRequestToken, resultAuthorityKey()]);
+}
+
+function beginSessionSummaryRequest() {
+    // All participating readers share ownership, including automatic refreshes.
+    // Release any superseded manual control before its finally guard skips it.
+    State.sessionSummaryPending = false;
+    setBusy(elements.resultReviewRefresh, false, 'Refresh Session State');
+    setBusy(elements.resultSessionReopen, false, 'Reopen Session');
+    if (elements.resultReviewRefresh) elements.resultReviewRefresh.disabled = !canRefreshSessionSummary();
+    if (elements.resultSessionReopen) elements.resultSessionReopen.disabled = !canReopenSessionById();
+    return ++State.sessionSummaryRequestToken;
 }
 
 function resultBodyMatchesAuthority(body, authority, sessionId = body?.session_id) {
@@ -9286,6 +9312,11 @@ function renderResultReviewPanel() {
     const authority = selectedResultAuthority();
     const statusBody = State.resultStatus || {};
     const reviewState = recordedResultReview();
+    const savedReview = State.sessionSummary?.execution_result_review;
+    const reviewNotes = reviewState?.review_record_ref
+        && savedReview?.review_record_ref === reviewState.review_record_ref
+        && resultBodyMatchesAuthority(savedReview, authority, State.sessionSummary?.session_id)
+        ? savedReview.review_notes : null;
     const panelState = resultReviewPanelState(authority);
     const metadata = statusBody.output_metadata_summary || {};
     const cohort = associatedCohortProjection(authority);
@@ -9351,6 +9382,12 @@ function renderResultReviewPanel() {
                     ${fieldItem('trace', summarizeTrace(traceSummary))}
                 </ul>
             </section>
+            ${typeof reviewNotes === 'string' && reviewNotes.trim() ? `
+                <section class="result-review-card" style="grid-column: 1 / -1; min-width: 0;">
+                    <strong>Operator-authored review notes</strong>
+                    <p id="result-review-recorded-notes" style="white-space: pre-wrap; overflow-wrap: anywhere;"></p>
+                </section>
+            ` : ''}
             <section class="result-review-card">
                 <strong>Disabled Downstream</strong>
                 <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
@@ -9358,6 +9395,8 @@ function renderResultReviewPanel() {
             ${renderErrorCard(error)}
         </div>
     `;
+    const notesElement = elements.resultReviewPanel.querySelector('#result-review-recorded-notes');
+    if (notesElement) notesElement.textContent = reviewNotes;
 }
 
 function buildApwRefDatalistsHtml() {
@@ -29437,7 +29476,7 @@ async function loadSessionSummaryById(sessionId, { button, label, anchorSource, 
     // GET /session/{session_id} route is the only source; a failed load leaves the
     // currently loaded session untouched and renders the server error card.
     const authorityKey = resultAuthorityKey();
-    const requestToken = ++State.sessionSummaryRequestToken;
+    const requestToken = beginSessionSummaryRequest();
     State.sessionSummaryPending = true;
     invalidateResultCaveats();
     setBusy(button, true, label);
@@ -30304,8 +30343,10 @@ async function inspectResultStatus() {
     if (!canInspectResultStatus()) return;
     const authority = selectedResultAuthority();
     const authorityKey = resultAuthorityKey(authority);
+    let requestKey = sessionRequestKey();
     const requestToken = ++State.resultStatusRequestToken;
-    const requestIsCurrent = () => requestToken === State.resultStatusRequestToken && authorityKey === resultAuthorityKey();
+    const requestIsCurrent = () => requestToken === State.resultStatusRequestToken
+        && authorityKey === resultAuthorityKey() && requestKey === sessionRequestKey();
     State.resultStatusPending = true;
     invalidateResultCaveats();
     clearPublicScienceBaseValuesState();
@@ -30339,6 +30380,8 @@ async function inspectResultStatus() {
         // Status intentionally carries no caveat text. Both automatic and manual
         // inspection require a fresh session projection before review is enabled.
         try {
+            beginSessionSummaryRequest();
+            requestKey = sessionRequestKey();
             const summary = await getJson(`/session/${encodeURIComponent(status.session_id)}`);
             if (!requestIsCurrent()) return;
             const summaryAuthority = selectedResultAuthority({ summary, includeLocal: false });
@@ -31491,12 +31534,20 @@ async function useExternalExportDownloadSignedReference() {
 async function submitResultReview(event) {
     event.preventDefault();
     if (!canSubmitResultReview()) return;
+    const authority = selectedResultAuthority();
+    const payload = resultReviewPayload();
+    let requestKey = sessionRequestKey();
+    const requestToken = ++State.resultReviewRequestToken;
+    const isCurrent = () => requestToken === State.resultReviewRequestToken && requestKey === sessionRequestKey();
     State.resultReviewPending = true;
     State.resultReviewError = null;
     renderAll();
     setBusy(elements.resultReviewSubmit, true, 'Submit Result Review');
     try {
-        State.resultReview = await postJson('/execution/result/review', resultReviewPayload());
+        const review = await postJson('/execution/result/review', payload);
+        if (!isCurrent()) return;
+        if (!resultBodyMatchesAuthority(review, authority)) throw new Error('Result review returned a different result authority.');
+        State.resultReview = review;
         State.resultReviewError = null;
         State.packageReviewPreview = null;
         State.packageReviewPreviewError = null;
@@ -31515,13 +31566,22 @@ async function submitResultReview(event) {
         clearExternalExportDownloadPrepareState();
         addEvent('Result review recorded.');
         try {
-            State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.resultReview.session_id)}`);
+            beginSessionSummaryRequest();
+            requestKey = sessionRequestKey();
+            const summary = await getJson(`/session/${encodeURIComponent(payload.session_id)}`);
+            if (!isCurrent()) return;
+            if (resultAuthorityKey(selectedResultAuthority({ summary, includeLocal: false })) !== resultAuthorityKey(authority)) {
+                throw new Error('Session refresh returned a different result authority.');
+            }
+            State.sessionSummary = summary;
             persistSessionRecoveryAnchor('result_review_refresh');
         } catch (refreshError) {
+            if (!isCurrent()) return;
             addEvent(`Review recorded; session refresh blocked: ${refreshError.message}`);
         }
         renderAll();
     } catch (error) {
+        if (!isCurrent()) return;
         State.resultReviewError = error.payload || {
             schema_id: 'layer3.workbench_error.v1',
             error_code: 'execution_result_review_request_failed',
@@ -31530,9 +31590,11 @@ async function submitResultReview(event) {
         addEvent(`Result review blocked: ${error.message}`);
         renderAll();
     } finally {
-        State.resultReviewPending = false;
-        setBusy(elements.resultReviewSubmit, false, 'Submit Result Review');
-        renderAll();
+        if (requestToken === State.resultReviewRequestToken) {
+            State.resultReviewPending = false;
+            setBusy(elements.resultReviewSubmit, false, 'Submit Result Review');
+            renderAll();
+        }
     }
 }
 
@@ -33369,9 +33431,38 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
 }());
 
 (function apwFormHandlers() {
-    async function refreshSession(sessionId) {
-        State.sessionSummary = await getJson(`/session/${encodeURIComponent(sessionId)}`);
+    let latestRequestToken = 0;
+
+    async function refreshSession(sessionId, isCurrent) {
+        const summary = await getJson(`/session/${encodeURIComponent(sessionId)}`);
+        if (!isCurrent()) return false;
+        if (summary.session_id !== sessionId) throw new Error('Session refresh returned a different session.');
+        const authorityKey = resultAuthorityKey();
+        State.sessionSummary = summary;
+        if (authorityKey !== resultAuthorityKey(selectedResultAuthority({ summary, includeLocal: false }))) {
+            clearResultReviewState({ keepSummary: true });
+        }
         renderAll();
+        return true;
+    }
+
+    async function submitApwRequest(path, body, statusEl, successMessage, failureLabel) {
+        const requestToken = ++latestRequestToken;
+        let requestKey = sessionRequestKey();
+        const isCurrent = () => requestToken === latestRequestToken && requestKey === sessionRequestKey();
+        try {
+            const res = await postJson(path, body);
+            if (!isCurrent()) return;
+            const sessionId = res.session_id || body.session_id;
+            if (sessionId !== body.session_id) throw new Error('Analysis Products response returned a different session.');
+            beginSessionSummaryRequest();
+            requestKey = sessionRequestKey();
+            if (!await refreshSession(sessionId, isCurrent)) return;
+            setApwStatus(statusEl, successMessage(res));
+        } catch (err) {
+            if (!isCurrent()) return;
+            setApwStatus(statusEl, `${failureLabel}: ${escapeHtml(err.message || 'request blocked')}`);
+        }
     }
 
     function setApwStatus(statusEl, message) {
@@ -33550,13 +33641,8 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 is_non_evidentiary: document.getElementById('apw-draft-non-evidentiary')?.checked === true,
                 evidence,
             };
-            try {
-                const res = await postJson('/analysis-product/draft', body);
-                await refreshSession(res.session_id || currentSessionId());
-                setApwStatus(statusEl, `Draft created: ${escapeHtml(String(res.product_id || res.status || 'ok'))}`);
-            } catch (err) {
-                setApwStatus(statusEl, `Draft failed: ${escapeHtml(err.message || 'request blocked')}`);
-            }
+            await submitApwRequest('/analysis-product/draft', body, statusEl,
+                (res) => `Draft created: ${escapeHtml(String(res.product_id || res.status || 'ok'))}`, 'Draft failed');
         });
     }
 
@@ -33587,13 +33673,8 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 name: document.getElementById('apw-ws-name')?.value || '',
                 members,
             };
-            try {
-                const res = await postJson('/working-set', body);
-                await refreshSession(res.session_id || currentSessionId());
-                setApwStatus(statusEl, `Working set created: ${escapeHtml(String(res.working_set_id || res.status || 'ok'))}`);
-            } catch (err) {
-                setApwStatus(statusEl, `Working set failed: ${escapeHtml(err.message || 'request blocked')}`);
-            }
+            await submitApwRequest('/working-set', body, statusEl,
+                (res) => `Working set created: ${escapeHtml(String(res.working_set_id || res.status || 'ok'))}`, 'Working set failed');
         });
     }
 
@@ -33623,13 +33704,8 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 working_set_id: workingSetId,
                 method_id: methodId,
             };
-            try {
-                const res = await postJson('/analysis-product/generate', body);
-                await refreshSession(res.session_id || currentSessionId());
-                setApwStatus(statusEl, `Generated: ${escapeHtml(String(res.product_id || res.status || 'ok'))}`);
-            } catch (err) {
-                setApwStatus(statusEl, `Generate failed: ${escapeHtml(err.message || 'request blocked')}`);
-            }
+            await submitApwRequest('/analysis-product/generate', body, statusEl,
+                (res) => `Generated: ${escapeHtml(String(res.product_id || res.status || 'ok'))}`, 'Generate failed');
         });
     }
 
@@ -33670,13 +33746,8 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
                 ...(notes ? { decision_notes: notes } : {}),
                 ...(intent === 'supersede' && successorId ? { decision_provenance: { successor_analysis_product_id: successorId } } : {}),
             };
-            try {
-                const res = await postJson(`/analysis-product/${encodeURIComponent(productId)}/transition`, body);
-                await refreshSession(res.session_id || currentSessionId());
-                setApwStatus(statusEl, `Transition recorded: ${escapeHtml(String(res.lifecycle_status || res.status || 'ok'))}`);
-            } catch (err) {
-                setApwStatus(statusEl, `Transition failed: ${escapeHtml(err.message || 'request blocked')}`);
-            }
+            await submitApwRequest(`/analysis-product/${encodeURIComponent(productId)}/transition`, body, statusEl,
+                (res) => `Transition recorded: ${escapeHtml(String(res.lifecycle_status || res.status || 'ok'))}`, 'Transition failed');
         });
     }
 

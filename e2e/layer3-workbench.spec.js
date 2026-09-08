@@ -26021,6 +26021,379 @@ function controlledReviewReadyStatus(overrides = {}) {
   };
 }
 
+async function reopenRaceSession(page, sessionId = 'newer-analyst-session', { cancel = false } = {}) {
+  await page.route(`**/api/v1/layer3/session/${sessionId}`, (route) => route.fulfill({
+    json: controlledReviewReadySummary({ session_id: sessionId }),
+  }));
+  if (cancel) {
+    await page.evaluate(() => {
+      clearResultReviewState();
+      renderAll();
+      setGateControls();
+    });
+  }
+  await page.locator('#result-session-reopen-id').fill(sessionId);
+  await page.locator('#result-session-reopen').click();
+  await expect.poll(() => page.evaluate(() => State.sessionSummary?.session_id)).toBe(sessionId);
+  await expect(page.locator('#result-session-reopen')).toHaveText('Reopen Session');
+}
+
+test('Analyst session recovery stays cancelled when source reset leaves no selected session', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#event-list')).toContainText('Workbench bootstrap loaded.');
+  await page.evaluate((summary) => {
+    State.sessionSummary = summary;
+    persistSessionRecoveryAnchor('recovery-reset-test');
+  }, controlledReviewReadySummary());
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  await page.route('**/api/v1/layer3/session/honest-result-session', async (route) => {
+    await gate;
+    await route.fulfill({ json: controlledReviewReadySummary() });
+  });
+  const pending = page.waitForRequest('**/api/v1/layer3/session/honest-result-session');
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await pending;
+  await page.evaluate(() => { clearResultReviewState(); renderAll(); });
+  release();
+  await expect(page.locator('#event-list')).toContainText('Workbench bootstrap loaded.');
+  expect(await page.evaluate(() => currentSessionId())).toBeNull();
+  await expect(page.locator('#event-list')).not.toContainText('restored from server state');
+});
+
+test('Analyst saved review notes redisplay after save, reload and pasted-id reopen without crossing sessions', async ({ page, request }) => {
+  const executed = await prepareExecutedLayer3Session(request);
+  const note = 'Conclusion: the synthetic series supports a descriptive review only.\n'
+    + 'Limitations: harness data are not scientific validation or connector provenance.\n'
+    + '<b>Operator interpretation</b> — retain the caveats before reuse.\n'
+    + `Trace token: ${'bounded-review-'.repeat(24)}`;
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await attachSessionToWorkbench(page, executed.seed.session_id);
+  await reloadRecoveredExecutionSession(page, executed.seed.session_id);
+  await page.locator('#result-status-inspect').click();
+  await expect(page.locator('#result-review-submit')).toBeEnabled();
+  await page.locator('#result-review-decision').selectOption('approved');
+  await page.locator('#result-review-notes').fill(note);
+  const reviewResponse = page.waitForResponse('**/api/v1/layer3/execution/result/review');
+  await page.locator('#result-review-submit').click();
+  const review = await expectJson(await reviewResponse);
+  expect(review.review_notes_recorded).toBe(true);
+  expect(review).not.toHaveProperty('review_notes');
+  const notes = page.locator('#result-review-recorded-notes');
+  await expect(notes).toHaveText(note);
+  await expect(notes.locator('b')).toHaveCount(0);
+  await expect(page.locator('#result-review-panel')).toContainText('Operator-authored review notes');
+
+  const recovered = await reloadRecoveredExecutionSession(page, executed.seed.session_id);
+  expect(recovered.execution_result_review).toMatchObject({
+    review_notes: note, review_record_ref: review.review_record_ref,
+    analysis_plan_id: executed.approval.analysis_plan_id, pass_run_id: executed.passRunId,
+    analysis_run_id: executed.start.analysis_run_id,
+  });
+  await expect(notes).toHaveText(note);
+  expect(await notes.evaluate((element) => element.textContent)).toBe(note);
+  expect(await notes.evaluate((element) => getComputedStyle(element).whiteSpace)).toBe('pre-wrap');
+  expect(await notes.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+  const other = await expectJson(await request.post('/__test/layer3/seed-quant'));
+  await page.locator('#result-session-reopen-id').fill(other.session_id);
+  await page.locator('#result-session-reopen').click();
+  await expect.poll(() => page.evaluate(() => State.sessionSummary?.session_id)).toBe(other.session_id);
+  await expect(notes).toHaveCount(0);
+  await page.locator('#result-session-reopen-id').fill(executed.seed.session_id);
+  await page.locator('#result-session-reopen').click();
+  await expect(notes).toHaveText(note);
+  expect(await page.evaluate(() => State.sessionSummary.execution_result_review.review_record_ref)).toBe(review.review_record_ref);
+});
+
+for (const outcome of ['success', 'failure']) {
+  test(`Analysis Products refresh ignores older same-session draft ${outcome} after a newer submission`, async ({ page }) => {
+    await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#event-list')).toContainText('Workbench bootstrap loaded.');
+    await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
+    await page.evaluate(() => {
+      State.activeOperationId = 'analysis-product-workspace-band';
+      State.operationDockManual = true;
+      renderAll();
+    });
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    let draftRequests = 0;
+    let summaryRequests = 0;
+    await page.route('**/api/v1/layer3/analysis-product/draft', async (route) => {
+      const sequence = ++draftRequests;
+      if (sequence === 1) await gate;
+      await route.fulfill(sequence === 1 && outcome === 'failure'
+        ? { status: 503, json: { message: 'older draft failed' } }
+        : { json: { session_id: 'honest-result-session', product_id: sequence === 1 ? 'older-product' : 'newest-product' } });
+    });
+    await page.route('**/api/v1/layer3/session/honest-result-session', (route) => {
+      summaryRequests += 1;
+      return route.fulfill({ json: controlledReviewReadySummary() });
+    });
+    await page.locator('#apw-draft-title').fill('First draft');
+    await page.locator('#apw-draft-submit').click();
+    await expect.poll(() => draftRequests).toBe(1);
+    await page.locator('#apw-draft-title').fill('Newer draft');
+    await page.locator('#apw-draft-submit').click();
+    await expect(page.locator('#apw-draft-status')).toHaveText('Draft created: newest-product');
+    const lateResponse = page.waitForResponse('**/api/v1/layer3/analysis-product/draft');
+    release();
+    await (await lateResponse).finished();
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await expect(page.locator('#apw-draft-status')).toHaveText('Draft created: newest-product');
+    expect(summaryRequests).toBe(1);
+  });
+}
+
+for (const outcome of ['success', 'failure', 'contract-mismatch']) {
+  test(`Analyst session recovery ignores obsolete ${outcome} after a newer reopen`, async ({ page }) => {
+    await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('#event-list')).toContainText('Workbench bootstrap loaded.');
+    await page.evaluate((summary) => {
+      State.sessionSummary = summary;
+      persistSessionRecoveryAnchor('recovery-race-test');
+    }, controlledReviewReadySummary());
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    await page.route('**/api/v1/layer3/session/honest-result-session', async (route) => {
+      await gate;
+      const summary = controlledReviewReadySummary();
+      if (outcome === 'contract-mismatch') summary.state_action_contract = { schema_id: 'obsolete.contract.v1' };
+      await route.fulfill(outcome === 'failure'
+        ? { status: 503, json: { message: 'obsolete recovery failed' } }
+        : { json: summary });
+    });
+    const pending = page.waitForRequest('**/api/v1/layer3/session/honest-result-session');
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await pending;
+    await reopenRaceSession(page);
+    const anchor = await page.evaluate(() => localStorage.getItem('layer3_workbench_session_recovery_v1'));
+    release();
+    await expect(page.locator('#event-list')).toContainText('Workbench bootstrap loaded.');
+    expect(await page.evaluate(() => State.sessionSummary.session_id)).toBe('newer-analyst-session');
+    expect(await page.evaluate(() => localStorage.getItem('layer3_workbench_session_recovery_v1'))).toBe(anchor);
+    await expect(page.locator('#event-list')).not.toContainText('restored from server state');
+    await expect(page.locator('#event-list')).not.toContainText('obsolete recovery failed');
+    await expect(page.locator('#event-list')).not.toContainText('no longer matches');
+  });
+}
+
+for (const olderOperation of ['product', 'review']) {
+  for (const outcome of ['success', 'failure']) {
+    test(`Analyst shared refresh ignores older ${olderOperation} ${outcome} after the other workflow refreshes`, async ({ page }) => {
+      await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#event-list')).toContainText('Workbench bootstrap loaded.');
+      await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
+      const review = controlledReviewReadyStatus({
+        schema_id: 'layer3.execution_result_review.v1', status: 'recorded',
+        review_state: 'execution_result_review_approved', operator_decision: 'approved',
+        review_record_ref: 'review-newest-refresh', review_notes_recorded: true,
+      });
+      const note = 'Conclusion: descriptive only. Limitations: synthetic evidence.';
+      const emptyInventory = {
+        schema_id: 'layer3.analysis_product_inventory_projection.v1', no_side_effects: true,
+        products: [], analyst_products: [], working_sets: [],
+      };
+      const product = { product_id: 'layer3_analyst_product:latest-product', product_kind: 'analyst_note', lifecycle_status: 'draft' };
+      const newSummary = controlledReviewReadySummary({
+        execution_result_review: { ...review, review_notes: note },
+        analysis_product_inventory_projection: { ...emptyInventory, products: [product], analyst_products: [product] },
+      });
+      const oldSummary = controlledReviewReadySummary({
+        ...(olderOperation === 'review' ? { execution_result_review: { ...review, review_notes: note } } : {}),
+        analysis_product_inventory_projection: emptyInventory,
+      });
+      let release;
+      const gate = new Promise((resolve) => { release = resolve; });
+      let summaryRequests = 0;
+      await page.route('**/api/v1/layer3/execution/result/review', (route) => route.fulfill({ json: review }));
+      await page.route('**/api/v1/layer3/analysis-product/draft', (route) => route.fulfill({
+        json: { session_id: 'honest-result-session', product_id: 'latest-product' },
+      }));
+      await page.route('**/api/v1/layer3/session/honest-result-session', async (route) => {
+        const sequence = ++summaryRequests;
+        if (sequence === 1) await gate;
+        await route.fulfill(sequence === 1 && outcome === 'failure'
+          ? { status: 503, json: { message: 'obsolete cross-workflow refresh failed' } }
+          : { json: sequence === 1 ? oldSummary : newSummary });
+      });
+      const submitProduct = () => page.locator('#apw-draft-form').evaluate((form) => form.requestSubmit());
+      const submitReview = () => page.evaluate(() => {
+        elements.resultReviewDecision.value = 'approved';
+        window.pendingSharedReview = submitResultReview({ preventDefault() {} });
+      });
+      if (olderOperation === 'product') await submitProduct();
+      else await submitReview();
+      await expect.poll(() => summaryRequests).toBe(1);
+      if (olderOperation === 'product') await submitReview();
+      else await submitProduct();
+      await expect(page.locator('#result-review-recorded-notes')).toHaveText(note);
+      const events = await page.evaluate(() => State.events.map((event) => event.message));
+      const lateResponse = page.waitForResponse('**/api/v1/layer3/session/honest-result-session');
+      release();
+      await (await lateResponse).finished();
+      await page.evaluate(() => window.pendingSharedReview);
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await expect(page.locator('#result-review-recorded-notes')).toHaveText(note);
+      await expect(page.locator('#apw-inventory-view .mockup-analyst-product-list li')).toHaveCount(1);
+      expect(await page.evaluate(() => State.events.map((event) => event.message))).toEqual(events);
+      await expect(page.locator('#apw-draft-status')).not.toContainText('obsolete cross-workflow');
+      await expect(page.locator('#result-review-submit')).toHaveText('Submit Result Review');
+    });
+  }
+}
+
+for (const delayedStep of ['review', 'summary']) {
+  for (const outcome of ['success', 'failure']) {
+    test(`Analyst post-review ignores obsolete ${delayedStep} ${outcome} after cancellation and reopen`, async ({ page }) => {
+      await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#event-list')).toContainText('Workbench bootstrap loaded.');
+      await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
+      const review = controlledReviewReadyStatus({
+        schema_id: 'layer3.execution_result_review.v1', status: 'recorded',
+        review_state: 'execution_result_review_approved', operator_decision: 'approved',
+        review_record_ref: 'review-obsolete', review_notes_recorded: true,
+      });
+      let release;
+      const gate = new Promise((resolve) => { release = resolve; });
+      let oldSummaryRequests = 0;
+      await page.route('**/api/v1/layer3/execution/result/review', async (route) => {
+        if (delayedStep === 'review') await gate;
+        await route.fulfill(delayedStep === 'review' && outcome === 'failure'
+          ? { status: 503, json: { message: 'obsolete review failed' } }
+          : { json: review });
+      });
+      await page.route('**/api/v1/layer3/session/honest-result-session', async (route) => {
+        oldSummaryRequests += 1;
+        if (delayedStep === 'summary') await gate;
+        await route.fulfill(delayedStep === 'summary' && outcome === 'failure'
+          ? { status: 503, json: { message: 'obsolete review refresh failed' } }
+          : { json: controlledReviewReadySummary({ execution_result_review: review }) });
+      });
+      const delayedUrl = delayedStep === 'review'
+        ? '**/api/v1/layer3/execution/result/review' : '**/api/v1/layer3/session/honest-result-session';
+      const pending = page.waitForRequest(delayedUrl);
+      await page.locator('#result-review-decision').selectOption('approved');
+      await page.locator('#result-review-notes').fill('Original session review note.');
+      await page.evaluate(() => { window.pendingAnalystReview = submitResultReview({ preventDefault() {} }); });
+      await pending;
+      await reopenRaceSession(page, 'newer-analyst-session', { cancel: true });
+      const events = await page.evaluate(() => State.events.map((event) => event.message));
+      release();
+      await page.evaluate(() => window.pendingAnalystReview);
+      expect(await page.evaluate(() => State.sessionSummary.session_id)).toBe('newer-analyst-session');
+      expect(await page.evaluate(() => [State.resultReview, State.resultReviewError])).toEqual([null, null]);
+      expect(await page.evaluate(() => State.events.map((event) => event.message))).toEqual(events);
+      expect(oldSummaryRequests).toBe(delayedStep === 'summary' ? 1 : 0);
+      await expect(page.locator('#result-review-submit')).toHaveText('Submit Result Review');
+    });
+  }
+}
+
+for (const olderReader of ['status', 'product']) {
+  for (const outcome of ['success', 'failure']) {
+    test(`Analyst status shared refresh ignores older ${olderReader} ${outcome} after the other reader refreshes`, async ({ page }) => {
+      await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#event-list')).toContainText('Workbench bootstrap loaded.');
+      const inventory = (products) => ({
+        schema_id: 'layer3.analysis_product_inventory_projection.v1', no_side_effects: true,
+        products, analyst_products: products, working_sets: [],
+      });
+      const draft = { product_id: 'layer3_analyst_product:new-draft', product_kind: 'analyst_note', lifecycle_status: 'draft' };
+      const concurrentDraft = { ...draft, product_id: 'layer3_analyst_product:concurrent-draft' };
+      const initial = controlledReviewReadySummary({ analysis_product_inventory_projection: inventory([]) });
+      // The reverse order includes a second durable product from another client
+      // in the newer status snapshot; the earlier product snapshot predates it.
+      const olderProducts = olderReader === 'status' ? [] : [draft];
+      const newerProducts = olderReader === 'status' ? [draft] : [draft, concurrentDraft];
+      const oldSummary = controlledReviewReadySummary({ analysis_product_inventory_projection: inventory(olderProducts) });
+      const newSummary = controlledReviewReadySummary({ analysis_product_inventory_projection: inventory(newerProducts) });
+      await renderControlledReviewReadyPanel(page, initial, controlledReviewReadyStatus());
+      let release;
+      const gate = new Promise((resolve) => { release = resolve; });
+      let summaryRequests = 0;
+      await page.route('**/api/v1/layer3/execution/result/status', (route) => route.fulfill({ json: controlledReviewReadyStatus() }));
+      await page.route('**/api/v1/layer3/analysis-product/draft', (route) => route.fulfill({
+        json: { session_id: 'honest-result-session', product_id: 'new-draft' },
+      }));
+      await page.route('**/api/v1/layer3/session/honest-result-session', async (route) => {
+        const sequence = ++summaryRequests;
+        if (sequence === 1) await gate;
+        await route.fulfill(sequence === 1 && outcome === 'failure'
+          ? { status: 503, json: { message: 'obsolete status-product refresh failed' } }
+          : { json: sequence === 1 ? oldSummary : newSummary });
+      });
+      const submitProduct = () => page.locator('#apw-draft-form').evaluate((form) => form.requestSubmit());
+      const inspectStatus = () => page.evaluate(() => { window.pendingSharedStatus = inspectResultStatus(); });
+      if (olderReader === 'status') await inspectStatus();
+      else await submitProduct();
+      await expect.poll(() => summaryRequests).toBe(1);
+      if (olderReader === 'status') await submitProduct();
+      else await inspectStatus();
+      const rows = page.locator('#apw-inventory-view .mockup-analyst-product-list li');
+      await expect(rows).toHaveCount(newerProducts.length);
+      const events = await page.evaluate(() => State.events.map((event) => event.message));
+      const lateResponse = page.waitForResponse('**/api/v1/layer3/session/honest-result-session');
+      release();
+      await (await lateResponse).finished();
+      await page.evaluate(() => window.pendingSharedStatus);
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await expect(rows).toHaveCount(newerProducts.length);
+      expect(await page.evaluate(() => State.resultStatusError)).toBeNull();
+      expect(await page.evaluate(() => State.events.map((event) => event.message))).toEqual(events);
+      await expect(page.locator('#apw-draft-status')).not.toContainText('obsolete status-product');
+      await expect(page.locator('#result-status-inspect')).toHaveText('Inspect Result Status');
+      expect(await page.evaluate(() => State.resultStatusPending)).toBe(false);
+    });
+  }
+}
+
+for (const delayedStep of ['draft', 'summary']) {
+  for (const outcome of ['success', 'failure']) {
+    test(`Analysis Products refresh ignores obsolete ${delayedStep} ${outcome} after a newer reopen`, async ({ page }) => {
+      await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('#event-list')).toContainText('Workbench bootstrap loaded.');
+      await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
+      await page.evaluate(() => {
+        State.activeOperationId = 'analysis-product-workspace-band';
+        State.operationDockManual = true;
+        renderAll();
+      });
+      let release;
+      const gate = new Promise((resolve) => { release = resolve; });
+      let oldSummaryRequests = 0;
+      await page.route('**/api/v1/layer3/analysis-product/draft', async (route) => {
+        if (delayedStep === 'draft') await gate;
+        await route.fulfill(delayedStep === 'draft' && outcome === 'failure'
+          ? { status: 503, json: { message: 'obsolete draft failed' } }
+          : { json: { session_id: 'honest-result-session', product_id: 'obsolete-product' } });
+      });
+      await page.route('**/api/v1/layer3/session/honest-result-session', async (route) => {
+        oldSummaryRequests += 1;
+        if (delayedStep === 'summary') await gate;
+        await route.fulfill(delayedStep === 'summary' && outcome === 'failure'
+          ? { status: 503, json: { message: 'obsolete product refresh failed' } }
+          : { json: controlledReviewReadySummary() });
+      });
+      const delayedUrl = delayedStep === 'draft'
+        ? '**/api/v1/layer3/analysis-product/draft' : '**/api/v1/layer3/session/honest-result-session';
+      const pending = page.waitForRequest(delayedUrl);
+      await page.locator('#apw-draft-title').fill('Original session draft');
+      await page.locator('#apw-draft-submit').click();
+      await pending;
+      await reopenRaceSession(page);
+      const lateResponse = page.waitForResponse(delayedUrl);
+      release();
+      await (await lateResponse).finished();
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      expect(await page.evaluate(() => State.sessionSummary.session_id)).toBe('newer-analyst-session');
+      await expect(page.locator('#apw-draft-status')).toBeEmpty();
+      expect(oldSummaryRequests).toBe(delayedStep === 'summary' ? 1 : 0);
+    });
+  }
+}
+
 async function renderControlledReviewReadyPanel(page, summary, status) {
   await page.evaluate(({ summary: controlledSummary, status: controlledStatus }) => {
     State.sessionSummary = controlledSummary;
@@ -26167,6 +26540,9 @@ test('Result caveat freshness fails closed during and after a same-run refresh f
   await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
   await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
   await expect(page.locator('#result-review-submit')).toBeEnabled();
+  await page.locator('#result-session-reopen-id').fill('honest-result-session');
+  await expect(page.locator('#result-review-refresh')).toBeEnabled();
+  await expect(page.locator('#result-session-reopen')).toBeEnabled();
 
   let releaseSummary;
   const summaryGate = new Promise((resolve) => { releaseSummary = resolve; });
@@ -26181,10 +26557,16 @@ test('Result caveat freshness fails closed during and after a same-run refresh f
   try {
     await expect(page.locator('#result-review-submit')).toBeDisabled();
     await expect(page.locator('#result-review-caveats')).toContainText('not loaded');
+    await expect(page.locator('#result-review-refresh')).toHaveText('Refresh Session State');
+    await expect(page.locator('#result-session-reopen')).toHaveText('Reopen Session');
+    await expect(page.locator('#result-review-refresh')).toBeDisabled();
+    await expect(page.locator('#result-session-reopen')).toBeDisabled();
   } finally {
     releaseSummary();
   }
   await expect(page.locator('#event-list')).toContainText('session refresh blocked');
+  await expect(page.locator('#result-review-refresh')).toBeEnabled();
+  await expect(page.locator('#result-session-reopen')).toBeEnabled();
   await expect(page.locator('#result-review-submit')).toBeDisabled();
   await expect(page.locator('#result-review-caveats')).toContainText('not loaded');
   await page.locator('#result-review-form').evaluate((form) => form.requestSubmit());
