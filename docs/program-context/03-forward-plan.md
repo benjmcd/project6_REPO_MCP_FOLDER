@@ -1,5 +1,47 @@
 # 03 — Forward Plan
 
+## 2026-09-08 current forward pointer
+
+Use the [local analyst continuation](../MASTER_CONTEXT.md#2026-09-08-local-analyst-continuation)
+for the bounded repair and interpretation evidence. This supersedes the September
+7 request to repair startup recovery, post-review refresh and analysis-product
+refresh. It does not assert request protection for every asynchronous workflow.
+Historical runs retain their original assumptions; the stationarity correction
+applies when profiling or analysis is deliberately performed again.
+
+The next useful pass must name its analytical question and intended reader before
+adding source or delivery scope. The retained-data answer is a separate descriptive
+record, while saved-note creation/reopening and legacy production-note recovery
+have distinct evidence. It is not a new production review of the retained runs.
+Do not repeat those runs merely to refresh a status record or obtain a preferable
+stationarity or break result.
+
+Remaining work is scoped as follows:
+
+1. **In-product analytical use:** if the next reader needs the new interpretation
+   inside an analysis product, bind an existing authoring/review surface to the
+   exact source and run identities, persist the conclusion and limits, and reopen
+   the same record. Acceptance requires readable evidence and caveats, not only a
+   successful POST. This is separate from the already verified note reader.
+2. **Eligibility and public results:** audit only the methods/source classes the
+   selected question requires. Close a demonstrated eligibility defect with a
+   focused regression. Public-value caveat co-display needs its own bounded
+   default-off slice; the local operator-note reader does not complete it.
+3. **Source-integrated workflow:** select one required admitted family and prove
+   its source-to-analysis/review/output path. A public temporal question needs
+   qualified temporal observations and lineage; row ordering cannot supply time.
+   Broader family pilots and Phase 4/5/6 claims retain their own acceptance and
+   owner gates. One successful family does not close the whole program.
+4. **Intended consumption and operations:** choose the actual consumer before
+   expanding document/body presentation, exports or handoffs. Qualify the named
+   host's custody, recovery and upgrade arrangement separately. Acquisition,
+   credentials, signing, nonlocal operation, default changes and unrelated
+   preservation cleanup remain outside this continuation.
+
+The preserved detailed F/P sections below remain applicable within their dated
+scope. This pointer orders useful outcomes; it grants no new admission, execution,
+arming or deployment authority.
+
 ## 2026-09-07 current forward pointer
 
 The known result-review and time-index repairs now have bounded verification,

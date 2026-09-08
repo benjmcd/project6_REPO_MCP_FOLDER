@@ -1,5 +1,94 @@
 # Master Context — project6 Layer 3 / SEC-XBRL Campaign
 
+## 2026-09-08 local analyst continuation
+
+This continuation started from canonical main
+`a723a5e436a14e9d6ab21ff4c6eb2c63c53cb0b5`, the merged #2501 result. The
+combined implementation is pinned at
+`475380ed3ce9f539d8561decccfc45d89ba89a01`. This block supersedes the September
+7 remaining-loader follow-up within the specific paths below; broader analysis
+and program milestones remain incomplete.
+
+Startup recovery, manual session loading, result-status refresh, post-review
+refresh and analysis-product refresh now share request ordering. Obsolete success
+and failure responses cannot replace a newer participating reader's state, even
+when the session and run identities stay the same. Request-specific cleanup keeps
+newer controls intact; normal labels retain their existing disabled gates. This
+does not establish protection for every asynchronous workflow in the application.
+
+Session GET now projects the exact saved operator review note from its canonical
+pass record. Session/plan/pass/run ownership, source-preview agreement and the
+content-derived review reference must match; missing or mismatched state returns
+null. A compact session note cannot substitute for the canonical record. The UI
+uses the matching GET note, literal text and wrapped full-width presentation.
+POST and persisted JSON are unchanged. This exposes operator-authored text to the
+existing session-reader audience, including auditors; it is not author-private
+text or a public artifact-value/provenance extension. Independent source review
+covered this read-time projection and its authority boundaries.
+
+The stationarity repair at `435d7f05` converts numerical-library comparison results
+to native booleans while preserving the existing thresholds and statistical
+calls. Cross-correlation passes its stationarity assumption only when every
+numeric contributor has positive stationary evidence. Existing nonstationary
+hints still fail; incomplete or unknown evidence warns. This changes diagnostic
+classification, not correlation/STL calculations, method defaults or historical
+profiles. Existing retained runs were not reprofiled or rerun.
+
+Validation: 22 focused stationarity cases and 18 existing compatibility cases
+passed; 22 saved-note API cases and 14 compatibility/access checks passed. The
+final browser suite passed 38 cases in each of headed and headless Chrome: 23 new
+regressions plus 15 compatibility cases. The added regressions and the strengthened
+existing pending-control assertion reproduced their defects before correction.
+Independent review's status/product refresh interaction and control-presentation
+finding were corrected and rechecked; no actionable source finding remained.
+
+Production recovery at the same source revision used the immutable original
+database with initialization disabled. Fresh headed and headless Chrome contexts
+each reopened the same two saved reviews in three alternating selections, using
+13 local GETs and no POSTs. Exact note/session/plan/pass/run/review identities and
+recorded caveats matched. Start remained disabled. Screenshot inspection confirmed
+readable, wrapped note/caveat cards at a 1536px light-theme viewport; this is not
+an all-layout visual qualification. Response-only result-status fields remain
+unknown during GET-only reopening, as expected.
+
+The first attempt stopped before page load because the browser harness forced
+loopback traffic through a closed proxy. A separate attempt corrected that
+process-local setting while retaining the proxy and GET-only dispatch guard;
+product source was unchanged. Final artifact-free readback preserved 101 original
+evidence files, three original helpers and all seven first-attempt files. The 14
+new runtime files were unchanged during readback. No retained analysis, profile or
+review was written. The original workflow database remains
+`fda294dfcad4195a4fde18b26a539cd40ef337251ca05218e31ff1cd56e443ec`.
+
+The local interpretation is a retrospective descriptive assessment of one retained
+60-quarter nominal balance series. It reconciles raw facts, lineage, input rows
+and both retained observed-value arrays, with actual fiscal dates distinguished
+from normalized quarter coordinates. It retains acquisition/as-of limitations,
+the two original break configurations and every recorded failed/warning
+assumption. It makes no new causal, calendar-seasonality or scientific-validity
+claim. The separate question and answer are anchored by SHA-256:
+
+| Record | SHA-256 |
+|---|---|
+| Retrospective question | `a363d7cc7c436592e4f532c9d9a88f2bcd03d58c46fb247705a7bff1ab13093f` |
+| Retained-data interpretation | `2b07ace47e7504642280b4e4acf89e5ef50a428a5525dd8e404766f4a1360f44` |
+| Final production source/preservation plan | `50f7ff4c0f82b93acbf822d4549650bbae515b053d889ed41083f32f08bf00c6` |
+| Headed legacy-note recovery | `51f2b093af930d92b16f302f83de54252057120d5d3ca4ba7c611ae4b29663bf` |
+| Headless legacy-note recovery | `af5ad4bb63d362f03909ccf470e57ecbd52c33551d93318f97e848ac2e8fa046` |
+
+Keep the evidence classes distinct: the new interpretation is a standalone local
+record; an isolated real application test saves and reopens a synthetic analyst
+note; production recovery concerns the original retained reviews. The new
+interpretation has not replaced an original review or been saved as a new
+production review. These establish bounded descriptive and review capabilities,
+not full provenance co-display, broader analytical utility or operational readiness.
+
+Rollback is a code revert with no migration or backfill. Public analysis/value and
+operator method-selection defaults remain off. Acquisition, source-family
+admission, signing and nonlocal use retain their separate boundaries. See the
+[current forward plan](program-context/03-forward-plan.md#2026-09-08-current-forward-pointer)
+for the remaining outcomes and acceptance criteria.
+
 ## 2026-09-07 operator-result continuation
 
 This continuation started from canonical main

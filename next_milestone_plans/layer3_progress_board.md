@@ -1,5 +1,20 @@
 # Layer3 Progress Board
 
+## 2026-09-08 local analyst continuation
+
+Base: `a723a5e436a14e9d6ab21ff4c6eb2c63c53cb0b5` after #2501; branch:
+`codex/analyst-close`; combined source and bounded acceptance verified at
+`475380ed3ce9f539d8561decccfc45d89ba89a01`; broader milestone incomplete.
+The new scoped `local_analyst_closure_tracking` entries in both manifests point
+to [the current record](../docs/MASTER_CONTEXT.md#2026-09-08-local-analyst-continuation).
+They cover participating session-reader ordering, canonical saved-note readback,
+stationarity evidence classification and a separate descriptive interpretation.
+An isolated application save/reopen test and GET-only recovery of the original
+two production reviews are separate proofs. The new interpretation was not
+written as a new production review. Original failed/warning assumptions, source
+admission, flags and downstream gates remain unchanged. Older entries retain
+their dated scope.
+
 ## 2026-09-07 operator-result continuation
 
 Base: `cd86cb57dfc168fcc43bb60dbbc23fd519def543` after #2500; branch:

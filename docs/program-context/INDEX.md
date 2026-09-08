@@ -1,5 +1,11 @@
 # Program Context — Index and Conventions
 
+> **2026-09-08 pointer:** The current local analyst continuation and its bounded
+> evidence are in [MASTER_CONTEXT](../MASTER_CONTEXT.md#2026-09-08-local-analyst-continuation).
+> The [current forward plan](03-forward-plan.md#2026-09-08-current-forward-pointer)
+> keeps interpretation, source integration and operational qualification separate.
+> Exhaustive membership remains the same six files below.
+
 > **2026-09-07 pointer:** The current continuation and bounded verified acceptance are
 > in [MASTER_CONTEXT](../MASTER_CONTEXT.md#2026-09-07-operator-result-continuation).
 > The exhaustive six-file membership below is unchanged; older entries retain
