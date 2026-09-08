@@ -26181,6 +26181,52 @@ test('Result caveat freshness clears old local authority when a same-session ref
   await expect(page.locator('#result-review-caveats')).toContainText(HONEST_RESULT_CAVEAT.message);
 });
 
+test('Result caveat layout keeps long caveats and assumption notes readable', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1536, height: 960 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  const summary = controlledReviewReadySummary({
+    caveats: [{
+      caveat_type: 'nonstationary_break_interpretation', severity: 'medium',
+      message: 'value_used: breaks on a non-stationary series may reflect trend rather than regime change. working_series=cached_decomposition_residual',
+    }],
+    assumption_checks: [{
+      assumption_name: 'stationarity_required_for_structural_break_interpretation',
+      check_method: 'frequency_and_gap_check', check_result: 'warn', severity: 'medium',
+      notes: 'time_column=normalized_time; distinct_timestamps=60; value_used: {"inferred_frequency":"QE-DEC","gap_count":0}',
+    }],
+  });
+  for (const theme of ['light', 'workbench']) {
+    await page.locator('#theme-selector').selectOption(theme);
+    for (const width of [1536, 390]) {
+      await page.setViewportSize({ width, height: 960 });
+      await renderControlledReviewReadyPanel(page, summary, controlledReviewReadyStatus());
+      await page.locator('#execution-step-chip').click();
+      const card = page.locator('#result-review-caveats');
+      await expect(card).toBeVisible();
+      const layout = await card.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        const grid = element.parentElement.getBoundingClientRect();
+        const textBounds = [...element.querySelectorAll('li')].flatMap((item) => {
+          const range = document.createRange();
+          range.selectNodeContents(item);
+          return [...range.getClientRects()];
+        });
+        return {
+          width: bounds.width,
+          gridWidth: grid.width,
+          fitsCard: element.scrollWidth <= element.clientWidth + 1,
+          textFitsCard: textBounds.every((rect) => rect.left >= bounds.left && rect.right <= bounds.right + 1),
+        };
+      });
+      expect(layout.width, `${theme} ${width}px caveat card should use the available review width`).toBeGreaterThanOrEqual(layout.gridWidth - 1);
+      expect(layout.fitsCard, `${theme} ${width}px caveat content overflows its card`).toBe(true);
+      expect(layout.textFitsCard, `${theme} ${width}px caveat text extends beyond its card`).toBe(true);
+      await card.screenshot({ path: testInfo.outputPath(`caveats-${theme}-${width}.png`) });
+    }
+  }
+});
+
 test('Layer 3 workbench renders selected-run caveats and assumption checks before the review decision', async ({ page }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });

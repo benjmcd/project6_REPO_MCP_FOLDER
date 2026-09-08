@@ -3953,6 +3953,11 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     min-width: 0;
 }
 
+#result-review-caveats {
+    grid-column: 1 / -1;
+    overflow-wrap: anywhere;
+}
+
 .plan-summary-card strong,
 .plan-list h3,
 .result-review-card strong {
