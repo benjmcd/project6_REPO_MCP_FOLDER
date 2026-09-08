@@ -1,6 +1,25 @@
 {
   "artifact_version": 1,
   "artifact_name": "layer3-workbench-proof-readiness-manifest",
+  "retained_product_tracking": {
+    "recorded_at": "2026-09-08",
+    "source_base": "cfa58d3b321dcf9115d90b53bb24a633182beb25",
+    "verified_source": "0416f6b9d37c4be6f410079dec5af44e55406492",
+    "branch": "codex/product-read",
+    "status": "bounded_retained_draft_verified",
+    "record": "docs/MASTER_CONTEXT.md#2026-09-08-retained-analyst-product",
+    "product_id": "a2b1581c-5127-4a25-aef1-ac107ab9dd7b",
+    "lifecycle_status": "draft",
+    "backend_cases_passed": 65,
+    "browser_cases_per_mode_passed": 35,
+    "retained_interpretation_saved": true,
+    "fresh_process_read_only_reopen_verified": true,
+    "original_reviews_rewritten": false,
+    "statistical_methods_rerun": false,
+    "default_flags_changed": false,
+    "source_family_admission_changed": false,
+    "broader_milestone_complete": false
+  },
   "local_analyst_closure_tracking": {
     "recorded_at": "2026-09-08",
     "source_base": "a723a5e436a14e9d6ab21ff4c6eb2c63c53cb0b5",

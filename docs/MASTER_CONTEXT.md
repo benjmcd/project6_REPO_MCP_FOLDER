@@ -1,5 +1,53 @@
 # Master Context — project6 Layer 3 / SEC-XBRL Campaign
 
+## 2026-09-08 retained analyst product
+
+The [selected product reader](product-content.md) is implemented and verified at
+`0416f6b9d37c4be6f410079dec5af44e55406492`, based on canonical
+`cfa58d3b321dcf9115d90b53bb24a633182beb25`. It reuses the existing draft writer
+and read authorization. Explicit selection retrieves exact stored title/body and
+bounded evidence identities; inventory, lineage and package projections remain
+metadata-only. The existing reader audience includes auditors where roles are
+enforced. Authored prose can contain values; this is an explicit content disclosure,
+not author-private text or a public artifact-value flag change.
+
+Backend verification passed 65 focused/compatibility cases, including identity,
+no-write, bounded disclosure, authoring replay and authorization. Both headed and
+headless Chrome passed 35 cases: 16 content-reader regressions and 19 existing
+authoring/transition/shared-refresh cases. Missing-reader and exact-line-ending
+regressions failed before correction. Independent source review covered backend
+disclosure and UI selection/request ordering; no actionable finding remained.
+
+The retrospective NBC interpretation was then saved as a distinct **draft** in an
+explicitly retained local working copy through the ordinary authoring form. Product
+`a2b1581c-5127-4a25-aef1-ac107ab9dd7b` belongs to session
+`9d7db018-bf74-40d9-be95-2ca6f69b10e8`. Its two structured links are material
+`5b6bf586-7d13-4f41-b37e-7dbd411e1ec5` as observation and pass
+`1b0fe2c9-bd8f-49f7-854f-b644df2afe23` as measurement. Its basis hash is
+`7a35dae35c6d1d2b5ec0cb03693b5a13d56bd963a642f7ff63048c94cf9e6c64`.
+The body identifies automated assistance and no separate human approval; the
+server-set `human` executor name is a technical mode, not an attestation.
+
+Actual creation made one POST. After stopping that process and removing its clean
+temporary checkout, a fresh read-only process recovered the same product in headed
+and headless Chrome: 15 GETs and zero POSTs per mode, with exact text, hashes,
+evidence and original review identities. Session switching cleared selected text.
+The retained DB hash is
+`81b8eb0843b8488c9cd5c342b9853a55af044d073069469e987b5be64f4771b3`.
+All 101 original evidence files remain unchanged. The copied database preserves
+every original row except five explicitly rebound storage-routing cells; it adds
+only the product and two evidence-link rows. Original reviews were not rewritten,
+and no analysis or profiling was rerun.
+
+The local launcher uses a pinned temporary detached checkout only while serving;
+retained data survives normal checkout removal. An initial browser navigation
+failure occurred before any POST and was corrected in the helper alone. Viewport
+inspection confirmed readable conclusion, identities and caveats at 1536×1000 in
+Light theme; tall element captures alone were insufficient visual proof.
+This closes the selected in-product interpretation gap, not broader scientific
+qualification, source admission, external delivery or host recovery/upgrade.
+Rollback is a reader/UI code revert; no migration or draft deletion is needed.
+
 ## 2026-09-08 local analyst continuation
 
 This continuation started from canonical main
