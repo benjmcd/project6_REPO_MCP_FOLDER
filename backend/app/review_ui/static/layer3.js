@@ -695,6 +695,8 @@ const State = {
     planRevisionRecoverError: null,
     planRevisionRecoverPending: false,
     sessionSummary: null,
+    sessionSummaryPending: false,
+    sessionSummaryRequestToken: 0,
     executionSelection: null,
     executionSelectionError: null,
     executionSelectionPending: false,
@@ -703,6 +705,8 @@ const State = {
     executionStartPending: false,
     resultStatus: null,
     resultStatusError: null,
+    resultStatusPending: false,
+    resultStatusRequestToken: 0,
     resultStatusAutoAdvancePending: false,
     resultReview: null,
     resultReviewError: null,
@@ -4006,6 +4010,14 @@ function clearPublicScienceBaseValuesState() {
     }
 }
 
+const invalidatedResultCaveatSources = new WeakSet();
+
+function invalidateResultCaveats() {
+    for (const source of [State.sessionSummary, State.resultReview]) {
+        if (source) invalidatedResultCaveatSources.add(source);
+    }
+}
+
 function clearResultReviewState({ keepSummary = false } = {}) {
     if (!keepSummary) {
         State.sessionSummary = null;
@@ -4018,6 +4030,9 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.executionStartPending = false;
     State.resultStatus = null;
     State.resultStatusError = null;
+    State.resultStatusRequestToken += 1;
+    State.resultStatusPending = false;
+    setBusy(elements.resultStatusInspect, false, 'Inspect Result Status');
     clearPublicScienceBaseValuesState();
     State.resultReview = null;
     State.resultReviewError = null;
@@ -4046,34 +4061,65 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     clearExternalExportDownloadPrepareState();
 }
 
-function selectedResultAuthority() {
-    const summary = State.sessionSummary || {};
-    const selection = State.executionSelection || summary.execution_selection || {};
-    const startState = State.executionStart || summary.analysis_execution_start || {};
-    const statusBody = State.resultStatus || {};
-    const reviewBody = State.resultReview || {};
+function selectedResultAuthority({ summary = State.sessionSummary, includeLocal = true } = {}) {
+    summary = summary || {};
+    const selection = (includeLocal && State.executionSelection) || summary.execution_selection || {};
+    const startState = (includeLocal && State.executionStart) || summary.analysis_execution_start || {};
+    const statusBody = (includeLocal && State.resultStatus) || {};
+    const reviewBody = (includeLocal && State.resultReview) || summary.execution_result_review || {};
     const passRunIds = Array.isArray(selection.pass_run_ids) ? selection.pass_run_ids : [];
-    const firstPassRunId = passRunIds[0] || startState.pass_run_id || statusBody.pass_run_id || reviewBody.pass_run_id || null;
+    const passRuns = Array.isArray(summary.sublayer_visualization?.pass_runs) ? summary.sublayer_visualization.pass_runs : [];
+    // The server projects the recorded execution, then the newest executed pass.
+    // Keep its pass/run pair intact; analysis_run_ids omits unexecuted passes.
+    const newestExecutedPass = [...passRunIds].reverse()
+        .map((id) => passRuns.find((passRun) => passRun.pass_run_id === id))
+        .find((passRun) => passRun?.analysis_run_id);
+    const resultBody = [statusBody, startState, newestExecutedPass, reviewBody]
+        .find((body) => body?.pass_run_id) || null;
+    const passRunId = resultBody?.pass_run_id || passRunIds[0] || null;
     const passRunStatuses = selection.pass_run_statuses || {};
-    const passStatus = statusBody.pass_run_status || startState.pass_run_status || passRunStatuses[firstPassRunId] || null;
+    const passStatus = resultBody?.pass_run_status || passRunStatuses[passRunId] || newestExecutedPass?.status || null;
     const analysisRunIds = Array.isArray(selection.analysis_run_ids) ? selection.analysis_run_ids : [];
-    const analysisRunId = statusBody.analysis_run_id || startState.analysis_run_id || analysisRunIds[0] || reviewBody.analysis_run_id || null;
-    const previewIdentity = statusBody.preview_identity || startState.preview_identity || selection.preview_identity || reviewBody.preview_identity || {};
-    const previewId = selection.source_preview_id || startState.source_preview_id || previewIdentity.preview_id || State.planPreview?.preview_id || null;
-    const previewHash = selection.source_preview_hash || startState.source_preview_hash || previewIdentity.preview_hash || State.planPreview?.preview_hash || null;
-    const analysisPlanId = selection.analysis_plan_id || startState.analysis_plan_id || statusBody.analysis_plan_id || reviewBody.analysis_plan_id || State.planApproval?.analysis_plan_id || null;
+    const analysisRunId = resultBody
+        ? resultBody.analysis_run_id || null
+        : (passRunIds.length === 1 && analysisRunIds.length === 1 ? analysisRunIds[0] : null);
+    const previewIdentity = resultBody?.preview_identity || selection.preview_identity || {};
+    const previewId = resultBody?.source_preview_id || previewIdentity.preview_id || selection.source_preview_id || (includeLocal && State.planPreview?.preview_id) || null;
+    const previewHash = resultBody?.source_preview_hash || previewIdentity.preview_hash || selection.source_preview_hash || (includeLocal && State.planPreview?.preview_hash) || null;
+    const analysisPlanId = resultBody?.analysis_plan_id || selection.analysis_plan_id || (includeLocal && State.planApproval?.analysis_plan_id) || null;
     return {
-        sessionId: summary.session_id || currentSessionId(),
+        sessionId: summary.session_id || (includeLocal && currentSessionId()) || null,
         analysisPlanId,
-        passRunId: firstPassRunId,
+        passRunId,
         previewId,
         previewHash,
         analysisRunId,
         passStatus,
-        selected: Boolean((selection.selected === true || State.executionSelection?.schema_id) && firstPassRunId),
+        selected: Boolean((selection.selected === true || (includeLocal && State.executionSelection?.schema_id)) && passRunIds.includes(passRunId)),
         terminal: TERMINAL_PASS_STATUSES.has(passStatus),
         executionStarted: Boolean(selection.execution_started || startState.execution_started || startState.pass_run_id || statusBody.execution_started),
     };
+}
+
+function resultAuthorityKey(authority = selectedResultAuthority()) {
+    return JSON.stringify([
+        authority.sessionId, authority.analysisPlanId, authority.passRunId,
+        authority.analysisRunId, authority.previewId, authority.previewHash,
+    ]);
+}
+
+function resultBodyMatchesAuthority(body, authority, sessionId = body?.session_id) {
+    return Boolean(
+        body?.pass_run_id
+        && sessionId === authority.sessionId
+        && body.analysis_plan_id === authority.analysisPlanId
+        && body.pass_run_id === authority.passRunId
+        && (body.analysis_run_id || null) === authority.analysisRunId
+        && (!body.preview_identity || (
+            body.preview_identity.preview_id === authority.previewId
+            && body.preview_identity.preview_hash === authority.previewHash
+        ))
+    );
 }
 
 function executionSelectionState() {
@@ -4114,11 +4160,18 @@ function hasResultAuthorityIdentity(authority = selectedResultAuthority()) {
 }
 
 function recordedResultReview() {
-    if (State.resultReview?.review_record_ref || State.resultReview?.review_state) {
+    const authority = selectedResultAuthority();
+    if (
+        (State.resultReview?.review_record_ref || State.resultReview?.review_state)
+        && resultBodyMatchesAuthority(State.resultReview, authority)
+    ) {
         return State.resultReview;
     }
     const sessionReview = State.sessionSummary?.execution_result_review;
-    if (sessionReview?.review_record_ref || sessionReview?.state) {
+    if (
+        (sessionReview?.review_record_ref || sessionReview?.state)
+        && resultBodyMatchesAuthority(sessionReview, authority, State.sessionSummary?.session_id)
+    ) {
         return sessionReview;
     }
     return null;
@@ -4246,7 +4299,9 @@ function associatedCohortReviewContext() {
 
 function sessionSummaryLoadIdle() {
     return Boolean(
-        !State.executionSelectionPending
+        !State.sessionSummaryPending
+        && !State.resultStatusPending
+        && !State.executionSelectionPending
         && !State.executionStartPending
         && !State.resultReviewPending
         && !State.packageReviewPreviewPending
@@ -4277,6 +4332,8 @@ function canInspectResultStatus() {
         hasResultAuthorityIdentity(authority)
         && authority.selected
         && authority.terminal
+        && !State.sessionSummaryPending
+        && !State.resultStatusPending
         && !State.executionSelectionPending
         && !State.executionStartPending
         && !State.resultReviewPending
@@ -4307,6 +4364,8 @@ function canSubmitResultReview() {
         && authority.selected
         && authority.terminal
         && State.resultStatus?.result_status_available === true
+        && !State.resultStatusError
+        && resultCaveatProjection(authority)
         && !recordedResultReview()
         && !State.resultReviewPending
         && !State.packageReviewPreviewPending
@@ -8946,6 +9005,13 @@ function resultReviewPanelState(authority) {
         };
     }
     if (State.resultStatus?.result_status_available === true) {
+        if (!resultCaveatProjection(authority)) {
+            return {
+                label: 'result_review_ui_blocked',
+                pill: 'blocked',
+                message: 'Load caveats and assumption checks for this pass before recording a decision.',
+            };
+        }
         if (cohort.isAssociated && !cohort.ready) {
             return {
                 label: 'cohort_result_review_ui_blocked',
@@ -9090,12 +9156,19 @@ function resultCaveatProjection(authority = selectedResultAuthority()) {
     // Read-time text projection of the selected run's caveat notes and assumption
     // checks. The session summary is the one source for the pre-decision panel and
     // reopen-by-id; the post-decision review body echoes the same keys.
+    if (State.resultStatusPending || State.sessionSummaryPending) return null;
     const summary = State.sessionSummary;
+    const summaryAuthority = selectedResultAuthority({ summary, includeLocal: false });
     if (
         summary
+        && !invalidatedResultCaveatSources.has(summary)
         && Array.isArray(summary.caveats)
         && Array.isArray(summary.assumption_checks)
-        && (!authority.sessionId || summary.session_id === authority.sessionId)
+        && hasResultAuthorityIdentity(summaryAuthority)
+        && summaryAuthority.terminal
+        && resultAuthorityKey(summaryAuthority) === resultAuthorityKey(authority)
+        // A pass without an AnalysisRun must not borrow an older sibling's projection.
+        && (summaryAuthority.analysisRunId || !(summary.execution_selection?.analysis_run_ids || []).length)
     ) {
         return {
             source: 'State.sessionSummary',
@@ -9105,7 +9178,13 @@ function resultCaveatProjection(authority = selectedResultAuthority()) {
         };
     }
     const review = State.resultReview;
-    if (review && Array.isArray(review.caveats) && Array.isArray(review.assumption_checks)) {
+    if (
+        review
+        && !invalidatedResultCaveatSources.has(review)
+        && resultBodyMatchesAuthority(review, authority)
+        && Array.isArray(review.caveats)
+        && Array.isArray(review.assumption_checks)
+    ) {
         return {
             source: 'State.resultReview',
             caveats: review.caveats,
@@ -29317,11 +29396,19 @@ async function loadSessionSummaryById(sessionId, { button, label, anchorSource, 
     // One loader for "Refresh Session State" and "Reopen Session": the existing
     // GET /session/{session_id} route is the only source; a failed load leaves the
     // currently loaded session untouched and renders the server error card.
+    const authorityKey = resultAuthorityKey();
+    const requestToken = ++State.sessionSummaryRequestToken;
+    State.sessionSummaryPending = true;
+    invalidateResultCaveats();
     setBusy(button, true, label);
+    renderAll();
     try {
-        const previousSessionId = State.sessionSummary?.session_id;
-        State.sessionSummary = await getJson(`/session/${encodeURIComponent(sessionId)}`);
-        if (previousSessionId && previousSessionId !== State.sessionSummary.session_id) {
+        const summary = await getJson(`/session/${encodeURIComponent(sessionId)}`);
+        if (requestToken !== State.sessionSummaryRequestToken || authorityKey !== resultAuthorityKey()) return;
+        if (summary.session_id !== sessionId) throw new Error('Session summary returned a different session.');
+        const summaryAuthority = selectedResultAuthority({ summary, includeLocal: false });
+        State.sessionSummary = summary;
+        if (authorityKey !== resultAuthorityKey(summaryAuthority)) {
             clearResultReviewState({ keepSummary: true });
         }
         persistSessionRecoveryAnchor(anchorSource);
@@ -29344,6 +29431,7 @@ async function loadSessionSummaryById(sessionId, { button, label, anchorSource, 
         addEvent(successEvent);
         renderAll();
     } catch (error) {
+        if (requestToken !== State.sessionSummaryRequestToken || authorityKey !== resultAuthorityKey()) return;
         State.resultStatusError = error.payload || {
             schema_id: 'layer3.workbench_error.v1',
             error_code: 'session_summary_request_failed',
@@ -29352,8 +29440,12 @@ async function loadSessionSummaryById(sessionId, { button, label, anchorSource, 
         addEvent(`${blockedPrefix}: ${error.message}`);
         renderAll();
     } finally {
-        setBusy(button, false, label);
-        setGateControls();
+        if (requestToken === State.sessionSummaryRequestToken) {
+            State.sessionSummaryPending = false;
+            setBusy(button, false, label);
+            renderAll();
+            setGateControls();
+        }
     }
 }
 
@@ -30168,12 +30260,24 @@ function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel() {
     `;
 }
 
-async function inspectResultStatus({ refreshSummary = false } = {}) {
+async function inspectResultStatus() {
     if (!canInspectResultStatus()) return;
+    const authority = selectedResultAuthority();
+    const authorityKey = resultAuthorityKey(authority);
+    const requestToken = ++State.resultStatusRequestToken;
+    const requestIsCurrent = () => requestToken === State.resultStatusRequestToken && authorityKey === resultAuthorityKey();
+    State.resultStatusPending = true;
+    invalidateResultCaveats();
     clearPublicScienceBaseValuesState();
     setBusy(elements.resultStatusInspect, true, 'Inspect Result Status');
+    renderAll();
     try {
-        State.resultStatus = await postJson('/execution/result/status', resultStatusPayload());
+        const status = await postJson('/execution/result/status', resultStatusPayload(authority));
+        if (!requestIsCurrent()) return;
+        if (!resultBodyMatchesAuthority(status, authority)) {
+            throw new Error('Result status returned a different pass or analysis run.');
+        }
+        State.resultStatus = status;
         State.resultStatusError = null;
         State.resultReviewError = null;
         State.packageReviewPreview = null;
@@ -30192,23 +30296,29 @@ async function inspectResultStatus({ refreshSummary = false } = {}) {
         State.apsHandoffDispatchError = null;
         clearExternalExportDownloadPrepareState();
         addEvent('Result/status authority loaded.');
-        // The frozen status body carries warnings_present only, so the caveat text comes from
-        // the session summary. Refresh it only on the operator's own Inspect click: the
-        // auto-advance path must issue zero /session/ calls after result/status (e2e "G1
-        // result-review auto-advance" pins that), so it renders from the summary already in
-        // State, and the caveat card says "not loaded" rather than showing an empty list when
-        // that summary does not cover the selected run.
-        const statusSessionId = State.resultStatus?.session_id || currentSessionId();
-        if (refreshSummary && statusSessionId) {
-            try {
-                State.sessionSummary = await getJson(`/session/${encodeURIComponent(statusSessionId)}`);
-                persistSessionRecoveryAnchor('result_status_refresh');
-            } catch (refreshError) {
-                addEvent(`Result/status loaded; session refresh blocked: ${refreshError.message}`);
+        // Status intentionally carries no caveat text. Both automatic and manual
+        // inspection require a fresh session projection before review is enabled.
+        try {
+            const summary = await getJson(`/session/${encodeURIComponent(status.session_id)}`);
+            if (!requestIsCurrent()) return;
+            const summaryAuthority = selectedResultAuthority({ summary, includeLocal: false });
+            if (resultAuthorityKey(summaryAuthority) !== authorityKey) {
+                throw new Error('Session caveats belong to a different pass or analysis run. Refresh session state.');
             }
+            State.sessionSummary = summary;
+            persistSessionRecoveryAnchor('result_status_refresh');
+        } catch (refreshError) {
+            if (!requestIsCurrent()) return;
+            State.resultStatusError = {
+                schema_id: 'layer3.workbench_error.v1',
+                error_code: 'session_summary_request_failed',
+                message: refreshError.message,
+            };
+            addEvent(`Result/status loaded; session refresh blocked: ${refreshError.message}`);
         }
         renderAll();
     } catch (error) {
+        if (!requestIsCurrent()) return;
         State.resultStatusError = error.payload || {
             schema_id: 'layer3.workbench_error.v1',
             error_code: 'execution_result_status_request_failed',
@@ -30217,8 +30327,12 @@ async function inspectResultStatus({ refreshSummary = false } = {}) {
         addEvent(`Result/status blocked: ${error.message}`);
         renderAll();
     } finally {
-        setBusy(elements.resultStatusInspect, false, 'Inspect Result Status');
-        setGateControls();
+        if (requestToken === State.resultStatusRequestToken) {
+            State.resultStatusPending = false;
+            setBusy(elements.resultStatusInspect, false, 'Inspect Result Status');
+            renderAll();
+            setGateControls();
+        }
     }
 }
 
@@ -32386,7 +32500,7 @@ elements.resultSessionReopenId.addEventListener('keydown', (event) => {
         reopenSessionById();
     }
 });
-elements.resultStatusInspect.addEventListener('click', () => inspectResultStatus({ refreshSummary: true }));
+elements.resultStatusInspect.addEventListener('click', inspectResultStatus);
 elements.resultReviewForm.addEventListener('submit', submitResultReview);
 elements.packageReviewPreviewInspect.addEventListener('click', inspectPackageReviewPreview);
 elements.packageConstructionCommit.addEventListener('click', commitPackageConstruction);

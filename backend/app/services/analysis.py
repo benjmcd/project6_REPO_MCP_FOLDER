@@ -470,7 +470,7 @@ def _run_cross_correlation(db: Session, run: AnalysisRun, dataset_version_id: st
     time_index_varies = _record_time_index_variation(db, run, df, dataset)
     time_check_result = 'pass' if dataset.time_column and time_index_varies else 'fail'
     db.add(AssumptionCheck(analysis_run_id=run.analysis_run_id, assumption_name='time_ordered_observations', check_method='time_column_present', check_result=time_check_result, severity='high', notes='cross-correlation requires ordered observations'))
-    if dataset.time_column and not time_index_varies:
+    if not time_index_varies:
         db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='non_varying_time_index', severity='high', message=_non_varying_time_index_message('Cross-correlation', dataset)))
         return
     profile_map = {var.variable_name: profile for profile, var in db.query(VariableProfile, VariableDefinition).join(VariableDefinition, VariableProfile.variable_id == VariableDefinition.variable_id).filter(VariableProfile.dataset_version_id == dataset_version_id).all()}
