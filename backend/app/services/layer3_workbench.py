@@ -20602,6 +20602,93 @@ def _selected_pass_result_caveat_projection(
     return _result_caveat_projection(analysis_run)
 
 
+def _session_result_review_notes(
+    db: Session, *, session_id: str, review_summary: dict[str, Any]
+) -> str | None:
+    """Read the canonical operator note for the existing session-reader audience."""
+    if review_summary.get("schema_id") != EXECUTION_RESULT_REVIEW_STATE_SCHEMA_ID:
+        return None
+    for field in ("analysis_plan_id", "pass_run_id", "review_record_ref"):
+        if not isinstance(review_summary.get(field), str) or not review_summary[field]:
+            return None
+
+    analysis_plan_id = review_summary["analysis_plan_id"]
+    pass_run_id = review_summary["pass_run_id"]
+    pass_run = db.get(L3PassRun, pass_run_id)
+    if (
+        pass_run is None
+        or pass_run.session_id != session_id
+        or pass_run.analysis_plan_id != analysis_plan_id
+        or not isinstance(pass_run.summary_json, dict)
+    ):
+        return None
+    plan = db.get(L3AnalysisPlan, analysis_plan_id)
+    if plan is None or plan.session_id != session_id or not isinstance(plan.plan_json, dict):
+        return None
+    review = _execution_result_review_from_pass_run(pass_run)
+    if review is None:
+        return None
+    notes = review.get("review_notes")
+    if not isinstance(notes, str) or not notes:
+        return None
+
+    analysis_run_id = _pass_run_analysis_run_id(pass_run)
+    identity = {
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "analysis_run_id": analysis_run_id,
+    }
+    if any(review.get(field) != value or review_summary.get(field) != value for field, value in identity.items()):
+        return None
+    trace = review.get("trace_summary")
+    if not isinstance(trace, dict) or any(
+        trace.get(field) != value for field, value in {"session_id": session_id, **identity}.items()
+    ):
+        return None
+    for field in ("source_preview_id", "source_preview_hash"):
+        value = review.get(field)
+        if (
+            not isinstance(value, str)
+            or not value
+            or pass_run.summary_json.get(field) != value
+            or plan.plan_json.get(field) != value
+        ):
+            return None
+
+    decision = review.get("operator_decision")
+    request_id = review.get("client_request_id")
+    reviewed_items = review.get("reviewed_output_items")
+    if (
+        not isinstance(decision, str)
+        or decision not in EXECUTION_RESULT_REVIEW_STATE_BY_DECISION
+        or review.get("review_state") != EXECUTION_RESULT_REVIEW_STATE_BY_DECISION[decision]
+        or review_summary.get("operator_decision") != decision
+        or review_summary.get("review_state") != review.get("review_state")
+        or not isinstance(request_id, str)
+        or not request_id
+        or not isinstance(reviewed_items, list)
+    ):
+        return None
+    # Reuse the write contract's content identity; a changed note under the old
+    # reference is not the saved review, even if the compact session still agrees.
+    expected_ref = _stable_id(
+        "l3-result-review",
+        {
+            "session_id": session_id,
+            **identity,
+            "preview_id": review["source_preview_id"],
+            "preview_hash": review["source_preview_hash"],
+            "operator_decision": decision,
+            "client_request_id": request_id,
+            "review_notes": notes,
+            "reviewed_output_items": reviewed_items,
+        },
+    )
+    if review.get("review_record_ref") != expected_ref or review_summary["review_record_ref"] != expected_ref:
+        return None
+    return notes
+
+
 def session_summary(db: Session, session_id: str) -> dict[str, Any]:
     session = _load_session(db, session_id)
     manifest = _latest_selection_manifest_for_session(db, session=session)
@@ -20916,7 +21003,12 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "approved_plan_cancel": approved_plan_cancel_state,
         "execution_selection": execution_selection_readiness,
         "analysis_execution_start": analysis_execution_start_state,
-        "execution_result_review": execution_result_review_state,
+        "execution_result_review": {
+            **execution_result_review_state,
+            "review_notes": _session_result_review_notes(
+                db, session_id=session_id, review_summary=execution_result_review_state
+            ),
+        },
         **result_caveat_state,
         "package_review_preview": package_review_preview_state,
         "package_construction": package_construction_state,
