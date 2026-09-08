@@ -1,5 +1,10 @@
 # Program Context — Index and Conventions
 
+> **2026-09-07 pointer:** The current continuation and bounded verified acceptance are
+> in [MASTER_CONTEXT](../MASTER_CONTEXT.md#2026-09-07-operator-result-continuation).
+> The exhaustive six-file membership below is unchanged; older entries retain
+> their dated scope.
+
 > **2026-09-04 current pointer:** This exhaustive set contains exactly six
 > tracked files: this index plus the five numbered records below. The current
 > cross-record summary is

@@ -1,5 +1,19 @@
 # Layer3 Progress Board
 
+## 2026-09-07 operator-result continuation
+
+Base: `cd86cb57dfc168fcc43bb60dbbc23fd519def543` after #2500; branch:
+`codex/result-close`; bounded workflow verified at
+`da39c74804f2f4239cfabd221d3a46a253cf9db5`; broader milestone incomplete.
+The scoped `operator_result_closure_tracking` entries in both manifests point to
+[the current record](../docs/MASTER_CONTEXT.md#2026-09-07-operator-result-continuation).
+They cover caveat freshness, pass/run identity, missing-time refusal and reused
+upload eligibility, caveat readability and truthful saved-run lifecycle, followed
+by ordinary isolated browser proof and GET-only reopening of the same two runs.
+Existing defaults and source-family admission are unchanged. Scientific validity,
+full provenance co-display and broader runtime readiness are not established.
+Older sections below retain their dated scope.
+
 ## M-STATE-RECONCILIATION
 
 Milestone: `m_state_reconciliation_v1`.

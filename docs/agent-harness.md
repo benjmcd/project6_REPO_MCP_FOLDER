@@ -89,6 +89,10 @@ For local log legibility, use `npm run harness:logs -- --tail 80` or pass `--con
 
 Treat `.codesight` as generated navigation only. Use `docs/codesight-policy.md` before relying on its route, schema, or map counts.
 
+## Claims Of Absence
+
+The owner adopted this rule on 2026-09-07: establish a claim of absence with at least two structurally different probes. For example, inspect both constructor keywords and dictionary-based construction, or combine source inspection with a behavioral test that would fail if the capability were absent. Repeating the same search does not provide independent evidence. If only one empty search supports a conclusion, report "not found by <exact probe>" and state its scope instead of asserting that the behavior or artifact does not exist.
+
 ## Non-Interference
 
 - Recheck open PRs and `project6-origin/main` before creating, pushing, or merging.

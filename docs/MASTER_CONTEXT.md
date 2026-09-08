@@ -1,5 +1,81 @@
 # Master Context — project6 Layer 3 / SEC-XBRL Campaign
 
+## 2026-09-07 operator-result continuation
+
+This continuation started from canonical main
+`cd86cb57dfc168fcc43bb60dbbc23fd519def543`, after PR #2500 merged the
+penalty-disclosure correction with all 21 checks passing. PR #2499 landed at
+`780e0c04b1c71779b0e2da2803e10b73ac226f16`. The dated acceptance below supersedes
+older current-frontier wording without declaring the broader analysis milestone
+complete.
+
+The `codex/result-close` repair at `58e43dd4cf157a36dfe4e5048a601de66758b237`
+addresses stale caveats during automatic result inspection, inconsistent pass/run
+selection on reopening, cross-correlation without a time index, and reused-upload
+time-index classification. The ordinary application proof then exposed clipped
+caveats and misleading saved-run start controls. Those were corrected at
+`73aff4917548df9ae1b34a4a76fffe8950d2f857` and
+`da39c74804f2f4239cfabd221d3a46a253cf9db5`, respectively. The latter derives
+lifecycle from the exact selected pass, requires confirmed `selected_not_started`
+before Start, and keeps sibling run evidence and session-aggregate state separate.
+
+Each defect was reproduced before its correction. Across these staged repairs:
+nine new API cases and twelve existing compatibility cases passed; the caveat
+suite passed ten headless cases, with fifteen headed compatibility cases and a
+separate final cancellation regression. Caveat layout passed in both browser
+modes at two widths and two themes. The final lifecycle suite passed nine cases
+in each mode, including ordinary select/start, review and reopen compatibility.
+Independent source review found no unresolved actionable issue within this scope.
+
+Reused-upload responses, variable flags and recommendations now qualify each
+version independently. Shared dataset metadata retains its original time-column
+name so earlier valid versions remain usable. Obsolete-response protection covers
+result-status inspection and manual session loading; other asynchronous loaders
+retain their prior behavior. The frozen status contract, routes and defaults are
+unchanged.
+
+**Bounded operator journey verified:** one retained 60-row quarterly input was
+uploaded/profiled through the ordinary API, then chosen, planned, executed,
+reviewed and reopened through the production workbench. Exactly one decomposition
+and one structural-break run were created at `58e43dd4`; the database contains one
+dataset/version, two sessions/passes/runs and four analysis artifacts. Existing
+workbench defaults were used, without retuning. The earlier explicit-parameter
+local proof remains separate and unchanged.
+
+At `da39c748`, fresh headed and headless Chrome contexts each alternated the same
+three saved-session reopenings using 13 GETs and no POSTs. Run/review identities
+and caveat text matched; Start stayed disabled, completed lifecycle was truthful,
+and caveat text remained within its rendered card. Screenshot inspection confirmed
+readability. Separate-process readback preserved all 11 database/application files
+and the prior evidence, including the original clipped screenshots. Evidence
+SHA-256 anchors are:
+
+| Record | SHA-256 |
+|---|---|
+| Preserved workflow database | `fda294dfcad4195a4fde18b26a539cd40ef337251ca05218e31ff1cd56e443ec` |
+| Original production execution record | `2e211039486b79fa5f0ca42a0825c035787c526a9b1580724c33436060d54845` |
+| Final source/read-only attestation | `5d7eb25803bfa89b8678527fc70f259f9822abe2a68a8e8d5be1f773d44687b8` |
+| Final headed reopening | `539c16108fc292b45acb41f5ad81707574223f5e1cbd7f42c015260e5b31e184` |
+| Final headless reopening | `e498d43e732e3009abbc17ccceab9afc24b02296ec1aff868fc8d5bf6a2fee2d` |
+
+Acceptance concerns persistence and truthful review, not scientific validity.
+Structural break retains `minimum_segment_length: fail` at high severity and
+stationarity `warn/inconclusive`. Decomposition has zero caveats but four
+assumption checks, including an inconclusive stationarity warning. Saved reviews
+were limited to workflow/descriptive evidence. The source trace truthfully reports
+absent APS provenance; lineage hashes and acquisition limits remain in dataset
+description/review notes, not full result-panel lineage co-display. No connector
+or DatasetSourceProvenance rows were created. Response-only result-status fields
+remain unknown on GET-only reopening until explicit status inspection.
+
+The two-probe rule for claims of absence is recorded in
+[the harness guidance](agent-harness.md#claims-of-absence).
+
+Public analysis/value flags and operator method selection remain default-off;
+method selection was enabled only in the isolated proof instance.
+Public-source acquisition, source-family admission, signing, nonlocal operation,
+and the public-value caveat surface remain separately gated work.
+
 ## 2026-09-04 current state reconciliation
 
 This is the single tracked current-state summary for the September 4

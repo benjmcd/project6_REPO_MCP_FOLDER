@@ -1,5 +1,24 @@
 # 03 — Forward Plan
 
+## 2026-09-07 current forward pointer
+
+The known result-review and time-index repairs now have bounded verification,
+including the ordinary persisted operator journey with retained eligible input
+and existing workbench defaults, followed by read-only reopening of the same runs.
+The final UI source is `da39c74804f2f4239cfabd221d3a46a253cf9db5`. See
+[the current acceptance record](../MASTER_CONTEXT.md#2026-09-07-operator-result-continuation).
+The next technical follow-up is the specific asynchronous-response race below;
+scientific-use acceptance must retain the recorded failed/warning assumptions.
+This supersedes the ordering in the September 4 block; public-source acquisition,
+the public-value caveat surface, broader admission, signing and nonlocal operation
+remain separate pursuits with their existing gates.
+
+Keep a separate bounded follow-up for obsolete responses from startup recovery,
+post-review refresh and analysis-product workspace refresh. The current repair guards
+result-status inspection and manual session loading; it does not establish
+request-identity protection across every asynchronous loader. Reproduce the
+specific source/session-change race before extending those other paths.
+
 ## 2026-09-04 current forward pointer
 
 The current state and boundaries are in
