@@ -581,6 +581,173 @@ def test_descriptive_summary_classifies_numeric_after_placeholder_nulls():
     assert summary["numeric_summary"]["non_null_count"] == 2
 
 
+@pytest.mark.parametrize(('adf_pvalue', 'kpss_pvalue', 'expected_hint'), [
+    (0.01, 0.10, 'likely_stationary'),
+    (0.10, 0.01, 'likely_nonstationary'),
+    (0.01, 0.01, 'trend_stationary_or_mixed'),
+    (0.10, 0.10, 'mixed_or_borderline'),
+    (0.05, 0.05, 'likely_nonstationary'),
+    (None, 0.10, 'inconclusive'),
+    (0.01, None, 'inconclusive'),
+])
+def test_stationarity_classifier_handles_numpy_pvalues(monkeypatch, adf_pvalue, kpss_pvalue, expected_hint):
+    import numpy as np
+    from app.services import profiling
+
+    def adf_result(series, **kwargs):
+        if adf_pvalue is None:
+            raise ValueError('ADF unavailable')
+        return np.float64(-3), np.float64(adf_pvalue), 1, len(series) - 2, {}, 0.0
+
+    def kpss_result(series, **kwargs):
+        if kpss_pvalue is None:
+            raise ValueError('KPSS unavailable')
+        return np.float64(0.1), np.float64(kpss_pvalue), 1, {}
+
+    monkeypatch.setattr(profiling, 'adfuller', adf_result)
+    monkeypatch.setattr(profiling, 'kpss', kpss_result)
+    hint, summary = profiling._detect_stationarity(pd.Series(range(36)))
+    assert hint == expected_hint
+    for method, pvalue in (('adf', adf_pvalue), ('kpss', kpss_pvalue)):
+        if pvalue is None:
+            assert 'unavailable' in summary[method]['error']
+        else:
+            assert summary[method]['pvalue'] == pvalue
+
+
+@pytest.mark.parametrize(('values', 'expected_hint'), [
+    (list(range(11)), 'insufficient_data'),
+    ([5.0] * 36, 'constant_series'),
+])
+def test_stationarity_classifier_preserves_unavailable_series(values, expected_hint):
+    from app.services.profiling import _detect_stationarity
+
+    hint, summary = _detect_stationarity(pd.Series(values))
+    assert hint == expected_hint
+    assert 'adf' not in summary and 'kpss' not in summary
+
+
+@pytest.mark.parametrize(('left_hint', 'right_hint', 'expected_result'), [
+    ('likely_stationary', 'likely_stationary', 'pass'),
+    ('likely_stationary', 'inconclusive', 'warn'),
+    ('likely_stationary', 'insufficient_data', 'warn'),
+    ('likely_stationary', 'mixed_or_borderline', 'warn'),
+    ('likely_stationary', 'not_assessed', 'warn'),
+    ('likely_stationary', 'constant_series', 'warn'),
+    ('likely_stationary', None, 'warn'),
+    ('likely_stationary', 'missing-profile', 'warn'),
+    ('missing-profile', 'missing-profile', 'warn'),
+    ('likely_nonstationary', 'inconclusive', 'fail'),
+    ('trend_stationary_or_mixed', 'missing-profile', 'fail'),
+])
+def test_cross_correlation_stationarity_requires_evidence_for_every_series(left_hint, right_hint, expected_result):
+    from app.models import VariableDefinition, VariableProfile
+
+    content = ('year,a,b\n' + '\n'.join(f'{1990 + i},{i},{i * 2}' for i in range(36)) + '\n').encode()
+    uploaded = client.post(
+        '/api/v1/sources/upload',
+        files={'file': ('stationarity.csv', io.BytesIO(content), 'text/csv')},
+        data={'name': 'Stationarity evidence', 'primary_time_column': 'year'},
+    )
+    assert uploaded.status_code == 200, uploaded.text
+    version_id = uploaded.json()['dataset_version_id']
+    db = TestingSessionLocal()
+    try:
+        variables = {row.variable_name: row for row in db.query(VariableDefinition).filter(
+            VariableDefinition.dataset_version_id == version_id,
+        ).all()}
+        for name, hint in (('a', left_hint), ('b', right_hint)):
+            if hint != 'missing-profile':
+                db.add(VariableProfile(dataset_version_id=version_id, variable_id=variables[name].variable_id, stationarity_hint=hint))
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.post('/api/v1/analysis-runs', json={
+        'dataset_version_id': version_id, 'method_name': 'cross_correlation',
+        'goal_type': 'exploratory', 'parameters': {}, 'annotation_window_id': None,
+    })
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assumption = next(item for item in payload['assumptions'] if item['assumption_name'] == 'series_stationarity')
+    assert assumption['check_result'] == expected_result
+    assert assumption['severity'] == ('high' if expected_result == 'fail' else 'medium')
+    for name, hint in (('a', left_hint), ('b', right_hint)):
+        expected_hint = 'not_profiled' if hint in (None, 'missing-profile') else hint
+        assert f'{name}:{expected_hint}' in assumption['notes']
+    assert payload['status'] == 'completed'
+    assert {'cross_correlation_result', 'cross_correlation_plot'} == {item['artifact_type'] for item in payload['artifacts']}
+    reopened = client.get(f"/api/v1/analysis-runs/{payload['analysis_run_id']}")
+    assert reopened.status_code == 200, reopened.text
+    assert reopened.json()['assumptions'] == payload['assumptions']
+
+
+def test_stationarity_real_library_results_reach_profiles_and_cross_correlation():
+    import numpy as np
+    from app.models import VariableProfile
+    from statsmodels.tsa.stattools import adfuller, kpss
+
+    values = np.random.default_rng(123).normal(size=96)
+    assert adfuller(values, autolag='AIC')[1] < 0.05
+    assert kpss(values, regression='ct', nlags='auto')[1] > 0.05
+    content = pd.DataFrame({'year': range(1990, 2086), 'a': values, 'b': -2 * values}).to_csv(index=False).encode()
+    uploaded = client.post(
+        '/api/v1/sources/upload',
+        files={'file': ('stationary.csv', io.BytesIO(content), 'text/csv')},
+        data={'name': 'Stationary numeric series', 'primary_time_column': 'year'},
+    )
+    assert uploaded.status_code == 200, uploaded.text
+    dataset_id = uploaded.json()['dataset_id']
+    version_id = uploaded.json()['dataset_version_id']
+    profiled = client.post(f'/api/v1/datasets/{dataset_id}/versions/{version_id}/profile', json={
+        'detect_seasonality': False, 'detect_stationarity': True,
+    })
+    assert profiled.status_code == 200, profiled.text
+    assert [item['stationarity_hint'] for item in profiled.json()] == ['likely_stationary'] * 2
+    db = TestingSessionLocal()
+    try:
+        assert [row.stationarity_hint for row in db.query(VariableProfile).filter(
+            VariableProfile.dataset_version_id == version_id,
+        ).all()] == ['likely_stationary'] * 2
+    finally:
+        db.close()
+    response = client.post('/api/v1/analysis-runs', json={
+        'dataset_version_id': version_id, 'method_name': 'cross_correlation',
+        'goal_type': 'exploratory', 'parameters': {}, 'annotation_window_id': None,
+    })
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assumption = next(item for item in payload['assumptions'] if item['assumption_name'] == 'series_stationarity')
+    assert assumption['check_result'] == 'pass'
+    result = next(item for item in payload['artifacts'] if item['artifact_type'] == 'cross_correlation_result')
+    stored = json.loads((TEST_STORAGE_DIR / 'artifacts' / Path(result['storage_ref']).name).read_text())
+    assert stored['summary_stats']['max_lag'] == 10
+    assert stored['results']['a__vs__b']['0'] == pytest.approx(-1.0)
+
+
+def test_stl_residual_stationarity_uses_real_numeric_pvalues():
+    import numpy as np
+    from app.models import Dataset
+    from app.services.analysis import _run_stl
+    from statsmodels.tsa.stattools import adfuller, kpss
+
+    frame = pd.DataFrame({
+        'time': pd.date_range('2000-01-01', periods=96, freq='MS'),
+        'value': np.random.default_rng(123).normal(size=96),
+    })
+    payload, assumptions, _ = _run_stl(frame, Dataset(time_column='time', frequency_hint='MS'), 'value', None)
+    assert payload is not None
+    residual = pd.Series(payload['residual']).dropna()
+    assert adfuller(residual, autolag='AIC')[1] < 0.05
+    assert kpss(residual, regression='ct', nlags='auto')[1] > 0.05
+    assert payload['summary_stats']['residual_stationarity_hint'] == 'likely_stationary'
+    check = next(item for item in assumptions if item['assumption_name'] == 'stationarity_of_residual')
+    assert check['check_result'] == 'pass'
+    assert 'likely_stationary' in check['notes']
+    assert payload['observed'] == frame['value'].tolist()
+    assert payload['summary_stats']['period'] == 12
+
+
 def test_storage_ref_uses_parquet_and_stationarity_is_returned():
     csv_bytes = (
         b"year,a,b\n"
