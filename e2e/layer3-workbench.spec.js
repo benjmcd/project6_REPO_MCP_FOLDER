@@ -21190,14 +21190,23 @@ test('Layer 3 mockup output review package handoff projection renders read-only 
   await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
 
   await page.evaluate(() => {
+    const resultIdentity = {
+      session_id: 'mockup-output-review-session',
+      analysis_plan_id: 'mockup-output-review-plan',
+      pass_run_id: 'mockup-output-review-pass',
+      analysis_run_id: 'mockup-output-review-run',
+      preview_identity: { preview_id: 'mockup-output-review-preview', preview_hash: 'mockup-output-review-hash' },
+    };
     State.resultStatus = {
       schema_id: 'layer3.execution_result_status.v1',
+      ...resultIdentity,
       status: 'completed',
       pass_run_status: 'completed',
       output_payload_ref: 'C:\\raw\\forbidden-output-payload.json',
     };
     State.resultReview = {
       schema_id: 'layer3.execution_result_review.v1',
+      ...resultIdentity,
       review_state: 'execution_result_review_approved',
       operator_decision: 'approved',
       review_record_ref: 'review-record-ref-must-not-render',
@@ -21266,8 +21275,13 @@ test('Layer 3 mockup output review package handoff projection renders read-only 
     };
     State.sessionSummary = {
       schema_id: 'layer3.session_summary.v1',
-      session_id: 'mockup-output-review-session',
-      execution_result_review: { state: 'execution_result_review_approved' },
+      session_id: resultIdentity.session_id,
+      execution_result_review: {
+        state: 'execution_result_review_approved',
+        analysis_plan_id: resultIdentity.analysis_plan_id,
+        pass_run_id: resultIdentity.pass_run_id,
+        analysis_run_id: resultIdentity.analysis_run_id,
+      },
       package_review_preview: { state: 'package_review_preview_available' },
       package_construction: { state: 'package_constructed' },
       package_review_submit: { package_review_state: 'package_review_approved' },
