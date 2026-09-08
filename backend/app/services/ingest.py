@@ -116,7 +116,12 @@ def ingest_csv_bytes_to_dataset(
         db.add(dataset)
         db.flush()
     else:
-        time_column = dataset.time_column or infer_time_column(df, primary_time_column)
+        if dataset.time_column:
+            # Keep the shared name for earlier versions, but qualify this input
+            # independently without substituting a column the runners cannot use.
+            time_column = infer_time_column(df, dataset.time_column) if dataset.time_column in df.columns else None
+        else:
+            time_column = infer_time_column(df, primary_time_column)
         if time_column:
             df[time_column] = parse_time_series(df[time_column], time_column)
         if not dataset.time_column:

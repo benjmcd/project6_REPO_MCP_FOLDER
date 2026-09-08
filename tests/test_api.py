@@ -10492,6 +10492,120 @@ def test_constant_time_like_column_does_not_mark_dataset_time_indexed():
         assert recommendation.json()['recommended_sequence'] == ['descriptive_summary']
 
 
+@pytest.mark.parametrize('time_input', ['missing', 'constant'])
+@pytest.mark.parametrize('method_name', ['cross_correlation', 'decomposition', 'structural_break'])
+def test_time_series_runners_refuse_upload_without_time_index(time_input, method_name):
+    from app.core.config import settings
+
+    content = _constant_year_csv(36) if time_input == 'constant' else (
+        'value_a,value_b\n' + '\n'.join(f'{10 + i},{100 - i}' for i in range(36)) + '\n'
+    ).encode()
+    uploaded = client.post(
+        '/api/v1/sources/upload',
+        files={'file': ('no-time.csv', io.BytesIO(content), 'text/csv')},
+        data={'name': f'No time index {time_input}', 'domain_pack': 'macro'},
+    )
+    assert uploaded.status_code == 200, uploaded.text
+    assert uploaded.json()['time_column'] is None
+
+    response = client.post(
+        '/api/v1/analysis-runs',
+        json={'dataset_version_id': uploaded.json()['dataset_version_id'], 'method_name': method_name, 'goal_type': 'exploratory', 'parameters': {}, 'annotation_window_id': None},
+    )
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload['artifacts'] == []
+    variation = next(item for item in payload['assumptions'] if item['assumption_name'] == 'time_index_variation')
+    assert variation['check_result'] == 'fail'
+    assert variation['severity'] == 'high'
+    assert 'distinct_timestamps=0' in variation['notes']
+    refusal_type = 'non_varying_time_index' if method_name == 'cross_correlation' else 'missing_time_index'
+    refusal = next(item for item in payload['caveats'] if item['caveat_type'] == refusal_type)
+    assert refusal['severity'] == 'high'
+    assert list(Path(settings.artifact_storage_dir).glob(f"*{payload['analysis_run_id']}*")) == []
+    reopened = client.get(f"/api/v1/analysis-runs/{payload['analysis_run_id']}")
+    assert reopened.status_code == 200, reopened.text
+    assert reopened.json()['artifacts'] == []
+    assert reopened.json()['assumptions'] == payload['assumptions']
+    assert reopened.json()['caveats'] == payload['caveats']
+
+
+@pytest.mark.parametrize('time_input', ['constant', 'missing', 'alternate'])
+def test_reused_dataset_rechecks_time_index_per_version(time_input):
+    from app.models import Dataset, VariableDefinition
+    from app.services.ingest import ingest_csv_bytes_to_dataset
+
+    original_content = ('Year,value_a,value_b\n' + '\n'.join(
+        f'{1990 + i},{10 + i},{100 - i}' for i in range(36)
+    ) + '\n').encode()
+    if time_input == 'constant':
+        later_content = _constant_year_csv(36)
+    elif time_input == 'alternate':
+        later_content = ('period,value_a,value_b\n' + '\n'.join(
+            f'{period},{10 + i},{100 - i}' for i, period in enumerate(_MONTHLY_36)
+        ) + '\n').encode()
+    else:
+        later_content = ('value_a,value_b\n' + '\n'.join(
+            f'{10 + i},{100 - i}' for i in range(36)
+        ) + '\n').encode()
+
+    db = TestingSessionLocal()
+    try:
+        original = ingest_csv_bytes_to_dataset(
+            db, filename='varying.csv', content=original_content, name='Versioned time index',
+            description=None, domain_pack='macro', primary_time_column='Year',
+        )
+        original_path = Path(original['storage_ref'])
+        original_hash = hashlib.sha256(original_path.read_bytes()).hexdigest()
+        later = ingest_csv_bytes_to_dataset(
+            db, filename='later.csv', content=later_content, name='Versioned time index',
+            description=None, domain_pack='macro',
+            primary_time_column='period' if time_input == 'alternate' else None,
+            dataset_id=original['dataset_id'],
+        )
+        assert later['dataset_id'] == original['dataset_id']
+        assert later['dataset_version_id'] != original['dataset_version_id']
+        assert later['time_column'] is None
+        assert db.get(Dataset, original['dataset_id']).time_column == 'Year'
+        assert db.query(VariableDefinition).filter(
+            VariableDefinition.dataset_version_id == later['dataset_version_id'],
+            VariableDefinition.is_time_index.is_(True),
+        ).count() == 0
+        original_time = db.query(VariableDefinition).filter(
+            VariableDefinition.dataset_version_id == original['dataset_version_id'],
+            VariableDefinition.is_time_index.is_(True),
+        ).one()
+        assert original_time.variable_name == 'Year'
+        assert hashlib.sha256(original_path.read_bytes()).hexdigest() == original_hash
+        if time_input == 'constant':
+            assert pd.read_parquet(later['storage_ref'])['Year'].iloc[0] == '2025_estimated'
+    finally:
+        db.close()
+
+    for version, expected_sequence in (
+        (later, ['descriptive_summary']),
+        (original, ['cross_correlation', 'decomposition', 'structural_break']),
+    ):
+        recommendation = client.post(
+            f"/api/v1/datasets/{version['dataset_id']}/versions/{version['dataset_version_id']}/analysis/recommend",
+            json={'goal_type': 'exploratory'},
+        )
+        assert recommendation.status_code == 200, recommendation.text
+        assert recommendation.json()['recommended_sequence'] == expected_sequence
+        response = client.post(
+            '/api/v1/analysis-runs',
+            json={'dataset_version_id': version['dataset_version_id'], 'method_name': 'cross_correlation', 'goal_type': 'exploratory', 'parameters': {}, 'annotation_window_id': None},
+        )
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        variation = next(item for item in payload['assumptions'] if item['assumption_name'] == 'time_index_variation')
+        assert variation['check_result'] == ('pass' if version is original else 'fail')
+        if version is original:
+            assert 'cross_correlation_result' in {item['artifact_type'] for item in payload['artifacts']}
+        else:
+            assert payload['artifacts'] == []
+
+
 def _seed_stored_non_varying_time_index_version(version_id: str) -> str:
     from app.models import Dataset, VariableDefinition, VariableProfile
 

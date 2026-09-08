@@ -21190,14 +21190,23 @@ test('Layer 3 mockup output review package handoff projection renders read-only 
   await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
 
   await page.evaluate(() => {
+    const resultIdentity = {
+      session_id: 'mockup-output-review-session',
+      analysis_plan_id: 'mockup-output-review-plan',
+      pass_run_id: 'mockup-output-review-pass',
+      analysis_run_id: 'mockup-output-review-run',
+      preview_identity: { preview_id: 'mockup-output-review-preview', preview_hash: 'mockup-output-review-hash' },
+    };
     State.resultStatus = {
       schema_id: 'layer3.execution_result_status.v1',
+      ...resultIdentity,
       status: 'completed',
       pass_run_status: 'completed',
       output_payload_ref: 'C:\\raw\\forbidden-output-payload.json',
     };
     State.resultReview = {
       schema_id: 'layer3.execution_result_review.v1',
+      ...resultIdentity,
       review_state: 'execution_result_review_approved',
       operator_decision: 'approved',
       review_record_ref: 'review-record-ref-must-not-render',
@@ -21266,8 +21275,13 @@ test('Layer 3 mockup output review package handoff projection renders read-only 
     };
     State.sessionSummary = {
       schema_id: 'layer3.session_summary.v1',
-      session_id: 'mockup-output-review-session',
-      execution_result_review: { state: 'execution_result_review_approved' },
+      session_id: resultIdentity.session_id,
+      execution_result_review: {
+        state: 'execution_result_review_approved',
+        analysis_plan_id: resultIdentity.analysis_plan_id,
+        pass_run_id: resultIdentity.pass_run_id,
+        analysis_run_id: resultIdentity.analysis_run_id,
+      },
       package_review_preview: { state: 'package_review_preview_available' },
       package_construction: { state: 'package_constructed' },
       package_review_submit: { package_review_state: 'package_review_approved' },
@@ -24548,12 +24562,14 @@ test('G1 result-review auto-advance: result-review-submit enabled without manual
   const statusCalls = layer3ApiRequests.filter((r) => r.path.includes('/execution/result/status'));
   expect(statusCalls).toHaveLength(1);
 
-  // Assert: no /session/ requests fired AFTER start (i.e. auto-advance did not call refreshSessionSummary).
-  // We assert by checking no session call appeared AFTER the status call, using the order in the array.
+  // Caveats come from the session summary, so auto-advance must load one fresh
+  // projection before enabling review. Reusing the pre-start summary hides caveats.
   const firstStatusIndex = layer3ApiRequests.findIndex((r) => r.path.includes('/execution/result/status'));
   const requestsAfterStatus = layer3ApiRequests.slice(firstStatusIndex + 1);
   const sessionCallsAfterStatus = requestsAfterStatus.filter((r) => r.path.includes('/session/'));
-  expect(sessionCallsAfterStatus).toHaveLength(0);
+  expect(sessionCallsAfterStatus).toHaveLength(1);
+  expect(sessionCallsAfterStatus[0].path).toBe(`/api/v1/layer3/session/${gateB.session_id}`);
+  await expect(page.locator('#result-review-caveats')).not.toContainText('not loaded');
 
   // The transient pill must no longer be present (auto-advance cleared after completion).
   await expect(page.locator('#result-review-panel')).not.toContainText('result_status_auto_advance_pending');
@@ -25968,7 +25984,15 @@ function controlledReviewReadySummary(overrides = {}) {
       analysis_run_ids: ['run-honest-result'],
       pass_run_statuses: { 'pass-honest-result': 'completed' },
     },
-    analysis_execution_start: { state: 'execution_pass_completed' },
+    analysis_execution_start: {
+      state: 'execution_pass_completed',
+      pass_run_id: 'pass-honest-result',
+      analysis_run_id: 'run-honest-result',
+      pass_run_status: 'completed',
+    },
+    sublayer_visualization: {
+      pass_runs: [{ pass_run_id: 'pass-honest-result', analysis_run_id: 'run-honest-result', status: 'completed' }],
+    },
     execution_result_review: { schema_id: 'layer3.execution_result_review_state.v1', available: true, state: null },
     caveats: [HONEST_RESULT_CAVEAT],
     assumption_checks: [HONEST_RESULT_CHECK],
@@ -26008,6 +26032,300 @@ async function renderControlledReviewReadyPanel(page, summary, status) {
     setGateControls();
   }, { summary, status });
 }
+
+for (const { passStatus, unstartedSibling = false } of [
+  ...['completed', 'completed_with_warnings', 'failed', 'running'].map((passStatus) => ({ passStatus })),
+  { passStatus: 'completed', unstartedSibling: true },
+]) {
+  test(`Execution lifecycle reopens ${passStatus}${unstartedSibling ? ' with an unstarted sibling' : ''} without offering another start`, async ({ page }) => {
+    const requests = trackLayer3ApiRequests(page);
+    const summary = controlledReviewReadySummary();
+    const executionState = passStatus === 'running' ? 'execution_pass_running'
+      : passStatus === 'failed' ? 'execution_pass_failed' : 'execution_pass_completed';
+    summary.execution_selection.state = executionState;
+    summary.execution_selection.pass_run_statuses['pass-honest-result'] = passStatus;
+    Object.assign(summary.analysis_execution_start, {
+      analysis_plan_id: 'plan-honest-result', state: executionState, pass_run_status: passStatus,
+      started_at: '2026-09-07T12:00:00Z',
+    });
+    summary.sublayer_visualization.pass_runs[0].status = passStatus;
+    if (unstartedSibling) {
+      summary.execution_selection.pass_run_ids.push('pass-unstarted');
+      summary.execution_selection.pass_run_count = 2;
+      summary.execution_selection.pass_run_statuses['pass-unstarted'] = 'selected_not_started';
+      summary.sublayer_visualization.pass_runs.push({ pass_run_id: 'pass-unstarted', status: 'selected_not_started', analysis_run_id: null });
+      // Saved start.state describes all session passes; pass_run_status describes this pass.
+      summary.execution_selection.state = 'execution_selected_not_started';
+      summary.analysis_execution_start.state = 'execution_selected_not_started';
+    }
+    if (passStatus.startsWith('completed')) {
+      summary.execution_result_review = {
+        schema_id: 'layer3.execution_result_review_state.v1', state: 'execution_result_review_approved',
+        review_record_ref: 'review-honest-result', analysis_plan_id: 'plan-honest-result',
+        pass_run_id: 'pass-honest-result', analysis_run_id: 'run-honest-result',
+      };
+    }
+    // The durable start projection intentionally has no execution_started/next_state fields.
+    await page.route('**/api/v1/layer3/session/honest-result-session', (route) => route.fulfill({ json: summary }));
+    await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+    await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+    await page.locator('#result-session-reopen-id').fill(summary.session_id);
+    await page.locator('#result-session-reopen').click();
+    const panel = page.locator('#execution-selection-start-panel');
+    await expect(panel).toContainText('pass-honest-result');
+    expect(await page.evaluate(() => State.executionStart)).toBeNull();
+    await expect(page.locator('#execution-start')).toBeDisabled();
+    await expect(panel).toContainText('started: true');
+    await expect(panel).toContainText(`pass status: ${passStatus}`);
+    await expect(panel).toContainText('analysis run: run-honest-result');
+    await expect(panel).toContainText(`next state: ${executionState}`);
+    await expect(panel).not.toContainText('ready to start');
+    await expect(panel).not.toContainText('started: unknown');
+    if (passStatus.startsWith('completed')) {
+      await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_recorded');
+    }
+    await page.evaluate(() => startExecution());
+    expectNoRequestsToLayer3Paths(requests, ['/execution/start']);
+  });
+}
+
+test('Execution lifecycle requires confirmed unstarted status and keeps sibling run evidence separate', async ({ page }) => {
+  const requests = trackLayer3ApiRequests(page);
+  const summary = controlledReviewReadySummary();
+  summary.execution_selection.pass_run_ids.unshift('pass-unstarted');
+  summary.execution_selection.pass_run_count = 2;
+  summary.sublayer_visualization.pass_runs.unshift({ pass_run_id: 'pass-unstarted', analysis_run_id: null });
+  await page.route('**/api/v1/layer3/session/honest-result-session', (route) => route.fulfill({ json: summary }));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  await page.locator('#result-session-reopen-id').fill(summary.session_id);
+  await page.locator('#result-session-reopen').click();
+  const panel = page.locator('#execution-selection-start-panel');
+  await expect(panel).toContainText('pass-unstarted');
+  await expect(page.locator('#execution-start')).toBeDisabled();
+  await expect(panel).not.toContainText('ready to start');
+  await page.evaluate(() => startExecution());
+  expectNoRequestsToLayer3Paths(requests, ['/execution/start']);
+
+  summary.execution_selection.pass_run_statuses['pass-unstarted'] = 'selected_not_started';
+  await page.locator('#result-session-reopen').click();
+  await expect(page.locator('#execution-start')).toBeEnabled();
+  const startCard = panel.locator('.result-review-card').filter({ has: page.getByText('Execution Start', { exact: true }) });
+  await expect(startCard).toContainText('started: false');
+  await expect(startCard).toContainText('pass run: pass-unstarted');
+  await expect(startCard).toContainText('pass status: selected_not_started');
+  await expect(startCard).not.toContainText('run-honest-result');
+  expect(await page.evaluate(() => executionStartPayload().pass_run_id)).toBe('pass-unstarted');
+  expectNoRequestsToLayer3Paths(requests, ['/execution/start']);
+});
+
+test('Result caveat freshness keeps the authoritative pass and analysis run together', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  const summary = controlledReviewReadySummary();
+  summary.execution_selection.pass_run_ids.unshift('pass-unexecuted');
+  summary.execution_selection.pass_run_statuses['pass-unexecuted'] = 'selected_not_started';
+  summary.sublayer_visualization.pass_runs.unshift({ pass_run_id: 'pass-unexecuted', analysis_run_id: null });
+  await renderControlledReviewReadyPanel(page, summary, controlledReviewReadyStatus());
+
+  const payloads = await page.evaluate(() => [resultStatusPayload(), resultReviewPayload()]);
+  for (const payload of payloads) {
+    expect(payload.pass_run_id).toBe('pass-honest-result');
+    expect(payload.analysis_run_id).toBe('run-honest-result');
+  }
+  await expect(page.locator('#result-review-caveats')).toContainText(HONEST_RESULT_CAVEAT.message);
+  await expect(page.locator('#result-review-submit')).toBeEnabled();
+
+  // Reopening without a status body uses the same recorded execution pair.
+  await renderControlledReviewReadyPanel(page, summary, null);
+  expect(await page.evaluate(() => selectedResultAuthority().passRunId)).toBe('pass-honest-result');
+  await expect(page.locator('#result-review-caveats')).toContainText(HONEST_RESULT_CAVEAT.message);
+});
+
+test('Result caveat freshness rejects another run and an unfetched empty projection', async ({ page }) => {
+  const requests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  for (const recordedRun of ['run-before-execution', null]) {
+    const summary = controlledReviewReadySummary({ caveats: [], assumption_checks: [] });
+    summary.analysis_execution_start.analysis_run_id = recordedRun;
+    summary.sublayer_visualization.pass_runs[0].analysis_run_id = recordedRun;
+    summary.execution_selection.analysis_run_ids = recordedRun ? [recordedRun] : [];
+    await renderControlledReviewReadyPanel(page, summary, controlledReviewReadyStatus());
+    await expect(page.locator('#result-review-caveats')).toContainText('not loaded');
+    await expect(page.locator('#result-review-caveats')).not.toContainText('no caveats recorded');
+    await expect(page.locator('#result-review-panel')).not.toContainText('result_review_ui_review_ready');
+    await expect(page.locator('#result-review-submit')).toBeDisabled();
+    await page.locator('#result-review-form').evaluate((form) => form.requestSubmit());
+  }
+  expectNoRequestsToLayer3Paths(requests, ['/execution/result/review']);
+});
+
+test('Result caveat freshness fails closed during and after a same-run refresh failure', async ({ page }) => {
+  const requests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
+  await expect(page.locator('#result-review-submit')).toBeEnabled();
+
+  let releaseSummary;
+  const summaryGate = new Promise((resolve) => { releaseSummary = resolve; });
+  await page.route('**/api/v1/layer3/execution/result/status', (route) => route.fulfill({ json: controlledReviewReadyStatus() }));
+  await page.route('**/api/v1/layer3/session/honest-result-session', async (route) => {
+    await summaryGate;
+    await route.fulfill({ status: 503, json: { message: 'Caveat refresh unavailable.' } });
+  });
+  const summaryRequest = page.waitForRequest('**/api/v1/layer3/session/honest-result-session');
+  await page.locator('#result-status-inspect').click();
+  await summaryRequest;
+  try {
+    await expect(page.locator('#result-review-submit')).toBeDisabled();
+    await expect(page.locator('#result-review-caveats')).toContainText('not loaded');
+  } finally {
+    releaseSummary();
+  }
+  await expect(page.locator('#event-list')).toContainText('session refresh blocked');
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await expect(page.locator('#result-review-caveats')).toContainText('not loaded');
+  await page.locator('#result-review-form').evaluate((form) => form.requestSubmit());
+  expectNoRequestsToLayer3Paths(requests, ['/execution/result/review']);
+
+  // A successful read of the same run with truly empty arrays restores readiness.
+  await page.unroute('**/api/v1/layer3/session/honest-result-session');
+  await page.route('**/api/v1/layer3/session/honest-result-session', (route) => route.fulfill({
+    json: controlledReviewReadySummary({ caveats: [], assumption_checks: [], caveat_count: 0, assumption_check_count: 0 }),
+  }));
+  await page.locator('#result-review-refresh').click();
+  await expect(page.locator('#result-review-caveats')).toContainText('no caveats recorded');
+  await expect(page.locator('#result-review-submit')).toBeEnabled();
+});
+
+for (const delayedStep of ['status', 'summary']) {
+  test(`Result caveat freshness ignores an obsolete ${delayedStep} response`, async ({ page }) => {
+    await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+    await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+    await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
+    let release;
+    const gate = new Promise((resolve) => { release = resolve; });
+    await page.route('**/api/v1/layer3/execution/result/status', async (route) => {
+      if (delayedStep === 'status') await gate;
+      await route.fulfill({ json: controlledReviewReadyStatus() });
+    });
+    await page.route('**/api/v1/layer3/session/honest-result-session', async (route) => {
+      if (delayedStep === 'summary') await gate;
+      await route.fulfill({ json: controlledReviewReadySummary() });
+    });
+    const delayedUrl = delayedStep === 'status'
+      ? '**/api/v1/layer3/execution/result/status'
+      : '**/api/v1/layer3/session/honest-result-session';
+    const pendingRequest = page.waitForRequest(delayedUrl);
+    await page.locator('#result-status-inspect').click();
+    await pendingRequest;
+    const nextSummary = controlledReviewReadySummary({ session_id: 'session-reopened' });
+    nextSummary.analysis_execution_start.analysis_run_id = 'run-reopened';
+    nextSummary.sublayer_visualization.pass_runs[0].analysis_run_id = 'run-reopened';
+    nextSummary.execution_selection.analysis_run_ids = ['run-reopened'];
+    await renderControlledReviewReadyPanel(page, nextSummary, controlledReviewReadyStatus({
+      session_id: 'session-reopened', analysis_run_id: 'run-reopened',
+    }));
+    release();
+    await expect(page.locator('#result-status-inspect')).toHaveText('Inspect Result Status');
+    expect(await page.evaluate(() => State.sessionSummary.session_id)).toBe('session-reopened');
+    expect(await page.evaluate(() => State.resultStatus.analysis_run_id)).toBe('run-reopened');
+    await expect(page.locator('#result-review-panel')).toContainText('run-reopened');
+  });
+}
+
+test('Result caveat cancellation restores the inspect control before discarding a late response', async ({ page }) => {
+  const requests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
+  let release;
+  const gate = new Promise((resolve) => { release = resolve; });
+  await page.route('**/api/v1/layer3/execution/result/status', async (route) => {
+    await gate;
+    await route.fulfill({ json: controlledReviewReadyStatus() });
+  });
+  const pendingRequest = page.waitForRequest('**/api/v1/layer3/execution/result/status');
+  await page.locator('#result-status-inspect').click();
+  await pendingRequest;
+  await expect(page.locator('#result-status-inspect')).toHaveText('Working...');
+  await page.evaluate(() => {
+    clearResultReviewState();
+    renderAll();
+    setGateControls();
+  });
+  const lateResponse = page.waitForResponse('**/api/v1/layer3/execution/result/status');
+  release();
+  await lateResponse;
+  await expect(page.locator('#result-status-inspect')).toHaveText('Inspect Result Status');
+  await expect(page.locator('#result-status-inspect')).toBeDisabled();
+  expect(await page.evaluate(() => [State.sessionSummary, State.resultStatus])).toEqual([null, null]);
+  expectNoRequestsToLayer3Paths(requests, ['/session/', '/execution/result/review']);
+});
+
+test('Result caveat freshness clears old local authority when a same-session refresh selects a new run', async ({ page }) => {
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  await renderControlledReviewReadyPanel(page, controlledReviewReadySummary(), controlledReviewReadyStatus());
+  const nextSummary = controlledReviewReadySummary();
+  nextSummary.analysis_execution_start.analysis_run_id = 'run-new-execution';
+  nextSummary.sublayer_visualization.pass_runs[0].analysis_run_id = 'run-new-execution';
+  nextSummary.execution_selection.analysis_run_ids = ['run-new-execution'];
+  await page.route('**/api/v1/layer3/session/honest-result-session', (route) => route.fulfill({ json: nextSummary }));
+  await page.locator('#result-review-refresh').click();
+  await expect(page.locator('#result-review-panel')).toContainText('run-new-execution');
+  expect(await page.evaluate(() => State.resultStatus)).toBeNull();
+  await expect(page.locator('#result-review-submit')).toBeDisabled();
+  await expect(page.locator('#result-review-caveats')).toContainText(HONEST_RESULT_CAVEAT.message);
+});
+
+test('Result caveat layout keeps long caveats and assumption notes readable', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1536, height: 960 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  const summary = controlledReviewReadySummary({
+    caveats: [{
+      caveat_type: 'nonstationary_break_interpretation', severity: 'medium',
+      message: 'value_used: breaks on a non-stationary series may reflect trend rather than regime change. working_series=cached_decomposition_residual',
+    }],
+    assumption_checks: [{
+      assumption_name: 'stationarity_required_for_structural_break_interpretation',
+      check_method: 'frequency_and_gap_check', check_result: 'warn', severity: 'medium',
+      notes: 'time_column=normalized_time; distinct_timestamps=60; value_used: {"inferred_frequency":"QE-DEC","gap_count":0}',
+    }],
+  });
+  for (const theme of ['light', 'workbench']) {
+    await page.locator('#theme-selector').selectOption(theme);
+    for (const width of [1536, 390]) {
+      await page.setViewportSize({ width, height: 960 });
+      await renderControlledReviewReadyPanel(page, summary, controlledReviewReadyStatus());
+      await page.locator('#execution-step-chip').click();
+      const card = page.locator('#result-review-caveats');
+      await expect(card).toBeVisible();
+      const layout = await card.evaluate((element) => {
+        const bounds = element.getBoundingClientRect();
+        const grid = element.parentElement.getBoundingClientRect();
+        const textBounds = [...element.querySelectorAll('li')].flatMap((item) => {
+          const range = document.createRange();
+          range.selectNodeContents(item);
+          return [...range.getClientRects()];
+        });
+        return {
+          width: bounds.width,
+          gridWidth: grid.width,
+          fitsCard: element.scrollWidth <= element.clientWidth + 1,
+          textFitsCard: textBounds.every((rect) => rect.left >= bounds.left && rect.right <= bounds.right + 1),
+        };
+      });
+      expect(layout.width, `${theme} ${width}px caveat card should use the available review width`).toBeGreaterThanOrEqual(layout.gridWidth - 1);
+      expect(layout.fitsCard, `${theme} ${width}px caveat content overflows its card`).toBe(true);
+      expect(layout.textFitsCard, `${theme} ${width}px caveat text extends beyond its card`).toBe(true);
+      await card.screenshot({ path: testInfo.outputPath(`caveats-${theme}-${width}.png`) });
+    }
+  }
+});
 
 test('Layer 3 workbench renders selected-run caveats and assumption checks before the review decision', async ({ page }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);

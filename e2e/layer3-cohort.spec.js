@@ -21,6 +21,8 @@ test('Layer 3 workbench records bounded associated-cohort result review from ser
   const outputPayloadRef = 'artifact://cohort-output-ui';
   const summary = {
     session_id: sessionId,
+    caveats: [],
+    assumption_checks: [],
     execution_selection: {
       selected: true,
       execution_started: true,
@@ -852,6 +854,8 @@ test('Layer 3 workbench blocks associated-cohort result review when provenance i
   await page.evaluate((id) => {
     State.sessionSummary = {
       session_id: id,
+      caveats: [],
+      assumption_checks: [],
       execution_selection: {
         selected: true,
         execution_started: true,
