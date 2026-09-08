@@ -3364,6 +3364,35 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     overflow-wrap: anywhere;
 }
 
+#apw-read-product {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin: 8px 0;
+}
+
+#apw-content-view {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.apw-content-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+}
+
+#apw-content-metadata {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px 12px;
+}
+
+#apw-content-metadata dd {
+    margin: 0;
+}
+
 .dataset-version-selector h3,
 .dataset-version-selector p,
 .aps-content-document-selector h3,

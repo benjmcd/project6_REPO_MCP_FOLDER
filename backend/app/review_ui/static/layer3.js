@@ -697,6 +697,10 @@ const State = {
     sessionSummary: null,
     sessionSummaryPending: false,
     sessionSummaryRequestToken: 0,
+    analysisProductReader: {
+        sessionId: null, productId: null, requestKey: null, requestToken: 0,
+        pending: false, content: null, error: null,
+    },
     executionSelection: null,
     executionSelectionError: null,
     executionSelectionPending: false,
@@ -4126,6 +4130,7 @@ function sessionRequestKey() {
 function beginSessionSummaryRequest() {
     // All participating readers share ownership, including automatic refreshes.
     // Release any superseded manual control before its finally guard skips it.
+    clearAnalysisProductContent();
     State.sessionSummaryPending = false;
     setBusy(elements.resultReviewRefresh, false, 'Refresh Session State');
     setBusy(elements.resultSessionReopen, false, 'Reopen Session');
@@ -9516,7 +9521,137 @@ function buildApwPackagingReadinessHtml() {
     return `<div class="apw-packaging-readiness-head"><h3>Ready for packaging</h3></div>${badge}${rosterHtml}`;
 }
 
+function clearAnalysisProductContent() {
+    const reader = State.analysisProductReader;
+    reader.requestToken += 1;
+    reader.requestKey = null;
+    reader.content = null;
+    reader.error = null;
+    reader.pending = false;
+    const button = document.getElementById('apw-read-submit');
+    if (button) setBusy(button, false, 'Read product');
+    const view = document.getElementById('apw-content-view');
+    if (view) {
+        view.hidden = true;
+        view.replaceChildren();
+    }
+    const status = document.getElementById('apw-read-status');
+    if (status) status.textContent = '';
+}
+
+function renderAnalysisProductReader() {
+    const select = document.getElementById('apw-read-product');
+    const button = document.getElementById('apw-read-submit');
+    const status = document.getElementById('apw-read-status');
+    const view = document.getElementById('apw-content-view');
+    if (!select || !button || !status || !view) return;
+    const reader = State.analysisProductReader;
+    const sessionId = State.sessionSummary?.session_id || null;
+    const products = analysisProductInventoryProjectionStatus().analystProducts;
+    const productId = (product) => String(product.product_id || '').replace(/^layer3_analyst_product:/, '');
+    if (reader.sessionId !== sessionId) {
+        clearAnalysisProductContent();
+        reader.sessionId = sessionId;
+        reader.productId = null;
+    }
+    if (reader.productId && !products.some((product) => productId(product) === reader.productId)) {
+        clearAnalysisProductContent();
+        reader.productId = null;
+    }
+    if (reader.requestKey && reader.requestKey !== sessionRequestKey()) clearAnalysisProductContent();
+    select.innerHTML = '<option value="">Select a product</option>' + products.map((product) => {
+        const id = productId(product);
+        const label = `${shortText(product.title || '', 80)} / ${product.lifecycle_status || ''} / ${id}`;
+        return `<option value="${escapeHtml(id)}">${escapeHtml(label)}</option>`;
+    }).join('');
+    select.value = reader.productId || '';
+    select.disabled = !sessionId || !products.length || State.sessionSummaryPending;
+    setBusy(button, reader.pending, 'Read product');
+    button.disabled = reader.pending || select.disabled || !reader.productId;
+    status.textContent = reader.pending ? 'Reading product...'
+        : reader.error ? `Unable to read product: ${reader.error}`
+            : reader.content ? 'Stored product loaded.'
+                : reader.productId ? 'Read the selected product to load its stored content.'
+                    : 'Select a product to read its stored content.';
+    view.hidden = !reader.content;
+    if (!reader.content) {
+        view.replaceChildren();
+        return;
+    }
+    const data = reader.content;
+    const product = data.analysis_product;
+    const metadata = [
+        ['Session ID', data.session_id],
+        ['Product ID', product.analysis_product_id],
+        ['Product kind', product.product_kind],
+        ['Lifecycle status', product.lifecycle_status],
+        ['Recorded executor mode', product.executor_type === 'human'
+            ? 'human (technical authoring mode; does not establish authorship or approval)' : product.executor_type],
+        ['Non-evidentiary', String(product.is_non_evidentiary)],
+        ['Basis hash', product.basis_hash],
+        ['Spec hash', product.spec_hash],
+        ['Created at', product.created_at || 'Not recorded'],
+    ];
+    view.innerHTML = `
+        <h3 id="apw-content-title" class="apw-content-text"></h3>
+        <dl id="apw-content-metadata">${metadata.map(([label, value]) =>
+        `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join('')}</dl>
+        <div id="apw-content-body" class="apw-content-text"></div>
+        <section id="apw-content-evidence" aria-label="Product evidence identities">
+            <h4>Evidence identities</h4>
+            <p>Showing ${data.evidence_refs.length} of ${data.evidence_refs_total}${data.evidence_refs_truncated ? ' (truncated)' : ''}.</p>
+            <ul>${data.evidence_refs.map((ref) => `<li>${escapeHtml(ref.ref_kind)} / ${escapeHtml(ref.ref_id)} / ${escapeHtml(ref.evidence_role)}</li>`).join('')}</ul>
+        </section>`;
+    // Preserve literal text, including line endings that HTML parsing normalizes.
+    view.querySelector('#apw-content-title').textContent = product.title;
+    view.querySelector('#apw-content-body').textContent = product.body;
+}
+
+async function readSelectedAnalysisProduct() {
+    const reader = State.analysisProductReader;
+    const { sessionId, productId } = reader;
+    if (!sessionId || !productId || reader.pending || State.sessionSummaryPending) return;
+    const requestToken = ++reader.requestToken;
+    const requestKey = sessionRequestKey();
+    const isCurrent = () => requestToken === reader.requestToken && requestKey === sessionRequestKey()
+        && reader.sessionId === sessionId && State.sessionSummary?.session_id === sessionId && reader.productId === productId;
+    reader.requestKey = requestKey;
+    reader.content = null;
+    reader.error = null;
+    reader.pending = true;
+    renderAnalysisProductReader();
+    try {
+        const data = await getJson(`/analysis-product/${encodeURIComponent(productId)}/content?session_id=${encodeURIComponent(sessionId)}`);
+        if (!isCurrent()) return;
+        const product = data?.analysis_product;
+        if (data?.schema_id !== 'layer3.analysis_product_content.v1'
+            || data.session_id !== sessionId || product?.analysis_product_id !== productId) {
+            throw new Error('Stored content did not match the selected product and session.');
+        }
+        const strings = ['title', 'body', 'product_kind', 'executor_type', 'lifecycle_status', 'basis_hash', 'spec_hash'];
+        if (strings.some((key) => typeof product[key] !== 'string')
+            || typeof product.is_non_evidentiary !== 'boolean'
+            || !(product.created_at === null || typeof product.created_at === 'string')
+            || !Array.isArray(data.evidence_refs) || data.evidence_refs.length > 200
+            || data.evidence_refs.some((ref) => ['ref_kind', 'ref_id', 'evidence_role'].some((key) => typeof ref?.[key] !== 'string'))
+            || !Number.isInteger(data.evidence_refs_total) || data.evidence_refs_total < data.evidence_refs.length
+            || data.evidence_refs_truncated !== (data.evidence_refs_total > data.evidence_refs.length)) {
+            throw new Error('Stored content response is incomplete or invalid.');
+        }
+        reader.content = data;
+    } catch (error) {
+        if (!isCurrent()) return;
+        reader.error = error.message || 'Request failed.';
+    } finally {
+        if (isCurrent()) {
+            reader.pending = false;
+            renderAnalysisProductReader();
+        }
+    }
+}
+
 function renderAnalysisProductWorkspacePanel() {
+    renderAnalysisProductReader();
     const inventoryView = document.getElementById('apw-inventory-view');
     const genWsSelect = document.getElementById('apw-gen-ws');
     const trProductSelect = document.getElementById('apw-tr-product');
@@ -33433,6 +33568,15 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
 (function apwFormHandlers() {
     let latestRequestToken = 0;
 
+    function bindApwReader() {
+        document.getElementById('apw-read-product')?.addEventListener('change', (event) => {
+            clearAnalysisProductContent();
+            State.analysisProductReader.productId = event.target.value || null;
+            renderAnalysisProductReader();
+        });
+        document.getElementById('apw-read-submit')?.addEventListener('click', readSelectedAnalysisProduct);
+    }
+
     async function refreshSession(sessionId, isCurrent) {
         const summary = await getJson(`/session/${encodeURIComponent(sessionId)}`);
         if (!isCurrent()) return false;
@@ -33753,6 +33897,7 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            bindApwReader();
             bindApwRowControls();
             bindApwDraftForm();
             bindApwWsForm();
@@ -33761,6 +33906,7 @@ elements.materialLedgerBody.addEventListener('input', (event) => {
             populateMethodSelect();
         });
     } else {
+        bindApwReader();
         bindApwRowControls();
         bindApwDraftForm();
         bindApwWsForm();
