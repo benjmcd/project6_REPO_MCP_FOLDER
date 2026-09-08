@@ -1,6 +1,24 @@
 # Operator Utilization Index
 
-## 2026-09-04 current operator pointer
+## 2026-09-08 current operator pointer
+
+Use the [local analyst continuation](MASTER_CONTEXT.md#2026-09-08-local-analyst-continuation)
+for current review recovery, diagnostic corrections and descriptive-use limits.
+The [bounded operator-result acceptance](MASTER_CONTEXT.md#2026-09-07-operator-result-continuation)
+records the completed persisted workflow. The retained 60-quarter local
+derivative has been uploaded, analyzed with two chosen methods, reviewed and
+reopened through the ordinary application. It needs no repeat execution or fresh
+download to establish that bounded workflow. Scientific assumptions and full
+lineage-display limitations remain as recorded; the local derivative has no
+ScienceBase provenance.
+
+The [current forward plan](program-context/03-forward-plan.md#2026-09-08-current-forward-pointer)
+specifies the remaining analytical-use and source-integrated work. Public
+analysis and value inspection retain their separate default-off flags and source
+requirements. This pointer grants no acquisition, flag arming or admission change.
+The September 4 section below is historical where superseded by this pointer.
+
+## 2026-09-04 historical operator pointer
 
 Current tracked state is summarized in
 [MASTER_CONTEXT](MASTER_CONTEXT.md#2026-09-04-current-state-reconciliation).

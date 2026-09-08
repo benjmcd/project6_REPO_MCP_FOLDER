@@ -474,14 +474,14 @@ def _run_cross_correlation(db: Session, run: AnalysisRun, dataset_version_id: st
         db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='non_varying_time_index', severity='high', message=_non_varying_time_index_message('Cross-correlation', dataset)))
         return
     profile_map = {var.variable_name: profile for profile, var in db.query(VariableProfile, VariableDefinition).join(VariableDefinition, VariableProfile.variable_id == VariableDefinition.variable_id).filter(VariableProfile.dataset_version_id == dataset_version_id).all()}
-    hints = [profile_map[n].stationarity_hint for n in numeric_cols if n in profile_map and profile_map[n].stationarity_hint]
+    hints = [profile_map[n].stationarity_hint if n in profile_map else None for n in numeric_cols]
     nonstationary = [h for h in hints if h in NONSTATIONARY_HINTS]
-    check_result = 'fail' if nonstationary else ('pass' if hints else 'warn')
+    check_result = 'fail' if nonstationary else ('pass' if hints and all(h == 'likely_stationary' for h in hints) else 'warn')
     stationarity_notes = []
     for name in numeric_cols:
         profile = profile_map.get(name)
-        if profile:
-            stationarity_notes.append(f"{name}:{profile.stationarity_hint or 'not_profiled'}")
+        hint = profile.stationarity_hint if profile else None
+        stationarity_notes.append(f"{name}:{hint or 'not_profiled'}")
     db.add(AssumptionCheck(analysis_run_id=run.analysis_run_id, assumption_name='series_stationarity', check_method='profile_lookup', check_result=check_result, severity='high' if check_result == 'fail' else 'medium', notes='; '.join(stationarity_notes) if stationarity_notes else 'no_profile_data'))
     db.add(CaveatNote(analysis_run_id=run.analysis_run_id, caveat_type='interpretation', severity='medium', message='Cross-correlation is not causal inference. Regime changes and nonstationarity can distort lag relationships.'))
     if len(numeric_cols) < 2:

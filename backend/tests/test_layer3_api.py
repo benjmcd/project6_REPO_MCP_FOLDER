@@ -14232,6 +14232,7 @@ def _start_and_approve_quant_result_review(
     approval_body: dict,
     selection_body: dict,
     request_id: str,
+    review_notes: str | None = "Output is traceable enough for package preview readiness.",
 ) -> tuple[dict, dict, dict]:
     pass_run_id = selection_body["pass_run_ids"][0]
 
@@ -14274,7 +14275,7 @@ def _start_and_approve_quant_result_review(
             "preview_hash": preview_body["preview_hash"],
             "analysis_run_id": start_body["analysis_run_id"],
             "operator_decision": "approved",
-            "review_notes": "Output is traceable enough for package preview readiness.",
+            "review_notes": review_notes,
             "reviewed_output_items": [
                 {
                     "item_ref": "primary-output",
@@ -23729,6 +23730,121 @@ def test_layer3_api_selected_cohort_result_review_prechecks_fail_closed(
         assert db.query(L3OutputPackage).count() == 0
     finally:
         db.close()
+
+
+@pytest.mark.parametrize("review_notes", ["Retained operator note.\n<literal> & exact text", None])
+def test_layer3_api_session_review_notes_reopen_from_canonical_pass_without_writes(
+    client: TestClient, tmp_path, review_notes: str | None,
+) -> None:
+    session_id, preview, approval, selection = _select_quant_pass(client, tmp_path)
+    _, _, review = _start_and_approve_quant_result_review(
+        client, session_id=session_id, preview_body=preview, approval_body=approval,
+        selection_body=selection, request_id="note-reopen", review_notes=review_notes,
+    )
+    assert "review_notes" not in review
+    assert review["review_notes_recorded"] is bool(review_notes)
+    pass_run_id = selection["pass_run_ids"][0]
+    with client.layer3_session_factory() as db:
+        stored_session = copy.deepcopy(db.get(L3Session, session_id).summary_json)
+        stored_pass = copy.deepcopy(db.get(L3PassRun, pass_run_id).summary_json)
+        assert "review_notes" not in stored_session["execution_result_review"]
+        assert stored_pass["execution_result_review"]["review_notes"] == review_notes
+
+    # A fresh HTTP client and each request's fresh ORM session reopen persisted state.
+    for reader in (client, TestClient(app)):
+        reopened = reader.get(f"/api/v1/layer3/session/{session_id}")
+        assert reopened.status_code == 200
+        saved_review = reopened.json()["execution_result_review"]
+        assert saved_review["review_record_ref"] == review["review_record_ref"]
+        assert saved_review["review_notes"] == review_notes
+    with client.layer3_session_factory() as db:
+        assert db.get(L3Session, session_id).summary_json == stored_session
+        assert db.get(L3PassRun, pass_run_id).summary_json == stored_pass
+
+
+@pytest.mark.parametrize(
+    ("record", "field", "replacement"),
+    [
+        ("compact", "review_record_ref", "different-review"),
+        ("compact", "analysis_plan_id", "different-plan"),
+        ("compact", "pass_run_id", "missing-pass"),
+        ("compact", "analysis_run_id", "different-run"),
+        ("review", "schema_id", "not-a-review"),
+        ("review", "analysis_plan_id", "different-plan"),
+        ("review", "pass_run_id", "different-pass"),
+        ("review", "analysis_run_id", "different-run"),
+        ("review", "source_preview_id", "different-preview"),
+        ("review", "source_preview_hash", "different-preview-hash"),
+        ("review", "review_record_ref", "different-review"),
+        ("review", "review_notes", "A note outside the canonical review record."),
+        ("trace", "session_id", "different-session"),
+        ("pass", "session_id", "different-session"),
+        ("pass", "analysis_plan_id", "different-plan"),
+        ("plan", "session_id", "different-session"),
+    ],
+)
+def test_layer3_api_session_review_notes_refuse_mismatched_authority(
+    client: TestClient, tmp_path, record: str, field: str, replacement: str,
+) -> None:
+    session_id, _, approval, selection, _, _, _ = _execute_and_approve_quant_result_review(
+        client, tmp_path, request_id="note-mismatch",
+    )
+    pass_run_id = selection["pass_run_ids"][0]
+    with client.layer3_session_factory() as db:
+        session = db.get(L3Session, session_id)
+        pass_run = db.get(L3PassRun, pass_run_id)
+        session_summary = copy.deepcopy(session.summary_json)
+        pass_summary = copy.deepcopy(pass_run.summary_json)
+        session_summary["execution_result_review"]["review_notes"] = "Untrusted compact note."
+        if record == "compact":
+            session_summary["execution_result_review"][field] = replacement
+        elif record == "review":
+            pass_summary["execution_result_review"][field] = replacement
+        elif record == "trace":
+            pass_summary["execution_result_review"]["trace_summary"][field] = replacement
+        elif record == "pass":
+            setattr(pass_run, field, replacement)
+        else:
+            setattr(db.get(L3AnalysisPlan, approval["analysis_plan_id"]), field, replacement)
+        session.summary_json = session_summary
+        pass_run.summary_json = pass_summary
+        db.commit()
+
+    reopened = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert reopened.status_code == 200
+    assert reopened.json()["execution_result_review"]["review_notes"] is None
+    with client.layer3_session_factory() as db:
+        assert db.get(L3Session, session_id).summary_json == session_summary
+        assert db.get(L3PassRun, pass_run_id).summary_json == pass_summary
+
+
+@pytest.mark.parametrize("missing", ["compact_review", "pass_review", "review_notes", "malformed_notes"])
+def test_layer3_api_session_review_notes_handle_legacy_missing_state(
+    client: TestClient, tmp_path, missing: str,
+) -> None:
+    session_id, _, _, selection, _, _, _ = _execute_and_approve_quant_result_review(
+        client, tmp_path, request_id="note-legacy",
+    )
+    with client.layer3_session_factory() as db:
+        session = db.get(L3Session, session_id)
+        pass_run = db.get(L3PassRun, selection["pass_run_ids"][0])
+        session_summary = copy.deepcopy(session.summary_json)
+        pass_summary = copy.deepcopy(pass_run.summary_json)
+        session_summary["execution_result_review"]["review_notes"] = "Untrusted compact note."
+        if missing == "compact_review":
+            session_summary.pop("execution_result_review")
+        elif missing == "pass_review":
+            pass_summary.pop("execution_result_review")
+        elif missing == "review_notes":
+            pass_summary["execution_result_review"].pop("review_notes")
+        else:
+            pass_summary["execution_result_review"]["review_notes"] = {"text": "not a saved note"}
+        session.summary_json = session_summary
+        pass_run.summary_json = pass_summary
+        db.commit()
+    reopened = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert reopened.status_code == 200
+    assert reopened.json()["execution_result_review"]["review_notes"] is None
 
 
 def test_layer3_api_execution_result_review_records_approval_without_downstream_writes(

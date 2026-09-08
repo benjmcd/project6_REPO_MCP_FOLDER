@@ -44,14 +44,14 @@ def _detect_stationarity(series: pd.Series) -> tuple[str, dict]:
     try:
         adf_stat, adf_pvalue, used_lag, nobs, _, _ = adfuller(clean, autolag="AIC")
         summary["adf"] = {"stat": float(adf_stat), "pvalue": float(adf_pvalue), "usedlag": int(used_lag), "nobs": int(nobs)}
-        adf_pass = adf_pvalue < 0.05
+        adf_pass = bool(adf_pvalue < 0.05)
     except Exception as exc:
         summary["adf"] = {"error": str(exc)}
     try:
         regression = "ct" if len(clean) >= 24 else "c"
         kpss_stat, kpss_pvalue, used_lag, _ = kpss(clean, regression=regression, nlags="auto")
         summary["kpss"] = {"stat": float(kpss_stat), "pvalue": float(kpss_pvalue), "usedlag": int(used_lag), "regression": regression}
-        kpss_pass = kpss_pvalue > 0.05
+        kpss_pass = bool(kpss_pvalue > 0.05)
     except Exception as exc:
         summary["kpss"] = {"error": str(exc)}
     if adf_pass is True and kpss_pass is True:
