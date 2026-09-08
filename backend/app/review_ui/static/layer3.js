@@ -4130,6 +4130,44 @@ function executionStartState() {
     return State.executionStart || State.sessionSummary?.analysis_execution_start || {};
 }
 
+function executionStartProjection() {
+    const selection = executionSelectionState();
+    const passRunIds = Array.isArray(selection.pass_run_ids) ? selection.pass_run_ids : [];
+    // Start targets the first selected pass. A recorded sibling execution must
+    // not supply that target's run identity or lifecycle.
+    const passRunId = passRunIds[0] || null;
+    const startBody = executionStartState();
+    const start = passRunId && startBody.pass_run_id === passRunId ? startBody : {};
+    const passRuns = State.sessionSummary?.sublayer_visualization?.pass_runs || [];
+    const pass = passRuns.find((item) => item.pass_run_id === passRunId);
+    const passStatus = start.pass_run_status || selection.pass_run_statuses?.[passRunId] || pass?.status || null;
+    const analysisRunIds = Array.isArray(selection.analysis_run_ids) ? selection.analysis_run_ids : [];
+    const analysisRunId = start.analysis_run_id || pass?.analysis_run_id
+        || (passRunIds.length === 1 && analysisRunIds.length === 1 ? analysisRunIds[0] : null);
+    // The saved start state omits the response-only execution_started boolean.
+    // Unknown status is not evidence that a pass has never started.
+    const hasStarted = Boolean(start.execution_started === true || start.started_at || analysisRunId
+        || passStatus === 'running' || TERMINAL_PASS_STATUSES.has(passStatus)
+        || (passRunIds.length === 1 && selection.execution_started === true));
+    const executionStarted = hasStarted ? true : passStatus === 'selected_not_started' ? false : null;
+    const passState = {
+        selected_not_started: 'execution_selected_not_started',
+        running: 'execution_pass_running',
+        completed: 'execution_pass_completed',
+        completed_with_warnings: 'execution_pass_completed',
+        failed: 'execution_pass_failed',
+    }[passStatus];
+    return {
+        ...start,
+        execution_started: executionStarted,
+        pass_run_id: passRunId,
+        pass_run_status: passStatus,
+        analysis_run_id: analysisRunId,
+        // Saved start.state is session-wide; next_state must describe this pass.
+        next_state: start.next_state || passState || null,
+    };
+}
+
 function executionPlanAuthority() {
     const selection = executionSelectionState();
     const previewIdentity = selection.preview_identity || State.executionStart?.preview_identity || {};
@@ -8755,19 +8793,16 @@ function canSelectExecution() {
 }
 
 function canStartExecution() {
-    const selection = executionSelectionState();
-    const start = executionStartState();
+    const start = executionStartProjection();
     const authority = executionPlanAuthority();
-    const passRunIds = Array.isArray(selection.pass_run_ids)
-        ? selection.pass_run_ids
-        : [];
     return Boolean(
         currentSessionId()
         && authority.analysisPlanId
         && authority.previewId
         && authority.previewHash
-        && passRunIds[0]
-        && start.execution_started !== true
+        && start.pass_run_id
+        && start.pass_run_status === 'selected_not_started'
+        && start.execution_started === false
         && !State.executionSelectionPending
         && !State.executionStartPending
     );
@@ -9060,21 +9095,27 @@ function renderDownstreamLocks(labels) {
 
 function executionSelectionPanelState() {
     const authority = executionPlanAuthority();
-    const selection = executionSelectionState();
+    const start = executionStartProjection();
     if (State.executionStartPending) {
         return { label: 'execution_starting', pill: 'preview', message: 'Starting the selected pass through server authority.' };
     }
     if (State.executionSelectionPending) {
         return { label: 'execution_selecting', pill: 'preview', message: 'Selecting pass runs for the approved plan.' };
     }
-    if (State.executionStart?.execution_started === true) {
-        return { label: 'execution_started', pill: 'ok', message: 'Execution started for the server-selected pass.' };
+    if (start.execution_started === true) {
+        const message = TERMINAL_PASS_STATUSES.has(start.pass_run_status)
+            ? `Server-selected pass finished with status ${start.pass_run_status}.`
+            : 'Execution started for the server-selected pass.';
+        return { label: 'execution_started', pill: start.pass_run_status === 'failed' ? 'blocked' : 'ok', message };
     }
     if (State.executionStartError || State.executionSelectionError) {
         return { label: 'execution_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the latest execution action.' };
     }
-    if (selection.pass_run_count) {
+    if (start.execution_started === false) {
         return { label: 'execution_selected', pill: 'ok', message: 'Server-selected pass run is ready to start.' };
+    }
+    if (start.pass_run_id) {
+        return { label: 'execution_blocked', pill: 'blocked', message: 'Selected pass status is not confirmed. Refresh session state.' };
     }
     if (authority.analysisPlanId && authority.previewId && authority.previewHash) {
         return { label: 'execution_selection_ready', pill: 'preview', message: 'Approved plan is ready for execution selection.' };
@@ -9085,10 +9126,9 @@ function executionSelectionPanelState() {
 function renderExecutionSelectionStartPanel() {
     const panelState = executionSelectionPanelState();
     const selection = executionSelectionState();
-    const start = executionStartState();
+    const start = executionStartProjection();
     const error = State.executionStartError || State.executionSelectionError;
     const passRunIds = Array.isArray(selection.pass_run_ids) ? selection.pass_run_ids : [];
-    const analysisRunIds = Array.isArray(selection.analysis_run_ids) ? selection.analysis_run_ids : [];
     const previewIdentity = start.preview_identity || selection.preview_identity || {};
     elements.executionSelectionStartPanel.innerHTML = `
         <div class="result-review-status">
@@ -9111,11 +9151,11 @@ function renderExecutionSelectionStartPanel() {
                 <strong>Execution Start</strong>
                 <ul>
                     ${fieldItem('started', start.execution_started)}
-                    ${fieldItem('pass run', start.pass_run_id || passRunIds[0], { code: true })}
+                    ${fieldItem('pass run', start.pass_run_id, { code: true })}
                     ${fieldItem('pass status', start.pass_run_status)}
-                    ${fieldItem('analysis run', start.analysis_run_id || analysisRunIds[0], { code: true })}
+                    ${fieldItem('analysis run', start.analysis_run_id, { code: true })}
                     ${fieldItem('output ref', start.output_payload_ref, { code: true })}
-                    ${fieldItem('next state', start.next_state || selection.next_state)}
+                    ${fieldItem('next state', start.next_state)}
                 </ul>
             </section>
             <section class="result-review-card">

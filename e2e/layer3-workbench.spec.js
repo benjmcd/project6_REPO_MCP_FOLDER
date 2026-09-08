@@ -26019,6 +26019,92 @@ async function renderControlledReviewReadyPanel(page, summary, status) {
   }, { summary, status });
 }
 
+for (const { passStatus, unstartedSibling = false } of [
+  ...['completed', 'completed_with_warnings', 'failed', 'running'].map((passStatus) => ({ passStatus })),
+  { passStatus: 'completed', unstartedSibling: true },
+]) {
+  test(`Execution lifecycle reopens ${passStatus}${unstartedSibling ? ' with an unstarted sibling' : ''} without offering another start`, async ({ page }) => {
+    const requests = trackLayer3ApiRequests(page);
+    const summary = controlledReviewReadySummary();
+    const executionState = passStatus === 'running' ? 'execution_pass_running'
+      : passStatus === 'failed' ? 'execution_pass_failed' : 'execution_pass_completed';
+    summary.execution_selection.state = executionState;
+    summary.execution_selection.pass_run_statuses['pass-honest-result'] = passStatus;
+    Object.assign(summary.analysis_execution_start, {
+      analysis_plan_id: 'plan-honest-result', state: executionState, pass_run_status: passStatus,
+      started_at: '2026-09-07T12:00:00Z',
+    });
+    summary.sublayer_visualization.pass_runs[0].status = passStatus;
+    if (unstartedSibling) {
+      summary.execution_selection.pass_run_ids.push('pass-unstarted');
+      summary.execution_selection.pass_run_count = 2;
+      summary.execution_selection.pass_run_statuses['pass-unstarted'] = 'selected_not_started';
+      summary.sublayer_visualization.pass_runs.push({ pass_run_id: 'pass-unstarted', status: 'selected_not_started', analysis_run_id: null });
+      // Saved start.state describes all session passes; pass_run_status describes this pass.
+      summary.execution_selection.state = 'execution_selected_not_started';
+      summary.analysis_execution_start.state = 'execution_selected_not_started';
+    }
+    if (passStatus.startsWith('completed')) {
+      summary.execution_result_review = {
+        schema_id: 'layer3.execution_result_review_state.v1', state: 'execution_result_review_approved',
+        review_record_ref: 'review-honest-result', analysis_plan_id: 'plan-honest-result',
+        pass_run_id: 'pass-honest-result', analysis_run_id: 'run-honest-result',
+      };
+    }
+    // The durable start projection intentionally has no execution_started/next_state fields.
+    await page.route('**/api/v1/layer3/session/honest-result-session', (route) => route.fulfill({ json: summary }));
+    await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+    await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+    await page.locator('#result-session-reopen-id').fill(summary.session_id);
+    await page.locator('#result-session-reopen').click();
+    const panel = page.locator('#execution-selection-start-panel');
+    await expect(panel).toContainText('pass-honest-result');
+    expect(await page.evaluate(() => State.executionStart)).toBeNull();
+    await expect(page.locator('#execution-start')).toBeDisabled();
+    await expect(panel).toContainText('started: true');
+    await expect(panel).toContainText(`pass status: ${passStatus}`);
+    await expect(panel).toContainText('analysis run: run-honest-result');
+    await expect(panel).toContainText(`next state: ${executionState}`);
+    await expect(panel).not.toContainText('ready to start');
+    await expect(panel).not.toContainText('started: unknown');
+    if (passStatus.startsWith('completed')) {
+      await expect(page.locator('#result-review-panel')).toContainText('result_review_ui_recorded');
+    }
+    await page.evaluate(() => startExecution());
+    expectNoRequestsToLayer3Paths(requests, ['/execution/start']);
+  });
+}
+
+test('Execution lifecycle requires confirmed unstarted status and keeps sibling run evidence separate', async ({ page }) => {
+  const requests = trackLayer3ApiRequests(page);
+  const summary = controlledReviewReadySummary();
+  summary.execution_selection.pass_run_ids.unshift('pass-unstarted');
+  summary.execution_selection.pass_run_count = 2;
+  summary.sublayer_visualization.pass_runs.unshift({ pass_run_id: 'pass-unstarted', analysis_run_id: null });
+  await page.route('**/api/v1/layer3/session/honest-result-session', (route) => route.fulfill({ json: summary }));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
+  await page.locator('#result-session-reopen-id').fill(summary.session_id);
+  await page.locator('#result-session-reopen').click();
+  const panel = page.locator('#execution-selection-start-panel');
+  await expect(panel).toContainText('pass-unstarted');
+  await expect(page.locator('#execution-start')).toBeDisabled();
+  await expect(panel).not.toContainText('ready to start');
+  await page.evaluate(() => startExecution());
+  expectNoRequestsToLayer3Paths(requests, ['/execution/start']);
+
+  summary.execution_selection.pass_run_statuses['pass-unstarted'] = 'selected_not_started';
+  await page.locator('#result-session-reopen').click();
+  await expect(page.locator('#execution-start')).toBeEnabled();
+  const startCard = panel.locator('.result-review-card').filter({ has: page.getByText('Execution Start', { exact: true }) });
+  await expect(startCard).toContainText('started: false');
+  await expect(startCard).toContainText('pass run: pass-unstarted');
+  await expect(startCard).toContainText('pass status: selected_not_started');
+  await expect(startCard).not.toContainText('run-honest-result');
+  expect(await page.evaluate(() => executionStartPayload().pass_run_id)).toBe('pass-unstarted');
+  expectNoRequestsToLayer3Paths(requests, ['/execution/start']);
+});
+
 test('Result caveat freshness keeps the authoritative pass and analysis run together', async ({ page }) => {
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   await expect.poll(() => page.evaluate(() => Boolean(State.bootstrap))).toBe(true);
